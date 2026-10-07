@@ -6,11 +6,13 @@ import {
   type StaticKind,
   type StaticPlacement,
 } from '@fenix/shared';
-import type { MapRegion } from './tiled-map-loader';
+import type { MapRegion, PlacedItem } from './tiled-map-loader';
 
 export interface GeneratedWorld {
   readonly map: TileMap;
   readonly spawnPoint: Position;
+  /** Objetos sueltos puestos en el mapa, en coordenadas del mundo. */
+  readonly items: readonly PlacedItem[];
 }
 
 export interface WorldGenerationOptions {
@@ -46,6 +48,7 @@ export function generateIslandMap(options: WorldGenerationOptions): GeneratedWor
   let statics = scatterVegetation();
   const regions: RegionData[] = [];
   let spawnPoint: Position = center;
+  const items: PlacedItem[] = [];
 
   if (town) {
     const offset = {
@@ -67,6 +70,12 @@ export function generateIslandMap(options: WorldGenerationOptions): GeneratedWor
     statics.push(...town.statics.map((s) => ({ ...s, x: s.x + offset.x, y: s.y + offset.y })));
     regions.push(...town.regions.map((r) => ({ ...r, x: r.x + offset.x, y: r.y + offset.y })));
     if (town.spawn) spawnPoint = { x: town.spawn.x + offset.x, y: town.spawn.y + offset.y };
+    items.push(
+      ...town.items.map((i) => ({
+        ...i,
+        position: { x: i.position.x + offset.x, y: i.position.y + offset.y },
+      })),
+    );
   } else {
     for (let y = center.y - 6; y <= center.y + 6; y++) {
       for (let x = center.x - 6; x <= center.x + 6; x++) terrain[y * width + x] = Terrain.Stone;
@@ -76,7 +85,7 @@ export function generateIslandMap(options: WorldGenerationOptions): GeneratedWor
     );
   }
 
-  return { map: new TileMap({ width, height, terrain, statics, regions }), spawnPoint };
+  return { map: new TileMap({ width, height, terrain, statics, regions }), spawnPoint, items };
 
   function pickTerrain(x: number, y: number): { tile: Terrain; road: boolean } {
     const edgeDistance = Math.min(x, y, width - 1 - x, height - 1 - y);

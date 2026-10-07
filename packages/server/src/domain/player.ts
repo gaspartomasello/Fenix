@@ -67,7 +67,8 @@ export class Player {
     return { ok: true };
   }
 
-  toSnapshot(): PlayerSnapshot {
+  /** Datos públicos del jugador; lo que tiene puesto lo agrega `World`. */
+  toSnapshot(): Omit<PlayerSnapshot, 'equipment'> {
     return {
       id: this.id,
       name: this.name,

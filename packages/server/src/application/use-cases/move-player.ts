@@ -1,6 +1,7 @@
 import type { Direction, EntityId, MoveMode } from '@fenix/shared';
 import type { Player } from '../../domain/player';
 import type { World } from '../../domain/world';
+import type { ItemNotifications } from '../item-notifications';
 import type { Clock, Notifier } from '../ports';
 
 export interface MovePlayerInput {
@@ -15,6 +16,7 @@ export class MovePlayer {
     private readonly world: World,
     private readonly clock: Clock,
     private readonly notifier: Notifier,
+    private readonly notifications: ItemNotifications,
   ) {}
 
   execute({ playerId, direction, mode, seq }: MovePlayerInput): void {
@@ -22,6 +24,7 @@ export class MovePlayer {
     if (!player) return;
 
     const before = this.idsNear(player);
+    const groundBefore = new Set(this.notifications.groundSnapshotsNear(playerId).map((i) => i.id));
     const outcome = player.tryMove(this.world.map, direction, mode, this.clock.now());
     if (!outcome.ok) {
       this.notifier.send(playerId, {
@@ -35,6 +38,11 @@ export class MovePlayer {
 
     this.notifier.send(playerId, { type: 'moveAck', seq, position: player.position });
     this.updateVisibility(player, before, mode);
+    this.notifications.sendGroundDiff(
+      playerId,
+      groundBefore,
+      this.notifications.groundSnapshotsNear(playerId),
+    );
   }
 
   /**
@@ -54,13 +62,19 @@ export class MovePlayer {
       direction: player.direction,
       mode,
     });
-    this.notifier.sendMany(entered, { type: 'playerAppeared', player: player.toSnapshot() });
+    this.notifier.sendMany(entered, {
+      type: 'playerAppeared',
+      player: this.world.snapshotOf(player),
+    });
     this.notifier.sendMany(left, { type: 'playerDisappeared', id: player.id });
 
     for (const id of entered) {
       const other = this.world.get(id);
       if (other)
-        this.notifier.send(player.id, { type: 'playerAppeared', player: other.toSnapshot() });
+        this.notifier.send(player.id, {
+          type: 'playerAppeared',
+          player: this.world.snapshotOf(other),
+        });
     }
     for (const id of left) this.notifier.send(player.id, { type: 'playerDisappeared', id });
   }

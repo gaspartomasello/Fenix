@@ -1,9 +1,8 @@
 import type { ClientMessage } from '@fenix/shared';
 import { encodeMessage } from '@fenix/shared';
 import { GameApplication } from './application/game-application';
-import { World } from './domain/world';
 import { WorldClock } from './domain/world-clock';
-import { buildWorld } from './infrastructure/content/world-builder';
+import { createWorld } from './infrastructure/content/world-builder';
 import { ClientSession } from './infrastructure/network/client-session';
 import { SessionRegistry } from './infrastructure/network/session-registry';
 import { SeededRandom } from './infrastructure/system/seeded-random';
@@ -32,17 +31,15 @@ export interface EmbeddedServer {
 }
 
 export function createEmbeddedServer(options: EmbeddedServerOptions = {}): EmbeddedServer {
-  const { map, spawnPoint } = buildWorld({
-    size: options.mapSize ?? 128,
-    seed: options.mapSeed ?? 1997,
-  });
+  const ids = new UuidGenerator();
+  const world = createWorld({ size: options.mapSize ?? 128, seed: options.mapSeed ?? 1997 }, ids);
   const sessions = new SessionRegistry();
   const clock = new SystemClock();
   const app = new GameApplication({
-    world: new World(map, spawnPoint),
+    world,
     worldClock: new WorldClock(clock.now(), options.startHour),
     clock,
-    ids: new UuidGenerator(),
+    ids,
     random: new SeededRandom(Date.now()),
     notifier: sessions,
   });

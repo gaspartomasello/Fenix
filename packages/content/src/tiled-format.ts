@@ -43,6 +43,7 @@ export interface TiledObject {
   readonly width: number;
   readonly height: number;
   readonly point?: boolean;
+  readonly properties?: readonly TiledProperty[];
 }
 
 export interface TiledObjectLayer {
@@ -69,6 +70,8 @@ export const TILED = {
   terrainLayer: 'terreno',
   staticsLayer: 'objetos',
   zonesLayer: 'zonas',
+  itemsLayer: 'objetos-sueltos',
+  amountProperty: 'cantidad',
   spawnObject: 'aparicion',
   regionClass: 'region',
   terrainProperty: 'terrain',
