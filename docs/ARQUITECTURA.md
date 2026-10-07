@@ -52,14 +52,20 @@ infrastructure ──► application ──► domain
   - `http/`: sirve el cliente compilado y `/health`.
   - `content/`: generador procedural del mapa (se reemplazará por mapas diseñados).
   - `system/`: reloj, ids, PRNG.
-- **main.ts**: raíz de composición. Es el único archivo que conoce todas las piezas concretas.
+- **main.ts**: raíz de composición del servidor en red (HTTP + WebSocket).
+- **embedded.ts**: segunda raíz de composición, sin red ni dependencias de Node, para correr el
+  servidor dentro del navegador (modo solo). Es el único punto que el cliente puede importar
+  (`@fenix/server/embedded`).
+
+`ClientSession` concentra el ciclo de vida de un cliente (ingreso, mensajes, salida) y lo usan
+los dos transportes, así el comportamiento es idéntico en red y en modo solo.
 
 ## @fenix/client
 
 ```
 app (orquestación)
  ├── core       estado del juego y reglas del cliente (sin DOM ni Pixi)
- ├── network    adaptador WebSocket → puerto ServerGateway
+ ├── network    adaptadores del puerto ServerGateway: WebSocket o servidor embebido
  ├── input      teclado/mouse → intenciones de movimiento
  ├── rendering  Pixi: proyección isométrica, terreno, personajes, cámara
  ├── assets     arte procedural (canvas puro, sin Pixi)
@@ -72,6 +78,9 @@ app (orquestación)
 - **rendering/** solo **lee** el estado del core y lo dibuja. `TextureCache` es el único punto
   donde el arte generado (`assets/`) se convierte en texturas de Pixi.
 - **ui/** usa DOM nativo, separado del canvas. Los componentes reciben callbacks; no conocen la red.
+- **network/** elige el transporte al compilar: `WebSocketGateway` (online) o `EmbeddedGateway`
+  (modo solo, `vite --mode solo`). Es la única capa que puede importar el servidor embebido; en
+  el build online ese código ni siquiera se incluye.
 - **app/GameSession** conecta todo y corre el loop: input → core → render.
 
 ## Flujo de un paso

@@ -26,15 +26,17 @@ npm run dev
 
 Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña y creá otro personaje.
 
-| Comando             | Qué hace                                                     |
-| ------------------- | ------------------------------------------------------------ |
-| `npm run dev`       | Servidor (puerto 3000) y cliente con recarga en vivo (5173)  |
-| `npm run build`     | Compila cliente y servidor                                   |
-| `npm start`         | Corre la versión compilada: juego completo en el puerto 3000 |
-| `npm test`          | Tests                                                        |
-| `npm run lint`      | ESLint (incluye las reglas de capas)                         |
-| `npm run typecheck` | Verificación de tipos de los tres paquetes                   |
-| `npm run check`     | Formato + lint + tipos + tests (lo mismo que corre la CI)    |
+| Comando              | Qué hace                                                     |
+| -------------------- | ------------------------------------------------------------ |
+| `npm run dev`        | Servidor (puerto 3000) y cliente con recarga en vivo (5173)  |
+| `npm run dev:solo`   | Modo solo con recarga en vivo, sin servidor aparte           |
+| `npm run build`      | Compila cliente y servidor                                   |
+| `npm run build:solo` | Genera la página autocontenida del modo solo                 |
+| `npm start`          | Corre la versión compilada: juego completo en el puerto 3000 |
+| `npm test`           | Tests                                                        |
+| `npm run lint`       | ESLint (incluye las reglas de capas)                         |
+| `npm run typecheck`  | Verificación de tipos de los tres paquetes                   |
+| `npm run check`      | Formato + lint + tipos + tests (lo mismo que corre la CI)    |
 
 ### Variables de entorno del servidor
 
@@ -49,7 +51,8 @@ Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña 
 ## Controles
 
 - **Flechas / WASD**: caminar (arriba en pantalla = Noroeste, como en UO). **Shift** para correr.
-- **Clic derecho sostenido**: caminar hacia el cursor; lejos del personaje, correr.
+- **Clic derecho sostenido** (o **tocar y mantener** en el celular): caminar hacia el cursor;
+  lejos del personaje, correr.
 - **Enter**: hablar. **Escape**: cancelar.
 - **Rueda del mouse**: zoom.
 
