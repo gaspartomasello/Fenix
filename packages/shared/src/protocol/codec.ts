@@ -64,8 +64,8 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
 const SERVER_TYPES: ReadonlySet<ServerMessageType> = new Set<ServerMessageType>([
   'welcome',
   'joinRejected',
-  'playerJoined',
-  'playerLeft',
+  'playerAppeared',
+  'playerDisappeared',
   'playerMoved',
   'moveAck',
   'moveRejected',
