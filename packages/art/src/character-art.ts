@@ -1,14 +1,5 @@
 import { Direction, type Appearance } from '@fenix/shared';
-import {
-  context2d,
-  createCanvas,
-  css,
-  hexToRgb,
-  mirrored,
-  outline,
-  shade,
-  type Rgb,
-} from './pixel-art';
+import { hexToRgb, PixelImage, shade, type Rgb } from './pixel-art';
 
 /** Tamaño lógico del sprite (se escala x2 al dibujar). */
 export const CHARACTER_ART_WIDTH = 20;
@@ -65,14 +56,13 @@ function paletteFor(appearance: Appearance): Palette {
 /** Pincel con sombreado: luz desde arriba a la izquierda, como en UO. */
 class Brush {
   constructor(
-    private readonly ctx: CanvasRenderingContext2D,
+    private readonly image: PixelImage,
     private readonly offsetY: number,
   ) {}
 
   rect(x: number, y: number, w: number, h: number, color: Rgb): void {
     if (w <= 0 || h <= 0) return;
-    this.ctx.fillStyle = css(color);
-    this.ctx.fillRect(x, y + this.offsetY, w, h);
+    this.image.fillRect(x, y + this.offsetY, w, h, color);
   }
 
   /** Rectángulo con borde izquierdo iluminado y derecho en sombra. */
@@ -117,13 +107,13 @@ export function drawCharacterFrame(
   appearance: Appearance,
   direction: Direction,
   frame: CharacterFrame,
-): HTMLCanvasElement {
+): PixelImage {
   const { view, mirror } = VIEW_BY_DIRECTION[direction];
-  const canvas = createCanvas(CHARACTER_ART_WIDTH, CHARACTER_ART_HEIGHT);
+  const image = new PixelImage(CHARACTER_ART_WIDTH, CHARACTER_ART_HEIGHT);
   const pose = poseFor(frame);
   const palette = paletteFor(appearance);
-  const body = new Brush(context2d(canvas), pose.bob);
-  const legs = new Brush(context2d(canvas), 0);
+  const body = new Brush(image, pose.bob);
+  const legs = new Brush(image, 0);
 
   switch (view) {
     case 'front':
@@ -139,8 +129,8 @@ export function drawCharacterFrame(
       break;
   }
 
-  outline(canvas, [27, 19, 14]);
-  return mirror ? mirrored(canvas) : canvas;
+  image.outline([27, 19, 14]);
+  return mirror ? image.mirrored() : image;
 }
 
 function drawLeg(brush: Brush, x: number, lifted: boolean, p: Palette, dim = 1): void {
