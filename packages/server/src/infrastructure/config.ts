@@ -1,0 +1,33 @@
+import { existsSync } from 'node:fs';
+
+export interface ServerConfig {
+  readonly port: number;
+  readonly host: string;
+  /** Carpeta del cliente compilado; null en desarrollo (lo sirve Vite). */
+  readonly clientDist: string | null;
+  readonly mapSeed: number;
+  readonly mapSize: number;
+}
+
+function intFromEnv(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw === '') return fallback;
+  const value = Number(raw);
+  if (!Number.isInteger(value)) throw new Error(`${name} debe ser un número entero`);
+  return value;
+}
+
+/**
+ * @param defaultClientDist carpeta del cliente compilado a usar si existe y no
+ * se definió CLIENT_DIST.
+ */
+export function loadConfig(defaultClientDist: string): ServerConfig {
+  return {
+    port: intFromEnv('PORT', 3000),
+    host: process.env.HOST ?? '0.0.0.0',
+    clientDist:
+      process.env.CLIENT_DIST ?? (existsSync(defaultClientDist) ? defaultClientDist : null),
+    mapSeed: intFromEnv('MAP_SEED', 1997),
+    mapSize: intFromEnv('MAP_SIZE', 96),
+  };
+}
