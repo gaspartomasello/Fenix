@@ -26,27 +26,29 @@ npm run dev
 
 Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña y creá otro personaje.
 
-| Comando              | Qué hace                                                     |
-| -------------------- | ------------------------------------------------------------ |
-| `npm run dev`        | Servidor (puerto 3000) y cliente con recarga en vivo (5173)  |
-| `npm run dev:solo`   | Modo solo con recarga en vivo, sin servidor aparte           |
-| `npm run build`      | Compila cliente y servidor                                   |
-| `npm run build:solo` | Genera la página autocontenida del modo solo                 |
-| `npm start`          | Corre la versión compilada: juego completo en el puerto 3000 |
-| `npm test`           | Tests                                                        |
-| `npm run lint`       | ESLint (incluye las reglas de capas)                         |
-| `npm run typecheck`  | Verificación de tipos de los tres paquetes                   |
-| `npm run check`      | Formato + lint + tipos + tests (lo mismo que corre la CI)    |
+| Comando                              | Qué hace                                                     |
+| ------------------------------------ | ------------------------------------------------------------ |
+| `npm run dev`                        | Servidor (puerto 3000) y cliente con recarga en vivo (5173)  |
+| `npm run dev:solo`                   | Modo solo con recarga en vivo, sin servidor aparte           |
+| `npm run build`                      | Compila cliente y servidor                                   |
+| `npm run build:solo`                 | Genera la página autocontenida del modo solo                 |
+| `npm start`                          | Corre la versión compilada: juego completo en el puerto 3000 |
+| `npm test`                           | Tests                                                        |
+| `npm run lint`                       | ESLint (incluye las reglas de capas)                         |
+| `npm run typecheck`                  | Verificación de tipos de los tres paquetes                   |
+| `npm run check`                      | Formato + lint + tipos + tests (lo mismo que corre la CI)    |
+| `npm run tilesets -w @fenix/content` | Regenera los tilesets de Tiled a partir del arte             |
 
 ### Variables de entorno del servidor
 
-| Variable      | Por defecto   | Descripción                            |
-| ------------- | ------------- | -------------------------------------- |
-| `PORT`        | `3000`        | Puerto HTTP/WebSocket                  |
-| `HOST`        | `0.0.0.0`     | Interfaz donde escucha                 |
-| `MAP_SEED`    | `1997`        | Semilla del mapa generado              |
-| `MAP_SIZE`    | `96`          | Lado del mapa en tiles                 |
-| `CLIENT_DIST` | `client/dist` | Carpeta del cliente compilado a servir |
+| Variable      | Por defecto   | Descripción                                |
+| ------------- | ------------- | ------------------------------------------ |
+| `PORT`        | `3000`        | Puerto HTTP/WebSocket                      |
+| `HOST`        | `0.0.0.0`     | Interfaz donde escucha                     |
+| `MAP_SEED`    | `1997`        | Semilla del mapa generado                  |
+| `MAP_SIZE`    | `128`         | Lado del mapa en tiles                     |
+| `START_HOUR`  | `8`           | Hora del juego con la que arranca el mundo |
+| `CLIENT_DIST` | `client/dist` | Carpeta del cliente compilado a servir     |
 
 ## Controles
 
@@ -61,10 +63,13 @@ Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña 
 ```
 packages/
 ├── shared/   Dominio y protocolo comunes (sin dependencias)
+├── art/      Arte procedural: pixel art generado por código, sin DOM
+├── content/  Mapas y tilesets editables con Tiled
 ├── server/   Servidor autoritativo: dominio → aplicación → infraestructura
 └── client/   Cliente web: core → render / UI / input / red
 docs/
-└── ARQUITECTURA.md
+├── ARQUITECTURA.md
+└── MAPAS.md   Cómo diseñar mapas con Tiled
 ```
 
 Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
@@ -72,7 +77,8 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
 ## Hoja de ruta
 
 1. ✅ **Base online**: mapa isométrico, personajes, movimiento en tiempo real, chat.
-2. Mundo: mapa más grande por zonas, árboles y edificios, colisiones, día/noche.
+2. ✅ **Mundo**: isla de 128×128 con bosques, pueblo diseñado en Tiled, edificios y objetos con
+   colisión, transiciones de terreno, rango de visión y día/noche con faroles.
 3. Ítems: suelo, mochila, paperdoll, equipar, arrastrar y soltar.
 4. Combate: monstruos con IA, HP/mana/stamina, muerte, fantasma y resurrección.
 5. Skills: suben con el uso, tope total, magia con reagentes y libro de hechizos.
