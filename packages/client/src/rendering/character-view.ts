@@ -1,7 +1,8 @@
 import { Container, Graphics, Sprite, Text } from 'pixi.js';
-import { CHARACTER_ART_HEIGHT, CHARACTER_FEET_Y, WALK_FRAMES } from '../assets/character-art';
+import { CHARACTER_ART_HEIGHT, CHARACTER_FEET_Y, WALK_FRAMES } from '@fenix/art';
 import type { Entity } from '../core/entity';
-import { ART_SCALE, depthOf, tileToScreen } from './iso';
+import { ART_SCALE, tileToScreen } from './iso';
+import { characterDepth } from './depth';
 import type { TextureCache } from './texture-cache';
 
 const NAME_COLOR_SELF = 0xf6d36b;
@@ -50,7 +51,7 @@ export class CharacterView {
     const position = this.entity.renderPosition(now);
     const screen = tileToScreen(position);
     this.container.position.set(screen.x, screen.y);
-    this.container.zIndex = depthOf(position);
+    this.container.zIndex = characterDepth(position);
     this.sprite.texture = this.textures.character(
       this.entity.appearance,
       this.entity.direction,

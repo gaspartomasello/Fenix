@@ -1,11 +1,14 @@
 import {
   TileMap,
+  advanceTime,
   moveDuration,
   sanitizeChatText,
   type Direction,
   type EntityId,
   type MoveMode,
+  type RegionData,
   type ServerMessage,
+  type WorldTime,
 } from '@fenix/shared';
 import { Entity } from './entity';
 import { EventEmitter } from './event-emitter';
@@ -38,6 +41,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   private _map: TileMap | null = null;
   private selfId: EntityId | null = null;
   private predictor: MovementPredictor | null = null;
+  private time: { value: WorldTime; receivedAt: number } | null = null;
 
   constructor(
     private readonly gateway: ServerGateway,
@@ -58,8 +62,21 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     return this.entities.values();
   }
 
-  get playerCount(): number {
+  /** Jugadores a la vista, incluido el propio. */
+  get visibleCount(): number {
     return this.entities.size;
+  }
+
+  /** Hora actual del mundo, extrapolada desde la que envió el servidor. */
+  worldTime(): WorldTime | null {
+    if (!this.time) return null;
+    return advanceTime(this.time.value, this.clock() - this.time.receivedAt);
+  }
+
+  /** Zona con nombre donde está el jugador, si hay alguna. */
+  currentRegion(): RegionData | undefined {
+    const self = this.self;
+    return self ? this._map?.regionAt(self.position) : undefined;
   }
 
   // ── Acciones del jugador ────────────────────────────────────────────
@@ -92,6 +109,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this._map = new TileMap(message.map);
         this.selfId = message.selfId;
         this.predictor = new MovementPredictor(this._map);
+        this.time = { value: message.time, receivedAt: now };
         message.players.forEach((p) => this.addEntity(new Entity(p)));
         this.emit('ready', { selfId: message.selfId, map: this._map });
         break;
@@ -99,11 +117,13 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       case 'joinRejected':
         this.emit('joinRejected', { reason: message.reason });
         break;
-      case 'playerJoined':
-        this.addEntity(new Entity(message.player));
+      case 'playerAppeared':
+        if (!this.entities.has(message.player.id)) this.addEntity(new Entity(message.player));
         break;
-      case 'playerLeft':
-        if (this.entities.delete(message.id)) this.emit('entityRemoved', message.id);
+      case 'playerDisappeared':
+        if (message.id !== this.selfId && this.entities.delete(message.id)) {
+          this.emit('entityRemoved', message.id);
+        }
         break;
       case 'playerMoved': {
         const entity = this.entities.get(message.id);

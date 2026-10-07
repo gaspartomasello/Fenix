@@ -6,12 +6,16 @@ import type { ClientGame } from '../core/client-game';
 import type { Entity } from '../core/entity';
 import { CharacterView } from './character-view';
 import { tileToScreen, type ScreenPoint } from './iso';
+import { Lighting } from './lighting';
+import { StaticLayer } from './static-layer';
 import { TerrainLayer } from './terrain-layer';
 import { TextureCache } from './texture-cache';
 
 const ZOOM_LEVELS = [1, 1.5, 2] as const;
 /** El personaje se dibuja un poco por debajo del centro, como en UO. */
 const CAMERA_VERTICAL_OFFSET = 30;
+/** Margen alrededor de la pantalla para crear objetos antes de que entren. */
+const VIEW_MARGIN = 96;
 
 /**
  * Dibuja el estado de `ClientGame` con Pixi. Solo lee el estado: nunca lo
@@ -21,9 +25,13 @@ export class GameRenderer {
   private readonly app = new Application();
   private readonly textures = new TextureCache();
   private readonly world = new Container();
+  /** Terreno y entidades: lo que se oscurece de noche. */
+  private readonly scene = new Container();
   private readonly entityLayer = new Container({ sortableChildren: true });
+  private readonly lighting = new Lighting(this.textures);
   private readonly views = new Map<EntityId, CharacterView>();
   private terrain: TerrainLayer | null = null;
+  private statics: StaticLayer | null = null;
   private zoomIndex = 0;
   private readonly unsubscribe: (() => void)[] = [];
 
@@ -59,14 +67,25 @@ export class GameRenderer {
     if (!self) return;
 
     for (const view of this.views.values()) view.update(now);
-    this.updateCamera(self, now);
+    const focus = self.renderPosition(now);
+    const view = this.updateCamera(focus);
+    this.terrain?.cull(view);
+    this.statics?.update(view, focus);
+
+    const time = this.game.worldTime();
+    if (time) {
+      this.scene.tint = Lighting.tintFor(time.dayProgress);
+      this.lighting.update(time.dayProgress, focus, this.statics?.visibleLights() ?? []);
+    }
     this.app.render();
   }
 
   destroy(): void {
     this.unsubscribe.forEach((off) => off());
     this.views.forEach((view) => view.destroy());
+    this.statics?.destroy();
     this.terrain?.destroy();
+    this.lighting.destroy();
     this.textures.destroy();
     this.app.destroy(true, { children: true });
   }
@@ -87,6 +106,7 @@ export class GameRenderer {
     // El loop lo maneja la aplicación: Pixi solo renderiza cuando se le pide.
     this.app.ticker.stop();
     host.appendChild(this.app.canvas);
+    this.world.addChild(this.scene, this.lighting.container);
     this.app.stage.addChild(this.world);
 
     const map = this.game.map;
@@ -109,10 +129,12 @@ export class GameRenderer {
   }
 
   private setMap(map: TileMap): void {
+    this.statics?.destroy();
     this.terrain?.destroy();
-    this.world.removeChildren();
+    this.scene.removeChildren();
     this.terrain = new TerrainLayer(map, this.textures);
-    this.world.addChild(this.terrain.container, this.entityLayer);
+    this.statics = new StaticLayer(map, this.textures, this.entityLayer);
+    this.scene.addChild(this.terrain.container, this.entityLayer);
   }
 
   private addView(entity: Entity): void {
@@ -122,23 +144,19 @@ export class GameRenderer {
     this.entityLayer.addChild(view.container);
   }
 
-  private updateCamera(self: Entity, now: number): void {
-    const focus = tileToScreen(self.renderPosition(now));
+  /** Centra la cámara y devuelve el rectángulo visible en coordenadas del mundo. */
+  private updateCamera(focus: { x: number; y: number }): Rectangle {
+    const center = tileToScreen(focus);
     const { width, height } = this.app.screen;
     const zoom = this.zoom;
-    const offsetX = Math.round(width / 2 - focus.x * zoom);
-    const offsetY = Math.round(height / 2 + CAMERA_VERTICAL_OFFSET - focus.y * zoom);
+    const offsetX = Math.round(width / 2 - center.x * zoom);
+    const offsetY = Math.round(height / 2 + CAMERA_VERTICAL_OFFSET - center.y * zoom);
     this.world.position.set(offsetX, offsetY);
-
-    // Rectángulo visible en coordenadas del mundo, con margen.
-    const margin = 64;
-    this.terrain?.cull(
-      new Rectangle(
-        (-offsetX - margin) / zoom,
-        (-offsetY - margin) / zoom,
-        (width + margin * 2) / zoom,
-        (height + margin * 2) / zoom,
-      ),
+    return new Rectangle(
+      (-offsetX - VIEW_MARGIN) / zoom,
+      (-offsetY - VIEW_MARGIN) / zoom,
+      (width + VIEW_MARGIN * 2) / zoom,
+      (height + VIEW_MARGIN * 2) / zoom,
     );
   }
 }

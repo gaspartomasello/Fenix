@@ -8,7 +8,8 @@ import {
   validateCharacterName,
   type Appearance,
 } from '@fenix/shared';
-import { drawCharacterFrame } from '../assets/character-art';
+import { drawCharacterFrame } from '@fenix/art';
+import { toCanvas } from '../platform/canvas';
 import { el, hexColor } from './dom';
 
 export interface LoginRequest {
@@ -145,7 +146,7 @@ export class LoginScreen {
 
   private drawPreview(): void {
     const direction = PREVIEW_DIRECTIONS[this.previewTurn] ?? Direction.SouthEast;
-    const art = drawCharacterFrame(this.appearance, direction, 'idle');
+    const art = toCanvas(drawCharacterFrame(this.appearance, direction, 'idle'));
     this.preview.width = art.width * PREVIEW_SCALE;
     this.preview.height = art.height * PREVIEW_SCALE;
     const ctx = this.preview.getContext('2d');
