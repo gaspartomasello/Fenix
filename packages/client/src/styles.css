@@ -1,0 +1,273 @@
+:root {
+  --color-bg: #0b1a26;
+  --color-panel: rgba(28, 20, 14, 0.92);
+  --color-panel-border: #8a6a3a;
+  --color-panel-border-light: #c9a45c;
+  --color-text: #efe2c4;
+  --color-text-muted: #b9a582;
+  --color-accent: #f6d36b;
+  --color-error: #ff8a7a;
+  --color-system: #9fd3a0;
+  --font-display: Georgia, 'Times New Roman', serif;
+  --font-body: Georgia, 'Times New Roman', serif;
+  --radius: 4px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+#game {
+  position: fixed;
+  inset: 0;
+}
+
+#game canvas {
+  display: block;
+  image-rendering: pixelated;
+}
+
+/* La capa de UI no bloquea el mouse salvo en sus paneles. */
+#ui {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+#ui > * {
+  pointer-events: auto;
+}
+
+/* ── Componentes base ─────────────────────────────────────────────── */
+
+.panel {
+  background: var(--color-panel);
+  border: 2px solid var(--color-panel-border);
+  border-radius: var(--radius);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.6),
+    0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  text-shadow: 0 2px 0 #000;
+}
+
+.title--small {
+  font-size: 1.4rem;
+}
+
+.field {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+  color: var(--color-text);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius);
+}
+
+.field:focus-visible {
+  outline: 2px solid var(--color-panel-border-light);
+  outline-offset: 1px;
+}
+
+.button {
+  padding: 0.65rem 1.25rem;
+  font: inherit;
+  font-weight: bold;
+  color: #1c140e;
+  background: linear-gradient(#e7c878, #b8903f);
+  border: 1px solid #5a4020;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--color-text);
+  outline-offset: 2px;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* ── Login ────────────────────────────────────────────────────────── */
+
+.login-screen {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: radial-gradient(circle at 50% 30%, #1d3346, var(--color-bg) 70%);
+}
+
+.login-panel {
+  width: min(100%, 360px);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.subtitle {
+  margin: 0.25rem 0 1rem;
+  color: var(--color-text-muted);
+}
+
+.login-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.login-preview {
+  justify-self: center;
+  width: 80px;
+  height: 140px;
+  image-rendering: pixelated;
+}
+
+.login-error {
+  min-height: 1.2em;
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-error);
+}
+
+.swatch-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.swatch-label {
+  width: 3rem;
+  text-align: left;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid #000;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.swatch[aria-pressed='true'] {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* ── HUD ──────────────────────────────────────────────────────────── */
+
+.status-bar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.status-help {
+  color: var(--color-text-muted);
+}
+
+.chat-panel {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  width: min(420px, calc(100% - 24px));
+  display: grid;
+  gap: 6px;
+}
+
+.chat-log {
+  max-height: 180px;
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  overflow-y: auto;
+  list-style: none;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: var(--radius);
+  text-shadow: 0 1px 0 #000;
+  overflow-wrap: anywhere;
+}
+
+.chat-log:empty {
+  display: none;
+}
+
+.chat-line--system {
+  color: var(--color-system);
+  font-style: italic;
+}
+
+.chat-author {
+  color: var(--color-accent);
+  font-weight: bold;
+}
+
+.chat-input:not(:focus) {
+  opacity: 0.7;
+}
+
+/* ── Overlay ──────────────────────────────────────────────────────── */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.overlay-panel {
+  max-width: 360px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .status-help {
+    display: none;
+  }
+}
