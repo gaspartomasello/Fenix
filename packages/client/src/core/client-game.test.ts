@@ -20,6 +20,7 @@ function snapshot(id: string, x: number, y: number): PlayerSnapshot {
     position: { x, y },
     direction: Direction.South,
     appearance: DEFAULT_APPEARANCE,
+    equipment: {},
   };
 }
 
@@ -152,6 +153,46 @@ describe('ClientGame', () => {
       expect(added).toEqual(['carla']);
       expect(removed).toEqual(['bruno']);
       expect(game.visibleCount).toBe(2);
+    });
+  });
+
+  describe('objetos', () => {
+    it('lleva la cuenta de los objetos del suelo a la vista', () => {
+      game.apply({
+        type: 'groundItems',
+        added: [{ id: 'i1', kind: 'apple', amount: 2, position: { x: 1, y: 0 } }],
+        removed: [],
+      });
+      expect([...game.groundItems()].map((i) => i.id)).toEqual(['i1']);
+      game.apply({ type: 'groundItems', added: [], removed: ['i1'] });
+      expect([...game.groundItems()]).toEqual([]);
+    });
+
+    it('guarda la mochila y avisa cuando cambia', () => {
+      const changes: number[] = [];
+      game.on('inventoryChanged', (inventory) => changes.push(inventory.backpack.length));
+      game.apply({
+        type: 'inventory',
+        backpack: [{ id: 'g', kind: 'gold', amount: 50, position: { x: 0, y: 0 } }],
+        equipment: [{ id: 'd', kind: 'dagger', amount: 1, slot: 'rightHand' }],
+      });
+      expect(changes).toEqual([1]);
+      expect(game.findItem('d')).toMatchObject({ slot: 'rightHand' });
+    });
+
+    it('actualiza lo que se ve puesto otro jugador', () => {
+      game.apply({ type: 'playerEquipment', id: 'bruno', equipment: { head: 'iron-helmet' } });
+      const bruno = [...game.allEntities()].find((e) => e.id === 'bruno');
+      expect(bruno?.equipment).toEqual({ head: 'iron-helmet' });
+    });
+
+    it('envía los pedidos de mover y usar', () => {
+      game.moveItem('i1', { type: 'equipment', slot: 'head' });
+      game.useItem('i1');
+      expect(sent).toEqual([
+        { type: 'moveItem', itemId: 'i1', to: { type: 'equipment', slot: 'head' } },
+        { type: 'useItem', itemId: 'i1' },
+      ]);
     });
   });
 

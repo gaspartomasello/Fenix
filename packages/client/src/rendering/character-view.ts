@@ -56,6 +56,7 @@ export class CharacterView {
       this.entity.appearance,
       this.entity.direction,
       this.currentFrame(now),
+      this.entity.equipment,
     );
     this.syncOverhead();
   }

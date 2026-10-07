@@ -1,11 +1,12 @@
-import type { EntityId, TileMap } from '@fenix/shared';
+import type { EntityId, GroundItemSnapshot, Position, TileMap } from '@fenix/shared';
 import { Application, Container, Rectangle } from 'pixi.js';
 // Evita `eval` en Pixi: necesario en páginas con Content Security Policy estricta.
 import 'pixi.js/unsafe-eval';
 import type { ClientGame } from '../core/client-game';
 import type { Entity } from '../core/entity';
 import { CharacterView } from './character-view';
-import { tileToScreen, type ScreenPoint } from './iso';
+import { ItemLayer } from './item-layer';
+import { screenToTile, tileToScreen, type ScreenPoint } from './iso';
 import { Lighting } from './lighting';
 import { StaticLayer } from './static-layer';
 import { TerrainLayer } from './terrain-layer';
@@ -32,6 +33,7 @@ export class GameRenderer {
   private readonly views = new Map<EntityId, CharacterView>();
   private terrain: TerrainLayer | null = null;
   private statics: StaticLayer | null = null;
+  private readonly groundItems = new ItemLayer(this.textures, this.entityLayer);
   private zoomIndex = 0;
   private readonly unsubscribe: (() => void)[] = [];
 
@@ -53,6 +55,17 @@ export class GameRenderer {
       x: this.app.screen.width / 2,
       y: this.app.screen.height / 2 + CAMERA_VERTICAL_OFFSET - 30 * this.zoom,
     };
+  }
+
+  /** Tile del mundo bajo un punto de la pantalla (relativo al canvas). */
+  screenToTile(point: ScreenPoint): Position {
+    const tile = screenToTile(this.toWorld(point));
+    return { x: Math.round(tile.x), y: Math.round(tile.y) };
+  }
+
+  /** Objeto del suelo bajo un punto de la pantalla, si hay. */
+  groundItemAt(point: ScreenPoint): GroundItemSnapshot | null {
+    return this.groundItems.itemAt(this.toWorld(point));
   }
 
   /** Cambia el nivel de zoom: +1 acerca, -1 aleja. */
@@ -90,6 +103,13 @@ export class GameRenderer {
     this.app.destroy(true, { children: true });
   }
 
+  private toWorld(point: ScreenPoint): ScreenPoint {
+    return {
+      x: (point.x - this.world.position.x) / this.zoom,
+      y: (point.y - this.world.position.y) / this.zoom,
+    };
+  }
+
   private get zoom(): number {
     return ZOOM_LEVELS[this.zoomIndex] ?? 1;
   }
@@ -112,11 +132,16 @@ export class GameRenderer {
     const map = this.game.map;
     if (map) this.setMap(map);
     for (const entity of this.game.allEntities()) this.addView(entity);
+    this.groundItems.apply([...this.game.groundItems()], []);
 
     this.unsubscribe.push(
+      this.game.on('groundItemsChanged', ({ added, removed }) =>
+        this.groundItems.apply(added, removed),
+      ),
       this.game.on('ready', ({ map: newMap }) => {
         this.views.forEach((view) => view.destroy());
         this.views.clear();
+        this.groundItems.clear();
         this.setMap(newMap);
         for (const entity of this.game.allEntities()) this.addView(entity);
       }),

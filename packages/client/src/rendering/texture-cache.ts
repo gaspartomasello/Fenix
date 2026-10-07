@@ -1,5 +1,6 @@
 import {
   drawCharacterFrame,
+  drawItem,
   drawStatic,
   drawTerrainTile,
   STATIC_VARIANTS,
@@ -8,7 +9,15 @@ import {
   type PixelImage,
   type TerrainNeighbors,
 } from '@fenix/art';
-import type { Appearance, Direction, StaticKind, Terrain } from '@fenix/shared';
+import {
+  EQUIPMENT_SLOTS,
+  type Appearance,
+  type Direction,
+  type EquipmentLook,
+  type ItemKind,
+  type StaticKind,
+  type Terrain,
+} from '@fenix/shared';
 import { Texture } from 'pixi.js';
 import { toCanvas } from '../platform/canvas';
 
@@ -32,9 +41,19 @@ export class TextureCache {
     return this.getOrCreate(`s:${kind}:${v}`, () => drawStatic(kind, v));
   }
 
-  character(appearance: Appearance, direction: Direction, frame: CharacterFrame): Texture {
-    const key = `c:${appearance.clothHue}:${appearance.skinTone}:${appearance.hairHue}:${direction}:${frame}`;
-    return this.getOrCreate(key, () => drawCharacterFrame(appearance, direction, frame));
+  character(
+    appearance: Appearance,
+    direction: Direction,
+    frame: CharacterFrame,
+    equipment: EquipmentLook,
+  ): Texture {
+    const worn = EQUIPMENT_SLOTS.map((slot) => equipment[slot] ?? '').join(',');
+    const key = `c:${appearance.clothHue}:${appearance.skinTone}:${appearance.hairHue}:${direction}:${frame}:${worn}`;
+    return this.getOrCreate(key, () => drawCharacterFrame(appearance, direction, frame, equipment));
+  }
+
+  item(kind: ItemKind): Texture {
+    return this.getOrCreate(`i:${kind}`, () => drawItem(kind));
   }
 
   /** Textura arbitraria generada una sola vez (por ejemplo, el halo de luz). */
