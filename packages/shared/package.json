@@ -1,0 +1,13 @@
+{
+  "name": "@fenix/shared",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Dominio y protocolo compartidos entre cliente y servidor",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}
