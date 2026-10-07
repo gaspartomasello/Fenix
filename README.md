@@ -11,6 +11,12 @@ en tiempo real, jugable desde el navegador.
 - Node.js 22.12 o superior
 - npm 10 o superior
 
+## Jugar solo, sin instalar nada
+
+El **modo solo** corre el servidor del juego dentro del navegador: no hace falta Node, Git
+ni conexión con otros jugadores. `npm run build:solo` genera un único archivo
+`packages/client/dist-solo/fenix.html` que se puede publicar como página web.
+
 ## Cómo correrlo
 
 ```bash
