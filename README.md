@@ -56,6 +56,10 @@ Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña 
 - **Clic derecho sostenido** (o **tocar y mantener** en el celular): caminar hacia el cursor;
   lejos del personaje, correr.
 - **Enter**: hablar. **Escape**: cancelar.
+- **B**: mochila. **C**: equipo (también con los botones de abajo a la derecha).
+- **Arrastrar** un objeto: moverlo entre el suelo, la mochila y los casilleros del equipo.
+- **Doble clic** (o doble toque): comer, beber, ponerse o sacarse algo; sobre un objeto del suelo,
+  levantarlo.
 - **Rueda del mouse**: acercar o alejar la cámara.
 
 ## Estructura
@@ -79,8 +83,8 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
 1. ✅ **Base online**: mapa isométrico, personajes, movimiento en tiempo real, chat.
 2. ✅ **Mundo**: isla de 128×128 con bosques, pueblo diseñado en Tiled, edificios y objetos con
    colisión, transiciones de terreno, rango de visión y día/noche con faroles.
-3. Objetos: tirarlos y levantarlos del suelo, mochila, ventana de equipo del personaje, equipar
-   armas y armaduras, arrastrar y soltar.
+3. ✅ **Objetos**: tirarlos y levantarlos del suelo, mochila, ventana de equipo, armas,
+   armaduras y ropa que se ven puestas, comida y pociones, arrastrar y soltar.
 4. Combate: monstruos con IA, HP/mana/stamina, muerte, fantasma y resurrección.
 5. Habilidades: mejoran con el uso, con un tope total; magia con reactivos y libro de hechizos.
 6. Economía: crafting, recolección, NPCs vendedores, banco, oro.
