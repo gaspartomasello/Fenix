@@ -17,6 +17,21 @@ MMORPG web inspirado en Ultima Online / Sphere. Leé `docs/ARQUITECTURA.md` ante
   (procedural) o con licencia libre verificada.
 - **Trabajo por etapas**: cada etapa en su rama y Pull Request.
 - Código en inglés; comentarios, UI y docs en español.
+- **Todo lo que ve el jugador va en español claro**, sin jerga de UO ni anglicismos. Glosario:
+
+  | En vez de… | Usar…                         |
+  | ---------- | ----------------------------- |
+  | paperdoll  | ventana de equipo / personaje |
+  | gump       | ventana                       |
+  | skills     | habilidades                   |
+  | reagents   | reactivos                     |
+  | item       | objeto                        |
+  | spawn      | aparición                     |
+  | party      | grupo                         |
+  | guild      | gremio                        |
+  | PvP        | combate entre jugadores       |
+  | GM         | administrador del juego       |
+  | zoom       | acercar / alejar              |
 
 ## Antes de commitear
 

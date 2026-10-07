@@ -21,7 +21,7 @@ export class StatusBar {
       this.text,
       el('span', {
         className: 'status-help',
-        text: 'Flechas/WASD, clic derecho o tocá para moverte · Shift corre · Rueda: zoom',
+        text: 'Flechas/WASD, clic derecho o tocá para moverte · Shift: correr · Rueda del mouse: acercar o alejar',
       }),
     ]);
   }
