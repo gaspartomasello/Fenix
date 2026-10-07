@@ -3,3 +3,5 @@ dist-solo
 coverage
 node_modules
 package-lock.json
+packages/content/maps
+packages/content/tilesets
