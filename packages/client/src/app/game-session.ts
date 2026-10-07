@@ -1,6 +1,7 @@
 import { ClientGame } from '../core/client-game';
 import { InputController } from '../input/input-controller';
-import { WebSocketGateway } from '../network/websocket-gateway';
+import { createGateway, IS_SOLO } from '../network/create-gateway';
+import type { GameGateway } from '../network/game-gateway';
 import { GameRenderer } from '../rendering/game-renderer';
 import { ChatPanel } from '../ui/chat-panel';
 import { LoginScreen, type LoginRequest } from '../ui/login-screen';
@@ -22,19 +23,22 @@ const clock = (): number => performance.now();
  */
 export class GameSession {
   private readonly game: ClientGame;
-  private readonly gateway: WebSocketGateway;
+  private readonly gateway: GameGateway;
   private readonly login: LoginScreen;
   private inWorld = false;
 
   constructor(private readonly hosts: GameSessionHosts) {
-    this.gateway = new WebSocketGateway(WebSocketGateway.defaultUrl(), {
+    this.gateway = createGateway({
       onMessage: (message) => this.game.apply(message),
       onStatus: (status) => {
         if (status === 'closed') this.onDisconnected();
       },
     });
     this.game = new ClientGame(this.gateway, clock);
-    this.login = new LoginScreen((request) => void this.enter(request));
+    this.login = new LoginScreen({
+      subtitle: IS_SOLO ? 'Modo solo · creá tu personaje' : 'Creá tu personaje',
+      onSubmit: (request) => void this.enter(request),
+    });
   }
 
   start(): void {

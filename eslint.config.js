@@ -57,6 +57,23 @@ const layerRules = [
     },
   },
   {
+    files: ['packages/client/src/**/*.ts'],
+    ignores: ['packages/client/src/network/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@fenix/server*'],
+              message: 'Solo network/ puede usar el servidor embebido.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['packages/client/src/core/**/*.ts'],
     rules: {
       'no-restricted-imports': [
@@ -82,7 +99,7 @@ const layerRules = [
 ];
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**'] },
+  { ignores: ['**/dist/**', '**/dist-solo/**', '**/node_modules/**', '**/coverage/**'] },
   js.configs.recommended,
   ...tseslint.configs.strict,
   {

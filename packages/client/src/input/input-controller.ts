@@ -21,14 +21,15 @@ export interface InputControllerOptions {
 }
 
 /**
- * Traduce teclado y mouse a intenciones de movimiento. Ignora el teclado
+ * Traduce teclado, mouse y toques a intenciones de movimiento. Ignora el teclado
  * mientras se escribe en un campo de texto (por ejemplo, el chat).
  */
 export class InputController {
   private readonly keys = new Set<string>();
   private shift = false;
   private pointer: ScreenPoint | null = null;
-  private rightButtonDown = false;
+  /** Clic derecho sostenido (mouse) o dedo apoyado (pantallas táctiles). */
+  private steering = false;
   private readonly abort = new AbortController();
 
   constructor(private readonly options: InputControllerOptions) {
@@ -43,8 +44,9 @@ export class InputController {
     surface.addEventListener(
       'pointerdown',
       (e) => {
-        if (e.button !== 2) return;
-        this.rightButtonDown = true;
+        if (!isSteeringPointer(e)) return;
+        e.preventDefault();
+        this.steering = true;
         this.pointer = this.localPoint(e);
         surface.setPointerCapture(e.pointerId);
       },
@@ -54,10 +56,11 @@ export class InputController {
     surface.addEventListener(
       'pointerup',
       (e) => {
-        if (e.button === 2) this.rightButtonDown = false;
+        if (isSteeringPointer(e)) this.steering = false;
       },
       { signal },
     );
+    surface.addEventListener('pointercancel', () => (this.steering = false), { signal });
     surface.addEventListener(
       'wheel',
       (e) => {
@@ -70,7 +73,7 @@ export class InputController {
 
   /** Intención de movimiento actual; el mouse tiene prioridad sobre el teclado. */
   movementIntent(): MovementIntent | null {
-    if (this.rightButtonDown && this.pointer) {
+    if (this.steering && this.pointer) {
       const self = this.options.selfScreenPosition();
       return pointerToIntent(this.pointer.x - self.x, this.pointer.y - self.y);
     }
@@ -92,13 +95,18 @@ export class InputController {
 
   private reset(): void {
     this.keys.clear();
-    this.rightButtonDown = false;
+    this.steering = false;
   }
 
   private localPoint(event: PointerEvent): ScreenPoint {
     const rect = this.options.surface.getBoundingClientRect();
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
   }
+}
+
+/** Con mouse se camina con el botón derecho; con dedo o lápiz, tocando. */
+function isSteeringPointer(event: PointerEvent): boolean {
+  return event.pointerType === 'mouse' ? event.button === 2 : event.isPrimary;
 }
 
 function isTyping(target: EventTarget | null): boolean {

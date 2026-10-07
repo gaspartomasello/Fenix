@@ -1,5 +1,7 @@
 import type { EntityId, TileMap } from '@fenix/shared';
 import { Application, Container, Rectangle } from 'pixi.js';
+// Evita `eval` en Pixi: necesario en páginas con Content Security Policy estricta.
+import 'pixi.js/unsafe-eval';
 import type { ClientGame } from '../core/client-game';
 import type { Entity } from '../core/entity';
 import { CharacterView } from './character-view';

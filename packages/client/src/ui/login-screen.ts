@@ -16,6 +16,11 @@ export interface LoginRequest {
   readonly appearance: Appearance;
 }
 
+export interface LoginScreenOptions {
+  readonly subtitle: string;
+  readonly onSubmit: (request: LoginRequest) => void;
+}
+
 const PREVIEW_SCALE = 4;
 const PREVIEW_DIRECTIONS = [
   Direction.SouthEast,
@@ -35,7 +40,10 @@ export class LoginScreen {
   private previewTurn = 0;
   private readonly previewTimer: number;
 
-  constructor(private readonly onSubmit: (request: LoginRequest) => void) {
+  private readonly onSubmit: (request: LoginRequest) => void;
+
+  constructor({ subtitle, onSubmit }: LoginScreenOptions) {
+    this.onSubmit = onSubmit;
     this.nameInput = el('input', {
       className: 'field',
       attrs: {
@@ -72,7 +80,7 @@ export class LoginScreen {
     this.element = el('div', { className: 'login-screen' }, [
       el('div', { className: 'panel login-panel' }, [
         el('h1', { className: 'title', text: 'Fenix' }),
-        el('p', { className: 'subtitle', text: 'Creá tu personaje' }),
+        el('p', { className: 'subtitle', text: subtitle }),
         form,
       ]),
     ]);

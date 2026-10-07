@@ -19,7 +19,7 @@ export class StatusBar {
       this.text,
       el('span', {
         className: 'status-help',
-        text: 'Flechas/WASD o clic derecho para moverte · Shift corre · Rueda: zoom',
+        text: 'Flechas/WASD, clic derecho o tocá para moverte · Shift corre · Rueda: zoom',
       }),
     ]);
   }

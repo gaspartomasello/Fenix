@@ -1,25 +1,13 @@
-import {
-  decodeServerMessage,
-  encodeMessage,
-  type ClientMessage,
-  type ServerMessage,
-} from '@fenix/shared';
-import type { ServerGateway } from '../core/ports';
+import { decodeServerMessage, encodeMessage, type ClientMessage } from '@fenix/shared';
+import type { GameGateway, GatewayHandlers } from './game-gateway';
 
-export type ConnectionStatus = 'connecting' | 'open' | 'closed';
-
-export interface WebSocketGatewayHandlers {
-  readonly onMessage: (message: ServerMessage) => void;
-  readonly onStatus: (status: ConnectionStatus) => void;
-}
-
-/** Implementación del puerto `ServerGateway` sobre WebSocket. */
-export class WebSocketGateway implements ServerGateway {
+/** Conexión con el servidor de juego por WebSocket. */
+export class WebSocketGateway implements GameGateway {
   private socket: WebSocket | null = null;
 
   constructor(
     private readonly url: string,
-    private readonly handlers: WebSocketGatewayHandlers,
+    private readonly handlers: GatewayHandlers,
   ) {}
 
   /** URL del servidor de juego en el mismo host que sirve la página. */
