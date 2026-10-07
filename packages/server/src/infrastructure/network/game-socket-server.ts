@@ -1,7 +1,7 @@
 import type { Server as HttpServer } from 'node:http';
-import { decodeClientMessage, encodeMessage, type EntityId } from '@fenix/shared';
 import { WebSocketServer, type RawData, type WebSocket } from 'ws';
 import type { GameApplication } from '../../application/game-application';
+import { ClientSession } from './client-session';
 import { RateLimiter } from './rate-limiter';
 import type { SessionRegistry } from './session-registry';
 
@@ -12,13 +12,13 @@ const MESSAGES_PER_SECOND = 20;
 interface Connection {
   readonly socket: WebSocket;
   readonly limiter: RateLimiter;
-  playerId: EntityId | null;
+  readonly session: ClientSession;
   alive: boolean;
 }
 
 /**
- * Adaptador WebSocket: decodifica mensajes, maneja el ciclo de vida de cada
- * conexión y delega toda decisión de juego en `GameApplication`.
+ * Adaptador WebSocket: limita mensajes, detecta conexiones caídas y delega
+ * cada conexión en una `ClientSession`.
  */
 export class GameSocketServer {
   private readonly wss: WebSocketServer;
@@ -45,7 +45,7 @@ export class GameSocketServer {
     const connection: Connection = {
       socket,
       limiter: new RateLimiter(MESSAGES_PER_SECOND, MESSAGES_PER_SECOND, () => performance.now()),
-      playerId: null,
+      session: new ClientSession(this.app, this.sessions, socket),
       alive: true,
     };
     this.connections.add(connection);
@@ -59,33 +59,12 @@ export class GameSocketServer {
   }
 
   private onMessage(connection: Connection, data: RawData): void {
-    if (!connection.limiter.tryConsume()) return;
-
-    const decoded = decodeClientMessage(data.toString());
-    if (!decoded.ok) return;
-    const message = decoded.message;
-
-    if (connection.playerId) {
-      this.app.handle(connection.playerId, message);
-      return;
-    }
-    if (message.type !== 'join') return;
-
-    const result = this.app.join(message);
-    if (!result.ok) {
-      connection.socket.send(encodeMessage({ type: 'joinRejected', reason: result.reason }));
-      return;
-    }
-    connection.playerId = result.playerId;
-    this.sessions.bind(result.playerId, connection.socket);
-    this.app.announceJoin(result.playerId);
+    if (connection.limiter.tryConsume()) connection.session.receive(data.toString());
   }
 
   private onClose(connection: Connection): void {
     this.connections.delete(connection);
-    if (!connection.playerId) return;
-    this.sessions.unbind(connection.playerId);
-    this.app.leave(connection.playerId);
+    connection.session.close();
   }
 
   /** Cierra conexiones que dejaron de responder (pestaña colgada, red caída). */

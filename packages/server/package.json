@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "description": "Servidor autoritativo del juego",
   "type": "module",
+  "exports": {
+    "./embedded": "./src/embedded.ts"
+  },
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "build": "esbuild src/main.ts --bundle --platform=node --format=esm --target=node22 --external:ws --outfile=dist/main.js",
