@@ -11,7 +11,8 @@ export class LeaveWorld {
   execute(playerId: EntityId): void {
     const player = this.world.remove(playerId);
     if (!player) return;
-    this.notifier.broadcast({ type: 'playerLeft', id: playerId });
+    const witnesses = this.world.playersNear(player.position).map((p) => p.id);
+    this.notifier.sendMany(witnesses, { type: 'playerDisappeared', id: playerId });
     this.notifier.broadcast({ type: 'system', text: `${player.name} salió del mundo.` });
   }
 }

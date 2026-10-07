@@ -14,6 +14,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@fenix/content": "0.1.0",
     "@fenix/shared": "0.1.0",
     "ws": "^8.18.3"
   },

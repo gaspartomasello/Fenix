@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
 import { GameApplication } from '../../application/game-application';
 import { World } from '../../domain/world';
+import { WorldClock } from '../../domain/world-clock';
 import { generateIslandMap } from '../content/procedural-map';
 import { createHttpServer } from '../http/static-server';
 import { SeededRandom } from '../system/seeded-random';
@@ -79,6 +80,7 @@ describe('GameSocketServer (integración)', () => {
     const sessions = new SessionRegistry();
     const app = new GameApplication({
       world: new World(map, spawnPoint),
+      worldClock: new WorldClock(0),
       clock: new SystemClock(),
       ids: new UuidGenerator(),
       random: new SeededRandom(1),
@@ -108,7 +110,7 @@ describe('GameSocketServer (integración)', () => {
     bruno.send({ type: 'join', name: 'Bruno', appearance: DEFAULT_APPEARANCE });
     const brunoWelcome = await bruno.next('welcome');
     expect(brunoWelcome.players).toHaveLength(2);
-    expect((await ana.next('playerJoined')).player.name).toBe('Bruno');
+    expect((await ana.next('playerAppeared')).player.name).toBe('Bruno');
 
     ana.send({ type: 'move', direction: Direction.North, mode: 'walk', seq: 1 });
     expect((await ana.next('moveAck')).seq).toBe(1);
@@ -119,7 +121,7 @@ describe('GameSocketServer (integración)', () => {
     expect((await ana.next('chat')).text).toBe('Hail, Ana!');
 
     bruno.close();
-    expect((await ana.next('playerLeft')).id).toBe(brunoWelcome.selfId);
+    expect((await ana.next('playerDisappeared')).id).toBe(brunoWelcome.selfId);
     ana.close();
   });
 

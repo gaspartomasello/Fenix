@@ -2,6 +2,7 @@ import { sanitizeChatText, type EntityId } from '@fenix/shared';
 import type { World } from '../../domain/world';
 import type { Notifier } from '../ports';
 
+/** Hablar: lo oyen quienes están dentro del rango de visión, como en UO. */
 export class SendChat {
   constructor(
     private readonly world: World,
@@ -12,6 +13,7 @@ export class SendChat {
     const player = this.world.get(playerId);
     const text = sanitizeChatText(rawText);
     if (!player || !text) return;
-    this.notifier.broadcast({ type: 'chat', id: playerId, name: player.name, text });
+    const listeners = this.world.playersNear(player.position).map((p) => p.id);
+    this.notifier.sendMany(listeners, { type: 'chat', id: playerId, name: player.name, text });
   }
 }

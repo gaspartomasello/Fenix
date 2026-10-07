@@ -26,6 +26,16 @@ export class SessionRegistry implements Notifier {
     this.sessions.get(playerId)?.send(encodeMessage(message));
   }
 
+  sendMany(playerIds: Iterable<EntityId>, message: ServerMessage): void {
+    let data: string | null = null;
+    for (const playerId of playerIds) {
+      const connection = this.sessions.get(playerId);
+      if (!connection) continue;
+      data ??= encodeMessage(message);
+      connection.send(data);
+    }
+  }
+
   broadcast(message: ServerMessage, options?: { except?: EntityId }): void {
     const data = encodeMessage(message);
     for (const [playerId, connection] of this.sessions) {
