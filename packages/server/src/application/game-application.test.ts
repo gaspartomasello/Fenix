@@ -55,12 +55,12 @@ describe('GameApplication', () => {
       const [welcome] = ctx.notifier.ofType('welcome');
       expect(welcome?.to).toBe(bruno);
       if (welcome?.message.type !== 'welcome') throw new Error('sin welcome');
-      expect(welcome.message.players.map((p) => p.id).sort()).toEqual([ana, bruno].sort());
+      expect(welcome.message.mobiles.map((p) => p.id).sort()).toEqual([ana, bruno].sort());
       expect(welcome.message.time.dayProgress).toBeGreaterThanOrEqual(0);
-      expect(ctx.notifier.ofType('playerAppeared')).toEqual([
+      expect(ctx.notifier.ofType('mobileAppeared')).toEqual([
         {
           to: ana,
-          message: { type: 'playerAppeared', player: expect.objectContaining({ id: bruno }) },
+          message: { type: 'mobileAppeared', mobile: expect.objectContaining({ id: bruno }) },
         },
       ]);
     });
@@ -87,7 +87,7 @@ describe('GameApplication', () => {
       expect(ctx.notifier.ofType('moveAck')).toEqual([
         { to: ana, message: { type: 'moveAck', seq: 1, position: { x: 1, y: 0 } } },
       ]);
-      expect(ctx.notifier.ofType('playerMoved')).toEqual([
+      expect(ctx.notifier.ofType('mobileMoved')).toEqual([
         {
           to: bruno,
           message: expect.objectContaining({ id: ana, position: { x: 1, y: 0 } }),
@@ -111,7 +111,7 @@ describe('GameApplication', () => {
           },
         },
       ]);
-      expect(ctx.notifier.ofType('playerMoved')).toHaveLength(0);
+      expect(ctx.notifier.ofType('mobileMoved')).toHaveLength(0);
     });
 
     it('rechaza pasos que no esperan su turno', () => {
@@ -154,18 +154,18 @@ describe('GameApplication', () => {
 
       far.clock.advance(MOVE_DURATION_MS.walk);
       far.app.handle(bruno, { type: 'move', direction: Direction.East, mode: 'walk', seq: 100 });
-      expect(far.notifier.ofType('playerDisappeared')).toEqual([
-        { to: ana, message: { type: 'playerDisappeared', id: bruno } },
-        { to: bruno, message: { type: 'playerDisappeared', id: ana } },
+      expect(far.notifier.ofType('mobileDisappeared')).toEqual([
+        { to: ana, message: { type: 'mobileDisappeared', id: bruno } },
+        { to: bruno, message: { type: 'mobileDisappeared', id: ana } },
       ]);
-      expect(far.notifier.ofType('playerMoved')).toHaveLength(0);
+      expect(far.notifier.ofType('mobileMoved')).toHaveLength(0);
 
       far.notifier.clear();
       far.clock.advance(MOVE_DURATION_MS.walk);
       far.app.handle(bruno, { type: 'move', direction: Direction.West, mode: 'walk', seq: 101 });
       expect(
         far.notifier
-          .ofType('playerAppeared')
+          .ofType('mobileAppeared')
           .map((d) => d.to)
           .sort(),
       ).toEqual([ana, bruno].sort());
@@ -263,8 +263,8 @@ describe('GameApplication', () => {
       const bruno = ctx.join('Bruno');
       ctx.notifier.clear();
       ctx.app.leave(ana);
-      expect(ctx.notifier.ofType('playerDisappeared')).toEqual([
-        { to: bruno, message: { type: 'playerDisappeared', id: ana } },
+      expect(ctx.notifier.ofType('mobileDisappeared')).toEqual([
+        { to: bruno, message: { type: 'mobileDisappeared', id: ana } },
       ]);
       ctx.notifier.clear();
       ctx.app.leave(ana);

@@ -1,8 +1,11 @@
 import type { ClientMessage, EntityId } from '@fenix/shared';
 import type { WorldClock } from '../domain/world-clock';
 import type { World } from '../domain/world';
+import { GameLoop } from './game-loop';
 import { ItemNotifications } from './item-notifications';
+import { MobileNotifications } from './mobile-notifications';
 import type { Clock, IdGenerator, Notifier, RandomSource } from './ports';
+import { Attack } from './use-cases/attack';
 import { MoveItem } from './use-cases/move-item';
 import { UseItem } from './use-cases/use-item';
 import { JoinWorld, type JoinWorldResult } from './use-cases/join-world';
@@ -30,15 +33,28 @@ export class GameApplication {
   private readonly sendChat: SendChat;
   private readonly moveItem: MoveItem;
   private readonly useItem: UseItem;
+  private readonly attack: Attack;
+  private readonly loop: GameLoop;
+  private readonly mobiles: MobileNotifications;
+  private readonly world: World;
 
   constructor({ world, worldClock, clock, ids, random, notifier }: GameApplicationDeps) {
+    this.world = world;
     const notifications = new ItemNotifications(world, notifier);
+    this.mobiles = new MobileNotifications(world, notifier);
     this.joinWorld = new JoinWorld(world, worldClock, clock, ids, random, notifier, notifications);
     this.leaveWorld = new LeaveWorld(world, notifier);
-    this.movePlayer = new MovePlayer(world, clock, notifier, notifications);
+    this.movePlayer = new MovePlayer(world, clock, notifier, notifications, this.mobiles);
     this.sendChat = new SendChat(world, notifier);
     this.moveItem = new MoveItem(world, notifications, notifier);
-    this.useItem = new UseItem(world, notifications, notifier);
+    this.useItem = new UseItem(world, notifications, notifier, this.mobiles);
+    this.attack = new Attack(world, this.mobiles, notifier);
+    this.loop = new GameLoop(world, this.mobiles, notifications, notifier, ids, random);
+  }
+
+  /** Avanza el mundo: criaturas, golpes, regeneración. La infraestructura lo llama seguido. */
+  tick(now: number): void {
+    this.loop.tick(now);
   }
 
   join(message: Extract<ClientMessage, { type: 'join' }>): JoinWorldResult {
@@ -48,6 +64,8 @@ export class GameApplication {
   /** Llamar después de asociar la conexión al jugador recién creado. */
   announceJoin(playerId: EntityId): void {
     this.joinWorld.announce(playerId);
+    const player = this.world.get(playerId);
+    if (player) this.mobiles.sendVitals(player);
   }
 
   /** Maneja un mensaje de un jugador que ya está dentro del mundo. */
@@ -69,6 +87,12 @@ export class GameApplication {
         break;
       case 'useItem':
         this.useItem.execute(playerId, message.itemId);
+        break;
+      case 'attack':
+        this.attack.execute(playerId, message.targetId);
+        break;
+      case 'stopAttack':
+        this.attack.stop(playerId);
         break;
       case 'join':
         // Ya está en el mundo: se ignora un segundo ingreso.

@@ -1,5 +1,6 @@
 import { validateCharacterName, type Appearance, type EntityId } from '@fenix/shared';
 import { STARTING_KIT } from '../../domain/items/starting-kit';
+import { Player } from '../../domain/player';
 import type { WorldClock } from '../../domain/world-clock';
 import type { World } from '../../domain/world';
 import type { ItemNotifications } from '../item-notifications';
@@ -54,13 +55,14 @@ export class JoinWorld {
   announce(playerId: EntityId): void {
     const player = this.world.get(playerId);
     if (!player) return;
-    const nearby = this.world.playersNear(player.position, { except: playerId });
+    const nearby = this.world.mobilesNear(player.position, { except: playerId });
+    const nearbyPlayers = nearby.filter((m) => m instanceof Player);
 
     this.notifier.send(playerId, {
       type: 'welcome',
       selfId: playerId,
       map: this.world.map.toData(),
-      players: [player, ...nearby].map((p) => this.world.snapshotOf(p)),
+      mobiles: [player, ...nearby].map((m) => this.world.snapshotOf(m)),
       time: this.worldClock.timeAt(this.clock.now()),
     });
     this.notifications.sendInventory(playerId);
@@ -70,8 +72,8 @@ export class JoinWorld {
       this.notifications.groundSnapshotsNear(playerId),
     );
     this.notifier.sendMany(
-      nearby.map((p) => p.id),
-      { type: 'playerAppeared', player: this.world.snapshotOf(player) },
+      nearbyPlayers.map((p) => p.id),
+      { type: 'mobileAppeared', mobile: this.world.snapshotOf(player) },
     );
     this.notifier.broadcast(
       { type: 'system', text: `${player.name} entró al mundo.` },

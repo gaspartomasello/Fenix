@@ -14,6 +14,13 @@ export class MoveItem {
   execute(playerId: EntityId, itemId: EntityId, to: ItemDestination): void {
     const player = this.world.get(playerId);
     if (!player) return;
+    if (player.combat.isDead) {
+      this.notifier.send(playerId, {
+        type: 'system',
+        text: 'Los fantasmas no pueden tocar objetos.',
+      });
+      return;
+    }
     const result = this.world.items.move(player, itemId, to, this.world.map);
     if (!result.ok) {
       this.notifier.send(playerId, { type: 'system', text: result.reason });

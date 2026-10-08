@@ -12,7 +12,7 @@ export class LeaveWorld {
     const player = this.world.remove(playerId);
     if (!player) return;
     const witnesses = this.world.playersNear(player.position).map((p) => p.id);
-    this.notifier.sendMany(witnesses, { type: 'playerDisappeared', id: playerId });
+    this.notifier.sendMany(witnesses, { type: 'mobileDisappeared', id: playerId });
     this.notifier.broadcast({ type: 'system', text: `${player.name} salió del mundo.` });
   }
 }

@@ -7,6 +7,7 @@ import { ClientSession } from './infrastructure/network/client-session';
 import { SessionRegistry } from './infrastructure/network/session-registry';
 import { SeededRandom } from './infrastructure/system/seeded-random';
 import { SystemClock } from './infrastructure/system/system-clock';
+import { startTicker } from './infrastructure/system/ticker';
 import { UuidGenerator } from './infrastructure/system/uuid-generator';
 
 /**
@@ -43,6 +44,11 @@ export function createEmbeddedServer(options: EmbeddedServerOptions = {}): Embed
     random: new SeededRandom(Date.now()),
     notifier: sessions,
   });
+
+  startTicker(
+    (now) => app.tick(now),
+    () => clock.now(),
+  );
 
   return {
     connect(deliver) {

@@ -1,12 +1,15 @@
 import {
+  DEFAULT_APPEARANCE,
   Direction,
   inViewRange,
   type EntityId,
-  type PlayerSnapshot,
+  type MobileSnapshot,
   type Position,
   type TileMap,
 } from '@fenix/shared';
+import type { Creature } from './creatures/creature';
 import { Items } from './items/items';
+import type { Mobile } from './mobile';
 import { Player, type PlayerProps } from './player';
 
 export const MAX_PLAYERS = 100;
@@ -14,6 +17,7 @@ export const MAX_PLAYERS = 100;
 /** Agregado raíz del mundo: el mapa, los jugadores conectados y los objetos. */
 export class World {
   private readonly players = new Map<EntityId, Player>();
+  private readonly creatures = new Map<EntityId, Creature>();
   readonly items = new Items();
 
   constructor(
@@ -56,9 +60,52 @@ export class World {
     return player;
   }
 
-  /** Lo que ven los demás de un jugador, incluido lo que tiene puesto. */
-  snapshotOf(player: Player): PlayerSnapshot {
-    return { ...player.toSnapshot(), equipment: this.items.lookOf(player.id) };
+  addCreature(creature: Creature): void {
+    this.creatures.set(creature.id, creature);
+  }
+
+  allCreatures(): readonly Creature[] {
+    return [...this.creatures.values()];
+  }
+
+  /** Un jugador o una criatura presente en el mundo. */
+  getMobile(id: EntityId): Mobile | undefined {
+    const creature = this.creatures.get(id);
+    if (creature) return creature.gone ? undefined : creature;
+    return this.players.get(id);
+  }
+
+  /** Jugadores y criaturas (presentes) que ven la posición dada. */
+  mobilesNear(position: Position, options: { except?: EntityId } = {}): Mobile[] {
+    const creatures = [...this.creatures.values()].filter((c) => !c.gone);
+    return [...this.players.values(), ...creatures].filter(
+      (m) => m.id !== options.except && inViewRange(m.position, position),
+    );
+  }
+
+  /** ¿Hay alguien vivo parado en ese tile? Las criaturas no se pisan entre sí ni a los jugadores. */
+  isOccupied(position: Position, except?: EntityId): boolean {
+    return this.mobilesNear(position, except === undefined ? {} : { except }).some(
+      (m) => !m.combat.isDead && m.position.x === position.x && m.position.y === position.y,
+    );
+  }
+
+  /** Lo que ven los demás de un jugador o criatura, incluido lo que tiene puesto. */
+  snapshotOf(mobile: Mobile): MobileSnapshot {
+    if (mobile instanceof Player) {
+      return { ...mobile.toSnapshot(), equipment: this.items.lookOf(mobile.id) };
+    }
+    return {
+      id: mobile.id,
+      name: mobile.name,
+      position: mobile.position,
+      direction: mobile.direction,
+      appearance: DEFAULT_APPEARANCE,
+      equipment: {},
+      body: mobile.body,
+      health: mobile.combat.health,
+      dead: mobile.combat.isDead,
+    };
   }
 
   get(id: EntityId): Player | undefined {

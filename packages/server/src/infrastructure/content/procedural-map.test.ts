@@ -1,7 +1,8 @@
 import { Terrain } from '@fenix/shared';
 import { describe, expect, it } from 'vitest';
 import { generateIslandMap } from './procedural-map';
-import { buildWorld } from './world-builder';
+import { buildWorld, createWorld } from './world-builder';
+import { SequentialIds } from '../../test-support/fakes';
 
 describe('generateIslandMap', () => {
   const options = { width: 64, height: 64, seed: 42 };
@@ -61,5 +62,18 @@ describe('buildWorld (con el pueblo de Tiled)', () => {
       }
     }
     expect(escaped).toBe(true);
+  });
+});
+
+describe('createWorld', () => {
+  it('puebla la isla con criaturas, ninguna dentro del pueblo', () => {
+    const world = createWorld({ size: 128, seed: 1997 }, new SequentialIds());
+    const creatures = world.allCreatures();
+    expect(creatures.length).toBeGreaterThanOrEqual(20);
+    expect(new Set(creatures.map((c) => c.body))).toEqual(new Set(['rat', 'wolf', 'skeleton']));
+    for (const creature of creatures) {
+      expect(world.map.regionAt(creature.position)).toBeUndefined();
+      expect(world.map.isWalkable(creature.position)).toBe(true);
+    }
   });
 });

@@ -104,24 +104,24 @@ describe('GameSocketServer (integración)', () => {
     const ana = await TestClient.connect(url);
     ana.send({ type: 'join', name: 'Ana', appearance: DEFAULT_APPEARANCE });
     const anaWelcome = await ana.next('welcome');
-    expect(anaWelcome.players).toHaveLength(1);
+    expect(anaWelcome.mobiles).toHaveLength(1);
 
     const bruno = await TestClient.connect(url);
     bruno.send({ type: 'join', name: 'Bruno', appearance: DEFAULT_APPEARANCE });
     const brunoWelcome = await bruno.next('welcome');
-    expect(brunoWelcome.players).toHaveLength(2);
-    expect((await ana.next('playerAppeared')).player.name).toBe('Bruno');
+    expect(brunoWelcome.mobiles).toHaveLength(2);
+    expect((await ana.next('mobileAppeared')).mobile.name).toBe('Bruno');
 
     ana.send({ type: 'move', direction: Direction.North, mode: 'walk', seq: 1 });
     expect((await ana.next('moveAck')).seq).toBe(1);
-    const moved = await bruno.next('playerMoved');
+    const moved = await bruno.next('mobileMoved');
     expect(moved.id).toBe(anaWelcome.selfId);
 
     bruno.send({ type: 'chat', text: 'Hail, Ana!' });
     expect((await ana.next('chat')).text).toBe('Hail, Ana!');
 
     bruno.close();
-    expect((await ana.next('playerDisappeared')).id).toBe(brunoWelcome.selfId);
+    expect((await ana.next('mobileDisappeared')).id).toBe(brunoWelcome.selfId);
     ana.close();
   });
 
