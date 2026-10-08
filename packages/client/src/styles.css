@@ -489,7 +489,15 @@ body {
 @media (max-width: 640px) {
   .chat-panel {
     width: calc(100% - 24px);
-    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* En el celular los botones van en columna a la derecha, siempre por encima de las ventanas. */
+  .hud-buttons {
+    z-index: 5000;
+    top: calc(56px + env(safe-area-inset-top, 0px));
+    bottom: auto;
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .hud-button kbd {
@@ -582,6 +590,85 @@ body {
 
 @media (max-width: 640px) {
   .ghost-banner {
-    top: calc(150px + env(safe-area-inset-top, 0px));
+    top: auto;
+    bottom: calc(130px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ── Habilidades y hechizos ───────────────────────────────────────── */
+
+.skills-list {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 1.5rem;
+  margin: 0;
+  min-width: 200px;
+}
+
+.skills-list dt {
+  color: var(--color-text);
+  cursor: help;
+}
+
+.skills-list dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-accent);
+}
+
+.spell-list {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  width: min(340px, calc(100vw - 48px));
+}
+
+.spell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.4rem 0.5rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius);
+}
+
+.spell--locked {
+  opacity: 0.55;
+}
+
+.spell-info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.spell-meta {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.button--small {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.targeting-banner {
+  position: absolute;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(460px, calc(100% - 24px));
+  padding: 0.55rem 0.8rem;
+  text-align: center;
+  border-color: #ffd36b;
+}
+
+@media (max-width: 640px) {
+  .targeting-banner {
+    bottom: calc(130px + env(safe-area-inset-bottom, 0px));
   }
 }

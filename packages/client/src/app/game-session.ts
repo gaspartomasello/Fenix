@@ -1,4 +1,4 @@
-import { formatGameTime } from '@fenix/shared';
+import { SPELLS, SPELL_KEYS, formatGameTime, type SpellKey } from '@fenix/shared';
 import { ClientGame } from '../core/client-game';
 import { InputController } from '../input/input-controller';
 import { createGateway, IS_SOLO } from '../network/create-gateway';
@@ -11,6 +11,9 @@ import { EquipmentWindow } from '../ui/equipment-window';
 import { HudButtons } from '../ui/hud-buttons';
 import { WorldTooltip } from '../ui/world-tooltip';
 import { GhostBanner } from '../ui/ghost-banner';
+import { SkillsWindow } from '../ui/skills-window';
+import { SpellbookWindow } from '../ui/spellbook-window';
+import { TargetingBanner } from '../ui/targeting-banner';
 import { VitalsPanel } from '../ui/vitals-panel';
 import { WorldCombat } from './world-combat';
 import { WorldItems } from './world-items';
@@ -36,6 +39,8 @@ export class GameSession {
   private readonly gateway: GameGateway;
   private readonly login: LoginScreen;
   private inWorld = false;
+  /** Botones de pantalla que agregan otros módulos (hechizos, habilidades…). */
+  private readonly hudExtras: { label: string; key: string; onPress: () => void }[] = [];
 
   constructor(private readonly hosts: GameSessionHosts) {
     this.gateway = createGateway({
@@ -93,7 +98,8 @@ export class GameSession {
       onZoom: (delta) => renderer.stepZoom(delta),
       canSteerFrom: (point) => !worldItems.hasItemAt(point) && !worldCombat.hasCreatureAt(point),
     });
-    this.setUpInventory(drag, worldItems, tooltip);
+    const spellbook = this.setUpMagic(worldCombat);
+    this.setUpInventory(drag, worldItems, tooltip, spellbook);
     this.setUpVitals();
     const chat = new ChatPanel((text) => this.game.say(text));
     const status = new StatusBar();
@@ -139,19 +145,83 @@ export class GameSession {
     render();
   }
 
+  /** Libro de hechizos, habilidades, elegir objetivo y atajos 1–5. Devuelve el libro. */
+  private setUpMagic(worldCombat: WorldCombat): SpellbookWindow {
+    const banner = new TargetingBanner();
+    const cast = (spell: SpellKey): void => {
+      const definition = SPELLS[spell];
+      if (definition.target === 'self') {
+        this.game.castSpell(spell);
+        return;
+      }
+      // Con un objetivo de combate elegido, se usa ese; si no, se elige con un clic.
+      const target = this.game.targetId;
+      if (target) {
+        this.game.castSpell(spell, target);
+        return;
+      }
+      banner.show(
+        `${definition.name}: tocá la criatura a la que se lo querés lanzar (Escape cancela).`,
+      );
+      worldCombat.pickCreature(
+        (id) => {
+          banner.hide();
+          this.game.castSpell(spell, id);
+        },
+        () => banner.hide(),
+      );
+    };
+
+    const spellbook = new SpellbookWindow(cast);
+    const skills = new SkillsWindow();
+    this.hosts.ui.append(spellbook.window.element, skills.window.element, banner.element);
+    const render = (): void => {
+      const values = this.game.skills;
+      spellbook.render(values);
+      if (values) skills.render(values);
+    };
+    this.game.on('skillsChanged', render);
+    render();
+
+    window.addEventListener('keydown', (e) => {
+      if (e.target instanceof HTMLInputElement || e.ctrlKey || e.metaKey || e.altKey) return;
+      const spell = SPELL_KEYS[Number(e.key) - 1];
+      if (spell) {
+        e.preventDefault();
+        cast(spell);
+      }
+    });
+    this.hudExtras.push(
+      { label: 'Hechizos', key: 'l', onPress: () => spellbook.window.toggle() },
+      { label: 'Habilidades', key: 'k', onPress: () => skills.window.toggle() },
+    );
+    return spellbook;
+  }
+
   /** Ventanas de mochila y equipo, sus botones y la sincronización con el estado. */
   private setUpInventory(
     drag: DragController,
     worldItems: WorldItems,
     tooltip: WorldTooltip,
+    spellbook: SpellbookWindow,
   ): void {
     const self = this.game.self;
     if (!self) return;
-    const backpack = new BackpackWindow(drag, worldItems.actions);
-    const equipment = new EquipmentWindow(drag, worldItems.actions, self.appearance);
+    // Doble clic sobre el libro de hechizos: se abre la ventana en vez de avisar al servidor.
+    const actions = {
+      ...worldItems.actions,
+      useItem: (itemId: string) => {
+        const item = this.game.findItem(itemId);
+        if (item?.kind === 'spellbook') spellbook.window.show();
+        else worldItems.actions.useItem(itemId);
+      },
+    };
+    const backpack = new BackpackWindow(drag, actions);
+    const equipment = new EquipmentWindow(drag, actions, self.appearance);
     const buttons = new HudButtons([
       { label: 'Mochila', key: 'b', onPress: () => backpack.window.toggle() },
       { label: 'Equipo', key: 'c', onPress: () => equipment.window.toggle() },
+      ...this.hudExtras,
     ]);
     this.hosts.ui.append(
       backpack.window.element,

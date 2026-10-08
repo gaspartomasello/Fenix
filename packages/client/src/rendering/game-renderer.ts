@@ -5,6 +5,7 @@ import 'pixi.js/unsafe-eval';
 import type { ClientGame } from '../core/client-game';
 import type { Entity } from '../core/entity';
 import { CharacterView } from './character-view';
+import { EffectsLayer } from './effects-layer';
 import { ItemLayer } from './item-layer';
 import { screenToTile, tileToScreen, type ScreenPoint } from './iso';
 import { Lighting } from './lighting';
@@ -14,6 +15,9 @@ import { TextureCache } from './texture-cache';
 
 const ZOOM_LEVELS = [1, 1.5, 2] as const;
 const GHOST_TINT = 0x8c8c9c;
+/** El hechizo de Luz agranda el halo propio durante 5 minutos reales. */
+const LIGHT_SPELL_RADIUS = 7;
+const LIGHT_SPELL_MS = 5 * 60 * 1000;
 /** Caja de un personaje en pantalla respecto de sus pies, para saber si se lo tocó. */
 const MOBILE_HIT_BOX = { halfWidth: 16, height: 64 };
 /** El personaje se dibuja un poco por debajo del centro, como en UO. */
@@ -37,6 +41,13 @@ export class GameRenderer {
   private terrain: TerrainLayer | null = null;
   private statics: StaticLayer | null = null;
   private readonly groundItems = new ItemLayer(this.textures, this.entityLayer);
+  private readonly effects = new EffectsLayer((id, now) => {
+    for (const entity of this.game.allEntities())
+      if (entity.id === id) return entity.renderPosition(now);
+    return null;
+  });
+  /** Hasta cuándo dura el hechizo de Luz propio. */
+  private lightBoostUntil = 0;
   private zoomIndex = 0;
   private readonly unsubscribe: (() => void)[] = [];
 
@@ -106,11 +117,18 @@ export class GameRenderer {
     this.terrain?.cull(view);
     this.statics?.update(view, focus);
 
+    this.effects.update(now);
     const time = this.game.worldTime();
     if (time) {
       // De fantasma el mundo se ve gris, como en UO.
       this.scene.tint = self.dead ? GHOST_TINT : Lighting.tintFor(time.dayProgress);
-      this.lighting.update(time.dayProgress, focus, this.statics?.visibleLights() ?? []);
+      const selfRadius = now < this.lightBoostUntil ? LIGHT_SPELL_RADIUS : undefined;
+      this.lighting.update(
+        time.dayProgress,
+        focus,
+        this.statics?.visibleLights() ?? [],
+        selfRadius,
+      );
     }
     this.app.render();
   }
@@ -148,7 +166,7 @@ export class GameRenderer {
     // El loop lo maneja la aplicación: Pixi solo renderiza cuando se le pide.
     this.app.ticker.stop();
     host.appendChild(this.app.canvas);
-    this.world.addChild(this.scene, this.lighting.container);
+    this.world.addChild(this.scene, this.effects.container, this.lighting.container);
     this.app.stage.addChild(this.world);
 
     const map = this.game.map;
@@ -168,6 +186,13 @@ export class GameRenderer {
         for (const entity of this.game.allEntities()) this.addView(entity);
       }),
       this.game.on('entityAdded', (entity) => this.addView(entity)),
+      this.game.on('spellEffect', (effect) => {
+        const now = performance.now();
+        this.effects.add(effect, now);
+        if (effect.spell === 'light' && effect.targetId === this.game.selfId) {
+          this.lightBoostUntil = now + LIGHT_SPELL_MS;
+        }
+      }),
       this.game.on('entityRemoved', (id) => {
         this.views.get(id)?.destroy();
         this.views.delete(id);

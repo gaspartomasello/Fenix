@@ -8,6 +8,8 @@ import type { WorldTooltip } from '../ui/world-tooltip';
  */
 export class WorldCombat {
   private readonly abort = new AbortController();
+  /** Mientras se elige objetivo, el próximo clic sobre una criatura va acá en vez de atacar. */
+  private picking: { onPick: (id: string) => void; onCancel: () => void } | null = null;
 
   constructor(
     private readonly game: ClientGame,
@@ -21,10 +23,28 @@ export class WorldCombat {
     window.addEventListener(
       'keydown',
       (e) => {
-        if (e.key === 'Escape' && !(e.target instanceof HTMLInputElement)) game.stopAttack();
+        if (e.key !== 'Escape' || e.target instanceof HTMLInputElement) return;
+        if (this.picking) this.cancelPick();
+        else game.stopAttack();
       },
       { signal },
     );
+  }
+
+  /** El próximo clic sobre una criatura la elige como objetivo (Escape cancela). */
+  pickCreature(onPick: (id: string) => void, onCancel: () => void): void {
+    this.cancelPick();
+    this.picking = { onPick, onCancel };
+  }
+
+  get isPicking(): boolean {
+    return this.picking !== null;
+  }
+
+  private cancelPick(): void {
+    const picking = this.picking;
+    this.picking = null;
+    picking?.onCancel();
   }
 
   /** ¿Hay una criatura bajo este punto del canvas? */
@@ -43,6 +63,12 @@ export class WorldCombat {
     // Atacar tiene prioridad sobre agarrar un objeto que esté debajo.
     e.stopImmediatePropagation();
     e.preventDefault();
+    if (this.picking) {
+      const { onPick } = this.picking;
+      this.picking = null;
+      onPick(id);
+      return;
+    }
     this.game.attack(id);
   }
 
@@ -51,7 +77,8 @@ export class WorldCombat {
     const id = this.renderer.creatureAt(this.local(e));
     if (!id) return;
     const creature = [...this.game.allEntities()].find((entity) => entity.id === id);
-    if (creature) this.tooltip.show(`${creature.name} · clic para atacar`, e.clientX, e.clientY);
+    const action = this.picking ? 'clic para elegir' : 'clic para atacar';
+    if (creature) this.tooltip.show(`${creature.name} · ${action}`, e.clientX, e.clientY);
   }
 
   private local(e: PointerEvent): { x: number; y: number } {
