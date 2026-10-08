@@ -1,14 +1,14 @@
-import { drawCharacterFrame } from '@fenix/art';
+import { drawCharacterFrame, type PixelImage } from '@fenix/art';
 import {
   Direction,
   EQUIPMENT_SLOTS,
-  SLOT_LABELS,
+  NOTORIETY_NAMES,
   describeItem,
   type Appearance,
   type EquipmentLook,
   type EquipmentSlot,
   type EquippedItemSnapshot,
-  type ItemKind,
+  type Notoriety,
 } from '@fenix/shared';
 import { toCanvas } from '../platform/canvas';
 import { destinationFor, type ItemActions } from './backpack-window';
@@ -17,108 +17,179 @@ import type { DragController } from './drag-controller';
 import { GameWindow } from './game-window';
 import { itemIconUrl } from './item-icons';
 
-const PREVIEW_SCALE = 2;
-const LEFT_SLOTS: readonly EquipmentSlot[] = ['head', 'cloak', 'torso', 'legs'];
-const RIGHT_SLOTS: readonly EquipmentSlot[] = ['rightHand', 'leftHand', 'feet'];
+/** El personaje se muestra grande, como en la ventana de personaje de UO. */
+const FIGURE_SCALE = 3;
+/** Mira hacia adelante y un poco a la izquierda, como en UO. */
+const FIGURE_DIRECTION = Direction.South;
+/** Si dos objetos se tapan, se agarra primero el de más arriba (armas, casco…). */
+const PICK_ORDER: readonly EquipmentSlot[] = [
+  'rightHand',
+  'leftHand',
+  'head',
+  'cloak',
+  'torso',
+  'legs',
+  'feet',
+];
 
-/** Ventana de equipo: el personaje con lo que tiene puesto y un casillero por lugar del cuerpo. */
+export interface PaperdollButton {
+  readonly label: string;
+  readonly onPress: () => void;
+  /** Botón que queda presionado (por ejemplo, Guerra). */
+  readonly pressed?: () => boolean;
+}
+
+/**
+ * Ventana de personaje al estilo de UO: el personaje grande sobre un
+ * pergamino con todo lo que tiene puesto. Para ponerse algo se lo suelta
+ * sobre el personaje; para sacárselo se lo arrastra desde el cuerpo.
+ * Al costado, los botones de las demás ventanas; abajo, nombre y título.
+ */
 export class EquipmentWindow {
   readonly window: GameWindow;
-  private readonly preview: HTMLCanvasElement;
-  private readonly slots = new Map<EquipmentSlot, HTMLElement>();
+  private readonly figure: HTMLCanvasElement;
+  private readonly name: HTMLElement;
+  private readonly title: HTMLElement;
+  private readonly buttons: { node: HTMLButtonElement; button: PaperdollButton }[] = [];
+  private equipment: readonly EquippedItemSnapshot[] = [];
+  /** Qué pixeles del dibujo pertenecen a cada objeto puesto. */
+  private masks = new Map<EquipmentSlot, Uint8Array>();
+  private artWidth = 0;
 
   constructor(
     private readonly drag: DragController,
     private readonly actions: ItemActions,
     private readonly appearance: Appearance,
+    buttons: readonly PaperdollButton[],
   ) {
-    this.window = new GameWindow('equipo', 'Equipo', { x: window.innerWidth - 300, y: 330 });
-    this.preview = el('canvas', {
-      className: 'equipment-preview',
-      attrs: { 'aria-hidden': 'true' },
+    this.window = new GameWindow('equipo', 'Personaje', { x: window.innerWidth - 330, y: 200 });
+    this.figure = el('canvas', {
+      className: 'paperdoll-figure',
+      attrs: { 'data-drop': 'paperdoll', 'aria-label': 'Tu personaje con su equipo' },
     });
-    const column = (slots: readonly EquipmentSlot[]): HTMLElement =>
-      el(
-        'div',
-        { className: 'equipment-column' },
-        slots.map((slot) => this.slot(slot)),
-      );
+    this.name = el('p', { className: 'paperdoll-name' });
+    this.title = el('p', { className: 'paperdoll-title' });
+    const column = el(
+      'div',
+      { className: 'paperdoll-buttons' },
+      buttons.map((button) => {
+        const node = el('button', {
+          className: 'paperdoll-button',
+          text: button.label,
+          attrs: { type: 'button' },
+        });
+        node.addEventListener('click', () => {
+          button.onPress();
+          this.refreshButtons();
+        });
+        this.buttons.push({ node, button });
+        return node;
+      }),
+    );
     this.window.body.append(
-      el('div', { className: 'equipment-layout' }, [
-        column(LEFT_SLOTS),
-        this.preview,
-        column(RIGHT_SLOTS),
+      el('div', { className: 'paperdoll' }, [
+        el('div', { className: 'paperdoll-sheet' }, [this.figure, this.name, this.title]),
+        column,
       ]),
       el('p', {
         className: 'window-hint',
-        text: 'Arrastrá objetos a los casilleros para ponértelos',
+        text: 'Soltá un objeto sobre el personaje para ponértelo; arrastralo afuera para sacártelo.',
       }),
     );
+    this.figure.addEventListener('pointerdown', (e) => this.onPointerDown(e));
+    this.figure.addEventListener('pointermove', (e) => this.onHover(e));
     this.render([]);
   }
 
   render(equipment: readonly EquippedItemSnapshot[]): void {
-    const look: Partial<Record<EquipmentSlot, ItemKind>> = {};
-    for (const item of equipment) look[item.slot] = item.kind;
-    for (const slot of EQUIPMENT_SLOTS) {
-      const item = equipment.find((i) => i.slot === slot);
-      this.fillSlot(slot, item);
+    this.equipment = equipment;
+    const look = lookOf(equipment);
+    const full = drawCharacterFrame(this.appearance, FIGURE_DIRECTION, 'idle', look);
+    this.artWidth = full.width;
+    this.masks = new Map();
+    // La silueta de cada objeto: lo que cambia en el dibujo al sacárselo.
+    for (const item of equipment) {
+      const without: EquipmentLook = { ...look, [item.slot]: undefined };
+      const other = drawCharacterFrame(this.appearance, FIGURE_DIRECTION, 'idle', without);
+      this.masks.set(item.slot, difference(full, other));
     }
-    this.drawPreview(look);
-  }
-
-  private slot(slot: EquipmentSlot): HTMLElement {
-    const box = el('div', {
-      className: 'equipment-slot',
-      attrs: { 'data-drop': 'slot', 'data-slot': slot, title: SLOT_LABELS[slot] },
-    });
-    this.slots.set(slot, box);
-    return el('div', { className: 'equipment-slot-wrap' }, [
-      box,
-      el('span', { className: 'equipment-slot-label', text: SLOT_LABELS[slot] }),
-    ]);
-  }
-
-  private fillSlot(slot: EquipmentSlot, item: EquippedItemSnapshot | undefined): void {
-    const box = this.slots.get(slot);
-    if (!box) return;
-    box.replaceChildren();
-    if (!item) return;
-    const label = describeItem(item.kind);
-    const icon = el(
-      'button',
-      {
-        className: 'item-icon item-icon--slot',
-        attrs: { type: 'button', title: label, 'aria-label': label },
-      },
-      [el('img', { attrs: { src: itemIconUrl(item.kind), alt: '', draggable: 'false' } })],
-    );
-    icon.addEventListener('pointerdown', (e) => {
-      if (e.pointerType === 'mouse' && e.button !== 0) return;
-      e.preventDefault();
-      this.drag.begin(
-        {
-          id: item.id,
-          iconUrl: itemIconUrl(item.kind),
-          onDrop: (target) => {
-            const to = destinationFor(target, this.actions);
-            if (to) this.actions.moveItem(item.id, to);
-          },
-          onDoubleTap: () => this.actions.useItem(item.id),
-        },
-        e,
-      );
-    });
-    box.append(icon);
-  }
-
-  private drawPreview(look: EquipmentLook): void {
-    const art = toCanvas(drawCharacterFrame(this.appearance, Direction.SouthEast, 'idle', look));
-    this.preview.width = art.width * PREVIEW_SCALE;
-    this.preview.height = art.height * PREVIEW_SCALE;
-    const ctx = this.preview.getContext('2d');
+    const art = toCanvas(full);
+    this.figure.width = art.width * FIGURE_SCALE;
+    this.figure.height = art.height * FIGURE_SCALE;
+    const ctx = this.figure.getContext('2d');
     if (!ctx) return;
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(art, 0, 0, this.preview.width, this.preview.height);
+    ctx.drawImage(art, 0, 0, this.figure.width, this.figure.height);
   }
+
+  /** Nombre, título por fama y karma, y reputación (que colorea el nombre). */
+  setIdentity(name: string, title: string, notoriety: Notoriety): void {
+    this.name.textContent = name;
+    this.name.dataset.notoriety = notoriety;
+    this.title.textContent = `${title} · ${NOTORIETY_NAMES[notoriety]}`;
+  }
+
+  refreshButtons(): void {
+    for (const { node, button } of this.buttons) {
+      if (button.pressed) node.setAttribute('aria-pressed', String(button.pressed()));
+    }
+  }
+
+  /** El objeto puesto bajo un punto del dibujo. */
+  private itemAt(e: PointerEvent): EquippedItemSnapshot | undefined {
+    const rect = this.figure.getBoundingClientRect();
+    const scale = rect.width / this.artWidth;
+    const x = Math.floor((e.clientX - rect.left) / scale);
+    const y = Math.floor((e.clientY - rect.top) / scale);
+    const slot = PICK_ORDER.find((s) => this.masks.get(s)?.[y * this.artWidth + x]);
+    return slot ? this.equipment.find((item) => item.slot === slot) : undefined;
+  }
+
+  private onHover(e: PointerEvent): void {
+    const item = this.itemAt(e);
+    this.figure.title = item ? describeItem(item.kind) : '';
+    this.figure.style.cursor = item ? 'grab' : 'default';
+  }
+
+  private onPointerDown(e: PointerEvent): void {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const item = this.itemAt(e);
+    if (!item) return;
+    e.preventDefault();
+    this.drag.begin(
+      {
+        id: item.id,
+        iconUrl: itemIconUrl(item.kind),
+        onDrop: (target) => {
+          const to = destinationFor(target, this.actions, item.kind);
+          if (to) this.actions.moveItem(item.id, to);
+        },
+        onDoubleTap: () => this.actions.useItem(item.id),
+      },
+      e,
+    );
+  }
+}
+
+function lookOf(equipment: readonly EquippedItemSnapshot[]): EquipmentLook {
+  const look: EquipmentLook = {};
+  for (const slot of EQUIPMENT_SLOTS) {
+    const item = equipment.find((i) => i.slot === slot);
+    if (item) Object.assign(look, { [slot]: item.kind });
+  }
+  return look;
+}
+
+/** Pixeles que cambian entre dos dibujos del mismo tamaño. */
+function difference(a: PixelImage, b: PixelImage): Uint8Array {
+  const mask = new Uint8Array(a.width * a.height);
+  for (let i = 0; i < mask.length; i++) {
+    for (let c = 0; c < 4; c++) {
+      if (a.data[i * 4 + c] !== b.data[i * 4 + c]) {
+        mask[i] = 1;
+        break;
+      }
+    }
+  }
+  return mask;
 }

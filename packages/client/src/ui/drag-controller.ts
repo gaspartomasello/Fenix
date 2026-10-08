@@ -6,6 +6,8 @@ export type DropTarget =
   | { readonly kind: 'backpack'; readonly position: { x: number; y: number } }
   | { readonly kind: 'bank'; readonly position: { x: number; y: number } }
   | { readonly kind: 'slot'; readonly slot: EquipmentSlot }
+  /** El personaje en la ventana de equipo: el objeto va a su lugar del cuerpo. */
+  | { readonly kind: 'paperdoll' }
   | { readonly kind: 'world'; readonly clientX: number; readonly clientY: number };
 
 export interface DragSource {
@@ -114,6 +116,8 @@ function resolveTarget(clientX: number, clientY: number): DropTarget | null {
       return zone.dataset.slot ? { kind: 'slot', slot: zone.dataset.slot as EquipmentSlot } : null;
     case 'world':
       return { kind: 'world', clientX, clientY };
+    case 'paperdoll':
+      return { kind: 'paperdoll' };
     default:
       return null;
   }

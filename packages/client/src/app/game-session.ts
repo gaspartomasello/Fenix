@@ -16,7 +16,7 @@ import { SkillsWindow } from '../ui/skills-window';
 import { SpellbookWindow } from '../ui/spellbook-window';
 import { TargetingBanner } from '../ui/targeting-banner';
 import { VitalsPanel } from '../ui/vitals-panel';
-import { ITEMS, VENDORS, VENDOR_RANGE, type NpcRole } from '@fenix/shared';
+import { ITEMS, VENDORS, VENDOR_RANGE, reputationTitle, type NpcRole } from '@fenix/shared';
 import type { ItemActions } from '../ui/backpack-window';
 import { BankWindow } from '../ui/bank-window';
 import { CraftingWindow } from '../ui/crafting-window';
@@ -338,13 +338,33 @@ export class GameSession {
     };
     economy.setItemActions(actions);
     const backpack = new BackpackWindow(drag, actions);
-    const equipment = new EquipmentWindow(drag, actions, self.appearance);
+    // Como en UO, la ventana de personaje tiene a mano las demás ventanas.
+    const equipment = new EquipmentWindow(drag, actions, self.appearance, [
+      { label: 'Mochila', onPress: () => backpack.window.toggle() },
+      ...this.hudExtras.map((b) => ({
+        label: b.label,
+        onPress: b.onPress,
+        ...(b.pressed ? { pressed: b.pressed } : {}),
+      })),
+    ]);
     const buttons = (this.hud = new HudButtons([
       { label: 'Mochila', key: 'b', onPress: () => backpack.window.toggle() },
-      { label: 'Equipo', key: 'c', onPress: () => equipment.window.toggle() },
+      { label: 'Personaje', key: 'c', onPress: () => equipment.window.toggle() },
       ...this.hudExtras,
     ]));
     buttons.refresh();
+    equipment.refreshButtons();
+    this.game.on('warModeChanged', () => equipment.refreshButtons());
+    const identity = (): void => {
+      const social = this.game.social;
+      equipment.setIdentity(
+        self.name,
+        reputationTitle(social?.fame ?? 0, social?.karma ?? 0),
+        social?.notoriety ?? 'innocent',
+      );
+    };
+    this.game.on('socialChanged', identity);
+    identity();
     this.hosts.ui.append(
       backpack.window.element,
       equipment.window.element,
