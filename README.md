@@ -69,6 +69,11 @@ Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña 
 - **Doble clic sobre el hacha o el pico**, y después tocar un árbol o una roca al lado: talar o
   minar. Doble clic sobre el mineral al lado de la forja: fundirlo. Doble clic sobre el martillo
   de herrero: abrir la herrería (al lado del yunque y la forja).
+- **O**: ventana social (reputación, grupo, gremio e invitaciones). **Tab**: modo guerra, para
+  poder atacar a otras personas fuera del pueblo.
+- **Chat**: `/g mensaje` habla al grupo, `/gr mensaje` al gremio, `/invitar nombre`,
+  `/aceptar`, `/rechazar`, `/salir`, `/fundar SIGLAS Nombre`, `/reclutar nombre`,
+  `/dejargremio`. `/ayuda` los muestra en el juego.
 - **Rueda del mouse**: acercar o alejar la cámara.
 
 ## Estructura
@@ -101,5 +106,7 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
    Tácticas, Parada, Magia, Meditación) y cinco hechizos con reactivos y libro.
 6. ✅ **Economía**: talar y minar, fundir mineral, herrería con recetas, cuatro comerciantes
    (herrero, maga, tabernero y banquera) y caja del banco.
-7. Social: grupos, gremios, combate entre jugadores, karma y fama.
+7. ✅ **Social**: grupos de hasta seis, gremios con siglas sobre el nombre, chat de grupo y de
+   gremio, combate entre jugadores fuera del pueblo (modo guerra), reputación con criminales y
+   asesinos (nombre azul, gris o rojo), fama y karma.
 8. Persistencia y deploy: cuentas, guardado, servidor 24/7.
