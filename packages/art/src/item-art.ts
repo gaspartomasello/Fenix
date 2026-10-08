@@ -104,6 +104,51 @@ const PAINTERS: Readonly<Record<ItemKind, Painter>> = {
     img.fillRect(6, 8, 4, 11, shade(color, 1.1));
     img.fillRect(12, 8, 4, 11, shade(color, 0.85));
   },
+  spellbook(img) {
+    const cover: Rgb = [110, 40, 120];
+    img.fillRect(4, 4, 14, 15, cover);
+    img.fillRect(4, 4, 2, 15, shade(cover, 0.7));
+    img.fillRect(17, 5, 2, 13, [236, 226, 196]);
+    img.fillRect(9, 8, 6, 6, [226, 186, 72]);
+    img.fillRect(11, 7, 2, 8, [226, 186, 72]);
+    img.set(11, 10, [255, 240, 160]);
+  },
+  'black-pearl'(img) {
+    for (const [x, y] of [
+      [8, 12],
+      [13, 11],
+      [10, 15],
+    ] as const) {
+      img.fillEllipse(x, y, 2.5, 2.5, (px, py) =>
+        px < x && py < y ? [120, 120, 140] : [30, 30, 40],
+      );
+    }
+  },
+  garlic(img) {
+    img.fillEllipse(11, 13, 5, 4.5, (x) => (x < 11 ? [244, 238, 222] : [214, 206, 186]));
+    img.fillRect(10, 5, 2, 5, [180, 200, 140]);
+    img.fillRect(11, 9, 1, 8, [200, 190, 170]);
+  },
+  ginseng(img) {
+    for (let i = 0; i < 10; i++) img.set(8 + Math.round(i * 0.5), 6 + i, [196, 160, 110]);
+    for (let i = 0; i < 8; i++) img.set(13 - Math.round(i * 0.4), 8 + i, [176, 140, 96]);
+    img.fillRect(9, 4, 4, 3, [90, 150, 70]);
+  },
+  'mandrake-root'(img) {
+    img.fillEllipse(11, 12, 3, 5, [150, 110, 70]);
+    img.fillRect(8, 16, 2, 3, [130, 94, 60]);
+    img.fillRect(13, 16, 2, 3, [130, 94, 60]);
+    img.fillRect(9, 4, 5, 3, [70, 130, 60]);
+  },
+  'spiders-silk'(img) {
+    img.fillEllipse(11, 12, 6, 5, [236, 236, 240]);
+    for (let i = 0; i < 9; i++) img.set(6 + i, 9 + (i % 3), [200, 200, 210]);
+    for (let i = 0; i < 9; i++) img.set(7 + i, 14 - (i % 2), [190, 190, 200]);
+  },
+  'sulfurous-ash'(img) {
+    img.fillEllipse(11, 14, 6, 3.5, (x) => (x < 11 ? [226, 200, 90] : [190, 166, 70]));
+    img.fillEllipse(11, 12, 3.5, 2, [240, 220, 120]);
+  },
   boots(img, color) {
     for (const x of [4, 12]) {
       img.fillRect(x, 6, 4, 10, shade(color, x === 4 ? 1.15 : 0.9));
