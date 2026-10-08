@@ -64,6 +64,12 @@ peinados como máscaras sobre una cáscara de pelo. En el cliente, `Entity` guar
 cuadro de cada momento y programa los gestos de reposo (`Fidgets`) para que lleguen cada tanto y
 no se repitan seguidos.
 
+La capa es una tela curva que cuelga de los hombros: en cada fila se aleja de la espalda lo
+necesario para que las piernas no la atraviesen y vuela hacia atrás según `Rig.sway`. Los objetos
+(`item-art.ts`) también son modelos de volumen, vistos desde arriba, en dos tamaños: en el suelo
+y como ícono. La ventana de personaje (`EquipmentWindow`) detecta qué objeto hay bajo el puntero
+comparando el dibujo con y sin cada pieza puesta.
+
 ## @fenix/content
 
 Datos del mundo editables con Tiled: el pueblo (`maps/`) y los tilesets generados (`tilesets/`).

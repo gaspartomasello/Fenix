@@ -57,8 +57,10 @@ Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña 
 - **Clic derecho sostenido** (o **tocar y mantener** en el celular): caminar hacia el cursor;
   lejos del personaje, correr.
 - **Enter**: hablar. **Escape**: cancelar.
-- **B**: mochila. **C**: equipo (también con los botones de abajo a la derecha).
-- **Arrastrar** un objeto: moverlo entre el suelo, la mochila y los casilleros del equipo.
+- **B**: mochila. **C**: ventana de personaje, como en UO: el personaje grande con lo que tiene
+  puesto, su nombre, título y botones a las demás ventanas (también con los botones de abajo).
+- **Arrastrar** un objeto: moverlo entre el suelo y la mochila. Soltarlo sobre el personaje de la
+  ventana de personaje lo equipa; arrastrarlo desde el personaje hacia afuera lo saca.
 - **Doble clic** (o doble toque): comer, beber, ponerse o sacarse algo; sobre un objeto del suelo,
   levantarlo.
 - **Clic** (o toque) sobre una criatura: atacarla. El personaje golpea solo mientras la tenga al
@@ -120,4 +122,5 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
    oficio para la gente del pueblo, y rata, lobo y esqueleto redibujados. Animaciones: caminar y
    correr (distintas), golpe en arco con espada o hacha, estocada con daga, puñetazo, lanzar
    hechizos, mordida de las bestias y gestos de reposo cada tanto (girar los hombros, cambiar el
-   peso de pierna).
+   peso de pierna). La capa envuelve el cuerpo y vuela según se camine, corra o pelee. Objetos
+   redibujados con volumen y vistos desde arriba, y ventana de personaje al estilo de UO.
