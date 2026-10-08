@@ -25,14 +25,15 @@ una capa que no debe, el lint falla.
 
 Código que cliente y servidor deben compartir exactamente. No tiene dependencias externas.
 
-| Módulo             | Contenido                                                             |
-| ------------------ | --------------------------------------------------------------------- |
-| `domain/geometry`  | `Position`, `Direction` (numeración de UO), pasos y distancias        |
-| `domain/world`     | `Terrain`, `TileMap`                                                  |
-| `domain/rules`     | Movimiento (`canStep`, tiempos de paso), chat (límites, limpieza)     |
-| `domain/character` | Apariencia y validación de nombres                                    |
-| `domain/items`     | Catálogo de objetos, lugares del equipo, alcance y límites de mochila |
-| `protocol`         | Mensajes cliente↔servidor tipados y su codec con validación           |
+| Módulo                              | Contenido                                                              |
+| ----------------------------------- | ---------------------------------------------------------------------- |
+| `domain/geometry`                   | `Position`, `Direction` (numeración de UO), pasos y distancias         |
+| `domain/world`                      | `Terrain`, `TileMap`                                                   |
+| `domain/rules`                      | Movimiento (`canStep`, tiempos de paso), chat (límites, limpieza)      |
+| `domain/character`                  | Apariencia y validación de nombres                                     |
+| `domain/items`                      | Catálogo de objetos, lugares del equipo, alcance y límites de mochila  |
+| `domain/combat`, `domain/creatures` | Vitales, armas, armaduras, golpe y daño; catálogo de criaturas y botín |
+| `protocol`                          | Mensajes cliente↔servidor tipados y su codec con validación            |
 
 Que `canStep` sea compartido es clave: el cliente predice con la **misma regla** que valida el
 servidor, por eso las correcciones son raras.
@@ -117,7 +118,7 @@ ClientGame.requestStep
   mueve la entidad al instante  ──move{dir,mode,seq}──►  MovePlayer
                                                           Player.tryMove (cadencia + canStep)
                                ◄──moveAck{seq,pos}──      ✓ confirma al jugador
-                                                          └─playerMoved──► resto de jugadores
+                                                          └─mobileMoved──► resto de jugadores
                                ◄──moveRejected{pos}──     ✗ corrige (el cliente vuelve atrás)
 ```
 
@@ -132,10 +133,25 @@ los del suelo a quienes los ven (`groundItems`), la mochila y el equipo a su due
 y lo que alguien tiene puesto a quienes lo ven (`playerEquipment`), que lo dibujan sobre el
 personaje. Si algo no se puede, el jugador recibe el motivo en el chat.
 
+### Combate
+
+Jugadores y criaturas son **mobiles** (`Mobile`): tienen un `Combatant` con vida, maná, energía,
+objetivo y turno de golpe. El cliente solo elige objetivo (`attack`); el golpe lo da el servidor en
+`GameLoop.tick`, que la infraestructura llama cada 100 ms y que también:
+
+- hace actuar a las criaturas (`creature-ai.ts`): buscan al jugador vivo más cercano dentro de su
+  rango, lo persiguen y atacan; no entran a zonas con nombre (los pueblos son seguros) y vuelven a
+  su lugar si se alejan demasiado;
+- resuelve golpes con `resolveAttack` (acierto por destreza, daño del arma, la armadura absorbe);
+- regenera vitales, tira el botín de las criaturas muertas y las hace reaparecer a los 30 s;
+- resucita a los fantasmas que llegan a 2 tiles del santuario.
+
+`MobileNotifications` avisa vitales al dueño, vida y golpes (`swing`) a quienes ven al mobile.
+
 ### Rango de visión
 
 Cada jugador solo recibe lo que pasa a 18 tiles o menos (como en UO): al moverse, el servidor
-calcula quién entra y quién sale de su rango y envía `playerAppeared` / `playerDisappeared` en
+calcula quién entra y quién sale de su rango y envía `mobileAppeared` / `mobileDisappeared` en
 ambos sentidos. El chat también se oye solo dentro de ese rango.
 
 ## Render
