@@ -5,6 +5,7 @@ import { GameLoop } from './game-loop';
 import { ItemNotifications } from './item-notifications';
 import { MobileNotifications } from './mobile-notifications';
 import type { Clock, IdGenerator, Notifier, RandomSource } from './ports';
+import { SocialNotifications } from './social-notifications';
 import { Attack } from './use-cases/attack';
 import { CastSpell } from './use-cases/cast-spell';
 import { EconomyActions } from './use-cases/economy-actions';
@@ -14,6 +15,7 @@ import { JoinWorld, type JoinWorldResult } from './use-cases/join-world';
 import { LeaveWorld } from './use-cases/leave-world';
 import { MovePlayer } from './use-cases/move-player';
 import { SendChat } from './use-cases/send-chat';
+import { SocialActions } from './use-cases/social-actions';
 
 export interface GameApplicationDeps {
   readonly world: World;
@@ -38,6 +40,8 @@ export class GameApplication {
   private readonly attack: Attack;
   private readonly castSpell: CastSpell;
   private readonly economy: EconomyActions;
+  private readonly socialActions: SocialActions;
+  private readonly social: SocialNotifications;
   private readonly loop: GameLoop;
   private readonly mobiles: MobileNotifications;
   private readonly world: World;
@@ -46,6 +50,8 @@ export class GameApplication {
     this.world = world;
     const notifications = new ItemNotifications(world, notifier);
     this.mobiles = new MobileNotifications(world, notifier);
+    this.social = new SocialNotifications(world, clock, this.mobiles, notifier);
+    this.socialActions = new SocialActions(world, clock, this.social);
     this.joinWorld = new JoinWorld(world, worldClock, clock, ids, random, notifier, notifications);
     this.leaveWorld = new LeaveWorld(world, notifier);
     this.movePlayer = new MovePlayer(world, clock, notifier, notifications, this.mobiles);
@@ -61,9 +67,17 @@ export class GameApplication {
     );
     this.moveItem = new MoveItem(world, notifications, notifier, this.economy);
     this.useItem = new UseItem(world, notifications, notifier, this.mobiles, this.economy);
-    this.attack = new Attack(world, this.mobiles, notifier);
+    this.attack = new Attack(world, clock, this.mobiles, this.social, notifier);
     this.castSpell = new CastSpell(world, clock, this.mobiles, notifications, notifier);
-    this.loop = new GameLoop(world, this.mobiles, notifications, notifier, ids, random);
+    this.loop = new GameLoop(
+      world,
+      this.mobiles,
+      notifications,
+      notifier,
+      ids,
+      random,
+      this.social,
+    );
   }
 
   /** Avanza el mundo: criaturas, golpes, regeneración. La infraestructura lo llama seguido. */
@@ -82,6 +96,7 @@ export class GameApplication {
     if (player) {
       this.mobiles.sendVitals(player);
       this.mobiles.sendSkills(player);
+      this.social.sendSocial(player);
     }
   }
 
@@ -97,7 +112,7 @@ export class GameApplication {
         });
         break;
       case 'chat':
-        this.sendChat.execute(playerId, message.text);
+        this.sendChat.execute(playerId, message.text, message.channel);
         break;
       case 'moveItem':
         this.moveItem.execute(playerId, message.itemId, message.to);
@@ -126,6 +141,9 @@ export class GameApplication {
       case 'craft':
         this.economy.craft(playerId, message.recipe);
         break;
+      case 'social':
+        this.socialActions.execute(playerId, message);
+        break;
       case 'join':
         // Ya está en el mundo: se ignora un segundo ingreso.
         break;
@@ -133,6 +151,8 @@ export class GameApplication {
   }
 
   leave(playerId: EntityId): void {
+    const player = this.world.get(playerId);
+    if (player) this.socialActions.disconnect(player);
     this.leaveWorld.execute(playerId);
   }
 }

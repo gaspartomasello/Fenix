@@ -245,7 +245,7 @@ describe('GameApplication', () => {
       ctx.notifier.clear();
       ctx.app.handle(ana, { type: 'chat', text: '  Hail!  ' });
       expect(ctx.notifier.deliveries).toEqual([
-        { to: ana, message: { type: 'chat', id: ana, name: 'Ana', text: 'Hail!' } },
+        { to: ana, message: { type: 'chat', id: ana, name: 'Ana', text: 'Hail!', channel: 'say' } },
       ]);
     });
 
