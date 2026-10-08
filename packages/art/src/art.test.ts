@@ -89,8 +89,7 @@ describe('arte procedural (sin DOM)', () => {
 });
 
 describe('personajes con volumen', () => {
-  const pixels = (image: { data: Uint8ClampedArray }): string =>
-    Buffer.from(image.data).toString('base64');
+  const pixels = (image: { data: Uint8ClampedArray }): string => image.data.join(',');
 
   it('peinado, barba y ropa de oficio cambian el dibujo', () => {
     const base = drawCharacterFrame(DEFAULT_APPEARANCE, Direction.SouthEast, 'idle');
