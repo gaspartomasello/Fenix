@@ -874,21 +874,72 @@ body {
 /* ── Ventana de personaje (estilo UO) ─────────────────────────────── */
 
 .paperdoll {
-  display: flex;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.03) 0 6px,
+      rgba(0, 0, 0, 0.05) 6px 12px
+    ),
+    linear-gradient(#6f6c66, #4c4a46);
+  border: 3px solid #2e2c29;
+  border-radius: 22px;
+  box-shadow:
+    inset 0 0 0 2px #8f8b84,
+    inset 0 0 22px rgba(0, 0, 0, 0.6);
+}
+
+.paperdoll-frame {
+  display: grid;
+  grid-template-columns: auto auto auto;
   gap: 0.6rem;
   align-items: stretch;
 }
 
+/* Casilleros con lo que tiene puesto, a la izquierda. */
+.paperdoll-slots {
+  display: grid;
+  align-content: space-between;
+  gap: 0.3rem;
+  padding: 0.3rem 0;
+}
+
+.paperdoll-slot {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(#3a3733, #1f1d1b);
+  border: 2px solid #8f8b84;
+  border-radius: 6px;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.8);
+}
+
+.paperdoll-slot--filled {
+  border-color: #c9a45c;
+  cursor: grab;
+}
+
+.paperdoll-slot img {
+  width: 40px;
+  height: 40px;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+/* El personaje, de frente, sobre fondo oscuro como en UO. */
 .paperdoll-sheet {
   display: grid;
-  justify-items: center;
-  padding: 0.6rem 0.8rem 0.5rem;
-  background:
-    radial-gradient(ellipse at 50% 40%, rgba(255, 246, 220, 0.95), rgba(214, 190, 144, 0.95) 70%),
-    #d6be90;
-  border: 2px solid #8a6a3a;
-  border-radius: 4px;
-  box-shadow: inset 0 0 18px rgba(90, 60, 20, 0.55);
+  place-items: center;
+  padding: 0.4rem 0.6rem;
+  background: radial-gradient(ellipse at 50% 45%, #2b2a33, #0d0c10 75%);
+  border: 3px solid #2e2c29;
+  border-radius: 10px;
+  box-shadow:
+    inset 0 0 0 1px #8f8b84,
+    inset 0 0 20px #000;
 }
 
 .paperdoll-figure {
@@ -898,8 +949,54 @@ body {
   touch-action: none;
 }
 
+/* Botones a la derecha, repartidos a lo alto del personaje. */
+.paperdoll-buttons {
+  display: grid;
+  align-content: space-between;
+  gap: 0.4rem;
+  padding: 0.3rem 0;
+}
+
+.paperdoll-button {
+  min-width: 6.8rem;
+  padding: 0.3rem 0.6rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #f6e7b0;
+  background: linear-gradient(#3e5f9e, #22396b);
+  border: 2px solid #c9a45c;
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+}
+
+.paperdoll-button:hover,
+.paperdoll-button:focus-visible {
+  border-color: #ffe08a;
+  outline: none;
+}
+
+.paperdoll-button[aria-pressed='true'] {
+  background: linear-gradient(#a53a2e, #6a1a14);
+  border-color: #ff8a6a;
+}
+
+/* Placa con nombre y título, abajo. */
+.paperdoll-plate {
+  display: grid;
+  justify-items: center;
+  padding: 0.4rem 0.8rem;
+  background: linear-gradient(#e8dcbc, #c9b88f);
+  border: 2px solid #2e2c29;
+  border-radius: 8px;
+  box-shadow: inset 0 0 8px rgba(80, 60, 20, 0.5);
+}
+
 .paperdoll-name {
-  margin: 0.3rem 0 0;
+  margin: 0;
   font-weight: bold;
   font-size: 1rem;
   color: #22305a;
@@ -920,31 +1017,14 @@ body {
   color: #4a3a22;
 }
 
-.paperdoll-buttons {
-  display: grid;
-  align-content: start;
-  gap: 0.35rem;
-}
+@media (max-width: 640px) {
+  .paperdoll-figure {
+    width: 88px;
+    height: 156px;
+  }
 
-.paperdoll-button {
-  min-width: 6.5rem;
-  padding: 0.35rem 0.5rem;
-  font: inherit;
-  font-size: 0.82rem;
-  color: #f3e3bd;
-  background: linear-gradient(#5a3e22, #3c2914);
-  border: 1px solid #c9a45c;
-  border-radius: 3px;
-  cursor: pointer;
-}
-
-.paperdoll-button:hover,
-.paperdoll-button:focus-visible {
-  border-color: #ffd36b;
-  outline: none;
-}
-
-.paperdoll-button[aria-pressed='true'] {
-  background: linear-gradient(#8a2a2a, #5a1414);
-  border-color: #ff5a4a;
+  .paperdoll-button {
+    min-width: 5.2rem;
+    font-size: 0.7rem;
+  }
 }
