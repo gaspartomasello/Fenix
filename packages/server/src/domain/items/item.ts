@@ -12,6 +12,7 @@ import type {
 export type ItemLocation =
   | { readonly type: 'ground'; readonly position: Position }
   | { readonly type: 'backpack'; readonly ownerId: EntityId; readonly position: Position }
+  | { readonly type: 'bank'; readonly ownerId: EntityId; readonly position: Position }
   | { readonly type: 'equipment'; readonly ownerId: EntityId; readonly slot: EquipmentSlot };
 
 export class Item {
@@ -32,7 +33,7 @@ export class Item {
   }
 
   toBackpackSnapshot(): BackpackItemSnapshot | null {
-    if (this.location.type !== 'backpack') return null;
+    if (this.location.type !== 'backpack' && this.location.type !== 'bank') return null;
     return { id: this.id, kind: this.kind, amount: this.amount, position: this.location.position };
   }
 

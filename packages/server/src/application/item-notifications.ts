@@ -42,6 +42,7 @@ export class ItemNotifications {
       type: 'inventory',
       backpack: items.backpackOf(ownerId).flatMap((i) => i.toBackpackSnapshot() ?? []),
       equipment: items.equipmentOf(ownerId).flatMap((i) => i.toEquippedSnapshot() ?? []),
+      bank: items.bankOf(ownerId).flatMap((i) => i.toBackpackSnapshot() ?? []),
     });
   }
 

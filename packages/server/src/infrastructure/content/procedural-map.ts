@@ -1,4 +1,5 @@
 import {
+  type NpcRole,
   Terrain,
   TileMap,
   type Position,
@@ -13,6 +14,7 @@ export interface GeneratedWorld {
   readonly spawnPoint: Position;
   /** Objetos sueltos puestos en el mapa, en coordenadas del mundo. */
   readonly items: readonly PlacedItem[];
+  readonly npcs: readonly { readonly role: NpcRole; readonly position: Position }[];
 }
 
 export interface WorldGenerationOptions {
@@ -49,6 +51,7 @@ export function generateIslandMap(options: WorldGenerationOptions): GeneratedWor
   const regions: RegionData[] = [];
   let spawnPoint: Position = center;
   const items: PlacedItem[] = [];
+  const npcs: { role: NpcRole; position: Position }[] = [];
 
   if (town) {
     const offset = {
@@ -70,6 +73,12 @@ export function generateIslandMap(options: WorldGenerationOptions): GeneratedWor
     statics.push(...town.statics.map((s) => ({ ...s, x: s.x + offset.x, y: s.y + offset.y })));
     regions.push(...town.regions.map((r) => ({ ...r, x: r.x + offset.x, y: r.y + offset.y })));
     if (town.spawn) spawnPoint = { x: town.spawn.x + offset.x, y: town.spawn.y + offset.y };
+    npcs.push(
+      ...town.npcs.map((n) => ({
+        ...n,
+        position: { x: n.position.x + offset.x, y: n.position.y + offset.y },
+      })),
+    );
     items.push(
       ...town.items.map((i) => ({
         ...i,
@@ -85,7 +94,12 @@ export function generateIslandMap(options: WorldGenerationOptions): GeneratedWor
     );
   }
 
-  return { map: new TileMap({ width, height, terrain, statics, regions }), spawnPoint, items };
+  return {
+    map: new TileMap({ width, height, terrain, statics, regions }),
+    spawnPoint,
+    items,
+    npcs,
+  };
 
   function pickTerrain(x: number, y: number): { tile: Terrain; road: boolean } {
     const edgeDistance = Math.min(x, y, width - 1 - x, height - 1 - y);

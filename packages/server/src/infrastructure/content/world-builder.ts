@@ -2,6 +2,7 @@ import { TILESETS, TOWN_MAP } from '@fenix/content';
 import { tileDistance, type CreatureKind, type Position, type TileMap } from '@fenix/shared';
 import type { IdGenerator } from '../../application/ports';
 import { Creature } from '../../domain/creatures/creature';
+import { Npc } from '../../domain/npcs/npc';
 import { World } from '../../domain/world';
 import { SeededRandom } from '../system/seeded-random';
 import { generateIslandMap, type GeneratedWorld } from './procedural-map';
@@ -32,8 +33,9 @@ export function buildWorld({ size, seed }: WorldBuildOptions): GeneratedWorld {
 
 /** Crea el mundo listo para jugar, con los objetos sueltos del mapa en el suelo. */
 export function createWorld(options: WorldBuildOptions, ids: IdGenerator): World {
-  const { map, spawnPoint, items } = buildWorld(options);
+  const { map, spawnPoint, items, npcs } = buildWorld(options);
   const world = new World(map, spawnPoint);
+  for (const { role, position } of npcs) world.addNpc(new Npc(ids.next(), role, position));
   for (const { kind, amount, position } of items) {
     world.items.add(ids.next(), kind, amount, { type: 'ground', position });
   }

@@ -82,6 +82,34 @@ export class Items {
     );
   }
 
+  bankOf(ownerId: EntityId): Item[] {
+    return this.all().filter((i) => i.location.type === 'bank' && i.location.ownerId === ownerId);
+  }
+
+  /** Agrega unidades nuevas a la mochila, juntándolas con una pila existente si se puede. */
+  addToBackpack(
+    ownerId: EntityId,
+    kind: ItemKind,
+    amount: number,
+    ids: () => EntityId,
+    changes: ItemChanges,
+  ): boolean {
+    if (ITEMS[kind].stackable) {
+      const stack = this.backpackOf(ownerId).find(
+        (i) => i.kind === kind && i.amount + amount <= MAX_STACK,
+      );
+      if (stack) {
+        stack.amount += amount;
+        changes.inventories.add(ownerId);
+        return true;
+      }
+    }
+    if (this.backpackOf(ownerId).length >= MAX_BACKPACK_ITEMS) return false;
+    this.add(ids(), kind, amount, { type: 'backpack', ownerId, position: this.freeSpot(ownerId) });
+    changes.inventories.add(ownerId);
+    return true;
+  }
+
   equipmentOf(ownerId: EntityId): Item[] {
     return this.all().filter(
       (i) => i.location.type === 'equipment' && i.location.ownerId === ownerId,
@@ -128,12 +156,24 @@ export class Items {
     for (const item of this.all()) if (item.ownerId() === ownerId) this.byId.delete(item.id);
   }
 
-  /** Mueve un objeto al suelo, a la mochila o al equipo de `actor`. */
-  move(actor: ItemActor, itemId: EntityId, to: ItemDestination, map: TileMap): ItemResult {
+  /**
+   * Mueve un objeto al suelo, a la mochila, al banco o al equipo de `actor`.
+   * El banco solo se puede usar con `nearBanker`.
+   */
+  move(
+    actor: ItemActor,
+    itemId: EntityId,
+    to: ItemDestination,
+    map: TileMap,
+    nearBanker = false,
+  ): ItemResult {
     const item = this.byId.get(itemId);
     if (!item) return fail('Ese objeto ya no está.');
     const access = this.checkAccess(actor, item);
     if (access) return fail(access);
+    if ((item.location.type === 'bank' || to.type === 'bank') && !nearBanker) {
+      return fail('Para usar el banco tenés que estar cerca de la banquera.');
+    }
 
     const changes = emptyChanges();
     switch (to.type) {
@@ -146,6 +186,17 @@ export class Items {
       }
       case 'backpack':
         return this.putInBackpack(actor.id, item, to.position, changes);
+      case 'bank':
+        this.relocate(
+          item,
+          {
+            type: 'bank',
+            ownerId: actor.id,
+            position: clampToBackpack(to.position ?? { x: 0, y: 0 }),
+          },
+          changes,
+        );
+        return { ok: true, changes };
       case 'equipment':
         return this.equip(actor.id, item, to.slot, changes);
     }
@@ -176,7 +227,10 @@ export class Items {
           return this.putInBackpack(actor.id, item, undefined, changes);
         return this.equip(actor.id, item, definition.slot ?? 'rightHand', changes);
       case 'spellbook':
-        // El libro se abre en el cliente; el servidor no tiene nada que hacer.
+      case 'tool':
+      case 'craft':
+      case 'smelt':
+        // Se resuelven en otros casos de uso (o en el cliente): acá no hay nada que hacer.
         return { ok: true, changes };
       case 'none': {
         const total = this.backpackOf(actor.id)
@@ -303,7 +357,7 @@ export class Items {
   }
 
   /** Primer casillero libre de la mochila, en una grilla del tamaño de un ícono. */
-  private freeSpot(ownerId: EntityId): Position {
+  freeSpot(ownerId: EntityId): Position {
     const taken = this.backpackOf(ownerId).map((i) =>
       i.location.type === 'backpack' ? i.location.position : null,
     );

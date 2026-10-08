@@ -1,4 +1,5 @@
 import type { EntityId } from '@fenix/shared';
+import { Npc } from '../../domain/npcs/npc';
 import { Player } from '../../domain/player';
 import type { World } from '../../domain/world';
 import type { MobileNotifications } from '../mobile-notifications';
@@ -21,6 +22,7 @@ export class Attack {
     const target = this.world.getMobile(targetId);
     if (!target || target.id === playerId) return;
     if (target instanceof Player) return refuse('Todavía no se puede atacar a otros jugadores.');
+    if (target instanceof Npc) return refuse(`No podés atacar a ${target.name}.`);
     if (target.combat.isDead) return;
 
     player.combat.targetId = target.id;
