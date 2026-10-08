@@ -83,6 +83,19 @@ export class Combatant {
     this.resetRegen(now);
   }
 
+  /** Vuelve a los vitales guardados (acotados a los máximos). */
+  restore(saved: { hits: number; mana: number; stamina: number }, dead: boolean): void {
+    const fit = (value: number, max: number): number =>
+      Math.min(max, Math.max(0, Math.round(value)));
+    this.vitals = {
+      ...this.vitals,
+      hits: dead ? 0 : Math.max(1, fit(saved.hits, this.vitals.maxHits)),
+      mana: fit(saved.mana, this.vitals.maxMana),
+      stamina: fit(saved.stamina, this.vitals.maxStamina),
+    };
+    this.dead = dead;
+  }
+
   spendMana(amount: number): void {
     this.vitals = { ...this.vitals, mana: Math.max(0, this.vitals.mana - amount) };
   }

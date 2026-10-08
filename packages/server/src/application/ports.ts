@@ -1,4 +1,5 @@
 import type { EntityId, ServerMessage } from '@fenix/shared';
+import type { SavedCharacter } from '../domain/persistence/saved-character';
 
 /**
  * Puertos de salida de la aplicación. La infraestructura los implementa
@@ -25,4 +26,17 @@ export interface Notifier {
   /** Envía el mismo mensaje a varios jugadores (se serializa una vez). */
   sendMany(playerIds: Iterable<EntityId>, message: ServerMessage): void;
   broadcast(message: ServerMessage, options?: { except?: EntityId }): void;
+}
+
+/** Dónde se guardan los personajes (archivo en el servidor, navegador en el modo solo). */
+export interface CharacterStore {
+  /** Busca por nombre, sin distinguir mayúsculas. */
+  find(name: string): SavedCharacter | undefined;
+  save(character: SavedCharacter): void;
+}
+
+/** Hash de contraseñas: nunca se guardan en texto plano. */
+export interface PasswordHasher {
+  hash(password: string): string;
+  verify(password: string, hash: string): boolean;
 }

@@ -12,6 +12,7 @@ import {
   type MoveMode,
   type MobileSnapshot,
   type Position,
+  type SkillValues,
   type TileMap,
 } from '@fenix/shared';
 import { Combatant } from './combat/combatant';
@@ -35,6 +36,8 @@ export interface PlayerProps {
   readonly appearance: Appearance;
   readonly position: Position;
   readonly direction: Direction;
+  /** Habilidades guardadas; un personaje nuevo empieza con las iniciales. */
+  readonly skills?: SkillValues;
 }
 
 export class Player implements Mobile {
@@ -43,7 +46,7 @@ export class Player implements Mobile {
   readonly body = 'human' as const;
   readonly appearance: Appearance;
   readonly combat = new Combatant(PLAYER_ATTRIBUTES);
-  readonly skills = new SkillSet(STARTING_SKILLS);
+  readonly skills: SkillSet;
   readonly reputation = new Reputation();
   /** Hechizo que está lanzando, que se resuelve en `resolveAt`. */
   pendingCast: { spell: SpellKey; targetId: EntityId; resolveAt: number } | null = null;
@@ -58,6 +61,7 @@ export class Player implements Mobile {
     this.id = props.id;
     this.name = props.name;
     this.appearance = props.appearance;
+    this.skills = new SkillSet(props.skills ?? STARTING_SKILLS);
     this._position = props.position;
     this._direction = props.direction;
   }

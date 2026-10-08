@@ -70,7 +70,7 @@ describe('GameApplication', () => {
       ctx.join('Ana');
       expect(ctx.app.join({ type: 'join', name: 'ana', appearance: DEFAULT_APPEARANCE })).toEqual({
         ok: false,
-        reason: 'Ese nombre ya está en uso.',
+        reason: 'Ese personaje ya está en el mundo.',
       });
       expect(ctx.app.join({ type: 'join', name: 'x', appearance: DEFAULT_APPEARANCE }).ok).toBe(
         false,

@@ -4,7 +4,15 @@ import type { World } from '../domain/world';
 import { GameLoop } from './game-loop';
 import { ItemNotifications } from './item-notifications';
 import { MobileNotifications } from './mobile-notifications';
-import type { Clock, IdGenerator, Notifier, RandomSource } from './ports';
+import { CharacterPersistence } from './character-persistence';
+import type {
+  CharacterStore,
+  Clock,
+  IdGenerator,
+  Notifier,
+  PasswordHasher,
+  RandomSource,
+} from './ports';
 import { SocialNotifications } from './social-notifications';
 import { Attack } from './use-cases/attack';
 import { CastSpell } from './use-cases/cast-spell';
@@ -24,6 +32,10 @@ export interface GameApplicationDeps {
   readonly ids: IdGenerator;
   readonly random: RandomSource;
   readonly notifier: Notifier;
+  /** Dónde guardar los personajes; sin almacén no se guarda nada. */
+  readonly characters?: CharacterStore;
+  /** Con hasher, cada personaje tiene contraseña (servidor en línea). */
+  readonly passwords?: PasswordHasher;
 }
 
 /**
@@ -45,14 +57,34 @@ export class GameApplication {
   private readonly loop: GameLoop;
   private readonly mobiles: MobileNotifications;
   private readonly world: World;
+  private readonly persistence: CharacterPersistence;
 
-  constructor({ world, worldClock, clock, ids, random, notifier }: GameApplicationDeps) {
+  constructor({
+    world,
+    worldClock,
+    clock,
+    ids,
+    random,
+    notifier,
+    characters,
+    passwords,
+  }: GameApplicationDeps) {
     this.world = world;
+    this.persistence = new CharacterPersistence(world, characters, passwords);
     const notifications = new ItemNotifications(world, notifier);
     this.mobiles = new MobileNotifications(world, notifier);
     this.social = new SocialNotifications(world, clock, this.mobiles, notifier);
     this.socialActions = new SocialActions(world, clock, this.social);
-    this.joinWorld = new JoinWorld(world, worldClock, clock, ids, random, notifier, notifications);
+    this.joinWorld = new JoinWorld(
+      world,
+      worldClock,
+      clock,
+      ids,
+      random,
+      notifier,
+      notifications,
+      this.persistence,
+    );
     this.leaveWorld = new LeaveWorld(world, notifier);
     this.movePlayer = new MovePlayer(world, clock, notifier, notifications, this.mobiles);
     this.sendChat = new SendChat(world, notifier);
@@ -83,10 +115,20 @@ export class GameApplication {
   /** Avanza el mundo: criaturas, golpes, regeneración. La infraestructura lo llama seguido. */
   tick(now: number): void {
     this.loop.tick(now);
+    this.persistence.autosave(now);
+  }
+
+  /** Guarda a todos los conectados (por ejemplo, antes de apagar el servidor). */
+  saveAll(): void {
+    this.persistence.saveAll();
   }
 
   join(message: Extract<ClientMessage, { type: 'join' }>): JoinWorldResult {
-    return this.joinWorld.execute({ name: message.name, appearance: message.appearance });
+    return this.joinWorld.execute({
+      name: message.name,
+      appearance: message.appearance,
+      password: message.password,
+    });
   }
 
   /** Llamar después de asociar la conexión al jugador recién creado. */
@@ -152,7 +194,10 @@ export class GameApplication {
 
   leave(playerId: EntityId): void {
     const player = this.world.get(playerId);
-    if (player) this.socialActions.disconnect(player);
+    if (player) {
+      this.socialActions.disconnect(player);
+      this.persistence.release(player);
+    }
     this.leaveWorld.execute(playerId);
   }
 }
