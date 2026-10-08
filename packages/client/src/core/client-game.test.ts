@@ -25,6 +25,8 @@ function snapshot(id: string, x: number, y: number): MobileSnapshot {
     health: 1,
     dead: false,
     npc: null,
+    notoriety: id === 'rata' ? 'murderer' : 'innocent',
+    guildTag: null,
   };
 }
 
@@ -267,8 +269,8 @@ describe('ClientGame', () => {
     it('muestra el texto sobre la cabeza y en el registro', () => {
       const log: LogEntry[] = [];
       game.on('log', (entry) => log.push(entry));
-      game.apply({ type: 'chat', id: 'bruno', name: 'BRUNO', text: 'Hail!' });
-      expect(log).toEqual([{ kind: 'chat', author: 'BRUNO', text: 'Hail!' }]);
+      game.apply({ type: 'chat', id: 'bruno', name: 'BRUNO', text: 'Hail!', channel: 'say' });
+      expect(log).toEqual([{ kind: 'chat', author: 'BRUNO', text: 'Hail!', channel: 'say' }]);
       const bruno = [...game.allEntities()].find((e) => e.id === 'bruno');
       expect(bruno?.overheadTexts.map((t) => t.text)).toEqual(['Hail!']);
 
@@ -281,6 +283,50 @@ describe('ClientGame', () => {
       game.say('   ');
       game.say(' hola ');
       expect(sent).toEqual([{ type: 'chat', text: 'hola' }]);
+    });
+
+    it('los mensajes al grupo no aparecen sobre la cabeza', () => {
+      game.apply({ type: 'chat', id: 'bruno', name: 'BRUNO', text: 'psst', channel: 'party' });
+      const bruno = [...game.allEntities()].find((e) => e.id === 'bruno');
+      expect(bruno?.overheadTexts).toHaveLength(0);
+    });
+
+    it('traduce comandos y responde la invitación pendiente', () => {
+      game.say('/g vamos');
+      game.say('/invitar Bruno');
+      game.apply({
+        type: 'social',
+        party: null,
+        guild: null,
+        invites: { party: null, guild: 'Bruno' },
+        fame: 0,
+        karma: 0,
+        murders: 0,
+        notoriety: 'innocent',
+      });
+      game.say('/aceptar');
+      expect(sent).toEqual([
+        { type: 'chat', text: 'vamos', channel: 'party' },
+        { type: 'social', command: 'party-invite', name: 'Bruno' },
+        { type: 'social', command: 'guild-accept' },
+      ]);
+    });
+  });
+
+  describe('combate entre jugadores', () => {
+    it('solo se ataca a otras personas en modo guerra', () => {
+      game.attack('bruno');
+      expect(sent).toEqual([]);
+      game.toggleWarMode();
+      game.attack('bruno');
+      expect(sent).toEqual([{ type: 'attack', targetId: 'bruno' }]);
+    });
+
+    it('actualiza la reputación y el gremio de quien se ve', () => {
+      game.apply({ type: 'mobileStatus', id: 'bruno', notoriety: 'criminal', guildTag: 'FNX' });
+      const bruno = [...game.allEntities()].find((e) => e.id === 'bruno');
+      expect(bruno?.notoriety).toBe('criminal');
+      expect(bruno?.guildTag).toBe('FNX');
     });
   });
 });

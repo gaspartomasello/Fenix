@@ -3,6 +3,7 @@ import type { LogEntry } from '../core/client-game';
 import { el } from './dom';
 
 const MAX_LINES = 60;
+const CHANNEL_LABELS = { party: '[Grupo] ', guild: '[Gremio] ' } as const;
 
 /** Registro de mensajes y campo para hablar. Enter abre/envía, Escape cierra. */
 export class ChatPanel {
@@ -33,6 +34,8 @@ export class ChatPanel {
       (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
+          // Que el atajo global de Enter no vuelva a abrir el campo recién enviado.
+          e.stopPropagation();
           const text = this.input.value.trim();
           if (text) this.onSay(text);
           this.input.value = '';
@@ -57,7 +60,12 @@ export class ChatPanel {
   }
 
   append(entry: LogEntry): void {
-    const line = el('li', { className: `chat-line chat-line--${entry.kind}` });
+    const channel = entry.channel && entry.channel !== 'say' ? entry.channel : null;
+    const line = el('li', {
+      className: `chat-line chat-line--${channel ?? entry.kind}`,
+    });
+    if (channel)
+      line.append(el('span', { className: 'chat-channel', text: CHANNEL_LABELS[channel] }));
     if (entry.author)
       line.append(el('span', { className: 'chat-author', text: `${entry.author}: ` }));
     line.append(document.createTextNode(entry.text));

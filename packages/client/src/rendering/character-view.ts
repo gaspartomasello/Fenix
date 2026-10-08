@@ -5,13 +5,19 @@ import {
   type CharacterFrame,
 } from '@fenix/art';
 import { Container, Graphics, Sprite, Text } from 'pixi.js';
+import type { Notoriety } from '@fenix/shared';
 import { COMBAT_TEXT_MS, type CombatText, type Entity } from '../core/entity';
 import { characterDepth } from './depth';
 import { ART_SCALE, tileToScreen } from './iso';
 import type { TextureCache } from './texture-cache';
 
 const NAME_COLOR_SELF = 0xf6d36b;
-const NAME_COLOR_PLAYER = 0x8fbfff;
+/** Personas según su reputación: azul inocente, gris criminal, rojo asesino. */
+const NAME_COLOR_NOTORIETY: Readonly<Record<Notoriety, number>> = {
+  innocent: 0x8fbfff,
+  criminal: 0xb4b4b4,
+  murderer: 0xff5a4a,
+};
 /** Gris, como las criaturas atacables de UO. */
 const NAME_COLOR_CREATURE = 0xd0c8b8;
 /** Amarillo suave para los personajes del pueblo. */
@@ -45,6 +51,7 @@ export class CharacterView {
   private readonly combatTexts = new Container();
   private shownOverhead = '';
   private shownHealth = -1;
+  private shownName = '';
   private readonly combatLabels = new Map<CombatText, Text>();
 
   constructor(
@@ -58,13 +65,6 @@ export class CharacterView {
     this.sprite.scale.set(ART_SCALE);
     this.targetRing.visible = false;
 
-    const nameColor = isSelf
-      ? NAME_COLOR_SELF
-      : entity.npc
-        ? NAME_COLOR_NPC
-        : entity.body === 'human'
-          ? NAME_COLOR_PLAYER
-          : NAME_COLOR_CREATURE;
     this.nameLabel = new Text({
       text: entity.name,
       resolution: TEXT_RESOLUTION,
@@ -72,10 +72,11 @@ export class CharacterView {
         fontFamily: 'Georgia, serif',
         fontSize: 13,
         fontWeight: 'bold',
-        fill: nameColor,
+        fill: NAME_COLOR_CREATURE,
         stroke: { color: 0x000000, width: 3 },
       },
     });
+    this.syncName();
     this.nameLabel.anchor.set(0.5, 1);
     this.nameLabel.position.set(0, -SPRITE_HEIGHT - 8);
     this.healthBar.position.set(-HEALTH_BAR_WIDTH / 2, -SPRITE_HEIGHT - 6);
@@ -110,6 +111,11 @@ export class CharacterView {
     return this.entity.npc !== null;
   }
 
+  /** Otra persona viva (para atacarla en modo guerra). */
+  get isOtherLivingPlayer(): boolean {
+    return !this.isSelf && this.entity.isPlayer && !this.entity.dead;
+  }
+
   update(now: number, state: CharacterViewState): void {
     const position = this.entity.renderPosition(now);
     const lunge = this.entity.lungeOffset(now);
@@ -132,12 +138,31 @@ export class CharacterView {
 
     this.targetRing.visible = state.targeted && !this.entity.dead;
     this.syncHealthBar(state.targeted);
+    this.syncName();
     this.syncOverhead();
     this.syncCombatTexts(now);
   }
 
   destroy(): void {
     this.container.destroy({ children: true });
+  }
+
+  /** Nombre con las siglas del gremio, coloreado según la reputación. */
+  private syncName(): void {
+    const { entity } = this;
+    const text = entity.guildTag ? `${entity.name} [${entity.guildTag}]` : entity.name;
+    const color = entity.npc
+      ? NAME_COLOR_NPC
+      : !entity.isPlayer
+        ? NAME_COLOR_CREATURE
+        : this.isSelf && entity.notoriety === 'innocent'
+          ? NAME_COLOR_SELF
+          : NAME_COLOR_NOTORIETY[entity.notoriety];
+    const key = `${text}|${color}`;
+    if (key === this.shownName) return;
+    this.shownName = key;
+    this.nameLabel.text = text;
+    this.nameLabel.style.fill = color;
   }
 
   /** Fantasma (jugador muerto): translúcido y azulado. Criatura muerta: se desvanece. */

@@ -3,8 +3,9 @@ import type { GameRenderer } from '../rendering/game-renderer';
 import type { WorldTooltip } from '../ui/world-tooltip';
 
 /**
- * Pelear desde el mundo: clic (o toque) sobre una criatura para atacarla,
- * Escape para dejar de atacar, y su nombre al pasar el mouse.
+ * Pelear desde el mundo: clic (o toque) sobre una criatura para atacarla
+ * (o sobre otra persona, en modo guerra), Escape para dejar de atacar, y su
+ * nombre al pasar el mouse.
  */
 export class WorldCombat {
   private readonly abort = new AbortController();
@@ -47,9 +48,16 @@ export class WorldCombat {
     picking?.onCancel();
   }
 
-  /** ¿Hay una criatura bajo este punto del canvas? */
-  hasCreatureAt(point: { x: number; y: number }): boolean {
-    return this.renderer.creatureAt(point) !== null;
+  /** ¿Hay algo atacable bajo este punto del canvas? */
+  hasTargetAt(point: { x: number; y: number }): boolean {
+    return this.targetAt(point) !== null;
+  }
+
+  /** Criatura bajo el punto; en modo guerra (y sin elegir hechizo) también personas. */
+  private targetAt(point: { x: number; y: number }): string | null {
+    const creature = this.renderer.creatureAt(point);
+    if (creature || this.picking || !this.game.warMode) return creature;
+    return this.renderer.playerAt(point);
   }
 
   destroy(): void {
@@ -58,7 +66,7 @@ export class WorldCombat {
 
   private onPointerDown(e: PointerEvent): void {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    const id = this.renderer.creatureAt(this.local(e));
+    const id = this.targetAt(this.local(e));
     if (!id) return;
     // Atacar tiene prioridad sobre agarrar un objeto que esté debajo.
     e.stopImmediatePropagation();
@@ -74,9 +82,9 @@ export class WorldCombat {
 
   private onHover(e: PointerEvent): void {
     if (e.pointerType !== 'mouse' || e.buttons !== 0) return;
-    const id = this.renderer.creatureAt(this.local(e));
+    const id = this.targetAt(this.local(e));
     if (!id) return;
-    const creature = [...this.game.allEntities()].find((entity) => entity.id === id);
+    const creature = this.game.entity(id);
     const action = this.picking ? 'clic para elegir' : 'clic para atacar';
     if (creature) this.tooltip.show(`${creature.name} · ${action}`, e.clientX, e.clientY);
   }
