@@ -43,7 +43,7 @@ export interface ItemChanges {
 
 export type ItemResult = { ok: true; changes: ItemChanges } | { ok: false; reason: string };
 
-const emptyChanges = (): ItemChanges => ({
+export const emptyChanges = (): ItemChanges => ({
   groundRemoved: [],
   groundAdded: [],
   inventories: new Set(),
@@ -94,6 +94,33 @@ export class Items {
       if (item.location.type === 'equipment') look[item.location.slot] = item.kind;
     }
     return look;
+  }
+
+  /** Cuántas unidades de un tipo tiene alguien en la mochila. */
+  countInBackpack(ownerId: EntityId, kind: ItemKind): number {
+    return this.backpackOf(ownerId)
+      .filter((i) => i.kind === kind)
+      .reduce((sum, i) => sum + i.amount, 0);
+  }
+
+  /** Gasta unidades de la mochila (reactivos, por ejemplo). Devuelve false si no alcanzan. */
+  consumeFromBackpack(
+    ownerId: EntityId,
+    kind: ItemKind,
+    amount: number,
+    changes: ItemChanges,
+  ): boolean {
+    if (this.countInBackpack(ownerId, kind) < amount) return false;
+    let left = amount;
+    for (const item of this.backpackOf(ownerId).filter((i) => i.kind === kind)) {
+      const used = Math.min(left, item.amount);
+      item.amount -= used;
+      left -= used;
+      if (item.amount <= 0) this.byId.delete(item.id);
+      if (left === 0) break;
+    }
+    changes.inventories.add(ownerId);
+    return true;
   }
 
   /** Borra todo lo que lleva un jugador (todavía no hay persistencia). */
@@ -148,6 +175,9 @@ export class Items {
         if (item.location.type === 'equipment')
           return this.putInBackpack(actor.id, item, undefined, changes);
         return this.equip(actor.id, item, definition.slot ?? 'rightHand', changes);
+      case 'spellbook':
+        // El libro se abre en el cliente; el servidor no tiene nada que hacer.
+        return { ok: true, changes };
       case 'none': {
         const total = this.backpackOf(actor.id)
           .filter((i) => i.kind === item.kind)

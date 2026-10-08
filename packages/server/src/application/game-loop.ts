@@ -1,8 +1,17 @@
-import { describeItem, step, tileDistance, type Position } from '@fenix/shared';
+import {
+  REGEN_INTERVAL_MS,
+  SPELLS,
+  describeItem,
+  step,
+  tileDistance,
+  type Position,
+} from '@fenix/shared';
 import { trySwing, type SwingResult } from '../domain/combat/combat';
 import { CORPSE_MS, RESPAWN_MS, type Creature } from '../domain/creatures/creature';
 import { canMoveTo, chooseStep, updateTarget } from '../domain/creatures/creature-ai';
 import { rollLoot } from '../domain/creatures/loot';
+import { resolveCast } from '../domain/magic/spellcasting';
+import type { Mobile } from '../domain/mobile';
 import { Player } from '../domain/player';
 import type { World } from '../domain/world';
 import type { ItemNotifications } from './item-notifications';
@@ -15,9 +24,8 @@ export const SHRINE_RANGE = 2;
 export const RESURRECT_HEALTH = 0.5;
 
 /**
- * El pulso del mundo: cada tick hace actuar a las criaturas, resuelve los
- * golpes automáticos de los jugadores, regenera vitales y resucita a los
- * fantasmas que llegan al santuario.
+ * El pulso del mundo: cada tick hace actuar a las criaturas, resuelve golpes
+ * y hechizos, regenera vitales y resucita a los fantasmas que llegan al santuario.
  */
 export class GameLoop {
   private readonly shrines: readonly Position[];
@@ -38,11 +46,15 @@ export class GameLoop {
     for (const creature of this.world.allCreatures()) this.tickCreature(creature, now);
   }
 
+  private readonly roll = (): number => this.random.next();
+
   private tickPlayer(player: Player, now: number): void {
     if (player.combat.isDead) {
       this.tryResurrect(player, now);
       return;
     }
+    if (player.pendingCast && now >= player.pendingCast.resolveAt) this.finishCast(player, now);
+
     const targetId = player.combat.targetId;
     if (targetId) {
       const target = this.world.getMobile(targetId);
@@ -50,13 +62,49 @@ export class GameLoop {
         player.combat.targetId = null;
         this.mobiles.sendTarget(player);
       } else {
-        const result = trySwing(player, target, this.world, now, () => this.random.next());
-        if (result) this.resolve(result, now);
+        const result = trySwing(player, target, this.world, now, this.roll);
+        if (result) this.resolveSwing(result, now);
       }
     }
-    if (player.combat.regenerate(now)) {
+
+    // Meditación: hasta 3 veces más rápido el maná con la habilidad al máximo.
+    const meditation = player.skills.get('meditation');
+    const manaInterval = REGEN_INTERVAL_MS.mana * (1 - meditation / 1500);
+    const regen = player.combat.regenerate(now, manaInterval);
+    if (regen.hits || regen.mana || regen.stamina) {
       this.mobiles.sendVitals(player);
-      this.mobiles.broadcastHealth(player);
+      if (regen.hits) this.mobiles.broadcastHealth(player);
+    }
+    if (regen.mana && player.skills.tryGain('meditation', this.roll)) {
+      this.mobiles.skillGains([{ player, skill: 'meditation' }]);
+    }
+  }
+
+  private finishCast(player: Player, now: number): void {
+    const spellKey = player.pendingCast?.spell;
+    const outcome = resolveCast(player, this.world, this.roll);
+    if (!outcome || !spellKey) return;
+    const spell = SPELLS[spellKey];
+    if (player.skills.tryGain('magery', this.roll))
+      this.mobiles.skillGains([{ player, skill: 'magery' }]);
+
+    switch (outcome.kind) {
+      case 'lost-target':
+        this.notifier.send(player.id, {
+          type: 'system',
+          text: 'El objetivo ya no está al alcance.',
+        });
+        return;
+      case 'fizzled':
+        this.notifier.send(player.id, { type: 'system', text: `${spell.name}: el hechizo falló.` });
+        return;
+      case 'success': {
+        const { target, amount, killed } = outcome;
+        this.mobiles.spellEffect(player, target, spellKey, amount);
+        this.mobiles.broadcastHealth(target);
+        if (target instanceof Player) this.mobiles.sendVitals(target);
+        if (killed) this.handleKill(player, target, now);
+      }
     }
   }
 
@@ -79,11 +127,11 @@ export class GameLoop {
 
     const target = updateTarget(creature, this.world);
     if (target) {
-      const result = trySwing(creature, target, this.world, now, () => this.random.next());
-      if (result) this.resolve(result, now);
+      const result = trySwing(creature, target, this.world, now, this.roll);
+      if (result) this.resolveSwing(result, now);
     }
     if (now >= creature.nextMoveAt) {
-      const direction = chooseStep(creature, target, this.world, () => this.random.next());
+      const direction = chooseStep(creature, target, this.world, this.roll);
       creature.nextMoveAt =
         now + creature.definition.moveMs * (direction === null && !target ? 3 : 1);
       if (direction !== null && canMoveTo(creature, direction, this.world)) {
@@ -93,38 +141,45 @@ export class GameLoop {
         this.mobiles.moved(creature, watchersBefore);
       }
     }
-    if (creature.combat.regenerate(now) && !target) this.mobiles.broadcastHealth(creature);
+    // Las criaturas solo se curan cuando dejan de pelear.
+    if (!target && creature.combat.regenerate(now).hits) this.mobiles.broadcastHealth(creature);
   }
 
-  private resolve(result: SwingResult, now: number): void {
+  private resolveSwing(result: SwingResult, now: number): void {
     this.mobiles.swing(result);
-    if (!result.killed) return;
-    const { attacker, target } = result;
+    if (result.killed) this.handleKill(result.attacker, result.target, now);
+  }
 
-    if (target instanceof Player) {
-      this.mobiles.broadcastHealth(target);
-      this.notifier.send(target.id, {
+  /** Muerte de un jugador (queda fantasma) o de una criatura (botín y reaparición). */
+  private handleKill(killer: Mobile, victim: Mobile, now: number): void {
+    if (victim instanceof Player) {
+      victim.pendingCast = null;
+      this.mobiles.broadcastHealth(victim);
+      this.mobiles.sendVitals(victim);
+      this.notifier.send(victim.id, {
         type: 'system',
         text: 'Moriste. Caminá hasta el santuario de Puerto Ceniza para volver a la vida.',
       });
       return;
     }
 
-    const creature = target as Creature;
+    const creature = victim as Creature;
     creature.despawnAt = now + CORPSE_MS;
-    if (attacker instanceof Player) {
-      this.notifier.send(attacker.id, {
+    if (killer instanceof Player) {
+      this.notifier.send(killer.id, {
         type: 'system',
         text: `Mataste ${creature.definition.article} ${creature.name}.`,
       });
-      attacker.combat.targetId = null;
-      this.mobiles.sendTarget(attacker);
+      if (killer.combat.targetId === creature.id) {
+        killer.combat.targetId = null;
+        this.mobiles.sendTarget(killer);
+      }
     }
     this.dropLoot(creature);
   }
 
   private dropLoot(creature: Creature): void {
-    const drops = rollLoot(creature.definition, () => this.random.next());
+    const drops = rollLoot(creature.definition, this.roll);
     for (const drop of drops) {
       const item = this.world.items.add(this.ids.next(), drop.kind, drop.amount, {
         type: 'ground',
@@ -136,13 +191,12 @@ export class GameLoop {
       );
     }
     const names = drops.map((d) => describeItem(d.kind, d.amount));
-    if (names.length > 0) {
-      for (const id of this.mobiles.watchers(creature)) {
-        this.notifier.send(id, {
-          type: 'system',
-          text: `${capitalize(creature.definition.article)} ${creature.name} dejó: ${names.join(', ')}.`,
-        });
-      }
+    if (names.length === 0) return;
+    for (const id of this.mobiles.watchers(creature)) {
+      this.notifier.send(id, {
+        type: 'system',
+        text: `${capitalize(creature.definition.article)} ${creature.name} dejó: ${names.join(', ')}.`,
+      });
     }
   }
 

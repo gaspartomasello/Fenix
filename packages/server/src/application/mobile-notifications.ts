@@ -1,5 +1,5 @@
-import type { EntityId } from '@fenix/shared';
-import type { SwingResult } from '../domain/combat/combat';
+import { SKILL_NAMES, formatSkill, type EntityId, type SpellKey } from '@fenix/shared';
+import type { SkillGain, SwingResult } from '../domain/combat/combat';
 import type { Mobile } from '../domain/mobile';
 import { Player } from '../domain/player';
 import type { World } from '../domain/world';
@@ -33,18 +33,55 @@ export class MobileNotifications {
   }
 
   swing(result: SwingResult): void {
-    const { attacker, target, hit, damage } = result;
+    const { attacker, target, hit, blocked, damage } = result;
     this.notifier.sendMany(this.watchers(target), {
       type: 'swing',
       attackerId: attacker.id,
       targetId: target.id,
       hit,
+      blocked,
       damage,
     });
-    if (hit) {
+    this.skillGains(result.gains);
+    if (hit && !blocked) {
       this.broadcastHealth(target);
       if (target instanceof Player) this.sendVitals(target);
     }
+  }
+
+  sendSkills(player: Player): void {
+    this.notifier.send(player.id, { type: 'skills', values: player.skills.snapshot() });
+  }
+
+  /** Avisa cada habilidad que subió y manda la lista actualizada. */
+  skillGains(gains: readonly SkillGain[]): void {
+    const players = new Set<Player>();
+    for (const { player, skill } of gains) {
+      players.add(player);
+      this.notifier.send(player.id, {
+        type: 'system',
+        text: `Tu habilidad de ${SKILL_NAMES[skill]} subió a ${formatSkill(player.skills.get(skill))}.`,
+      });
+    }
+    players.forEach((player) => this.sendSkills(player));
+  }
+
+  castStart(caster: Mobile, spell: SpellKey): void {
+    this.notifier.sendMany(this.watchers(caster), {
+      type: 'castStart',
+      casterId: caster.id,
+      spell,
+    });
+  }
+
+  spellEffect(caster: Mobile, target: Mobile, spell: SpellKey, amount: number): void {
+    this.notifier.sendMany(this.watchers(target), {
+      type: 'spellEffect',
+      casterId: caster.id,
+      targetId: target.id,
+      spell,
+      amount,
+    });
   }
 
   sendTarget(player: Player): void {

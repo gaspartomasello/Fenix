@@ -6,6 +6,12 @@ import {
   type Vitals,
 } from '@fenix/shared';
 
+export interface RegenResult {
+  readonly hits: boolean;
+  readonly mana: boolean;
+  readonly stamina: boolean;
+}
+
 /**
  * Estado de combate de un personaje o criatura: vida, maná, energía, a quién
  * ataca y cuándo puede volver a golpear. Las reglas de daño viven en `combat.ts`.
@@ -77,24 +83,31 @@ export class Combatant {
     this.resetRegen(now);
   }
 
-  /** Recupera un punto de cada vital cuando le toca. Devuelve true si algo cambió. */
-  regenerate(now: number): boolean {
-    if (this.dead) return false;
-    let changed = false;
+  spendMana(amount: number): void {
+    this.vitals = { ...this.vitals, mana: Math.max(0, this.vitals.mana - amount) };
+  }
+
+  /**
+   * Recupera un punto de cada vital cuando le toca. `manaIntervalMs` permite
+   * acelerar el maná (Meditación). Devuelve qué vitales cambiaron.
+   */
+  regenerate(now: number, manaIntervalMs: number = REGEN_INTERVAL_MS.mana): RegenResult {
+    const result = { hits: false, mana: false, stamina: false };
+    if (this.dead) return result;
     const v = { ...this.vitals };
-    const tick = (key: 'hits' | 'mana' | 'stamina', max: number): void => {
+    const tick = (key: 'hits' | 'mana' | 'stamina', max: number, interval: number): void => {
       if (now < this.nextRegen[key]) return;
-      this.nextRegen[key] = now + REGEN_INTERVAL_MS[key];
+      this.nextRegen[key] = now + interval;
       if (v[key] < max) {
         v[key] += 1;
-        changed = true;
+        result[key] = true;
       }
     };
-    tick('hits', v.maxHits);
-    tick('mana', v.maxMana);
-    tick('stamina', v.maxStamina);
-    if (changed) this.vitals = v;
-    return changed;
+    tick('hits', v.maxHits, REGEN_INTERVAL_MS.hits);
+    tick('mana', v.maxMana, manaIntervalMs);
+    tick('stamina', v.maxStamina, REGEN_INTERVAL_MS.stamina);
+    if (result.hits || result.mana || result.stamina) this.vitals = v;
+    return result;
   }
 
   private resetRegen(now: number): void {

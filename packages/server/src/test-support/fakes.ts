@@ -20,8 +20,9 @@ export class SequentialIds implements IdGenerator {
 }
 
 export class FixedRandom implements RandomSource {
+  constructor(private readonly value = 0.5) {}
   next(): number {
-    return 0.5;
+    return this.value;
   }
 }
 

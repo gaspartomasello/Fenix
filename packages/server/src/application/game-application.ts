@@ -6,6 +6,7 @@ import { ItemNotifications } from './item-notifications';
 import { MobileNotifications } from './mobile-notifications';
 import type { Clock, IdGenerator, Notifier, RandomSource } from './ports';
 import { Attack } from './use-cases/attack';
+import { CastSpell } from './use-cases/cast-spell';
 import { MoveItem } from './use-cases/move-item';
 import { UseItem } from './use-cases/use-item';
 import { JoinWorld, type JoinWorldResult } from './use-cases/join-world';
@@ -34,6 +35,7 @@ export class GameApplication {
   private readonly moveItem: MoveItem;
   private readonly useItem: UseItem;
   private readonly attack: Attack;
+  private readonly castSpell: CastSpell;
   private readonly loop: GameLoop;
   private readonly mobiles: MobileNotifications;
   private readonly world: World;
@@ -49,6 +51,7 @@ export class GameApplication {
     this.moveItem = new MoveItem(world, notifications, notifier);
     this.useItem = new UseItem(world, notifications, notifier, this.mobiles);
     this.attack = new Attack(world, this.mobiles, notifier);
+    this.castSpell = new CastSpell(world, clock, this.mobiles, notifications, notifier);
     this.loop = new GameLoop(world, this.mobiles, notifications, notifier, ids, random);
   }
 
@@ -65,7 +68,10 @@ export class GameApplication {
   announceJoin(playerId: EntityId): void {
     this.joinWorld.announce(playerId);
     const player = this.world.get(playerId);
-    if (player) this.mobiles.sendVitals(player);
+    if (player) {
+      this.mobiles.sendVitals(player);
+      this.mobiles.sendSkills(player);
+    }
   }
 
   /** Maneja un mensaje de un jugador que ya está dentro del mundo. */
@@ -93,6 +99,9 @@ export class GameApplication {
         break;
       case 'stopAttack':
         this.attack.stop(playerId);
+        break;
+      case 'castSpell':
+        this.castSpell.execute(playerId, message.spell, message.targetId);
         break;
       case 'join':
         // Ya está en el mundo: se ignora un segundo ingreso.
