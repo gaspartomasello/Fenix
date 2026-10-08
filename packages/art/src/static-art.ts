@@ -328,6 +328,37 @@ const paintShrine: Painter = (img) => {
   for (const y of [41, 45]) img.fillRect(19, y, 6, 1, [110, 170, 240]);
 };
 
+const paintForge: Painter = (img) => {
+  const brick: Rgb = [140, 70, 50];
+  img.fillRect(11, 36, 22, 20, brick);
+  img.fillRect(11, 36, 2, 20, shade(brick, 1.2));
+  img.fillRect(31, 36, 2, 20, shade(brick, 0.7));
+  for (let y = 39; y < 56; y += 4) img.fillRect(11, y, 22, 1, shade(brick, 0.6));
+  // Boca con fuego.
+  img.fillRect(16, 44, 12, 8, [40, 20, 16]);
+  img.fillRect(17, 47, 10, 5, [255, 140, 40]);
+  img.fillRect(19, 48, 6, 3, [255, 220, 120]);
+  // Chimenea.
+  img.fillRect(18, 22, 8, 14, shade(brick, 0.9));
+  img.fillRect(17, 21, 10, 2, shade(brick, 1.1));
+};
+
+const paintAnvil: Painter = (img) => {
+  const iron: Rgb = [90, 94, 104];
+  img.fillRect(17, 48, 10, 8, [100, 70, 44]);
+  img.fillRect(19, 44, 6, 4, iron);
+  img.fillRect(13, 39, 18, 5, iron);
+  img.fillRect(13, 39, 18, 1, shade(iron, 1.4));
+  img.fillPolygon(
+    [
+      { x: 31, y: 39 },
+      { x: 36, y: 41 },
+      { x: 31, y: 44 },
+    ],
+    shade(iron, 0.85),
+  );
+};
+
 const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   oak: { paint: paintOak, outline: true, shadow: [14, 5] },
   pine: { paint: paintPine, outline: true, shadow: [11, 4] },
@@ -346,6 +377,8 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   lamp: { paint: paintLamp, outline: true, shadow: [4, 2] },
   sign: { paint: paintSign, outline: true, shadow: [6, 2] },
   shrine: { paint: paintShrine, outline: true, shadow: [11, 4] },
+  forge: { paint: paintForge, outline: true, shadow: [13, 4] },
+  anvil: { paint: paintAnvil, outline: true, shadow: [10, 3] },
 };
 
 function hashKind(kind: string): number {
