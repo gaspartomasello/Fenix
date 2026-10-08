@@ -134,8 +134,8 @@ export interface Build {
 }
 
 export const BUILDS: Readonly<Record<'male' | 'female', Build>> = {
-  male: { shoulder: 6.7, hip: 3.4, stature: 1 },
-  female: { shoulder: 6.1, hip: 3.7, stature: 0.95 },
+  male: { shoulder: 6.5, hip: 3.4, stature: 1 },
+  female: { shoulder: 5.7, hip: 3.7, stature: 0.95 },
 };
 
 const STAND: LegPose = { thigh: 0, knee: 0.04, spread: 0.03 };
@@ -417,7 +417,7 @@ export function humanoidRig(
     bend: side === 1 && armed ? 0.95 : 0.3,
   });
   const armFor = (side: 1 | -1, armPose: ArmPose) => {
-    const shoulder = chest.at([side * build.shoulder, 4.4 * k - side * tilt, -0.2]);
+    const shoulder = chest.at([side * build.shoulder, 4 * k - side * tilt, -0.2]);
     const elbow = add(
       shoulder,
       scale(chest.dir(boneDir(armPose.raise, armPose.spread, side)), UPPER_ARM * k),

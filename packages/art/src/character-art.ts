@@ -272,7 +272,30 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
     female ? [4, 3.4, 2.9] : [4.9, 3.6, 3.2],
     material,
   );
-  canvas.ellipsoid(chest.origin, chest.axes, female ? [5.4, 6, 3.5] : [5.9, 6.3, 3.8], material);
+  // Caja torácica amplia y, arriba, el pecho que se ensancha hacia los hombros.
+  canvas.ellipsoid(
+    chest.at([0, 0.4, 0]),
+    chest.axes,
+    female ? [5.3, 6.2, 3.6] : [6.2, 6.7, 4.1],
+    material,
+  );
+  canvas.ellipsoid(
+    chest.at([0, 2.9, 0.4]),
+    chest.axes,
+    female ? [5.6, 3, 3.4] : [6.6, 3.3, 3.9],
+    material,
+  );
+  // Trapecios: la pendiente del cuello a cada hombro, sobre las clavículas.
+  const shoulderSpan = Math.abs(rig.arms[1].shoulder[0] - rig.arms[-1].shoulder[0]) / 2;
+  for (const side of [1, -1] as const) {
+    canvas.limb(
+      chest.at([side * 1.3, 6.1, -0.7]),
+      chest.at([side * (shoulderSpan - 1.3), 4.5, -0.4]),
+      female ? 1.9 : 2.3,
+      female ? 2.2 : 2.6,
+      material,
+    );
+  }
   if (female && equipment.torso !== 'chainmail') {
     for (const side of [1, -1] as const) {
       canvas.sphere(chest.at([side * 2.1, 0.8, 2.4]), 2.2, material);
@@ -336,7 +359,7 @@ function drawArms(
   const thin = female ? 0.85 : 1;
   for (const side of [1, -1] as const) {
     const arm = rig.arms[side];
-    canvas.limb(arm.shoulder, arm.elbow, 2.5 * thin, 2.1 * thin, sleeve);
+    canvas.limb(arm.shoulder, arm.elbow, 2.75 * thin, 2.1 * thin, sleeve);
     canvas.limb(arm.elbow, arm.hand, 2.1 * thin, 1.8 * thin, bareForearms ? solid(p.skin) : sleeve);
     canvas.sphere(arm.hand, 1.8 * thin, solid(p.skin));
   }
