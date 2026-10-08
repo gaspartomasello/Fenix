@@ -93,6 +93,12 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       }
       break;
     }
+    case 'attack':
+      if (isId(data.targetId))
+        return { ok: true, message: { type: 'attack', targetId: data.targetId } };
+      break;
+    case 'stopAttack':
+      return { ok: true, message: { type: 'stopAttack' } };
     case 'useItem':
       if (isId(data.itemId)) return { ok: true, message: { type: 'useItem', itemId: data.itemId } };
       break;
@@ -103,15 +109,19 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
 const SERVER_TYPES: ReadonlySet<ServerMessageType> = new Set<ServerMessageType>([
   'welcome',
   'joinRejected',
-  'playerAppeared',
-  'playerDisappeared',
-  'playerMoved',
+  'mobileAppeared',
+  'mobileDisappeared',
+  'mobileMoved',
   'moveAck',
   'moveRejected',
   'chat',
   'groundItems',
   'inventory',
   'playerEquipment',
+  'vitals',
+  'mobileHealth',
+  'combatTarget',
+  'swing',
   'system',
 ]);
 
