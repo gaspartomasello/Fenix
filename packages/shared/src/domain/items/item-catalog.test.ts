@@ -15,7 +15,9 @@ describe('catálogo de objetos', () => {
   it('todo lo equipable tiene un lugar en el cuerpo', () => {
     for (const kind of ITEM_KINDS) {
       const definition = ITEMS[kind];
-      expect(definition.use === 'equip').toBe(definition.slot !== undefined);
+      // Las herramientas (hacha, pico) también se pueden equipar como arma.
+      if (definition.use === 'equip') expect(definition.slot).toBeDefined();
+      if (definition.slot === undefined) expect(definition.use).not.toBe('equip');
     }
   });
 
