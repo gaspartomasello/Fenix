@@ -9,6 +9,7 @@ let topZ = 10;
 export class GameWindow {
   readonly element: HTMLElement;
   readonly body: HTMLElement;
+  private readonly title: HTMLElement;
   private readonly abort = new AbortController();
 
   constructor(
@@ -21,10 +22,8 @@ export class GameWindow {
       text: '×',
       attrs: { type: 'button', 'aria-label': `Cerrar ${title}` },
     });
-    const bar = el('div', { className: 'window-bar' }, [
-      el('h2', { className: 'window-title', text: title }),
-      close,
-    ]);
+    this.title = el('h2', { className: 'window-title', text: title });
+    const bar = el('div', { className: 'window-bar' }, [this.title, close]);
     this.body = el('div', { className: 'window-body' });
     this.element = el(
       'section',
@@ -43,6 +42,10 @@ export class GameWindow {
       signal: this.abort.signal,
     });
     bar.addEventListener('pointerdown', (e) => this.startMove(e), { signal: this.abort.signal });
+  }
+
+  setTitle(title: string): void {
+    this.title.textContent = title;
   }
 
   get visible(): boolean {

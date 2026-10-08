@@ -5,6 +5,7 @@ import {
   type Direction,
   type EntityId,
   type EquipmentLook,
+  type NpcRole,
   type MobileSnapshot,
   type Position,
 } from '@fenix/shared';
@@ -63,6 +64,8 @@ export class Entity {
   private _overhead: OverheadText[] = [];
   private _equipment: EquipmentLook;
   readonly body: Body;
+  /** Oficio si es un personaje del pueblo. */
+  readonly npc: NpcRole | null;
   private _health: number;
   private _dead: boolean;
   private _combatTexts: CombatText[] = [];
@@ -76,6 +79,7 @@ export class Entity {
     this._direction = snapshot.direction;
     this._equipment = snapshot.equipment;
     this.body = snapshot.body;
+    this.npc = snapshot.npc;
     this._health = snapshot.health;
     this._dead = snapshot.dead;
   }

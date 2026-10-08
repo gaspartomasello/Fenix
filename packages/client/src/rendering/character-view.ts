@@ -14,6 +14,8 @@ const NAME_COLOR_SELF = 0xf6d36b;
 const NAME_COLOR_PLAYER = 0x8fbfff;
 /** Gris, como las criaturas atacables de UO. */
 const NAME_COLOR_CREATURE = 0xd0c8b8;
+/** Amarillo suave para los personajes del pueblo. */
+const NAME_COLOR_NPC = 0xf2dd8a;
 const SPRITE_HEIGHT = CHARACTER_FEET_Y * ART_SCALE;
 const HEALTH_BAR_WIDTH = 32;
 const COMBAT_TEXT_COLORS: Readonly<Record<CombatText['kind'], number>> = {
@@ -58,9 +60,11 @@ export class CharacterView {
 
     const nameColor = isSelf
       ? NAME_COLOR_SELF
-      : entity.body === 'human'
-        ? NAME_COLOR_PLAYER
-        : NAME_COLOR_CREATURE;
+      : entity.npc
+        ? NAME_COLOR_NPC
+        : entity.body === 'human'
+          ? NAME_COLOR_PLAYER
+          : NAME_COLOR_CREATURE;
     this.nameLabel = new Text({
       text: entity.name,
       resolution: TEXT_RESOLUTION,
@@ -100,6 +104,10 @@ export class CharacterView {
 
   get isAliveCreature(): boolean {
     return this.entity.body !== 'human' && !this.entity.dead;
+  }
+
+  get isNpc(): boolean {
+    return this.entity.npc !== null;
   }
 
   update(now: number, state: CharacterViewState): void {

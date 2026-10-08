@@ -12,6 +12,7 @@ import {
   type EquippedItemSnapshot,
   type GroundItemSnapshot,
   type ItemDestination,
+  type ItemKind,
   type MoveMode,
   type RegionData,
   type ServerMessage,
@@ -56,6 +57,7 @@ export interface ClientGameEvents extends Record<string, unknown> {
 export interface Inventory {
   readonly backpack: readonly BackpackItemSnapshot[];
   readonly equipment: readonly EquippedItemSnapshot[];
+  readonly bank: readonly BackpackItemSnapshot[];
 }
 
 /**
@@ -69,7 +71,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   private predictor: MovementPredictor | null = null;
   private time: { value: WorldTime; receivedAt: number } | null = null;
   private readonly ground = new Map<EntityId, GroundItemSnapshot>();
-  private _inventory: Inventory = { backpack: [], equipment: [] };
+  private _inventory: Inventory = { backpack: [], equipment: [], bank: [] };
   private _vitals: { vitals: Vitals; dead: boolean } | null = null;
   private _targetId: EntityId | null = null;
   private _skills: SkillValues | null = null;
@@ -124,13 +126,14 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     return (
       this.ground.get(itemId) ??
       this._inventory.backpack.find((i) => i.id === itemId) ??
+      this._inventory.bank.find((i) => i.id === itemId) ??
       this._inventory.equipment.find((i) => i.id === itemId)
     );
   }
 
   /** Jugadores (personas, no criaturas) a la vista, incluido el propio. */
   get visibleCount(): number {
-    return [...this.entities.values()].filter((e) => e.body === 'human').length;
+    return [...this.entities.values()].filter((e) => e.body === 'human' && e.npc === null).length;
   }
 
   /** Hora actual del mundo, extrapolada desde la que envió el servidor. */
@@ -182,6 +185,45 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     this.gateway.send(
       targetId ? { type: 'castSpell', spell, targetId } : { type: 'castSpell', spell },
     );
+  }
+
+  gather(toolId: EntityId, position: { x: number; y: number }): void {
+    if (this.self) this.gateway.send({ type: 'gather', toolId, position });
+  }
+
+  buy(vendorId: EntityId, kind: ItemKind, amount: number): void {
+    if (this.self) this.gateway.send({ type: 'buy', vendorId, kind, amount });
+  }
+
+  sell(vendorId: EntityId, itemId: EntityId): void {
+    if (this.self) this.gateway.send({ type: 'sell', vendorId, itemId });
+  }
+
+  craft(recipe: string): void {
+    if (this.self) this.gateway.send({ type: 'craft', recipe });
+  }
+
+  /** ¿Está el jugador a esta distancia (en tiles) o menos de alguien? */
+  isNear(id: EntityId, range: number): boolean {
+    const self = this.self;
+    const other = this.entities.get(id);
+    if (!self || !other) return false;
+    return (
+      Math.max(
+        Math.abs(self.position.x - other.position.x),
+        Math.abs(self.position.y - other.position.y),
+      ) <= range
+    );
+  }
+
+  /** Avisa algo solo en el registro propio (sin pasar por el servidor). */
+  notify(text: string): void {
+    this.emit('log', { kind: 'system', text });
+  }
+
+  /** Busca un personaje o criatura a la vista. */
+  entity(id: EntityId): Entity | undefined {
+    return this.entities.get(id);
   }
 
   stopAttack(): void {
@@ -255,7 +297,11 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this.emit('groundItemsChanged', { added: message.added, removed: message.removed });
         break;
       case 'inventory':
-        this._inventory = { backpack: message.backpack, equipment: message.equipment };
+        this._inventory = {
+          backpack: message.backpack,
+          equipment: message.equipment,
+          bank: message.bank,
+        };
         this.emit('inventoryChanged', this._inventory);
         break;
       case 'vitals':

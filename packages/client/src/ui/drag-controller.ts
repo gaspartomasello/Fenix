@@ -4,6 +4,7 @@ import { el } from './dom';
 /** Dónde se soltó lo que se estaba arrastrando. */
 export type DropTarget =
   | { readonly kind: 'backpack'; readonly position: { x: number; y: number } }
+  | { readonly kind: 'bank'; readonly position: { x: number; y: number } }
   | { readonly kind: 'slot'; readonly slot: EquipmentSlot }
   | { readonly kind: 'world'; readonly clientX: number; readonly clientY: number };
 
@@ -98,10 +99,11 @@ function resolveTarget(clientX: number, clientY: number): DropTarget | null {
   const zone = element?.closest<HTMLElement>('[data-drop]');
   if (!zone) return null;
   switch (zone.dataset.drop) {
-    case 'backpack': {
+    case 'backpack':
+    case 'bank': {
       const rect = zone.getBoundingClientRect();
       return {
-        kind: 'backpack',
+        kind: zone.dataset.drop,
         position: {
           x: Math.round(clientX - rect.left - ICON_HALF),
           y: Math.round(clientY - rect.top - ICON_HALF),

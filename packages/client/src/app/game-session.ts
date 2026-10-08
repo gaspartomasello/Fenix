@@ -15,11 +15,26 @@ import { SkillsWindow } from '../ui/skills-window';
 import { SpellbookWindow } from '../ui/spellbook-window';
 import { TargetingBanner } from '../ui/targeting-banner';
 import { VitalsPanel } from '../ui/vitals-panel';
+import { ITEMS, VENDORS, VENDOR_RANGE, type NpcRole } from '@fenix/shared';
+import type { ItemActions } from '../ui/backpack-window';
+import { BankWindow } from '../ui/bank-window';
+import { CraftingWindow } from '../ui/crafting-window';
+import { ShopWindow } from '../ui/shop-window';
+import { TilePicker } from './tile-picker';
 import { WorldCombat } from './world-combat';
+import { WorldNpcs } from './world-npcs';
 import { WorldItems } from './world-items';
 import { LoginScreen, type LoginRequest } from '../ui/login-screen';
 import { showOverlay } from '../ui/overlay';
 import { StatusBar } from '../ui/status-bar';
+
+/** Ventanas de la economía que otras partes de la sesión necesitan abrir o actualizar. */
+interface EconomyUi {
+  readonly crafting: CraftingWindow;
+  readonly setItemActions: (actions: ItemActions) => void;
+  readonly openNpc: (id: string, role: NpcRole) => void;
+  readonly renderInventory: () => void;
+}
 
 export interface GameSessionHosts {
   /** Contenedor del canvas del juego. */
@@ -89,17 +104,27 @@ export class GameSession {
     const renderer = await GameRenderer.create(this.hosts.game, this.game);
     const drag = new DragController(this.hosts.ui);
     const tooltip = new WorldTooltip();
-    // El combate se registra primero: un clic sobre una criatura ataca antes que agarrar un objeto.
+    // Orden de prioridad de un toque en el mundo: elegir lugar, personajes del pueblo,
+    // criaturas (atacar) y por último objetos del suelo.
+    const tilePicker = new TilePicker(renderer);
+    const economy = this.setUpEconomy(drag);
+    const worldNpcs = new WorldNpcs(this.game, renderer, tooltip, (id, role) =>
+      economy.openNpc(id, role),
+    );
     const worldCombat = new WorldCombat(this.game, renderer, tooltip);
     const worldItems = new WorldItems(this.game, renderer, drag, tooltip);
     const input = new InputController({
       surface: renderer.canvas,
       selfScreenPosition: () => renderer.selfScreenPosition(),
       onZoom: (delta) => renderer.stepZoom(delta),
-      canSteerFrom: (point) => !worldItems.hasItemAt(point) && !worldCombat.hasCreatureAt(point),
+      canSteerFrom: (point) =>
+        !tilePicker.isPicking &&
+        !worldItems.hasItemAt(point) &&
+        !worldCombat.hasCreatureAt(point) &&
+        !worldNpcs.hasNpcAt(point),
     });
     const spellbook = this.setUpMagic(worldCombat);
-    this.setUpInventory(drag, worldItems, tooltip, spellbook);
+    this.setUpInventory(drag, worldItems, tooltip, spellbook, economy, tilePicker);
     this.setUpVitals();
     const chat = new ChatPanel((text) => this.game.say(text));
     const status = new StatusBar();
@@ -128,6 +153,46 @@ export class GameSession {
       requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
+  }
+
+  /** Tienda, banco y herrería. */
+  private setUpEconomy(drag: DragController): EconomyUi {
+    const shop = new ShopWindow({
+      buy: (vendorId, kind, amount) => this.game.buy(vendorId, kind, amount),
+      sell: (vendorId, itemId) => this.game.sell(vendorId, itemId),
+    });
+    const crafting = new CraftingWindow((recipe) => this.game.craft(recipe));
+    let bank: BankWindow | null = null;
+    this.hosts.ui.append(shop.window.element, crafting.window.element);
+
+    const ui: EconomyUi = {
+      crafting,
+      setItemActions: (actions) => {
+        bank = new BankWindow(drag, actions);
+        this.hosts.ui.append(bank.window.element);
+      },
+      openNpc: (id, role) => {
+        if (!this.game.isNear(id, VENDOR_RANGE)) {
+          this.game.notify(
+            `Acercate a ${VENDORS[role].name} para ${role === 'banker' ? 'usar el banco' : 'comerciar'}.`,
+          );
+          return;
+        }
+        if (role === 'banker') {
+          bank?.render(this.game.inventory.bank);
+          bank?.window.show();
+        } else {
+          shop.open(id, role);
+          shop.update(this.game.inventory.backpack);
+        }
+      },
+      renderInventory: () => {
+        shop.update(this.game.inventory.backpack);
+        bank?.render(this.game.inventory.bank);
+      },
+    };
+    this.game.on('skillsChanged', (values) => crafting.render(values));
+    return ui;
   }
 
   /** Barras de vida, maná y energía, y el aviso de fantasma. */
@@ -204,18 +269,34 @@ export class GameSession {
     worldItems: WorldItems,
     tooltip: WorldTooltip,
     spellbook: SpellbookWindow,
+    economy: EconomyUi,
+    tilePicker: TilePicker,
   ): void {
     const self = this.game.self;
     if (!self) return;
-    // Doble clic sobre el libro de hechizos: se abre la ventana en vez de avisar al servidor.
+    const banner = new TargetingBanner();
+    this.hosts.ui.append(banner.element);
+    // Doble clic: algunos objetos abren ventanas o piden elegir un lugar en vez de avisar al servidor.
     const actions = {
       ...worldItems.actions,
       useItem: (itemId: string) => {
         const item = this.game.findItem(itemId);
-        if (item?.kind === 'spellbook') spellbook.window.show();
-        else worldItems.actions.useItem(itemId);
+        const use = item ? ITEMS[item.kind].use : 'none';
+        if (use === 'spellbook') spellbook.window.show();
+        else if (use === 'craft') economy.crafting.window.show();
+        else if (use === 'tool' && item) {
+          banner.show('Tocá un árbol o una roca al lado tuyo (Escape cancela).');
+          tilePicker.pick(
+            (tile) => {
+              banner.hide();
+              this.game.gather(itemId, tile);
+            },
+            () => banner.hide(),
+          );
+        } else worldItems.actions.useItem(itemId);
       },
     };
+    economy.setItemActions(actions);
     const backpack = new BackpackWindow(drag, actions);
     const equipment = new EquipmentWindow(drag, actions, self.appearance);
     const buttons = new HudButtons([
@@ -233,6 +314,7 @@ export class GameSession {
     const render = (): void => {
       backpack.render(this.game.inventory.backpack);
       equipment.render(this.game.inventory.equipment);
+      economy.renderInventory();
     };
     this.game.on('inventoryChanged', render);
     render();

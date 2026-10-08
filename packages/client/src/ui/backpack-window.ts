@@ -22,6 +22,8 @@ export function destinationFor(target: DropTarget, actions: ItemActions): ItemDe
   switch (target.kind) {
     case 'backpack':
       return { type: 'backpack', position: target.position };
+    case 'bank':
+      return { type: 'bank', position: target.position };
     case 'slot':
       return { type: 'equipment', slot: target.slot };
     case 'world':

@@ -24,6 +24,7 @@ function snapshot(id: string, x: number, y: number): MobileSnapshot {
     body: id === 'rata' ? 'rat' : 'human',
     health: 1,
     dead: false,
+    npc: null,
   };
 }
 
@@ -178,6 +179,7 @@ describe('ClientGame', () => {
         type: 'inventory',
         backpack: [{ id: 'g', kind: 'gold', amount: 50, position: { x: 0, y: 0 } }],
         equipment: [{ id: 'd', kind: 'dagger', amount: 1, slot: 'rightHand' }],
+        bank: [],
       });
       expect(changes).toEqual([1]);
       expect(game.findItem('d')).toMatchObject({ slot: 'rightHand' });

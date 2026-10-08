@@ -672,3 +672,93 @@ body {
     bottom: calc(130px + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* ── Economía ─────────────────────────────────────────────────────── */
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--color-panel-border);
+}
+
+.tab {
+  padding: 0.35rem 0.8rem;
+  font: inherit;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  cursor: pointer;
+}
+
+.tab[aria-selected='true'] {
+  color: var(--color-accent);
+  border-color: var(--color-panel-border);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.shop-greeting {
+  margin: 0;
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+.shop-gold {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-accent);
+}
+
+.shop-list {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  width: min(360px, calc(100vw - 48px));
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.shop-row {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.4rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius);
+}
+
+.shop-icon {
+  width: 44px;
+  height: 44px;
+  image-rendering: pixelated;
+}
+
+.shop-info {
+  display: grid;
+  min-width: 0;
+}
+
+.shop-price {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.shop-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.shop-amount {
+  width: 3.6rem;
+  padding: 0.3rem 0.4rem;
+}
+
+.shop-empty {
+  padding: 0.5rem;
+  color: var(--color-text-muted);
+}

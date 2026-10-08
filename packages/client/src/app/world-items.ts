@@ -68,7 +68,9 @@ export class WorldItems {
     const point = this.local(e);
     const item = this.renderer.groundItemAt(point);
     if (item) this.tooltip.show(describeItem(item.kind, item.amount), e.clientX, e.clientY);
-    else if (this.renderer.creatureAt(point) === null) this.tooltip.hide();
+    else if (this.renderer.creatureAt(point) === null && this.renderer.npcAt(point) === null) {
+      this.tooltip.hide();
+    }
   }
 
   private groundAt(clientX: number, clientY: number): ItemDestination {
