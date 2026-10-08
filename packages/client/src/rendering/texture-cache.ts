@@ -17,6 +17,7 @@ import {
   type Direction,
   type EquipmentLook,
   type ItemKind,
+  type NpcRole,
   type StaticKind,
   type Terrain,
 } from '@fenix/shared';
@@ -48,10 +49,21 @@ export class TextureCache {
     direction: Direction,
     frame: CharacterFrame,
     equipment: EquipmentLook,
+    role: NpcRole | null = null,
   ): Texture {
     const worn = EQUIPMENT_SLOTS.map((slot) => equipment[slot] ?? '').join(',');
-    const key = `c:${appearance.clothHue}:${appearance.skinTone}:${appearance.hairHue}:${direction}:${frame}:${worn}`;
-    return this.getOrCreate(key, () => drawCharacterFrame(appearance, direction, frame, equipment));
+    const look = [
+      appearance.clothHue,
+      appearance.skinTone,
+      appearance.hairHue,
+      appearance.hairStyle ?? '',
+      appearance.facialHair ?? '',
+      role ?? '',
+    ].join(':');
+    const key = `c:${look}:${direction}:${frame}:${worn}`;
+    return this.getOrCreate(key, () =>
+      drawCharacterFrame(appearance, direction, frame, equipment, role),
+    );
   }
 
   creature(kind: CreatureKind, direction: Direction, frame: CharacterFrame): Texture {

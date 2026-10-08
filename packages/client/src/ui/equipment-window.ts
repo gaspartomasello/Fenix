@@ -17,7 +17,7 @@ import type { DragController } from './drag-controller';
 import { GameWindow } from './game-window';
 import { itemIconUrl } from './item-icons';
 
-const PREVIEW_SCALE = 4;
+const PREVIEW_SCALE = 2;
 const LEFT_SLOTS: readonly EquipmentSlot[] = ['head', 'cloak', 'torso', 'legs'];
 const RIGHT_SLOTS: readonly EquipmentSlot[] = ['rightHand', 'leftHand', 'feet'];
 

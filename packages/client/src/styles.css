@@ -886,3 +886,19 @@ body {
   font-size: 0.8rem;
   color: var(--color-text-muted);
 }
+
+.option-chip {
+  padding: 0.25rem 0.55rem;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.option-chip[aria-pressed='true'] {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}

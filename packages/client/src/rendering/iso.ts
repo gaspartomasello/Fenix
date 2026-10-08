@@ -6,6 +6,8 @@ export const TILE_HALF = 22;
 
 /** Escala de pixel del arte generado (todo se dibuja a 1/2 y se agranda). */
 export const ART_SCALE = 2;
+/** Los personajes se dibujan con el doble de detalle y se muestran sin escalar. */
+export const CHARACTER_SCALE = 1;
 
 export interface ScreenPoint {
   readonly x: number;

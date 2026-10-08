@@ -1,6 +1,7 @@
 import {
   CHARACTER_ART_HEIGHT,
   CHARACTER_FEET_Y,
+  CHARACTER_HEAD_Y,
   WALK_FRAMES,
   type CharacterFrame,
 } from '@fenix/art';
@@ -8,7 +9,7 @@ import { Container, Graphics, Sprite, Text } from 'pixi.js';
 import type { Notoriety } from '@fenix/shared';
 import { COMBAT_TEXT_MS, type CombatText, type Entity } from '../core/entity';
 import { characterDepth } from './depth';
-import { ART_SCALE, tileToScreen } from './iso';
+import { CHARACTER_SCALE, tileToScreen } from './iso';
 import type { TextureCache } from './texture-cache';
 
 const NAME_COLOR_SELF = 0xf6d36b;
@@ -22,7 +23,8 @@ const NAME_COLOR_NOTORIETY: Readonly<Record<Notoriety, number>> = {
 const NAME_COLOR_CREATURE = 0xd0c8b8;
 /** Amarillo suave para los personajes del pueblo. */
 const NAME_COLOR_NPC = 0xf2dd8a;
-const SPRITE_HEIGHT = CHARACTER_FEET_Y * ART_SCALE;
+/** Altura de la cabeza sobre los pies, en pantalla. */
+const SPRITE_HEIGHT = (CHARACTER_FEET_Y - CHARACTER_HEAD_Y) * CHARACTER_SCALE;
 const HEALTH_BAR_WIDTH = 32;
 const COMBAT_TEXT_COLORS: Readonly<Record<CombatText['kind'], number>> = {
   'damage-taken': 0xff5a4a,
@@ -62,7 +64,7 @@ export class CharacterView {
     const shadow = new Graphics().ellipse(0, 0, 13, 6).fill({ color: 0x000000, alpha: 0.28 });
 
     this.sprite.anchor.set(0.5, CHARACTER_FEET_Y / CHARACTER_ART_HEIGHT);
-    this.sprite.scale.set(ART_SCALE);
+    this.sprite.scale.set(CHARACTER_SCALE);
     this.targetRing.visible = false;
 
     this.nameLabel = new Text({
@@ -132,6 +134,7 @@ export class CharacterView {
             this.entity.direction,
             frame,
             this.entity.equipment,
+            this.entity.npc,
           )
         : this.textures.creature(this.entity.body, this.entity.direction, frame);
     this.applyDeathLook();

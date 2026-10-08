@@ -2,6 +2,10 @@ import {
   CLOTH_HUES,
   DEFAULT_APPEARANCE,
   Direction,
+  FACIAL_HAIR,
+  FACIAL_HAIR_NAMES,
+  HAIR_STYLES,
+  HAIR_STYLE_NAMES,
   HAIR_HUES,
   NAME_MAX_LENGTH,
   PASSWORD_MAX_LENGTH,
@@ -27,7 +31,7 @@ export interface LoginScreenOptions {
   readonly onSubmit: (request: LoginRequest) => void;
 }
 
-const PREVIEW_SCALE = 4;
+const PREVIEW_SCALE = 2;
 const PREVIEW_DIRECTIONS = [
   Direction.SouthEast,
   Direction.East,
@@ -95,6 +99,8 @@ export class LoginScreen {
       this.swatchRow('Ropa', CLOTH_HUES, 'clothHue'),
       this.swatchRow('Piel', SKIN_TONES, 'skinTone'),
       this.swatchRow('Pelo', HAIR_HUES, 'hairHue'),
+      this.optionRow('Peinado', HAIR_STYLES, HAIR_STYLE_NAMES, 'hairStyle'),
+      this.optionRow('Barba', FACIAL_HAIR, FACIAL_HAIR_NAMES, 'facialHair'),
       this.errorText,
       this.submitButton,
     ]);
@@ -171,6 +177,33 @@ export class LoginScreen {
       button.addEventListener('click', () => {
         this.appearance = { ...this.appearance, [key]: color };
         buttons.forEach((b, i) => b.setAttribute('aria-pressed', String(colors[i] === color)));
+        this.drawPreview();
+      });
+      return button;
+    });
+    return el('div', { className: 'swatch-row' }, [
+      el('span', { className: 'swatch-label', text: label }),
+      el('div', { className: 'swatches', attrs: { role: 'group', 'aria-label': label } }, buttons),
+    ]);
+  }
+
+  /** Fila de opciones con nombre (peinado, barba). */
+  private optionRow<K extends 'hairStyle' | 'facialHair'>(
+    label: string,
+    options: readonly NonNullable<Appearance[K]>[],
+    names: Readonly<Record<NonNullable<Appearance[K]>, string>>,
+    key: K,
+  ): HTMLElement {
+    const current = (): Appearance[K] | undefined => this.appearance[key] ?? options[0];
+    const buttons = options.map((option) => {
+      const button = el('button', {
+        className: 'option-chip',
+        text: names[option],
+        attrs: { type: 'button', 'aria-pressed': String(current() === option) },
+      });
+      button.addEventListener('click', () => {
+        this.appearance = { ...this.appearance, [key]: option };
+        buttons.forEach((b, i) => b.setAttribute('aria-pressed', String(options[i] === option)));
         this.drawPreview();
       });
       return button;
