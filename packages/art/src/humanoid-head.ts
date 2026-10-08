@@ -83,7 +83,7 @@ export interface HeadLook {
   readonly hairStyle: HairStyle;
   readonly facialHair: FacialHair;
   readonly female: boolean;
-  readonly headgear: 'cap' | 'helmet' | 'wizard' | null;
+  readonly headgear: 'cap' | 'helmet' | 'plate-helm' | 'wizard' | null;
   readonly capColor: Ramp;
   readonly hatColor: Ramp;
 }
@@ -116,11 +116,13 @@ export function drawHumanHead(
   // Labios: más marcados en las mujeres.
   head.decal([0, -3, 4.3], [0, -0.2, 1], look.female ? LIPS : tone(look.skin, 0.15), 2, 1);
 
-  const underHat = look.headgear === 'cap' || look.headgear === 'helmet';
+  const underHat =
+    look.headgear === 'cap' || look.headgear === 'helmet' || look.headgear === 'plate-helm';
   drawHair(head, look.hair, look.hairStyle, underHat);
   drawFacialHair(head, look.hair, look.facialHair);
 
   if (look.headgear === 'helmet') drawHelmet(head);
+  else if (look.headgear === 'plate-helm') drawPlateHelm(head);
   else if (look.headgear === 'cap') drawCap(head, look.capColor);
   else if (look.headgear === 'wizard') drawWizardHat(head, look.hatColor);
 }
@@ -238,6 +240,14 @@ function drawHelmet(head: HeadParts): void {
     ),
   );
   head.limb([0, 3.4, 5], [0, -1.2, 4.9], 0.7, 0.6, metal(STEEL));
+}
+
+/** Yelmo cerrado: cubre toda la cabeza, con ranura para los ojos, respiraderos y cresta. */
+function drawPlateHelm(head: HeadParts): void {
+  head.ellipsoid([0, 0.4, 0.1], [5.1, 6.1, 5.6], metal(STEEL));
+  head.decal([0, 0.2, 5.6], [0, 0, 1], [20, 18, 22], 5, 1);
+  head.decal([0, -2.8, 5.4], [0, -0.2, 1], [40, 38, 44], 1, 2);
+  head.limb([0, 6.4, -4.4], [0, 6.6, 3.4], 0.6, 0.5, metal(STEEL));
 }
 
 function drawWizardHat(head: HeadParts, cloth: Ramp): void {
