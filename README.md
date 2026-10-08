@@ -57,10 +57,12 @@ Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña 
 - **Clic derecho sostenido** (o **tocar y mantener** en el celular): caminar hacia el cursor;
   lejos del personaje, correr.
 - **Enter**: hablar. **Escape**: cancelar.
-- **B**: mochila. **C**: ventana de personaje, como en UO: el personaje grande con lo que tiene
-  puesto, su nombre, título y botones a las demás ventanas (también con los botones de abajo).
-- **Arrastrar** un objeto: moverlo entre el suelo y la mochila. Soltarlo sobre el personaje de la
-  ventana de personaje lo equipa; arrastrarlo desde el personaje hacia afuera lo saca.
+- **B**: mochila. **C**: ventana de personaje, como en UO: casilleros con lo que tiene puesto a la
+  izquierda, el personaje grande y de frente, botones a las demás ventanas a la derecha y una placa
+  con nombre y título. **Doble clic sobre otra persona** (o alguien del pueblo): ver su ventana de
+  personaje, sin botones.
+- **Arrastrar** un objeto: moverlo entre el suelo y la mochila. Soltarlo sobre el personaje o en su
+  casillero de la ventana de personaje lo equipa; arrastrarlo desde ahí hacia afuera lo saca.
 - **Doble clic** (o doble toque): comer, beber, ponerse o sacarse algo; sobre un objeto del suelo,
   levantarlo.
 - **Clic** (o toque) sobre una criatura: atacarla. El personaje golpea solo mientras la tenga al
