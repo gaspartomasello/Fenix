@@ -1,5 +1,6 @@
 import { isAppearance } from '../domain/character/appearance';
 import { isEquipmentSlot } from '../domain/items/equipment';
+import { isSpellKey } from '../domain/magic/spell-catalog';
 import { isDirection } from '../domain/geometry/direction';
 import { isMoveMode } from '../domain/rules/movement';
 import type { Position } from '../domain/geometry/position';
@@ -99,6 +100,17 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       break;
     case 'stopAttack':
       return { ok: true, message: { type: 'stopAttack' } };
+    case 'castSpell':
+      if (!isSpellKey(data.spell)) break;
+      if (data.targetId === undefined)
+        return { ok: true, message: { type: 'castSpell', spell: data.spell } };
+      if (isId(data.targetId)) {
+        return {
+          ok: true,
+          message: { type: 'castSpell', spell: data.spell, targetId: data.targetId },
+        };
+      }
+      break;
     case 'useItem':
       if (isId(data.itemId)) return { ok: true, message: { type: 'useItem', itemId: data.itemId } };
       break;
@@ -122,6 +134,9 @@ const SERVER_TYPES: ReadonlySet<ServerMessageType> = new Set<ServerMessageType>(
   'mobileHealth',
   'combatTarget',
   'swing',
+  'skills',
+  'castStart',
+  'spellEffect',
   'system',
 ]);
 

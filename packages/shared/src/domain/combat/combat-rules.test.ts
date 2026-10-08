@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { effectiveMoveMode, hitChance, inMeleeRange, resolveAttack } from './combat-rules';
+import {
+  blockChance,
+  effectiveMoveMode,
+  hitChance,
+  inMeleeRange,
+  resolveAttack,
+} from './combat-rules';
 import { fullVitals } from './vitals';
 import { FISTS, armorOf, weaponOf } from './weapons';
 
@@ -8,6 +14,9 @@ const sequence = (...values: number[]) => {
   let i = 0;
   return () => values[i++ % values.length] ?? 0;
 };
+
+const attacker = { strength: 50, weapon: FISTS, skill: 500, tactics: 1000 };
+const defender = { armor: 0, skill: 500, parrying: 0 };
 
 describe('reglas de combate', () => {
   it('calcula los vitales según los atributos', () => {
@@ -21,41 +30,49 @@ describe('reglas de combate', () => {
     });
   });
 
-  it('usa el arma de la mano derecha o los puños, y suma la armadura', () => {
-    expect(weaponOf({}).name).toBe(FISTS.name);
+  it('usa el arma de la mano derecha o los puños, con su habilidad', () => {
+    expect(weaponOf({}).skill).toBe('wrestling');
+    expect(weaponOf({ rightHand: 'dagger' }).skill).toBe('fencing');
     expect(weaponOf({ rightHand: 'axe' }).name).toBe('hacha');
     expect(armorOf({ head: 'iron-helmet', torso: 'chainmail', leftHand: 'wooden-shield' })).toBe(
       23,
     );
   });
 
-  it('acota la probabilidad de acierto', () => {
-    expect(hitChance(40, 40)).toBeCloseTo(0.6);
-    expect(hitChance(200, 0)).toBe(0.9);
-    expect(hitChance(0, 200)).toBe(0.3);
+  it('el acierto depende de las habilidades (50 % a igual nivel)', () => {
+    expect(hitChance(500, 500)).toBeCloseTo(0.5);
+    expect(hitChance(1000, 0)).toBe(0.95);
+    expect(hitChance(0, 1000)).toBe(0.1);
+    expect(blockChance(1000)).toBe(0.25);
   });
 
-  it('un golpe fallado no hace daño; uno acertado hace al menos 1', () => {
-    const attacker = { strength: 50, dexterity: 40, weapon: FISTS };
-    expect(resolveAttack(attacker, { dexterity: 40, armor: 0 }, sequence(0.99))).toEqual({
+  it('falla, bloquea o pega según los dados', () => {
+    expect(resolveAttack(attacker, defender, sequence(0.99))).toEqual({
       hit: false,
+      blocked: false,
       damage: 0,
     });
-    // Acierta (0.1) y saca el daño máximo (0.99): 4 + 50/20 = 6.
-    expect(resolveAttack(attacker, { dexterity: 40, armor: 0 }, sequence(0.1, 0.99))).toEqual({
+    expect(resolveAttack(attacker, { ...defender, parrying: 1000 }, sequence(0.1, 0.1))).toEqual({
       hit: true,
+      blocked: true,
+      damage: 0,
+    });
+    // Acierta (0.1) y saca el daño máximo (0.99): (4 + 50/20) × 1,0 = 6.
+    expect(resolveAttack(attacker, defender, sequence(0.1, 0.99))).toEqual({
+      hit: true,
+      blocked: false,
       damage: 6,
     });
-    expect(resolveAttack(attacker, { dexterity: 40, armor: 1000 }, sequence(0.1, 0))).toEqual({
-      hit: true,
-      damage: 1,
-    });
+    // Con Tácticas en 0 se pega al 60 %.
+    expect(resolveAttack({ ...attacker, tactics: 0 }, defender, sequence(0.1, 0.99)).damage).toBe(
+      4,
+    );
+    expect(resolveAttack(attacker, { ...defender, armor: 1000 }, sequence(0.1, 0)).damage).toBe(1);
   });
 
   it('golpea a tiles vecinos y sin energía no se corre', () => {
     expect(inMeleeRange({ x: 0, y: 0 }, { x: 1, y: 1 })).toBe(true);
     expect(inMeleeRange({ x: 0, y: 0 }, { x: 2, y: 0 })).toBe(false);
     expect(effectiveMoveMode('run', 0)).toBe('walk');
-    expect(effectiveMoveMode('run', 5)).toBe('run');
   });
 });

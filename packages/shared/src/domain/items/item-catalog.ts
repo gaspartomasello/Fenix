@@ -16,11 +16,18 @@ export const ITEM_KINDS = [
   'cloak',
   'trousers',
   'boots',
+  'spellbook',
+  'black-pearl',
+  'garlic',
+  'ginseng',
+  'mandrake-root',
+  'spiders-silk',
+  'sulfurous-ash',
 ] as const;
 
 export type ItemKind = (typeof ITEM_KINDS)[number];
 
-export type ItemUse = 'eat' | 'drink' | 'equip' | 'none';
+export type ItemUse = 'eat' | 'drink' | 'equip' | 'spellbook' | 'none';
 
 export interface ItemDefinition {
   readonly kind: ItemKind;
@@ -170,6 +177,62 @@ export const ITEMS: Readonly<Record<ItemKind, ItemDefinition>> = {
     slot: 'feet',
     use: 'equip',
     color: 0x3a2a1c,
+  }),
+  spellbook: item({
+    kind: 'spellbook',
+    name: 'libro de hechizos',
+    plural: 'libros de hechizos',
+    article: 'un',
+    stackable: false,
+    use: 'spellbook',
+  }),
+  'black-pearl': item({
+    kind: 'black-pearl',
+    name: 'perla negra',
+    plural: 'perlas negras',
+    article: 'una',
+    stackable: true,
+    use: 'none',
+  }),
+  garlic: item({
+    kind: 'garlic',
+    name: 'diente de ajo',
+    plural: 'dientes de ajo',
+    article: 'un',
+    stackable: true,
+    use: 'none',
+  }),
+  ginseng: item({
+    kind: 'ginseng',
+    name: 'raíz de ginseng',
+    plural: 'raíces de ginseng',
+    article: 'una',
+    stackable: true,
+    use: 'none',
+  }),
+  'mandrake-root': item({
+    kind: 'mandrake-root',
+    name: 'raíz de mandrágora',
+    plural: 'raíces de mandrágora',
+    article: 'una',
+    stackable: true,
+    use: 'none',
+  }),
+  'spiders-silk': item({
+    kind: 'spiders-silk',
+    name: 'seda de araña',
+    plural: 'sedas de araña',
+    article: 'una',
+    stackable: true,
+    use: 'none',
+  }),
+  'sulfurous-ash': item({
+    kind: 'sulfurous-ash',
+    name: 'ceniza sulfurosa',
+    plural: 'cenizas sulfurosas',
+    article: 'una',
+    stackable: true,
+    use: 'none',
   }),
 };
 
