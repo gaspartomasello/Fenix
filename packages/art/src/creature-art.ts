@@ -1,54 +1,26 @@
-import { type CreatureKind, type Direction } from '@fenix/shared';
+import type { CreatureKind, Direction } from '@fenix/shared';
 import {
   CHARACTER_ART_HEIGHT,
   CHARACTER_ART_WIDTH,
-  CHARACTER_FEET_Y,
+  OUTLINE,
+  cameraFor,
   drawSkeletonFrame,
-  poseFor,
-  viewFor,
   type CharacterFrame,
-  type View,
 } from './character-art';
-import { PixelImage, shade, type Rgb } from './pixel-art';
-
-/** Cómo es un cuadrúpedo: tamaño y colores. */
-interface QuadrupedSpec {
-  /** Medio largo y medio alto del cuerpo. */
-  readonly length: number;
-  readonly height: number;
-  readonly headRadius: number;
-  readonly legLength: number;
-  readonly fur: Rgb;
-  readonly belly: Rgb;
-  readonly tail: Rgb;
-  readonly tailLength: number;
-  readonly eye: Rgb;
-}
-
-const QUADRUPEDS: Readonly<Record<'rat' | 'wolf', QuadrupedSpec>> = {
-  rat: {
-    length: 4.5,
-    height: 2.5,
-    headRadius: 2,
-    legLength: 2,
-    fur: [112, 92, 78],
-    belly: [160, 140, 124],
-    tail: [214, 150, 150],
-    tailLength: 6,
-    eye: [200, 30, 30],
-  },
-  wolf: {
-    length: 7,
-    height: 3.5,
-    headRadius: 3,
-    legLength: 4,
-    fur: [128, 128, 132],
-    belly: [176, 176, 180],
-    tail: [110, 110, 114],
-    tailLength: 5,
-    eye: [240, 200, 60],
-  },
-};
+import type { PixelImage, Rgb } from './pixel-art';
+import {
+  VolumeCanvas,
+  add,
+  axesAlong,
+  noise,
+  normalize,
+  ramp,
+  solid,
+  tone,
+  type Material,
+  type Ramp,
+  type Vec3,
+} from './volume';
 
 /** Dibuja un frame de una criatura, en el mismo lienzo que los personajes. */
 export function drawCreatureFrame(
@@ -57,106 +29,155 @@ export function drawCreatureFrame(
   frame: CharacterFrame,
 ): PixelImage {
   if (kind === 'skeleton') return drawSkeletonFrame(direction, frame);
-  const { view, mirror } = viewFor(direction);
-  const image = new PixelImage(CHARACTER_ART_WIDTH, CHARACTER_ART_HEIGHT);
-  drawQuadruped(image, QUADRUPEDS[kind], view, frame);
-  image.outline([27, 19, 14]);
-  return mirror ? image.mirrored() : image;
+  const zoom = kind === 'rat' ? 1.6 : 1.25;
+  const canvas = new VolumeCanvas(
+    CHARACTER_ART_WIDTH,
+    CHARACTER_ART_HEIGHT,
+    cameraFor(direction, zoom),
+  );
+  if (kind === 'wolf') drawWolf(canvas, frame);
+  else drawRat(canvas, frame);
+  return canvas.toImage(OUTLINE);
 }
 
 /**
- * Cuadrúpedo visto desde el ángulo de la vista: el cuerpo es una elipse cuyo
- * largo se acorta al mirar de frente o de espaldas; cabeza adelante, cola atrás.
+ * Patas en diagonal: delantera derecha con trasera izquierda y al revés.
+ * Devuelve cuánto avanza cada pata (en px) según el frame.
  */
-function drawQuadruped(
-  img: PixelImage,
-  spec: QuadrupedSpec,
-  view: View,
+function gait(
   frame: CharacterFrame,
-): void {
-  const pose = poseFor(frame);
-  const groundY = CHARACTER_FEET_Y;
-  const bodyY = groundY - spec.legLength - spec.height + 1 + pose.bob;
-  const cx = CHARACTER_ART_WIDTH / 2;
+  stride: number,
+): { pairA: number; pairB: number; lift: number } {
+  switch (frame) {
+    case 0:
+      return { pairA: stride, pairB: -stride, lift: 0 };
+    case 2:
+      return { pairA: -stride, pairB: stride, lift: 0 };
+    case 'idle':
+      return { pairA: 0, pairB: 0, lift: 0 };
+    default:
+      return { pairA: 0, pairB: 0, lift: 1 };
+  }
+}
 
-  // Hacia dónde apunta la cabeza en pantalla (x, y) y cuánto se ve del largo.
-  const facing: Record<View, { dx: number; dy: number; foreshorten: number }> = {
-    side: { dx: 1, dy: 0, foreshorten: 1 },
-    front3: { dx: 0.75, dy: 0.45, foreshorten: 0.8 },
-    back3: { dx: 0.75, dy: -0.45, foreshorten: 0.8 },
-    front: { dx: 0, dy: 1, foreshorten: 0.45 },
-    back: { dx: 0, dy: -1, foreshorten: 0.45 },
+/** Pelaje: vientre más claro, lomo más oscuro y algo de textura. */
+function fur(colors: Ramp, belly: Ramp, saddleFrom: number): Material {
+  return (s) => {
+    if (s.n[1] < -0.35) return tone(belly, s.light);
+    const speckle =
+      noise(Math.floor(s.p[0] * 1.5), Math.floor(s.p[1] * 1.5), Math.floor(s.p[2])) > 0.78;
+    const saddle = s.p[1] > saddleFrom && s.n[1] > 0.5;
+    return tone(colors, s.light, (speckle ? -1 : 0) + (saddle ? -1 : 0));
   };
-  const f = facing[view];
-  const halfLength = Math.max(spec.height + 0.5, spec.length * f.foreshorten);
-  const headX = cx + f.dx * (halfLength + spec.headRadius * 0.4);
-  const headY = bodyY + f.dy * (spec.height * 0.9) - (f.dy === 0 ? spec.headRadius * 0.6 : 0);
-  const tailX = cx - f.dx * (halfLength + 1);
-  const tailY = bodyY - f.dy * spec.height;
-  const headInFront = f.dy >= 0;
+}
 
-  // Patas: cuatro, alternando adelante y atrás con la caminata.
-  const swing = pose.legShift[1] / 2;
-  const legXs = [-0.6, -0.25, 0.25, 0.6].map((t) => cx + t * halfLength * 1.6);
-  legXs.forEach((x, i) => {
-    const shift = (i % 2 === 0 ? swing : -swing) * (f.dx !== 0 ? 1 : 0);
-    const lift = f.dx === 0 && pose.liftedLeg === i % 2 ? 1 : 0;
-    const tone = i < 2 ? shade(spec.fur, 0.75) : shade(spec.fur, 0.85);
-    img.fillRect(
-      Math.round(x + shift),
-      Math.round(bodyY + spec.height - 1),
-      1,
-      Math.round(spec.legLength + 1 - lift),
-      tone,
+const WOLF_FUR = ramp([134, 134, 140]);
+const WOLF_BELLY = ramp([196, 192, 186]);
+const DARK: Rgb = [22, 18, 18];
+
+function drawWolf(canvas: VolumeCanvas, frame: CharacterFrame): void {
+  const step = gait(frame, 2.4);
+  const body = fur(WOLF_FUR, WOLF_BELLY, 15);
+  const bob = step.lift;
+
+  // Patas: muslo grueso y pata fina, con la mano al final.
+  const legs: [number, number, number][] = [
+    [1, 5, step.pairA],
+    [-1, 5, step.pairB],
+    [1, -6, step.pairB],
+    [-1, -6, step.pairA],
+  ];
+  for (const [side, z, swing] of legs) {
+    const top: Vec3 = [side * 2.2, 11 + bob, z];
+    const knee: Vec3 = [side * 2.3, 5.5 + bob * 0.5, z + swing * 0.5 + (z < 0 ? -1 : 0.5)];
+    const paw: Vec3 = [side * 2.3, 1, z + swing];
+    canvas.limb(top, knee, 2, 1.3, body);
+    canvas.limb(knee, paw, 1.2, 1.1, body);
+    canvas.ellipsoid(
+      add(paw, [0, -0.2, 0.8]),
+      axesAlong([0, 0, 1]),
+      [1.3, 0.9, 1.8],
+      solid(WOLF_FUR, -1),
     );
+  }
+
+  // Cuerpo: lomo, pecho ancho y anca.
+  canvas.ellipsoid([0, 12 + bob, -0.8], axesAlong([0, 0.08, 1]), [3.5, 3.8, 7.2], body);
+  canvas.sphere([0, 12.6 + bob, 4.6], 4.2, body);
+  canvas.sphere([0, 12 + bob, -5.8], 3.7, body);
+
+  // Cola peluda que se mueve al caminar.
+  const wag = frame === 'idle' ? 0 : frame === 0 || frame === 2 ? 1.2 : -1.2;
+  canvas.limb([0, 13.5 + bob, -8.5], [wag * 0.5, 12.5 + bob, -12], 1.8, 1.9, body);
+  canvas.limb([wag * 0.5, 12.5 + bob, -12], [wag, 9 + bob, -14.5], 1.9, 0.9, (s) =>
+    s.p[2] < -13.6 ? tone(WOLF_BELLY, s.light) : body(s),
+  );
+
+  // Cuello y cabeza con hocico largo.
+  const head: Vec3 = [0, 17 + bob, 9.6];
+  canvas.limb([0, 14 + bob, 5.6], head, 3, 2.6, body);
+  canvas.sphere(head, 3.2, body);
+  canvas.ellipsoid(add(head, [0, -1, 3.3]), axesAlong([0, -0.2, 1]), [1.6, 1.5, 2.8], (s) =>
+    s.n[1] < -0.2 ? tone(WOLF_BELLY, s.light) : body(s),
+  );
+  for (const side of [1, -1] as const) {
+    canvas.ellipsoid(
+      add(head, [side * 1.8, 3, -0.6]),
+      axesAlong([0, 0, 1], [side * -0.3, 1, 0]),
+      [0.9, 2, 0.7],
+      solid(WOLF_FUR, -1),
+    );
+    canvas.decal(
+      add(head, [side * 1.5, 0.9, 2.6]),
+      normalize([side * 0.5, 0.2, 1]),
+      [240, 196, 60],
+    );
+  }
+  canvas.decal(add(head, [0, -0.7, 6.1]), [0, 0, 1], DARK, 2, 1);
+}
+
+const RAT_FUR = ramp([118, 98, 84]);
+const RAT_BELLY = ramp([170, 152, 136]);
+const PINK = ramp([214, 150, 150]);
+
+function drawRat(canvas: VolumeCanvas, frame: CharacterFrame): void {
+  const step = gait(frame, 1.2);
+  const body = fur(RAT_FUR, RAT_BELLY, 6);
+  const bob = step.lift * 0.5;
+
+  for (const [side, z, swing] of [
+    [1, 2.6, step.pairA],
+    [-1, 2.6, step.pairB],
+    [1, -2.4, step.pairB],
+    [-1, -2.4, step.pairA],
+  ] as const) {
+    canvas.limb([side * 1.6, 3 + bob, z], [side * 1.8, 0.6, z + swing], 0.8, 0.6, solid(PINK, -1));
+  }
+  canvas.ellipsoid([0, 4.4 + bob, -0.6], axesAlong([0, 0.1, 1]), [2.7, 2.7, 4.8], body);
+
+  // Cola larga, rosada y en curva.
+  const tail: Vec3[] = [
+    [0, 3.8 + bob, -5],
+    [0.6, 2.4, -8.5],
+    [frame === 'idle' ? 1.6 : 0.4, 1.2, -11.5],
+    [frame === 'idle' ? 2.8 : 1.4, 1.6, -14],
+  ];
+  tail.slice(1).forEach((to, i) => {
+    const from = tail[i] ?? to;
+    canvas.limb(from, to, 0.75 - i * 0.15, 0.6 - i * 0.15, solid(PINK));
   });
 
-  // Cola (detrás del cuerpo cuando la cabeza mira hacia el frente).
-  const drawTail = (): void => {
-    for (let i = 0; i < spec.tailLength; i++) {
-      const t = i / spec.tailLength;
-      img.set(
-        Math.round(tailX - f.dx * i * 0.7),
-        Math.round(tailY - i * 0.5 + t * t * 2),
-        spec.tail,
-      );
-    }
-  };
-  const drawHead = (): void => {
-    img.fillEllipse(headX, headY, spec.headRadius, spec.headRadius * 0.9, (x) =>
-      shade(spec.fur, x < headX ? 1.1 : 0.9),
+  // Cabeza puntiaguda, orejas redondas, ojos rojos.
+  const head: Vec3 = [0, 5 + bob, 4.6];
+  canvas.ellipsoid(head, axesAlong([0, -0.25, 1]), [2, 2, 3], body);
+  canvas.sphere(add(head, [0, -0.7, 2.9]), 0.7, solid(PINK));
+  for (const side of [1, -1] as const) {
+    canvas.ellipsoid(
+      add(head, [side * 1.5, 2, -0.8]),
+      axesAlong([0, 0, 1]),
+      [1.3, 1.3, 0.5],
+      (s) => (s.n[2] > 0.3 ? tone(PINK, s.light) : tone(RAT_FUR, s.light, -1)),
     );
-    // Orejas.
-    img.set(
-      Math.round(headX - spec.headRadius * 0.6),
-      Math.round(headY - spec.headRadius),
-      shade(spec.fur, 0.7),
-    );
-    img.set(
-      Math.round(headX + spec.headRadius * 0.6),
-      Math.round(headY - spec.headRadius),
-      shade(spec.fur, 0.7),
-    );
-    if (f.dy >= 0) {
-      // Hocico y ojos, solo si la cara mira a la cámara o de costado.
-      const snoutX = Math.round(headX + f.dx * spec.headRadius);
-      img.set(snoutX, Math.round(headY + 1), [30, 24, 22]);
-      if (f.dx === 0) {
-        img.set(Math.round(headX - 1), Math.round(headY - 0.5), spec.eye);
-        img.set(Math.round(headX + 1), Math.round(headY - 0.5), spec.eye);
-      } else {
-        img.set(Math.round(headX + f.dx * 0.5), Math.round(headY - 0.5), spec.eye);
-      }
-    }
-  };
-
-  if (headInFront) drawTail();
-  else drawHead();
-  img.fillEllipse(cx, bodyY, halfLength, spec.height, (x, y) =>
-    y > bodyY + spec.height * 0.4
-      ? spec.belly
-      : shade(spec.fur, 1.15 - ((x - cx) / halfLength) * 0.15 - ((y - bodyY) / spec.height) * 0.1),
-  );
-  if (headInFront) drawHead();
-  else drawTail();
+    canvas.decal(add(head, [side * 1.1, 0.7, 1.9]), normalize([side * 0.6, 0.3, 1]), [210, 30, 30]);
+  }
 }
