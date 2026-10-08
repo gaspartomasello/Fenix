@@ -116,5 +116,8 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
    solo guarda en el navegador. Imagen Docker y despliegue en Render
    ([docs/DEPLOY.md](docs/DEPLOY.md)).
 9. ✅ **Gráficos de personajes y criaturas**: modelos de volumen con luz y sombras, el doble de
-   detalle, peinados y barbas, ropa de oficio para la gente del pueblo, y rata, lobo y esqueleto
-   redibujados.
+   detalle, cabeza ovalada realista, cuerpo de hombre o de mujer, nueve peinados y barbas, ropa de
+   oficio para la gente del pueblo, y rata, lobo y esqueleto redibujados. Animaciones: caminar y
+   correr (distintas), golpe en arco con espada o hacha, estocada con daga, puñetazo, lanzar
+   hechizos, mordida de las bestias y gestos de reposo cada tanto (girar los hombros, cambiar el
+   peso de pierna).

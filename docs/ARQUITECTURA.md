@@ -55,6 +55,15 @@ según su posición y normal en el modelo (cinturón, malla, pelo, pelaje). Las 
 del mismo modelo, sin espejar, así el arma queda siempre en la mano derecha. Los personajes se
 dibujan con el doble de detalle que el resto del arte y se muestran sin escalar (`CHARACTER_SCALE`).
 
+El esqueleto de las personas está en `humanoid-rig.ts`: cada cuadro (`CharacterFrame`) es una pose
+de piernas, brazos, giro de hombros, inclinación y peso; así se arman la caminata, la carrera, los
+golpes de cada arma (`attackStyleFor`), el hechizo y los gestos de reposo. La cabeza
+(`humanoid-head.ts`) es un cráneo ovalado con mandíbula, mentón y arco de las cejas, con los
+peinados como máscaras sobre una cáscara de pelo. En el cliente, `Entity` guarda la acción en curso
+(golpe o hechizo, según los mensajes del servidor) y si corre; `rendering/animation.ts` decide el
+cuadro de cada momento y programa los gestos de reposo (`Fidgets`) para que lleguen cada tanto y
+no se repitan seguidos.
+
 ## @fenix/content
 
 Datos del mundo editables con Tiled: el pueblo (`maps/`) y los tilesets generados (`tilesets/`).
