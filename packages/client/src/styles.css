@@ -880,3 +880,9 @@ body {
   background: #7a1f2a;
   border-color: #ff5a4a;
 }
+
+.login-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}

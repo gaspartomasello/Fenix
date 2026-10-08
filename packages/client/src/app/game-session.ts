@@ -68,7 +68,8 @@ export class GameSession {
     });
     this.game = new ClientGame(this.gateway, clock);
     this.login = new LoginScreen({
-      subtitle: IS_SOLO ? 'Modo solo · creá tu personaje' : 'Creá tu personaje',
+      subtitle: IS_SOLO ? 'Modo solo' : 'Entrá o creá tu personaje',
+      askPassword: !IS_SOLO,
       onSubmit: (request) => void this.enter(request),
     });
   }
@@ -91,7 +92,12 @@ export class GameSession {
 
     try {
       await this.gateway.connect();
-      this.gateway.send({ type: 'join', name: request.name, appearance: request.appearance });
+      this.gateway.send({
+        type: 'join',
+        name: request.name,
+        appearance: request.appearance,
+        ...(request.password === undefined ? {} : { password: request.password }),
+      });
     } catch (error) {
       offRejected();
       offReady();

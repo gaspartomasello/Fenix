@@ -1,4 +1,4 @@
-import type { EmbeddedConnection } from '@fenix/server/embedded';
+import type { EmbeddedConnection, KeyValueStorage } from '@fenix/server/embedded';
 import { decodeServerMessage, type ClientMessage } from '@fenix/shared';
 import type { GameGateway, GatewayHandlers } from './game-gateway';
 
@@ -16,7 +16,13 @@ export class EmbeddedGateway implements GameGateway {
     this.handlers.onStatus('connecting');
     // Carga diferida: el código del servidor solo se descarga en modo solo.
     const { createEmbeddedServer } = await import('@fenix/server/embedded');
-    const server = createEmbeddedServer();
+    const server = createEmbeddedServer({ storage: browserStorage });
+    // Guardar al cerrar o esconder la pestaña (en el celular puede no volver).
+    const save = (): void => server.saveAll();
+    window.addEventListener('pagehide', save);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') save();
+    });
     this.connection = server.connect((data) => {
       setTimeout(() => {
         const decoded = decodeServerMessage(data);
@@ -37,3 +43,9 @@ export class EmbeddedGateway implements GameGateway {
     this.handlers.onStatus('closed');
   }
 }
+
+/** `localStorage` accedido en cada uso: si el navegador lo bloquea, el almacén lo tolera. */
+const browserStorage: KeyValueStorage = {
+  getItem: (key) => window.localStorage.getItem(key),
+  setItem: (key, value) => window.localStorage.setItem(key, value),
+};
