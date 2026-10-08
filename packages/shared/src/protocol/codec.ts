@@ -144,14 +144,28 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       break;
     case 'stopAttack':
       return { ok: true, message: { type: 'stopAttack' } };
-    case 'castSpell':
+    case 'castSpell': {
       if (!isSpellKey(data.spell)) break;
-      if (data.targetId === undefined)
-        return { ok: true, message: { type: 'castSpell', spell: data.spell } };
-      if (isId(data.targetId)) {
+      if (data.targetId !== undefined && !isId(data.targetId)) break;
+      if (data.scrollId !== undefined && !isId(data.scrollId)) break;
+      const position = data.position === undefined ? undefined : asPosition(data.position);
+      if (position === null) break;
+      return {
+        ok: true,
+        message: {
+          type: 'castSpell',
+          spell: data.spell,
+          ...(isId(data.targetId) ? { targetId: data.targetId } : {}),
+          ...(position ? { position } : {}),
+          ...(isId(data.scrollId) ? { scrollId: data.scrollId } : {}),
+        },
+      };
+    }
+    case 'useOn':
+      if (isId(data.itemId) && isId(data.targetId)) {
         return {
           ok: true,
-          message: { type: 'castSpell', spell: data.spell, targetId: data.targetId },
+          message: { type: 'useOn', itemId: data.itemId, targetId: data.targetId },
         };
       }
       break;
@@ -220,6 +234,8 @@ const SERVER_TYPES: ReadonlySet<ServerMessageType> = new Set<ServerMessageType>(
   'skills',
   'castStart',
   'spellEffect',
+  'effects',
+  'mobileTeleported',
   'mobileStatus',
   'social',
   'system',

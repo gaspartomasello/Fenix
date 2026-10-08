@@ -46,6 +46,8 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       { kind: 'gold', chance: 0.9, amount: [2, 8] },
       { kind: 'apple', chance: 0.2, amount: [1, 2] },
       { kind: 'garlic', chance: 0.25, amount: [1, 3] },
+      { kind: 'raw-ribs', chance: 0.4, amount: [1, 1] },
+      { kind: 'hides', chance: 0.3, amount: [1, 1] },
     ],
   },
   wolf: {
@@ -66,6 +68,8 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       { kind: 'leather-armor', chance: 0.08 },
       { kind: 'ginseng', chance: 0.3, amount: [1, 3] },
       { kind: 'spiders-silk', chance: 0.2, amount: [1, 2] },
+      { kind: 'hides', chance: 0.9, amount: [2, 4] },
+      { kind: 'raw-ribs', chance: 0.7, amount: [1, 2] },
     ],
   },
   skeleton: {
@@ -95,6 +99,13 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       { kind: 'wooden-shield', chance: 0.1 },
       { kind: 'black-pearl', chance: 0.4, amount: [1, 4] },
       { kind: 'sulfurous-ash', chance: 0.4, amount: [2, 5] },
+      { kind: 'nightshade', chance: 0.4, amount: [1, 3] },
+      { kind: 'blood-moss', chance: 0.3, amount: [1, 3] },
+      { kind: 'blank-scroll', chance: 0.3, amount: [1, 3] },
+      { kind: 'mace', chance: 0.08 },
+      { kind: 'broadsword', chance: 0.05 },
+      { kind: 'scroll-fireball', chance: 0.06 },
+      { kind: 'scroll-poison', chance: 0.06 },
     ],
   },
 };

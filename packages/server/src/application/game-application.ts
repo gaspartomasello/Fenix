@@ -72,7 +72,7 @@ export class GameApplication {
     this.world = world;
     this.persistence = new CharacterPersistence(world, characters, passwords);
     const notifications = new ItemNotifications(world, notifier);
-    this.mobiles = new MobileNotifications(world, notifier);
+    this.mobiles = new MobileNotifications(world, notifier, clock);
     this.social = new SocialNotifications(world, clock, this.mobiles, notifier);
     this.socialActions = new SocialActions(world, clock, this.social);
     this.joinWorld = new JoinWorld(
@@ -98,9 +98,25 @@ export class GameApplication {
       notifier,
     );
     this.moveItem = new MoveItem(world, notifications, notifier, this.economy);
-    this.useItem = new UseItem(world, notifications, notifier, this.mobiles, this.economy);
+    this.useItem = new UseItem(
+      world,
+      clock,
+      ids,
+      random,
+      notifications,
+      notifier,
+      this.mobiles,
+      this.economy,
+    );
     this.attack = new Attack(world, clock, this.mobiles, this.social, notifier);
-    this.castSpell = new CastSpell(world, clock, this.mobiles, notifications, notifier);
+    this.castSpell = new CastSpell(
+      world,
+      clock,
+      this.mobiles,
+      notifications,
+      this.social,
+      notifier,
+    );
     this.loop = new GameLoop(
       world,
       this.mobiles,
@@ -109,6 +125,7 @@ export class GameApplication {
       ids,
       random,
       this.social,
+      (player, position) => this.movePlayer.teleport(player, position),
     );
   }
 
@@ -138,6 +155,7 @@ export class GameApplication {
     if (player) {
       this.mobiles.sendVitals(player);
       this.mobiles.sendSkills(player);
+      this.mobiles.sendEffects(player);
       this.social.sendSocial(player);
     }
   }
@@ -162,6 +180,9 @@ export class GameApplication {
       case 'useItem':
         this.useItem.execute(playerId, message.itemId);
         break;
+      case 'useOn':
+        this.useItem.useOn(playerId, message.itemId, message.targetId);
+        break;
       case 'attack':
         this.attack.execute(playerId, message.targetId);
         break;
@@ -169,7 +190,12 @@ export class GameApplication {
         this.attack.stop(playerId);
         break;
       case 'castSpell':
-        this.castSpell.execute(playerId, message.spell, message.targetId);
+        this.castSpell.execute(playerId, {
+          spell: message.spell,
+          ...(message.targetId ? { targetId: message.targetId } : {}),
+          ...(message.position ? { position: message.position } : {}),
+          ...(message.scrollId ? { scrollId: message.scrollId } : {}),
+        });
         break;
       case 'gather':
         this.economy.gather(playerId, message.toolId, message.position);

@@ -81,7 +81,7 @@ describe('Items', () => {
     });
 
     const eat = items.use(ana, 'apples');
-    expect(eat.ok && eat.changes.message).toBe('Comiste una manzana.');
+    expect(eat.ok && eat.changes.consumed).toBe('apple');
     expect(items.get('apples')?.amount).toBe(1);
     items.use(ana, 'apples');
     expect(items.get('apples')).toBeUndefined();

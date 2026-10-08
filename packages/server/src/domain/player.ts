@@ -30,6 +30,15 @@ export const MOVE_IDLE_CREDIT_MS = 200;
 
 export type MoveOutcome = { ok: true } | { ok: false; reason: 'too-fast' | 'blocked' };
 
+export interface PendingCast {
+  readonly spell: SpellKey;
+  /** A quién va (uno mismo en los que no eligen objetivo). */
+  readonly targetId: EntityId;
+  /** A qué lugar va (teletransporte). */
+  readonly position?: Position;
+  readonly resolveAt: number;
+}
+
 export interface PlayerProps {
   readonly id: EntityId;
   readonly name: string;
@@ -49,7 +58,9 @@ export class Player implements Mobile {
   readonly skills: SkillSet;
   readonly reputation = new Reputation();
   /** Hechizo que está lanzando, que se resuelve en `resolveAt`. */
-  pendingCast: { spell: SpellKey; targetId: EntityId; resolveAt: number } | null = null;
+  pendingCast: PendingCast | null = null;
+  /** Venda que está poniendo, que termina en `resolveAt`. */
+  pendingBandage: { targetId: EntityId; resolveAt: number } | null = null;
   /** Cuándo puede volver a recolectar o fabricar. */
   nextActionAt = 0;
   private runSteps = 0;
@@ -76,6 +87,7 @@ export class Player implements Mobile {
 
   /** Intenta dar un paso. Aun si el paso es bloqueado, el personaje gira. */
   tryMove(map: TileMap, direction: Direction, mode: MoveMode, now: number): MoveOutcome {
+    if (this.combat.isParalyzed) return { ok: false, reason: 'blocked' };
     if (this.nextMoveAt - now > MOVE_EARLY_TOLERANCE_MS) {
       return { ok: false, reason: 'too-fast' };
     }
@@ -86,6 +98,11 @@ export class Player implements Mobile {
     this._position = step(this._position, direction);
     this.nextMoveAt = Math.max(this.nextMoveAt, now - MOVE_IDLE_CREDIT_MS) + moveDuration(mode);
     return { ok: true };
+  }
+
+  /** Aparece en otro lugar al instante (teletransporte). */
+  teleport(position: Position): void {
+    this._position = position;
   }
 
   /** Cuenta un paso corriendo; cada RUN_STEPS_PER_STAMINA gasta un punto de energía. */

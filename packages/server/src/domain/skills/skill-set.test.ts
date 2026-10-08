@@ -13,7 +13,7 @@ describe('SkillSet', () => {
   it('no pasa del máximo ni del tope total', () => {
     const maxed = new SkillSet({ ...STARTING_SKILLS, magery: 1000 });
     expect(maxed.tryGain('magery', () => 0)).toBe(false);
-    // Cinco habilidades al máximo ya suman el tope total.
+    // Siete habilidades al máximo ya suman el tope total.
     const zero = Object.fromEntries(SKILL_KEYS.map((k) => [k, 0])) as typeof STARTING_SKILLS;
     const capped = new SkillSet({
       ...zero,
@@ -22,6 +22,8 @@ describe('SkillSet', () => {
       fencing: 1000,
       tactics: 1000,
       parrying: 1000,
+      anatomy: 1000,
+      healing: 1000,
     });
     expect(capped.tryGain('magery', () => 0)).toBe(false);
   });

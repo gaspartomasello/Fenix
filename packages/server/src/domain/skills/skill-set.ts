@@ -27,6 +27,11 @@ export class SkillSet {
     return { ...this.values };
   }
 
+  /** Fija una habilidad (entre 0 y el máximo), para administradores y pruebas. */
+  set(key: SkillKey, value: number): void {
+    this.values[key] = Math.max(0, Math.min(SKILL_MAX, Math.round(value)));
+  }
+
   /** Intenta subir una habilidad por haberla usado. Devuelve true si subió. */
   tryGain(key: SkillKey, random: () => number): boolean {
     const value = this.values[key];

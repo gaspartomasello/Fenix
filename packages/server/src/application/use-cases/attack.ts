@@ -6,6 +6,7 @@ import type { World } from '../../domain/world';
 import type { MobileNotifications } from '../mobile-notifications';
 import type { Clock, Notifier } from '../ports';
 import type { SocialNotifications } from '../social-notifications';
+import { commitAggression } from './aggression';
 
 /** Elegir a quién atacar (el golpe lo da el ciclo del juego cuando está al alcance). */
 export class Attack {
@@ -30,7 +31,7 @@ export class Attack {
     if (target instanceof Player) {
       const reason = pvpRefusal(player, target, this.world);
       if (reason) return refuse(reason);
-      this.commitAggression(player, target);
+      commitAggression(player, target, this.clock.now(), this.notifier, this.social);
     }
 
     player.combat.targetId = target.id;
@@ -42,18 +43,5 @@ export class Attack {
     if (!player || player.combat.targetId === null) return;
     player.combat.targetId = null;
     this.mobiles.sendTarget(player);
-  }
-
-  /** Atacar a un inocente es un crimen: quien ataca queda como criminal un rato. */
-  private commitAggression(attacker: Player, target: Player): void {
-    this.notifier.send(target.id, { type: 'system', text: `¡${attacker.name} te está atacando!` });
-    if (target.reputation.notoriety !== 'innocent') return;
-    if (attacker.reputation.markCriminal(this.clock.now())) {
-      this.notifier.send(attacker.id, {
-        type: 'system',
-        text: 'Atacaste a un inocente: ahora sos criminal y atacarte no es delito.',
-      });
-      this.social.statusChanged(attacker);
-    }
   }
 }
