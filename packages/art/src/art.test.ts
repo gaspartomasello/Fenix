@@ -1,5 +1,6 @@
 import {
   ALL_DIRECTIONS,
+  CREATURE_KINDS,
   DEFAULT_APPEARANCE,
   ITEM_KINDS,
   STATIC_KINDS,
@@ -7,6 +8,7 @@ import {
 } from '@fenix/shared';
 import { describe, expect, it } from 'vitest';
 import { CHARACTER_ART_HEIGHT, CHARACTER_ART_WIDTH, drawCharacterFrame } from './character-art';
+import { drawCreatureFrame } from './creature-art';
 import { ITEM_ART_SIZE, drawItem } from './item-art';
 import { STATIC_ART_HEIGHT, STATIC_ART_WIDTH, drawStatic } from './static-art';
 import { TERRAIN_ART_SIZE, drawTerrainTile } from './terrain-art';
@@ -53,6 +55,18 @@ describe('arte procedural (sin DOM)', () => {
       expect(() =>
         drawCharacterFrame(DEFAULT_APPEARANCE, direction, 0, { rightHand: 'axe', cloak: 'cloak' }),
       ).not.toThrow();
+    }
+  });
+
+  it('dibuja cada criatura en las 8 direcciones y con caminata', () => {
+    for (const kind of CREATURE_KINDS) {
+      for (const direction of ALL_DIRECTIONS) {
+        for (const frame of ['idle', 0, 1, 2, 3] as const) {
+          const image = drawCreatureFrame(kind, direction, frame);
+          expect(image.height).toBe(CHARACTER_ART_HEIGHT);
+          expect(opaquePixels(image.data)).toBeGreaterThan(15);
+        }
+      }
     }
   });
 

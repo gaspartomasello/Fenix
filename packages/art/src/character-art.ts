@@ -18,7 +18,7 @@ export type CharacterFrame = 'idle' | 0 | 1 | 2 | 3;
 export const WALK_FRAMES: readonly CharacterFrame[] = [0, 1, 2, 3];
 
 /** Cómo se ve el cuerpo según hacia dónde mira en pantalla. */
-type View = 'front' | 'front3' | 'side' | 'back3' | 'back';
+export type View = 'front' | 'front3' | 'side' | 'back3' | 'back';
 
 /**
  * Cada dirección de UO apunta a un lado distinto de la pantalla isométrica.
@@ -34,6 +34,11 @@ const VIEW_BY_DIRECTION: Readonly<Record<Direction, { view: View; mirror: boolea
   [Direction.West]: { view: 'back3', mirror: true }, // arriba-izquierda
   [Direction.NorthWest]: { view: 'back', mirror: false }, // arriba
 };
+
+/** Vista a dibujar para una dirección, y si hay que espejarla. */
+export function viewFor(direction: Direction): { view: View; mirror: boolean } {
+  return VIEW_BY_DIRECTION[direction];
+}
 
 interface Palette {
   readonly skin: Rgb;
@@ -91,7 +96,7 @@ class Brush {
   }
 }
 
-interface Pose {
+export interface Pose {
   /** Desplazamiento de cada pierna: [lejana, cercana]. */
   readonly legShift: readonly [number, number];
   /** Pierna levantada (1 px más corta): -1 ninguna, 0 lejana, 1 cercana. */
@@ -101,7 +106,7 @@ interface Pose {
   readonly bob: number;
 }
 
-function poseFor(frame: CharacterFrame): Pose {
+export function poseFor(frame: CharacterFrame): Pose {
   switch (frame) {
     case 'idle':
       return { legShift: [0, 0], liftedLeg: -1, armSwing: 0, bob: 0 };
@@ -121,10 +126,36 @@ export function drawCharacterFrame(
   frame: CharacterFrame,
   equipment: EquipmentLook = {},
 ): PixelImage {
+  return drawHumanoid(paletteFor(appearance, equipment), direction, frame, equipment, false);
+}
+
+const BONE: Rgb = [222, 214, 192];
+
+/** Esqueleto: el mismo cuerpo humanoide, hecho de huesos, con costillas y una espada. */
+export function drawSkeletonFrame(direction: Direction, frame: CharacterFrame): PixelImage {
+  const palette: Palette = {
+    skin: BONE,
+    cloth: shade(BONE, 0.92),
+    hair: shade(BONE, 1.05),
+    pants: shade(BONE, 0.85),
+    boots: shade(BONE, 0.8),
+    belt: shade(BONE, 0.6),
+    buckle: BONE,
+    eye: [12, 10, 10],
+  };
+  return drawHumanoid(palette, direction, frame, { rightHand: 'short-sword' }, true);
+}
+
+function drawHumanoid(
+  palette: Palette,
+  direction: Direction,
+  frame: CharacterFrame,
+  equipment: EquipmentLook,
+  ribs: boolean,
+): PixelImage {
   const { view, mirror } = VIEW_BY_DIRECTION[direction];
   const image = new PixelImage(CHARACTER_ART_WIDTH, CHARACTER_ART_HEIGHT);
   const pose = poseFor(frame);
-  const palette = paletteFor(appearance, equipment);
   const body = new Brush(image, pose.bob);
   const legs = new Brush(image, 0);
 
@@ -141,6 +172,11 @@ export function drawCharacterFrame(
     case 'side':
       drawSide(body, legs, palette, pose);
       break;
+  }
+  if (ribs) {
+    // Costillas oscuras sobre el torso y huecos entre las piernas.
+    for (const y of [15, 17, 19])
+      body.rect(view === 'side' ? 8 : 7, y, view === 'side' ? 4 : 6, 1, shade(BONE, 0.55));
   }
   drawEquipmentInFront(body, view, pose, equipment);
 
