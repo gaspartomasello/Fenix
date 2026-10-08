@@ -1,4 +1,5 @@
 import type { BaseItemKind } from '../items/item-catalog';
+import type { CreatureKind } from '../creatures/creature-catalog';
 import type { AttributeKey } from './effects';
 
 export const SPELL_KEYS = [
@@ -36,10 +37,19 @@ export const SPELL_KEYS = [
   // Séptimo círculo
   'flamestrike',
   'mana-vampire',
+  // Octavo círculo
+  'earthquake',
+  'energy-vortex',
+  'resurrection',
+  'air-elemental',
+  'earth-elemental',
+  'fire-elemental',
+  'water-elemental',
+  'summon-daemon',
 ] as const;
 export type SpellKey = (typeof SPELL_KEYS)[number];
 
-export const SPELL_CIRCLES = [1, 2, 3, 4, 5, 6, 7] as const;
+export const SPELL_CIRCLES = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 export type SpellCircle = (typeof SPELL_CIRCLES)[number];
 
 export const CIRCLE_NAMES: Readonly<Record<SpellCircle, string>> = {
@@ -50,6 +60,7 @@ export const CIRCLE_NAMES: Readonly<Record<SpellCircle, string>> = {
   5: 'Quinto círculo',
   6: 'Sexto círculo',
   7: 'Séptimo círculo',
+  8: 'Octavo círculo',
 };
 
 /** Maná y Magia mínima (en décimas) de cada círculo, como en UO. */
@@ -61,6 +72,7 @@ const CIRCLE_MANA: Readonly<Record<SpellCircle, number>> = {
   5: 14,
   6: 20,
   7: 40,
+  8: 50,
 };
 const CIRCLE_MIN_SKILL: Readonly<Record<SpellCircle, number>> = {
   1: 0,
@@ -70,6 +82,7 @@ const CIRCLE_MIN_SKILL: Readonly<Record<SpellCircle, number>> = {
   5: 550,
   6: 650,
   7: 750,
+  8: 850,
 };
 
 /**
@@ -100,7 +113,17 @@ export type SpellEffect =
       readonly steal: boolean;
     }
   | { readonly kind: 'protection' }
-  | { readonly kind: 'night-sight' };
+  | { readonly kind: 'night-sight' }
+  /** Daña a todos los que estén cerca del lanzador (menos a él y a su grupo). */
+  | {
+      readonly kind: 'area-damage';
+      readonly power: readonly [number, number];
+      readonly radius: number;
+    }
+  /** Devuelve la vida a un fantasma. */
+  | { readonly kind: 'resurrect' }
+  /** Invoca una criatura que pelea para el lanzador por un tiempo. */
+  | { readonly kind: 'summon'; readonly creature: CreatureKind };
 
 export interface Reagent {
   readonly kind: BaseItemKind;
@@ -439,6 +462,87 @@ const LIST: readonly SpellDefinition[] = [
     { kind: 'mana-drain', power: [20, 40], steal: true },
     'Le roba maná al objetivo y te lo quedás.',
   ),
+
+  spell(
+    'earthquake',
+    8,
+    'Terremoto',
+    'Terra Tremat',
+    ['BM', 'GI', 'MR', 'SA'],
+    'self',
+    { kind: 'area-damage', power: [16, 30], radius: 6 },
+    'La tierra se sacude y daña a todos los que estén cerca (menos a tu grupo).',
+  ),
+  spell(
+    'energy-vortex',
+    8,
+    'Vórtice de energía',
+    'Vortex Surgat',
+    ['BP', 'BM', 'MR', 'NS'],
+    'location',
+    { kind: 'summon', creature: 'energy-vortex' },
+    'Un remolino de energía que ataca a tus enemigos.',
+  ),
+  spell(
+    'resurrection',
+    8,
+    'Resurrección',
+    'Vita Redeat',
+    ['BM', 'GA', 'GI'],
+    'beneficial',
+    { kind: 'resurrect' },
+    'Le devuelve la vida a un fantasma.',
+  ),
+  spell(
+    'air-elemental',
+    8,
+    'Elemental de aire',
+    'Aer Surgat',
+    ['BM', 'MR', 'SS'],
+    'location',
+    { kind: 'summon', creature: 'air-elemental' },
+    'Invoca un elemental de aire, rápido y difícil de golpear.',
+  ),
+  spell(
+    'earth-elemental',
+    8,
+    'Elemental de tierra',
+    'Terra Surgat',
+    ['BM', 'MR', 'SS'],
+    'location',
+    { kind: 'summon', creature: 'earth-elemental' },
+    'Invoca un elemental de tierra, lento pero muy resistente.',
+  ),
+  spell(
+    'fire-elemental',
+    8,
+    'Elemental de fuego',
+    'Ignis Surgat',
+    ['BM', 'MR', 'SS', 'SA'],
+    'location',
+    { kind: 'summon', creature: 'fire-elemental' },
+    'Invoca un elemental de fuego que quema a tus enemigos.',
+  ),
+  spell(
+    'water-elemental',
+    8,
+    'Elemental de agua',
+    'Aqua Surgat',
+    ['BM', 'MR', 'SS'],
+    'location',
+    { kind: 'summon', creature: 'water-elemental' },
+    'Invoca un elemental de agua.',
+  ),
+  spell(
+    'summon-daemon',
+    8,
+    'Invocar demonio',
+    'Daemon Surgat',
+    ['BM', 'MR', 'SS', 'SA'],
+    'location',
+    { kind: 'summon', creature: 'daemon' },
+    'Invoca un demonio, la criatura más poderosa que se puede llamar.',
+  ),
 ];
 
 export const SPELLS: Readonly<Record<SpellKey, SpellDefinition>> = Object.fromEntries(
@@ -468,7 +572,13 @@ export function rollSpellPower(
   random: () => number,
 ): number {
   const effect = spell.effect;
-  if (effect.kind !== 'damage' && effect.kind !== 'heal' && effect.kind !== 'mana-drain') return 0;
+  if (
+    effect.kind !== 'damage' &&
+    effect.kind !== 'heal' &&
+    effect.kind !== 'mana-drain' &&
+    effect.kind !== 'area-damage'
+  )
+    return 0;
   const [min, max] = effect.power;
   return min + Math.floor(random() * (max - min + 1)) + Math.floor(magery / 100);
 }
@@ -480,4 +590,12 @@ export function rollSpellPower(
  */
 export function resistChance(magicResist: number, circle: SpellCircle): number {
   return Math.max(0, Math.min(0.7, (magicResist - circle * 50) / 1000));
+}
+
+/** Cuántas criaturas invocadas puede tener alguien a la vez. */
+export const MAX_SUMMONS = 2;
+
+/** Cuánto dura una invocación: de 1 a 3 minutos según la Magia. */
+export function summonDurationMs(magery: number): number {
+  return 60_000 + magery * 120;
 }

@@ -1,4 +1,5 @@
 import {
+  CREATURES,
   OVERHEAD_TEXT_DURATION_MS,
   type Appearance,
   type Body,
@@ -142,9 +143,9 @@ export class Entity {
     this._combatTexts = [...this._combatTexts, { text, kind, startedAt: now }].slice(-4);
   }
 
-  /** Personas y esqueletos: se animan con gestos (las bestias embisten). */
+  /** Personas, esqueletos, elementales y demonios: se animan con gestos (las bestias embisten). */
   get isHumanoid(): boolean {
-    return this.body === 'human' || this.body === 'skeleton';
+    return this.body === 'human' || CREATURES[this.body].humanoid;
   }
 
   /** Si el último paso fue corriendo. */

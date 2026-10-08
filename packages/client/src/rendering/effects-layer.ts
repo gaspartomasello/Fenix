@@ -57,6 +57,12 @@ function visualFor(spell: SpellKey): Visual {
       durationMs: 900,
       size: 6 + SPELLS[spell].circle * 2,
     };
+  if (effect.kind === 'area-damage')
+    return { style: 'burst', color: 0xc8a070, glow: 0x6a4a2a, durationMs: 700, size: 16 };
+  if (effect.kind === 'summon')
+    return { style: 'sparkles', color: 0xd0a0ff, glow: 0xd0a0ff, durationMs: 900, size: 14 };
+  if (effect.kind === 'resurrect')
+    return { style: 'sparkles', color: 0xfff2b0, glow: 0xfff2b0, durationMs: 1200, size: 16 };
   if (effect.kind === 'attribute')
     return effect.sign > 0
       ? { style: 'sparkles', color: 0x90c8ff, glow: 0x90c8ff, durationMs: 800, size: 7 }

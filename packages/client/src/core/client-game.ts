@@ -493,7 +493,11 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       case 'spellEffect': {
         const target = this.entities.get(message.targetId);
         const kind = SPELLS[message.spell].effect.kind;
-        if (target && message.amount > 0 && (kind === 'heal' || kind === 'damage')) {
+        if (
+          target &&
+          message.amount > 0 &&
+          (kind === 'heal' || kind === 'damage' || kind === 'area-damage')
+        ) {
           const healing = kind === 'heal';
           target.addCombatText(
             healing ? `+${message.amount}` : String(message.amount),

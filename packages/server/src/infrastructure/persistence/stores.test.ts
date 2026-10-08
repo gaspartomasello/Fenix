@@ -1,4 +1,4 @@
-import { DEFAULT_APPEARANCE, Direction, STARTING_SKILLS } from '@fenix/shared';
+import { DEFAULT_APPEARANCE, Direction, PLAYER_ATTRIBUTES, STARTING_SKILLS } from '@fenix/shared';
 import { describe, expect, it } from 'vitest';
 import { SAVE_VERSION, type SavedCharacter } from '../../domain/persistence/saved-character';
 import { ScryptPasswordHasher } from '../system/scrypt-password-hasher';
@@ -18,6 +18,7 @@ const ana: SavedCharacter = {
   vitals: { hits: 50, mana: 10, stamina: 20 },
   dead: false,
   skills: STARTING_SKILLS,
+  attributes: PLAYER_ATTRIBUTES,
   reputation: { fame: 0, karma: 0, murders: 0 },
   guild: null,
   items: [{ kind: 'apple', amount: 3, location: { type: 'backpack', position: { x: 0, y: 0 } } }],

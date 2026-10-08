@@ -225,4 +225,119 @@ describe('etapa 10: hechizos, efectos, vendas y oficios', () => {
     expect(f.world.items.countInBackpack(ana, 'arrow')).toBe(4);
     expect(f.last('swing', ana)?.ranged).toBe(true);
   });
+
+  describe('octavo círculo', () => {
+    /** Una maga lista para el octavo círculo: Magia alta e inteligencia para 50 de maná. */
+    const archmage = (f: ReturnType<typeof createField>, name: string): EntityId => {
+      const id = f.join(name);
+      const player = f.player(id);
+      player.skills.set('magery', 1000);
+      while (player.combat.baseAttributes.intelligence < 60)
+        player.combat.raiseAttribute('intelligence');
+      player.combat.restoreMana(100);
+      f.give(id, 'blood-moss', 10);
+      f.give(id, 'mandrake-root', 10);
+      f.give(id, 'spiders-silk', 10);
+      f.give(id, 'sulfurous-ash', 10);
+      return id;
+    };
+
+    it('Invocar demonio trae un demonio que ataca al objetivo de su dueño y se va al terminar', () => {
+      const f = createField();
+      const ana = archmage(f, 'Ana');
+      const { x, y } = f.player(ana).position;
+      f.app.handle(ana, { type: 'castSpell', spell: 'summon-daemon', position: { x: x + 2, y } });
+      f.run(3000);
+      const [daemon] = f.world.summonsOf(ana);
+      expect(daemon?.body).toBe('daemon');
+      expect(f.notifier.ofType('mobileAppeared').some((d) => d.to === ana)).toBe(true);
+
+      const rat = new Creature('rata', 'rat', { x: x + 6, y });
+      f.world.addCreature(rat);
+      f.app.handle(ana, { type: 'attack', targetId: 'rata' });
+      f.run(8000);
+      expect(rat.combat.isDead || rat.gone).toBe(true);
+      // No se puede atacar a la propia invocación.
+      if (daemon) f.app.handle(ana, { type: 'attack', targetId: daemon.id });
+      expect(f.texts()).toContain('Es una criatura que invocaste vos.');
+
+      f.run(300_000);
+      expect(f.world.summonsOf(ana)).toEqual([]);
+    });
+
+    it('no se pueden tener más de dos invocaciones', () => {
+      const f = createField();
+      const ana = archmage(f, 'Ana');
+      const { x, y } = f.player(ana).position;
+      for (const [dx, spell] of [
+        [2, 'air-elemental'],
+        [3, 'earth-elemental'],
+        [4, 'fire-elemental'],
+      ] as const) {
+        f.player(ana).combat.restoreMana(100);
+        f.app.handle(ana, { type: 'castSpell', spell, position: { x: x + dx, y } });
+        f.run(3000);
+      }
+      expect(f.world.summonsOf(ana)).toHaveLength(2);
+      expect(f.texts()).toContain('Ya tenés demasiadas criaturas invocadas.');
+    });
+
+    it('Terremoto daña a todos los que están cerca', () => {
+      const f = createField();
+      const ana = archmage(f, 'Ana');
+      const { x, y } = f.player(ana).position;
+      const rats = [1, 3].map((dx) => {
+        const rat = new Creature(`rata${dx}`, 'rat', { x: x + dx, y });
+        rat.combat.applyEffect('paralyzed', 0, 60_000, 0);
+        f.world.addCreature(rat);
+        return rat;
+      });
+      f.app.handle(ana, { type: 'castSpell', spell: 'earthquake' });
+      f.run(2600);
+      for (const rat of rats)
+        expect(rat.combat.current.hits).toBeLessThan(rat.combat.current.maxHits);
+    });
+
+    it('Resurrección devuelve la vida a un fantasma', () => {
+      const f = createField();
+      const ana = archmage(f, 'Ana');
+      const bruno = f.join('Bruno');
+      f.player(bruno).combat.takeDamage(500);
+      f.app.handle(ana, { type: 'castSpell', spell: 'resurrection', targetId: bruno });
+      f.run(2600);
+      expect(f.player(bruno).combat.isDead).toBe(false);
+      expect(
+        f.notifier
+          .ofType('system')
+          .some(
+            (d) =>
+              d.to === bruno &&
+              d.message.type === 'system' &&
+              d.message.text === '¡Ana te devolvió la vida!',
+          ),
+      ).toBe(true);
+    });
+  });
+
+  it('los atributos suben entrenando, con tope, y se avisan', () => {
+    const f = createField();
+    const ana = f.join('Ana');
+    const player = f.player(ana);
+    for (let i = 0; i < 40; i++) player.skills.tryGain('magery', () => 0);
+    expect(player.combat.baseAttributes.intelligence).toBeGreaterThan(30);
+    f.run(100);
+    expect(f.texts().some((t) => t.startsWith('Tu inteligencia subió a'))).toBe(true);
+    expect(f.last('effects', ana)?.attributes.intelligence).toBe(
+      player.combat.baseAttributes.intelligence,
+    );
+    // La suma de los tres no pasa de 225.
+    const total = (): number => {
+      const { strength, dexterity, intelligence } = player.combat.baseAttributes;
+      return strength + dexterity + intelligence;
+    };
+    while (player.combat.baseAttributes.strength < 100) player.combat.raiseAttribute('strength');
+    while (total() < 224) player.combat.raiseAttribute('dexterity');
+    for (let i = 0; i < 200; i++) player.skills.tryGain('magery', () => 0);
+    expect(total()).toBe(225);
+  });
 });

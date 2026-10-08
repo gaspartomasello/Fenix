@@ -54,7 +54,7 @@ function createServer(characters: CharacterStore, passwords?: PasswordHasher) {
 }
 
 describe('guardado de personajes', () => {
-  it('al volver conserva lugar, habilidades, objetos, reputación y gremio', () => {
+  it('al volver conserva lugar, habilidades, atributos, objetos, reputación y gremio', () => {
     const store = new FakeCharacterStore();
     const first = createServer(store);
     const ana = first.enter('Ana');
@@ -64,6 +64,7 @@ describe('guardado de personajes', () => {
     if (!player) throw new Error('sin Ana');
     player.reputation.award(120, 80);
     player.combat.takeDamage(10);
+    player.combat.raiseAttribute('intelligence');
     const position = player.position;
     const backpack = first.world.items
       .backpackOf(ana)
@@ -79,6 +80,7 @@ describe('guardado de personajes', () => {
     expect(restored?.position).toEqual(position);
     expect(restored?.combat.current.hits).toBe(player.combat.current.hits);
     expect(restored?.reputation.fame).toBe(120);
+    expect(restored?.combat.baseAttributes.intelligence).toBe(31);
     expect(second.world.guilds.of('Ana')?.tag).toBe('ORD');
     expect(
       second.world.items

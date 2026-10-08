@@ -221,6 +221,8 @@ export class GameApplication {
   leave(playerId: EntityId): void {
     const player = this.world.get(playerId);
     if (player) {
+      // Sus invocaciones se van con él.
+      for (const summon of this.world.summonsOf(playerId)) this.loop.dismiss(summon);
       this.socialActions.disconnect(player);
       this.persistence.release(player);
     }

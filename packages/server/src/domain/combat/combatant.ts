@@ -42,7 +42,7 @@ export interface EffectTick {
  * pociones, veneno). Las reglas de daño viven en `combat.ts`.
  */
 export class Combatant {
-  private readonly base: Attributes;
+  private base: Attributes;
   private vitals: Vitals;
   targetId: EntityId | null = null;
   nextSwingAt = 0;
@@ -72,6 +72,17 @@ export class Combatant {
       dexterity: value('dexterity'),
       intelligence: this.base.intelligence === 0 ? 0 : value('intelligence'),
     };
+  }
+
+  /** Atributos propios, sin los efectos. */
+  get baseAttributes(): Attributes {
+    return this.base;
+  }
+
+  /** Sube un punto un atributo propio (entrenamiento) y recalcula los máximos. */
+  raiseAttribute(key: AttributeKey): void {
+    this.base = { ...this.base, [key]: this.base[key] + 1 };
+    this.refreshMaxima();
   }
 
   get isDead(): boolean {

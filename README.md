@@ -67,7 +67,7 @@ Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña 
   levantarlo.
 - **Clic** (o toque) sobre una criatura: atacarla. El personaje golpea solo mientras la tenga al
   lado. **Escape**: dejar de atacar.
-- **L**: libro de hechizos, con una página por círculo. **1 a 7**: lanzar los hechizos de la página
+- **L**: libro de hechizos, con una página por círculo. **1 a 8**: lanzar los hechizos de la página
   abierta. Los de ataque van al objetivo de combate o piden tocar a alguien; los de ayuda piden
   tocar a alguien o a uno mismo, y Teletransporte un lugar. **K**: habilidades, por grupo.
 - **Doble clic sobre una venda** y tocar a alguien (o a uno mismo): vendarlo. Sobre un pergamino:
@@ -133,9 +133,12 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
    peso de pierna). La capa envuelve el cuerpo y vuela según se camine, corra o pelee. Objetos
    redibujados con volumen y vistos desde arriba, y ventana de personaje al estilo de UO.
 10. ✅ **Habilidades, hechizos, objetos y oficios como en UO**: 22 habilidades en cuatro grupos
-    (combate, magia, recolección y oficios) con tope total de 700. 26 hechizos en siete círculos,
-    con los reactivos de UO (musgo de sangre y belladona incluidos), objetivo a uno mismo, a otro
-    o a un lugar, y Resistencia mágica. Efectos que duran: subir o bajar atributos, Protección
+    (combate, magia, recolección y oficios) con tope total de 700; fuerza, destreza e
+    inteligencia suben al usarlas (hasta 100 cada una y 225 entre las tres). 34 hechizos en ocho
+    círculos, con los reactivos de UO (musgo de sangre y belladona incluidos), objetivo a uno
+    mismo, a otro o a un lugar, y Resistencia mágica. El octavo círculo trae Terremoto,
+    Resurrección e invocaciones (vórtice de energía, elementales de aire, tierra, fuego y agua, y
+    demonio) que pelean para su dueño un rato. Efectos que duran: subir o bajar atributos, Protección
     (los golpes no cortan el hechizo), veneno, parálisis y visión nocturna. Vendas con Primeros
     auxilios y Anatomía, pociones de los colores de UO, pergaminos. Mazas, estoque, lanza, espada
     ancha, katana, martillo de guerra y arco con flechas (de lejos, a dos manos); cuero

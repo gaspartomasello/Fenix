@@ -30,12 +30,18 @@ export class Creature implements Mobile {
   respawnAt: number | null = null;
   /** Ya no está en el mundo (murió y su cuerpo desapareció). */
   gone = false;
+  /** Invocada: jugador que la llamó (pelea para él) y cuándo se desvanece. */
+  readonly ownerId: EntityId | null;
+  readonly expiresAt: number | null;
 
   constructor(
     readonly id: EntityId,
     kind: CreatureKind,
     readonly home: Position,
+    summon: { ownerId: EntityId; expiresAt: number } | null = null,
   ) {
+    this.ownerId = summon?.ownerId ?? null;
+    this.expiresAt = summon?.expiresAt ?? null;
     this.body = kind;
     this.definition = CREATURES[kind];
     this.name = this.definition.name;

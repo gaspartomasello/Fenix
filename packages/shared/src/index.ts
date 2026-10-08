@@ -19,6 +19,7 @@ export * from './domain/combat/combat-rules';
 export * from './domain/combat/healing';
 export * from './domain/creatures/creature-catalog';
 export * from './domain/skills/skill-catalog';
+export * from './domain/skills/stat-gain';
 export * from './domain/magic/spell-catalog';
 export * from './domain/magic/effects';
 export * from './domain/economy/vendors';

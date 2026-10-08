@@ -1096,3 +1096,9 @@ body {
   overflow-y: auto;
   padding-right: 0.25rem;
 }
+
+.skills-attributes {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-accent);
+}

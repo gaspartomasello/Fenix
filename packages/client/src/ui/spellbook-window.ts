@@ -21,7 +21,7 @@ const TARGET_HINTS = {
 
 /**
  * Libro de hechizos, como en UO: una página por círculo, cada hechizo con
- * su maná, reactivos y un botón para lanzarlo. Las teclas 1 a 7 lanzan los
+ * su maná, reactivos y un botón para lanzarlo. Las teclas 1 a 8 lanzan los
  * hechizos de la página abierta.
  */
 export class SpellbookWindow {
@@ -40,7 +40,7 @@ export class SpellbookWindow {
       this.list,
       el('p', {
         className: 'window-hint',
-        text: 'Atajos: teclas 1 a 7 para los hechizos de esta página.',
+        text: 'Atajos: teclas 1 a 8 para los hechizos de esta página.',
       }),
     );
     this.render(null);

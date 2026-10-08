@@ -7,7 +7,7 @@ import {
   type Position,
   type TileMap,
 } from '@fenix/shared';
-import type { Creature } from './creatures/creature';
+import { Creature } from './creatures/creature';
 import { Items } from './items/items';
 import type { Mobile } from './mobile';
 import { Npc } from './npcs/npc';
@@ -77,6 +77,16 @@ export class World {
 
   addCreature(creature: Creature): void {
     this.creatures.set(creature.id, creature);
+  }
+
+  /** Saca una criatura del mundo para siempre (una invocación que terminó). */
+  removeCreature(id: EntityId): void {
+    this.creatures.delete(id);
+  }
+
+  /** Criaturas invocadas por un jugador que siguen en el mundo. */
+  summonsOf(ownerId: EntityId): Creature[] {
+    return [...this.creatures.values()].filter((c) => c.ownerId === ownerId && !c.gone);
   }
 
   addNpc(npc: Npc): void {
@@ -153,7 +163,11 @@ export class World {
       health: mobile.combat.health,
       dead: mobile.combat.isDead,
       npc: null,
-      notoriety: 'murderer',
+      // Una invocación se ve con el color de su dueño; las salvajes, rojas.
+      notoriety:
+        mobile instanceof Creature && mobile.ownerId
+          ? (this.players.get(mobile.ownerId)?.reputation.notoriety ?? 'innocent')
+          : 'murderer',
       guildTag: null,
     };
   }

@@ -1,4 +1,5 @@
 import {
+  ATTRIBUTE_NAMES,
   CREATURE_FAME,
   REGEN_INTERVAL_MS,
   SPELLS,
@@ -10,7 +11,8 @@ import {
 } from '@fenix/shared';
 import { outOfAmmo, trySwing, type SwingResult } from '../domain/combat/combat';
 import { resolveBandage } from '../domain/healing/bandage';
-import { CORPSE_MS, RESPAWN_MS, type Creature } from '../domain/creatures/creature';
+import { commitAggression } from './use-cases/aggression';
+import { CORPSE_MS, Creature, RESPAWN_MS } from '../domain/creatures/creature';
 import { canMoveTo, chooseStep, updateTarget } from '../domain/creatures/creature-ai';
 import { rollLoot } from '../domain/creatures/loot';
 import { resolveCast } from '../domain/magic/spellcasting';
@@ -72,6 +74,18 @@ export class GameLoop {
     }
   }
 
+  /** Avisa los atributos que subieron entrenando (y los vitales, cuyos máximos cambian). */
+  private announceStatGains(player: Player): void {
+    if (player.statGains.length === 0) return;
+    for (const key of player.statGains.splice(0)) {
+      this.notifier.send(player.id, {
+        type: 'system',
+        text: `Tu ${ATTRIBUTE_NAMES[key].toLowerCase()} subió a ${player.combat.baseAttributes[key]}.`,
+      });
+    }
+    this.mobiles.sendEffects(player);
+  }
+
   /** Un golpe corta la concentración de quien está lanzando, salvo con Protección. */
   private disrupt(mobile: Mobile): void {
     if (!(mobile instanceof Player) || !mobile.pendingCast) return;
@@ -122,6 +136,7 @@ export class GameLoop {
       this.tryResurrect(player, now);
       return;
     }
+    this.announceStatGains(player);
     this.tickEffects(player, now);
     if (player.combat.isDead) return;
     if (player.pendingCast && now >= player.pendingCast.resolveAt) this.finishCast(player, now);
@@ -179,6 +194,24 @@ export class GameLoop {
       case 'success': {
         const { target, amount, killed, resisted, effectsChanged, moveTo, message } = outcome;
         if (moveTo) this.teleport(player, moveTo);
+        if (outcome.summoned) this.mobiles.appear(outcome.summoned);
+        if (outcome.revived && target instanceof Player) {
+          this.mobiles.sendVitals(target);
+          this.notifier.send(target.id, {
+            type: 'system',
+            text: `¡${player.name} te devolvió la vida!`,
+          });
+        }
+        for (const hit of outcome.areaHits ?? []) {
+          this.mobiles.spellEffect(player, hit.target, spellKey, hit.amount, hit.resisted);
+          this.mobiles.broadcastHealth(hit.target);
+          this.disrupt(hit.target);
+          if (hit.target instanceof Player) {
+            this.mobiles.sendVitals(hit.target);
+            commitAggression(player, hit.target, now, this.notifier, this.social);
+          }
+          if (hit.killed) this.handleKill(player, hit.target, now);
+        }
         this.mobiles.spellEffect(player, target, spellKey, amount, resisted);
         this.mobiles.broadcastHealth(target);
         this.mobiles.sendVitals(player);
@@ -212,9 +245,19 @@ export class GameLoop {
       }
       return;
     }
+    // Una invocación se desvanece al terminar su tiempo.
+    if (creature.expiresAt !== null && now >= creature.expiresAt && !creature.combat.isDead) {
+      this.dismiss(creature);
+      return;
+    }
     if (!creature.combat.isDead) this.tickEffects(creature, now);
     if (creature.combat.isDead) {
       if (creature.despawnAt !== null && now >= creature.despawnAt) {
+        // Las invocaciones no reaparecen: se van del mundo.
+        if (creature.ownerId) {
+          this.dismiss(creature);
+          return;
+        }
         this.mobiles.disappear(creature);
         creature.gone = true;
         creature.respawnAt = now + RESPAWN_MS;
@@ -242,7 +285,18 @@ export class GameLoop {
     if (!target && creature.combat.regenerate(now).hits) this.mobiles.broadcastHealth(creature);
   }
 
+  /** Saca una invocación del mundo (se le terminó el tiempo, murió o se fue su dueño). */
+  dismiss(creature: Creature): void {
+    this.mobiles.disappear(creature);
+    creature.gone = true;
+    this.world.removeCreature(creature.id);
+  }
+
   private resolveSwing(result: SwingResult, now: number): void {
+    // Una criatura salvaje sin pelea se da vuelta contra quien la golpea (persona o invocación).
+    const { attacker, target } = result;
+    if (target instanceof Creature && !target.ownerId && target.combat.targetId === null)
+      target.combat.targetId = attacker.id;
     this.mobiles.swing(result);
     if (result.itemChanges) this.items.publish(result.itemChanges, result.attacker.id);
     if (result.hit && !result.blocked && result.damage > 0) this.disrupt(result.target);
@@ -250,7 +304,12 @@ export class GameLoop {
   }
 
   /** Muerte de un jugador (queda fantasma) o de una criatura (botín y reaparición). */
-  private handleKill(killer: Mobile | undefined, victim: Mobile, now: number): void {
+  private handleKill(killedBy: Mobile | undefined, victim: Mobile, now: number): void {
+    // Lo que mata una invocación cuenta para su dueño.
+    const killer =
+      killedBy instanceof Creature && killedBy.ownerId
+        ? (this.world.get(killedBy.ownerId) ?? killedBy)
+        : killedBy;
     if (victim instanceof Player) {
       victim.pendingCast = null;
       victim.pendingBandage = null;

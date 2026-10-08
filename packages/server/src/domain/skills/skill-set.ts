@@ -11,7 +11,11 @@ import {
 export class SkillSet {
   private readonly values: Record<SkillKey, number>;
 
-  constructor(initial: SkillValues) {
+  /** `onUse`: cada vez que se usa una habilidad (para entrenar atributos). */
+  constructor(
+    initial: SkillValues,
+    private readonly onUse?: (key: SkillKey, random: () => number) => void,
+  ) {
     this.values = { ...initial };
   }
 
@@ -34,6 +38,7 @@ export class SkillSet {
 
   /** Intenta subir una habilidad por haberla usado. Devuelve true si subió. */
   tryGain(key: SkillKey, random: () => number): boolean {
+    this.onUse?.(key, random);
     const value = this.values[key];
     if (value >= SKILL_MAX || this.total >= SKILL_TOTAL_CAP) return false;
     if (random() >= skillGainChance(value)) return false;

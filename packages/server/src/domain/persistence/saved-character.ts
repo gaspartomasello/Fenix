@@ -1,13 +1,16 @@
 import {
   MAX_STACK,
+  PLAYER_ATTRIBUTES,
   SKILL_KEYS,
   SKILL_MAX,
   STARTING_SKILLS,
+  STAT_CAP,
   isAppearance,
   isDirection,
   isEquipmentSlot,
   isItemKind,
   type Appearance,
+  type Attributes,
   type Direction,
   type EquipmentSlot,
   type ItemKind,
@@ -42,6 +45,8 @@ export interface SavedCharacter {
   readonly vitals: { readonly hits: number; readonly mana: number; readonly stamina: number };
   readonly dead: boolean;
   readonly skills: SkillValues;
+  /** Atributos entrenados (los personajes viejos no los tienen: se usan los iniciales). */
+  readonly attributes: Attributes;
   readonly reputation: { readonly fame: number; readonly karma: number; readonly murders: number };
   readonly guild: { readonly name: string; readonly tag: string } | null;
   readonly items: readonly SavedItem[];
@@ -70,6 +75,7 @@ export function captureCharacter(
     vitals: { hits, mana, stamina },
     dead: player.combat.isDead,
     skills: player.skills.snapshot(),
+    attributes: player.combat.baseAttributes,
     reputation: {
       fame: player.reputation.fame,
       karma: player.reputation.karma,
@@ -120,6 +126,21 @@ function parseSkills(value: unknown): SkillValues {
   return skills;
 }
 
+function parseAttributes(value: unknown): Attributes {
+  const source = isObject(value) ? value : {};
+  const read = (key: keyof Attributes): number => {
+    const raw = source[key];
+    return isNumber(raw)
+      ? Math.min(STAT_CAP, Math.max(10, Math.round(raw)))
+      : PLAYER_ATTRIBUTES[key];
+  };
+  return {
+    strength: read('strength'),
+    dexterity: read('dexterity'),
+    intelligence: read('intelligence'),
+  };
+}
+
 function parseItem(value: unknown): SavedItem | null {
   if (!isObject(value) || !isItemKind(value.kind) || !isNumber(value.amount)) return null;
   const amount = Math.min(MAX_STACK, Math.max(1, Math.round(value.amount)));
@@ -162,6 +183,7 @@ export function parseSavedCharacter(value: unknown): SavedCharacter | null {
     },
     dead: value.dead === true,
     skills: parseSkills(value.skills),
+    attributes: parseAttributes(value.attributes),
     reputation: {
       fame: number(reputation, 'fame'),
       karma: number(reputation, 'karma'),
@@ -184,7 +206,13 @@ export function restoreCharacter(
   now: number,
 ): Player {
   const player = world.spawn(
-    { id: nextId(), name: saved.name, appearance: saved.appearance, skills: saved.skills },
+    {
+      id: nextId(),
+      name: saved.name,
+      appearance: saved.appearance,
+      skills: saved.skills,
+      attributes: saved.attributes,
+    },
     random,
     { position: saved.position, direction: saved.direction },
   );

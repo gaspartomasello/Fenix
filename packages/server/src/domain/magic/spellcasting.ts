@@ -1,4 +1,5 @@
 import {
+  MAX_SUMMONS,
   SPELLS,
   SPELL_RANGE,
   attributeModifier,
@@ -12,6 +13,7 @@ import {
   rollSpellPower,
   spellDurationMs,
   spellSuccessChance,
+  summonDurationMs,
   tileDistance,
   type EntityId,
   type ItemKind,
@@ -98,7 +100,10 @@ export function startCast(
       break;
     case 'beneficial': {
       const target = request.targetId ? world.getMobile(request.targetId) : player;
-      if (!target || target instanceof Npc || target.combat.isDead)
+      if (spell.effect.kind === 'resurrect') {
+        if (!(target instanceof Player) || !target.combat.isDead || target.id === player.id)
+          return fail('Elegí a un fantasma.');
+      } else if (!target || target instanceof Npc || target.combat.isDead)
         return fail('Elegí a alguien vivo.');
       if (tileDistance(target.position, player.position) > SPELL_RANGE)
         return fail('Está demasiado lejos.');
@@ -122,6 +127,8 @@ export function startCast(
     }
     case 'location': {
       if (!request.position) return fail('Elegí un lugar.');
+      if (spell.effect.kind === 'summon' && world.summonsOf(player.id).length >= MAX_SUMMONS)
+        return fail('Ya tenés demasiadas criaturas invocadas.');
       if (tileDistance(request.position, player.position) > SPELL_RANGE)
         return fail('Está demasiado lejos.');
       if (!world.map.isWalkable(request.position) || world.isOccupied(request.position, player.id))
@@ -163,7 +170,23 @@ export type CastOutcome =
       moveTo?: Position;
       message?: string;
       itemChanges?: ItemChanges;
+      /** Terremoto: a quiénes alcanzó. */
+      areaHits?: readonly AreaHit[];
+      /** Criatura que apareció invocada. */
+      summoned?: Creature;
+      /** El objetivo volvió a la vida. */
+      revived?: boolean;
     };
+
+export interface AreaHit {
+  readonly target: Mobile;
+  readonly amount: number;
+  readonly killed: boolean;
+  readonly resisted: boolean;
+}
+
+/** Vida con la que vuelve quien es resucitado con el hechizo. */
+export const RESURRECTION_HEALTH = 0.5;
 
 /** Resistencia mágica del objetivo: la habilidad del jugador, o la de pelea de la criatura. */
 function magicResistOf(target: Mobile): number {
@@ -186,10 +209,12 @@ export function resolveCast(
   const spell = SPELLS[pending.spell];
   const magery = player.skills.get('magery');
 
+  // Resurrección va a un fantasma; todo lo demás, a alguien vivo.
+  const wantsGhost = spell.effect.kind === 'resurrect';
   const target = world.getMobile(pending.targetId);
   if (
     !target ||
-    target.combat.isDead ||
+    target.combat.isDead !== wantsGhost ||
     tileDistance(target.position, player.position) > SPELL_RANGE
   ) {
     return { kind: 'lost-target' };
@@ -270,6 +295,41 @@ export function resolveCast(
       if (!position || !world.map.isWalkable(position) || world.isOccupied(position, player.id))
         return { kind: 'lost-target' };
       return success({ moveTo: position });
+    }
+    case 'area-damage': {
+      const hits: AreaHit[] = [];
+      for (const mobile of world.mobilesNear(player.position)) {
+        if (mobile === player || mobile instanceof Npc || mobile.combat.isDead) continue;
+        if (tileDistance(mobile.position, player.position) > effect.radius) continue;
+        if (mobile instanceof Creature && mobile.ownerId === player.id) continue;
+        if (mobile instanceof Player && pvpRefusal(player, mobile, world)) continue;
+        const held = random() < resistChance(magicResistOf(mobile), spell.circle);
+        const rolled = rollSpellPower(spell, magery, random);
+        const amount = held ? Math.max(1, Math.round(rolled / 2)) : rolled;
+        const killed = mobile.combat.takeDamage(amount);
+        if (!killed) provoke(mobile, player);
+        hits.push({ target: mobile, amount, killed, resisted: held });
+      }
+      return success({ areaHits: hits });
+    }
+    case 'resurrect':
+      target.combat.resurrect(RESURRECTION_HEALTH, now);
+      return success({ revived: true });
+    case 'summon': {
+      const position = pending.position;
+      if (
+        !position ||
+        !world.map.isWalkable(position) ||
+        world.isOccupied(position, player.id) ||
+        world.summonsOf(player.id).length >= MAX_SUMMONS
+      )
+        return { kind: 'lost-target' };
+      const creature = new Creature(ids(), effect.creature, position, {
+        ownerId: player.id,
+        expiresAt: now + summonDurationMs(magery),
+      });
+      world.addCreature(creature);
+      return success({ target: creature, summoned: creature });
     }
     case 'create-food': {
       const food = CREATED_FOOD[Math.floor(random() * CREATED_FOOD.length)] ?? 'apple';

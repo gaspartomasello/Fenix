@@ -183,10 +183,21 @@ Cada jugador tiene un `SkillSet` (valores en décimas). Al pelear, practica el a
 Parada si lo atacan con escudo); al regenerar maná, Meditación; al lanzar, Magia. El acierto usa la
 fórmula de UO con las habilidades de ambos.
 
-Los hechizos (`spell-catalog.ts`) van en siete círculos, como en UO: cada círculo fija maná, Magia
+Los hechizos (`spell-catalog.ts`) van en ocho círculos, como en UO: cada círculo fija maná, Magia
 mínima y tiempo de lanzamiento, y cada hechizo dice a quién va (`self`, `beneficial`, `harmful` o
 `location`) y qué hace (`SpellEffect`: daño, curación, atributos, cura, veneno, parálisis,
-teletransporte, comida, drenar maná, protección o visión nocturna).
+teletransporte, comida, drenar maná, protección, visión nocturna, daño en área, resurrección o
+invocación).
+
+Las **invocaciones** son `Creature` con dueño (`ownerId`) y vencimiento (`expiresAt`): atacan al
+objetivo de su dueño o a quien lo ataque, si no lo siguen (pueden entrar al pueblo), lo que matan
+cuenta para él, no reaparecen y se van cuando vencen, mueren o su dueño se desconecta. Hay como
+mucho dos por jugador.
+
+Los **atributos** (fuerza, destreza e inteligencia) se entrenan como en UO: cada uso de una
+habilidad (`SkillSet` avisa a `Player`) puede subir uno de los suyos (`SKILL_STATS`), no muy
+seguido, hasta 100 cada uno y 225 entre los tres. Se guardan con el personaje y cambian los
+máximos de vida, maná y energía.
 
 Lanzar (`castSpell`) valida libro (o pergamino), Magia mínima, maná, reactivos y objetivo, y gasta
 todo de entrada (`startCast`); atacar con un hechizo a un inocente es un crimen, igual que con un

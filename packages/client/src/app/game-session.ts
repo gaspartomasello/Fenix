@@ -272,7 +272,7 @@ export class GameSession {
   }
 
   /**
-   * Libro de hechizos, habilidades y atajos 1–7. Cada hechizo pide su
+   * Libro de hechizos, habilidades y atajos 1–8. Cada hechizo pide su
    * objetivo: nada (a uno mismo), alguien (para ayudar o dañar) o un lugar.
    */
   private setUpMagic({ banner, worldCombat, tilePicker }: Targeting): Magic {
@@ -333,12 +333,13 @@ export class GameSession {
       if (values) skills.render(values);
     };
     this.game.on('skillsChanged', render);
+    this.game.on('effectsChanged', (state) => skills.renderAttributes(state.attributes));
     render();
 
     window.addEventListener('keydown', (e) => {
       if (e.target instanceof HTMLInputElement || e.ctrlKey || e.metaKey || e.altKey) return;
       const index = Number(e.key) - 1;
-      const spell = index >= 0 && index < 7 ? spellbook.spellAt(index) : undefined;
+      const spell = index >= 0 && index < 8 ? spellbook.spellAt(index) : undefined;
       if (spell) {
         e.preventDefault();
         cast(spell);
