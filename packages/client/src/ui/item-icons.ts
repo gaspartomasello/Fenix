@@ -8,7 +8,7 @@ const cache = new Map<ItemKind, string>();
 export function itemIconUrl(kind: ItemKind): string {
   let url = cache.get(kind);
   if (!url) {
-    url = toCanvas(drawItem(kind)).toDataURL();
+    url = toCanvas(drawItem(kind, 'icon')).toDataURL();
     cache.set(kind, url);
   }
   return url;

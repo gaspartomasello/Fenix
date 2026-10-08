@@ -2,10 +2,11 @@ import { ITEM_ART_SIZE } from '@fenix/art';
 import type { EntityId, GroundItemSnapshot } from '@fenix/shared';
 import { Sprite, type Container } from 'pixi.js';
 import { groundItemDepth } from './depth';
-import { ART_SCALE, tileToScreen, type ScreenPoint } from './iso';
+import { CHARACTER_SCALE, tileToScreen, type ScreenPoint } from './iso';
 import type { TextureCache } from './texture-cache';
 
-const HALF = (ITEM_ART_SIZE * ART_SCALE) / 2;
+/** Los objetos, como los personajes, tienen el doble de detalle y se muestran sin escalar. */
+const HALF = (ITEM_ART_SIZE * CHARACTER_SCALE) / 2;
 
 /** Objetos tirados en el suelo, en la capa ordenada junto a personajes y objetos fijos. */
 export class ItemLayer {
@@ -23,7 +24,7 @@ export class ItemLayer {
       const sprite = new Sprite(this.textures.item(item.kind));
       const screen = tileToScreen(item.position);
       sprite.anchor.set(0.5);
-      sprite.scale.set(ART_SCALE);
+      sprite.scale.set(CHARACTER_SCALE);
       sprite.position.set(screen.x, screen.y - 4);
       sprite.zIndex = groundItemDepth(item.position);
       this.target.addChild(sprite);

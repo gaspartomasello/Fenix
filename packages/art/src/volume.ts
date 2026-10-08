@@ -234,6 +234,59 @@ export class VolumeCanvas {
     }
   }
 
+  /** Caja con centro, ejes y medias medidas (libros, lingotes, cabezas de martillo). */
+  box(center: Vec3, axes: readonly [Vec3, Vec3, Vec3], half: Vec3, material: Material): void {
+    const [ax, ay, az] = axes;
+    const corner = (sx: number, sy: number, sz: number): Vec3 =>
+      add(
+        center,
+        add(add(scale(ax, sx * half[0]), scale(ay, sy * half[1])), scale(az, sz * half[2])),
+      );
+    const faces: [number, number, number][][] = [
+      [
+        [-1, 1, -1],
+        [1, 1, -1],
+        [1, 1, 1],
+        [-1, 1, 1],
+      ],
+      [
+        [-1, -1, -1],
+        [1, -1, -1],
+        [1, -1, 1],
+        [-1, -1, 1],
+      ],
+      [
+        [-1, -1, 1],
+        [1, -1, 1],
+        [1, 1, 1],
+        [-1, 1, 1],
+      ],
+      [
+        [-1, -1, -1],
+        [1, -1, -1],
+        [1, 1, -1],
+        [-1, 1, -1],
+      ],
+      [
+        [1, -1, -1],
+        [1, -1, 1],
+        [1, 1, 1],
+        [1, 1, -1],
+      ],
+      [
+        [-1, -1, -1],
+        [-1, -1, 1],
+        [-1, 1, 1],
+        [-1, 1, -1],
+      ],
+    ];
+    for (const face of faces)
+      this.polygon(
+        face.map(([x, y, z]) => corner(x, y, z)),
+        material,
+      );
+  }
+
   /** Polígono plano (capa, delantal, hoja de un arma…), visible de los dos lados. */
   polygon(points: readonly Vec3[], material: Material): void {
     const [first, ...rest] = points.map((p) => this.camera.point(p));
