@@ -1,0 +1,16 @@
+# Despliegue en Render (https://render.com) como servicio web con disco para los personajes.
+services:
+  - type: web
+    name: fenix
+    runtime: docker
+    plan: starter
+    healthCheckPath: /
+    envVars:
+      - key: DATA_DIR
+        value: /data
+      - key: MAP_SEED
+        value: '1997'
+    disk:
+      name: personajes
+      mountPath: /data
+      sizeGB: 1
