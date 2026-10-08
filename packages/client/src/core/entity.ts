@@ -1,10 +1,11 @@
 import {
   OVERHEAD_TEXT_DURATION_MS,
   type Appearance,
+  type Body,
   type Direction,
   type EntityId,
   type EquipmentLook,
-  type PlayerSnapshot,
+  type MobileSnapshot,
   type Position,
 } from '@fenix/shared';
 
@@ -25,6 +26,23 @@ export interface OverheadText {
   readonly expiresAt: number;
 }
 
+/** Número de daño (o "¡Falla!") que sube y se desvanece sobre la cabeza. */
+export interface CombatText {
+  readonly text: string;
+  readonly kind: 'damage-taken' | 'damage-dealt' | 'miss';
+  readonly startedAt: number;
+}
+
+/** Embestida corta hacia el objetivo al golpear. */
+interface Lunge {
+  readonly dx: number;
+  readonly dy: number;
+  readonly startedAt: number;
+}
+
+export const COMBAT_TEXT_MS = 1200;
+export const LUNGE_MS = 220;
+
 const MAX_OVERHEAD_TEXTS = 3;
 
 /**
@@ -44,14 +62,62 @@ export class Entity {
   private _stepCount = 0;
   private _overhead: OverheadText[] = [];
   private _equipment: EquipmentLook;
+  readonly body: Body;
+  private _health: number;
+  private _dead: boolean;
+  private _combatTexts: CombatText[] = [];
+  private lunge: Lunge | null = null;
 
-  constructor(snapshot: PlayerSnapshot) {
+  constructor(snapshot: MobileSnapshot) {
     this.id = snapshot.id;
     this.name = snapshot.name;
     this.appearance = snapshot.appearance;
     this._position = snapshot.position;
     this._direction = snapshot.direction;
     this._equipment = snapshot.equipment;
+    this.body = snapshot.body;
+    this._health = snapshot.health;
+    this._dead = snapshot.dead;
+  }
+
+  get health(): number {
+    return this._health;
+  }
+
+  get dead(): boolean {
+    return this._dead;
+  }
+
+  setHealth(health: number, dead: boolean): void {
+    this._health = health;
+    this._dead = dead;
+  }
+
+  get combatTexts(): readonly CombatText[] {
+    return this._combatTexts;
+  }
+
+  addCombatText(text: string, kind: CombatText['kind'], now: number): void {
+    this._combatTexts = [...this._combatTexts, { text, kind, startedAt: now }].slice(-4);
+  }
+
+  /** Inicia una embestida hacia `toward` (en tiles). */
+  lungeToward(toward: FractionalPosition, now: number): void {
+    const dx = Math.sign(toward.x - this._position.x);
+    const dy = Math.sign(toward.y - this._position.y);
+    this.lunge = { dx, dy, startedAt: now };
+  }
+
+  /** Desplazamiento de la embestida en tiles (sube y baja en LUNGE_MS). */
+  lungeOffset(now: number): FractionalPosition {
+    if (!this.lunge) return { x: 0, y: 0 };
+    const t = (now - this.lunge.startedAt) / LUNGE_MS;
+    if (t >= 1) {
+      this.lunge = null;
+      return { x: 0, y: 0 };
+    }
+    const amount = Math.sin(t * Math.PI) * 0.25;
+    return { x: this.lunge.dx * amount, y: this.lunge.dy * amount };
   }
 
   /** Lo que tiene puesto (se ve sobre el personaje). */
@@ -129,6 +195,7 @@ export class Entity {
   pruneOverhead(now: number): boolean {
     const before = this._overhead.length;
     this._overhead = this._overhead.filter((t) => t.expiresAt > now);
+    this._combatTexts = this._combatTexts.filter((t) => now - t.startedAt < COMBAT_TEXT_MS);
     return this._overhead.length !== before;
   }
 }

@@ -1,5 +1,6 @@
 import {
   drawCharacterFrame,
+  drawCreatureFrame,
   drawItem,
   drawStatic,
   drawTerrainTile,
@@ -12,6 +13,7 @@ import {
 import {
   EQUIPMENT_SLOTS,
   type Appearance,
+  type CreatureKind,
   type Direction,
   type EquipmentLook,
   type ItemKind,
@@ -50,6 +52,12 @@ export class TextureCache {
     const worn = EQUIPMENT_SLOTS.map((slot) => equipment[slot] ?? '').join(',');
     const key = `c:${appearance.clothHue}:${appearance.skinTone}:${appearance.hairHue}:${direction}:${frame}:${worn}`;
     return this.getOrCreate(key, () => drawCharacterFrame(appearance, direction, frame, equipment));
+  }
+
+  creature(kind: CreatureKind, direction: Direction, frame: CharacterFrame): Texture {
+    return this.getOrCreate(`m:${kind}:${direction}:${frame}`, () =>
+      drawCreatureFrame(kind, direction, frame),
+    );
   }
 
   item(kind: ItemKind): Texture {

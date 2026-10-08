@@ -13,6 +13,9 @@ import { TerrainLayer } from './terrain-layer';
 import { TextureCache } from './texture-cache';
 
 const ZOOM_LEVELS = [1, 1.5, 2] as const;
+const GHOST_TINT = 0x8c8c9c;
+/** Caja de un personaje en pantalla respecto de sus pies, para saber si se lo tocó. */
+const MOBILE_HIT_BOX = { halfWidth: 16, height: 64 };
 /** El personaje se dibuja un poco por debajo del centro, como en UO. */
 const CAMERA_VERTICAL_OFFSET = 30;
 /** Margen alrededor de la pantalla para crear objetos antes de que entren. */
@@ -68,6 +71,22 @@ export class GameRenderer {
     return this.groundItems.itemAt(this.toWorld(point));
   }
 
+  /** Criatura viva bajo un punto de la pantalla (la de más adelante si hay varias). */
+  creatureAt(point: ScreenPoint): EntityId | null {
+    const world = this.toWorld(point);
+    let best: { id: EntityId; y: number } | null = null;
+    for (const view of this.views.values()) {
+      if (!view.isAliveCreature) continue;
+      const { x, y } = view.feet;
+      const inside =
+        Math.abs(world.x - x) <= MOBILE_HIT_BOX.halfWidth &&
+        world.y <= y + 6 &&
+        world.y >= y - MOBILE_HIT_BOX.height;
+      if (inside && (!best || y > best.y)) best = { id: view.entityId, y };
+    }
+    return best?.id ?? null;
+  }
+
   /** Cambia el nivel de zoom: +1 acerca, -1 aleja. */
   stepZoom(delta: 1 | -1): void {
     this.zoomIndex = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, this.zoomIndex + delta));
@@ -79,7 +98,9 @@ export class GameRenderer {
     const self = this.game.self;
     if (!self) return;
 
-    for (const view of this.views.values()) view.update(now);
+    const targetId = this.game.targetId;
+    for (const view of this.views.values())
+      view.update(now, { targeted: view.entityId === targetId });
     const focus = self.renderPosition(now);
     const view = this.updateCamera(focus);
     this.terrain?.cull(view);
@@ -87,7 +108,8 @@ export class GameRenderer {
 
     const time = this.game.worldTime();
     if (time) {
-      this.scene.tint = Lighting.tintFor(time.dayProgress);
+      // De fantasma el mundo se ve gris, como en UO.
+      this.scene.tint = self.dead ? GHOST_TINT : Lighting.tintFor(time.dayProgress);
       this.lighting.update(time.dayProgress, focus, this.statics?.visibleLights() ?? []);
     }
     this.app.render();

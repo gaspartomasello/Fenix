@@ -10,6 +10,9 @@ import { DragController } from '../ui/drag-controller';
 import { EquipmentWindow } from '../ui/equipment-window';
 import { HudButtons } from '../ui/hud-buttons';
 import { WorldTooltip } from '../ui/world-tooltip';
+import { GhostBanner } from '../ui/ghost-banner';
+import { VitalsPanel } from '../ui/vitals-panel';
+import { WorldCombat } from './world-combat';
 import { WorldItems } from './world-items';
 import { LoginScreen, type LoginRequest } from '../ui/login-screen';
 import { showOverlay } from '../ui/overlay';
@@ -81,14 +84,17 @@ export class GameSession {
     const renderer = await GameRenderer.create(this.hosts.game, this.game);
     const drag = new DragController(this.hosts.ui);
     const tooltip = new WorldTooltip();
+    // El combate se registra primero: un clic sobre una criatura ataca antes que agarrar un objeto.
+    const worldCombat = new WorldCombat(this.game, renderer, tooltip);
     const worldItems = new WorldItems(this.game, renderer, drag, tooltip);
     const input = new InputController({
       surface: renderer.canvas,
       selfScreenPosition: () => renderer.selfScreenPosition(),
       onZoom: (delta) => renderer.stepZoom(delta),
-      canSteerFrom: (point) => !worldItems.hasItemAt(point),
+      canSteerFrom: (point) => !worldItems.hasItemAt(point) && !worldCombat.hasCreatureAt(point),
     });
     this.setUpInventory(drag, worldItems, tooltip);
+    this.setUpVitals();
     const chat = new ChatPanel((text) => this.game.say(text));
     const status = new StatusBar();
     this.hosts.ui.append(status.element, chat.element);
@@ -116,6 +122,21 @@ export class GameSession {
       requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
+  }
+
+  /** Barras de vida, maná y energía, y el aviso de fantasma. */
+  private setUpVitals(): void {
+    const panel = new VitalsPanel();
+    const ghost = new GhostBanner();
+    this.hosts.ui.append(panel.element, ghost.element);
+    const render = (): void => {
+      const state = this.game.vitals;
+      if (!state) return;
+      panel.update(state.vitals);
+      ghost.setVisible(state.dead);
+    };
+    this.game.on('vitalsChanged', render);
+    render();
   }
 
   /** Ventanas de mochila y equipo, sus botones y la sincronización con el estado. */

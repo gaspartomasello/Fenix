@@ -1,6 +1,8 @@
 import {
   TileMap,
   advanceTime,
+  bodyMoveMs,
+  effectiveMoveMode,
   moveDuration,
   sanitizeChatText,
   type BackpackItemSnapshot,
@@ -12,6 +14,7 @@ import {
   type MoveMode,
   type RegionData,
   type ServerMessage,
+  type Vitals,
   type WorldTime,
 } from '@fenix/shared';
 import { Entity } from './entity';
@@ -38,6 +41,10 @@ export interface ClientGameEvents extends Record<string, unknown> {
   groundItemsChanged: { added: readonly GroundItemSnapshot[]; removed: readonly EntityId[] };
   /** Cambió la mochila o el equipo propio. */
   inventoryChanged: Inventory;
+  /** Cambió la vida, el maná, la energía o si está muerto. */
+  vitalsChanged: { vitals: Vitals; dead: boolean };
+  /** Cambió a quién está atacando. */
+  targetChanged: EntityId | null;
 }
 
 export interface Inventory {
@@ -57,6 +64,8 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   private time: { value: WorldTime; receivedAt: number } | null = null;
   private readonly ground = new Map<EntityId, GroundItemSnapshot>();
   private _inventory: Inventory = { backpack: [], equipment: [] };
+  private _vitals: { vitals: Vitals; dead: boolean } | null = null;
+  private _targetId: EntityId | null = null;
 
   constructor(
     private readonly gateway: ServerGateway,
@@ -75,6 +84,14 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
 
   allEntities(): IterableIterator<Entity> {
     return this.entities.values();
+  }
+
+  get vitals(): { vitals: Vitals; dead: boolean } | null {
+    return this._vitals;
+  }
+
+  get targetId(): EntityId | null {
+    return this._targetId;
   }
 
   get inventory(): Inventory {
@@ -96,9 +113,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     );
   }
 
-  /** Jugadores a la vista, incluido el propio. */
+  /** Jugadores (personas, no criaturas) a la vista, incluido el propio. */
   get visibleCount(): number {
-    return this.entities.size;
+    return [...this.entities.values()].filter((e) => e.body === 'human').length;
   }
 
   /** Hora actual del mundo, extrapolada desde la que envió el servidor. */
@@ -118,7 +135,14 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   requestStep(direction: Direction, mode: MoveMode): void {
     const self = this.self;
     if (!self || !this.predictor) return;
-    const request = this.predictor.tryStep(self, direction, mode, this.clock());
+    // Sin energía no se puede correr: misma regla que aplica el servidor.
+    const stamina = this._vitals?.vitals.stamina ?? 1;
+    const request = this.predictor.tryStep(
+      self,
+      direction,
+      effectiveMoveMode(mode, stamina),
+      this.clock(),
+    );
     if (request) this.gateway.send(request);
   }
 
@@ -130,6 +154,15 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   /** Arrastrar y soltar un objeto. El servidor decide si se puede. */
   moveItem(itemId: EntityId, to: ItemDestination): void {
     if (this.self) this.gateway.send({ type: 'moveItem', itemId, to });
+  }
+
+  /** Atacar a una criatura: el servidor golpea mientras esté al alcance. */
+  attack(targetId: EntityId): void {
+    if (this.self && targetId !== this.selfId) this.gateway.send({ type: 'attack', targetId });
+  }
+
+  stopAttack(): void {
+    if (this.self && this._targetId) this.gateway.send({ type: 'stopAttack' });
   }
 
   /** Doble clic sobre un objeto. */
@@ -155,25 +188,27 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this.selfId = message.selfId;
         this.predictor = new MovementPredictor(this._map);
         this.time = { value: message.time, receivedAt: now };
-        message.players.forEach((p) => this.addEntity(new Entity(p)));
+        this._targetId = null;
+        message.mobiles.forEach((m) => this.addEntity(new Entity(m)));
         this.emit('ready', { selfId: message.selfId, map: this._map });
         break;
       }
       case 'joinRejected':
         this.emit('joinRejected', { reason: message.reason });
         break;
-      case 'playerAppeared':
-        if (!this.entities.has(message.player.id)) this.addEntity(new Entity(message.player));
+      case 'mobileAppeared':
+        if (!this.entities.has(message.mobile.id)) this.addEntity(new Entity(message.mobile));
         break;
-      case 'playerDisappeared':
+      case 'mobileDisappeared':
         if (message.id !== this.selfId && this.entities.delete(message.id)) {
           this.emit('entityRemoved', message.id);
         }
         break;
-      case 'playerMoved': {
+      case 'mobileMoved': {
         const entity = this.entities.get(message.id);
         if (entity && message.id !== this.selfId) {
-          entity.moveTo(message.position, message.direction, moveDuration(message.mode), now);
+          const duration = bodyMoveMs(entity.body, moveDuration(message.mode));
+          entity.moveTo(message.position, message.direction, duration, now);
         }
         break;
       }
@@ -200,10 +235,39 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this._inventory = { backpack: message.backpack, equipment: message.equipment };
         this.emit('inventoryChanged', this._inventory);
         break;
+      case 'vitals':
+        this._vitals = { vitals: message.vitals, dead: message.dead };
+        this.self?.setHealth(message.vitals.hits / message.vitals.maxHits, message.dead);
+        this.emit('vitalsChanged', this._vitals);
+        break;
+      case 'mobileHealth':
+        this.entities.get(message.id)?.setHealth(message.health, message.dead);
+        break;
+      case 'combatTarget':
+        this._targetId = message.targetId;
+        this.emit('targetChanged', message.targetId);
+        break;
+      case 'swing':
+        this.applySwing(message, now);
+        break;
       case 'playerEquipment':
         this.entities.get(message.id)?.setEquipment(message.equipment);
         break;
     }
+  }
+
+  private applySwing(message: Extract<ServerMessage, { type: 'swing' }>, now: number): void {
+    const attacker = this.entities.get(message.attackerId);
+    const target = this.entities.get(message.targetId);
+    if (attacker && target) attacker.lungeToward(target.position, now);
+    if (!target) return;
+    if (!message.hit) target.addCombatText('¡Falla!', 'miss', now);
+    else
+      target.addCombatText(
+        String(message.damage),
+        message.targetId === this.selfId ? 'damage-taken' : 'damage-dealt',
+        now,
+      );
   }
 
   private addEntity(entity: Entity): void {
