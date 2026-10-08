@@ -345,8 +345,13 @@ export interface Rig {
   readonly arms: Readonly<
     Record<1 | -1, { shoulder: Vec3; elbow: Vec3; hand: Vec3; weaponDir: Vec3 }>
   >;
-  /** Cuánto se abre la capa hacia atrás (al moverse o pelear). */
+  /**
+   * Cuánto vuela la capa hacia atrás: poco al caminar, mucho al correr, y
+   * según el giro y la inclinación al pelear.
+   */
   readonly sway: number;
+  /** Fase del ciclo (0–3), para que la tela ondee distinto en cada paso. */
+  readonly phase: number;
 }
 
 const THIGH = 12;
@@ -429,7 +434,14 @@ export function humanoidRig(
     [-1]: armFor(-1, pose.leftArm ?? defaultArm(-1)),
   } as Rig['arms'];
 
-  const moving = typeof frame === 'number' ? (frame % 2 === 1 ? 1.6 : 0.8) : 0;
+  const running = typeof frame === 'string' && frame.startsWith('run-');
+  const walking = typeof frame === 'number';
+  const step = walking ? frame : running ? Number(frame.slice(4)) : 0;
+  const sway = running
+    ? 4.2 + (step % 2) * 0.8
+    : walking
+      ? 1.1 + (step % 2) * 0.5
+      : Math.abs(lean) * 1.1 + Math.abs(twist) * 2.5;
   return {
     pelvis,
     chest,
@@ -437,7 +449,8 @@ export function humanoidRig(
     neck: [hipShift * 0.3, hipY + 15.5 * k, 0.3 + lean * 0.8],
     legs,
     arms,
-    sway: Math.max(moving, Math.abs(lean) * 0.8),
+    sway,
+    phase: step,
   };
 }
 

@@ -13,7 +13,6 @@ import {
   CHARACTER_ART_WIDTH,
   cameraFor,
   humanoidRig,
-  type Basis,
   type CharacterFrame,
   type Rig,
 } from './humanoid-rig';
@@ -32,6 +31,7 @@ import {
   solid,
   sub,
   tone,
+  yaw,
   type Material,
   type Ramp,
   type Vec3,
@@ -344,23 +344,80 @@ function drawArms(
 
 // ── Equipo ──────────────────────────────────────────────────────────
 
+/**
+ * Capa: una tela curva que cuelga de los hombros y envuelve la espalda por
+ * fuera del cuerpo. En cada fila se aleja lo necesario para que las piernas
+ * (y el torso inclinado) nunca la atraviesen, vuela hacia atrás según el
+ * movimiento y ondea distinto en cada paso.
+ */
 function drawCloak(canvas: VolumeCanvas, rig: Rig, cloak: Ramp): void {
-  const chest: Basis = rig.chest;
-  const sway = rig.sway;
-  const folds: Material = (s) => tone(cloak, s.light * 0.9, Math.sin(s.p[0] * 1.3) > 0.55 ? -1 : 0);
-  const shoulderY = rig.arms[1].shoulder[1] - chest.origin[1] + 1;
-  canvas.polygon(
-    [
-      chest.at([-7.4, shoulderY, -2.8]),
-      chest.at([7.4, shoulderY, -2.8]),
-      [9.6, 9, -6 - sway],
-      [-9.6, 9, -6 - sway],
-    ],
-    folds,
-  );
+  const chest = rig.chest;
+  const top = rig.arms[1].shoulder[1] + 0.8;
+  const bottom = 7;
+  const rows = 12;
+  const cols = 10;
+  const reach = 1.45;
+
+  // Lo que la capa tiene que esquivar: puntos de las piernas con su grosor.
+  const obstacles: { p: Vec3; r: number }[] = [];
+  for (const side of [1, -1] as const) {
+    const leg = rig.legs[side];
+    for (let i = 0; i <= 8; i++) {
+      const t = i / 8;
+      obstacles.push({ p: lerp(leg.hip, leg.knee, t), r: 3.6 });
+      obstacles.push({ p: lerp(leg.knee, leg.ankle, t), r: 3.1 });
+    }
+    obstacles.push({ p: leg.toe, r: 2.4 });
+  }
+
+  const ring: Vec3[][] = [];
+  let lastDepth = 0;
+  for (let row = 0; row <= rows; row++) {
+    const t = row / rows;
+    const y = top + (bottom - top) * t;
+    const turn = chest.turn * (1 - t);
+    const halfWidth = 7.9 + t * 2.4;
+    const center = lerp(chest.origin, rig.pelvis.origin, Math.min(1, t * 1.6));
+    // Profundidad: la de la espalda arriba, más el vuelo, y lo que pidan las piernas a esa altura.
+    let depth = 4.6 + t * 1.2 + rig.sway * t * t;
+    for (const { p, r } of obstacles) {
+      if (Math.abs(p[1] - y) > r) continue;
+      const across = Math.min(0.95, Math.abs(p[0] - center[0]) / halfWidth);
+      depth = Math.max(depth, (-(p[2] - center[2]) + r + 0.8) / Math.sqrt(1 - across * across));
+    }
+    // Una tela no se mete hacia adentro de golpe al bajar.
+    depth = Math.max(depth, lastDepth * 0.9);
+    lastDepth = depth;
+    const points: Vec3[] = [];
+    for (let col = 0; col <= cols; col++) {
+      const angle = -reach + (2 * reach * col) / cols;
+      const wave = Math.sin(angle * 3 + rig.phase * 1.7) * 0.5 * t * (1 + rig.sway * 0.3);
+      const local = yaw([Math.sin(angle) * halfWidth, 0, -Math.cos(angle) * (depth + wave)], turn);
+      points.push([center[0] + local[0], y, center[2] + local[2]]);
+    }
+    ring.push(points);
+  }
+
+  const folds: Material = (s) => {
+    const around = Math.atan2(s.p[0] - chest.origin[0], -(s.p[2] - chest.origin[2]));
+    return tone(cloak, s.light * 0.95, Math.sin(around * 7) > 0.55 ? -1 : 0);
+  };
+  for (let row = 0; row < rows; row++) {
+    const upper = ring[row];
+    const lower = ring[row + 1];
+    if (!upper || !lower) continue;
+    for (let col = 0; col < cols; col++) {
+      const a = upper[col];
+      const b = upper[col + 1];
+      const c = lower[col + 1];
+      const d = lower[col];
+      if (a && b && c && d) canvas.polygon([a, b, c, d], folds);
+    }
+  }
   // Esclavina sobre los hombros y broche.
-  canvas.ellipsoid(chest.at([0, shoulderY - 0.6, -0.4]), chest.axes, [8.2, 2.5, 4.6], solid(cloak));
-  canvas.sphere(chest.at([0, shoulderY - 1.6, 4.1]), 1, metal(GOLD));
+  const shoulderY = top - chest.origin[1];
+  canvas.ellipsoid(chest.at([0, shoulderY - 1.2, -0.6]), chest.axes, [8.2, 2.6, 4.9], solid(cloak));
+  canvas.sphere(chest.at([0, shoulderY - 2.2, 4.1]), 1, metal(GOLD));
 }
 
 function drawShield(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
