@@ -1,4 +1,5 @@
 import { isAppearance } from '../domain/character/appearance';
+import { PASSWORD_MAX_LENGTH } from '../domain/character/password';
 import { isEquipmentSlot } from '../domain/items/equipment';
 import { isItemKind } from '../domain/items/item-catalog';
 import { isSpellKey } from '../domain/magic/spell-catalog';
@@ -76,10 +77,16 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
 
   switch (data.type) {
     case 'join':
-      if (isString(data.name) && isAppearance(data.appearance)) {
+      if (
+        isString(data.name) &&
+        isAppearance(data.appearance) &&
+        (data.password === undefined ||
+          (isString(data.password) && data.password.length <= PASSWORD_MAX_LENGTH))
+      ) {
+        const base = { type: 'join', name: data.name, appearance: data.appearance } as const;
         return {
           ok: true,
-          message: { type: 'join', name: data.name, appearance: data.appearance },
+          message: isString(data.password) ? { ...base, password: data.password } : base,
         };
       }
       break;

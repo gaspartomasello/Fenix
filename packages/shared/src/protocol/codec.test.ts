@@ -32,6 +32,12 @@ describe('decodeClientMessage', () => {
     expect(decodeClientMessage(JSON.stringify({ type: 'teleport' })).ok).toBe(false);
   });
 
+  it('acepta el ingreso con contraseña', () => {
+    const join = { type: 'join', name: 'Ana', appearance: DEFAULT_APPEARANCE, password: 'secreta' };
+    expect(decodeClientMessage(JSON.stringify(join))).toEqual({ ok: true, message: join });
+    expect(decodeClientMessage(JSON.stringify({ ...join, password: 5 })).ok).toBe(false);
+  });
+
   it('rechaza mensajes demasiado grandes', () => {
     expect(decodeClientMessage(JSON.stringify({ type: 'chat', text: 'a'.repeat(2000) })).ok).toBe(
       false,
