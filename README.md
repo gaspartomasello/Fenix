@@ -64,6 +64,11 @@ Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña 
   lado. **Escape**: dejar de atacar.
 - **L**: libro de hechizos. **K**: habilidades. **1 a 5**: lanzar un hechizo (los de ataque van al
   objetivo de combate o piden tocar una criatura).
+- **Tocar a un comerciante** (estando cerca): comprar y vender. A la banquera: abrir la caja del
+  banco y arrastrar objetos entre la mochila y el banco.
+- **Doble clic sobre el hacha o el pico**, y después tocar un árbol o una roca al lado: talar o
+  minar. Doble clic sobre el mineral al lado de la forja: fundirlo. Doble clic sobre el martillo
+  de herrero: abrir la herrería (al lado del yunque y la forja).
 - **Rueda del mouse**: acercar o alejar la cámara.
 
 ## Estructura
@@ -94,6 +99,7 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
    zonas seguras.
 5. ✅ **Habilidades y magia**: siete habilidades que suben con el uso (Lucha, Espadas, Esgrima,
    Tácticas, Parada, Magia, Meditación) y cinco hechizos con reactivos y libro.
-6. Economía: crafting, recolección, NPCs vendedores, banco, oro.
+6. ✅ **Economía**: talar y minar, fundir mineral, herrería con recetas, cuatro comerciantes
+   (herrero, maga, tabernero y banquera) y caja del banco.
 7. Social: grupos, gremios, combate entre jugadores, karma y fama.
 8. Persistencia y deploy: cuentas, guardado, servidor 24/7.

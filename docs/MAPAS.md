@@ -48,6 +48,10 @@ npm run tilesets -w @fenix/content
   - una puerta es un hueco en la pared sur o este.
 - **Faroles** iluminan de noche (radio de 5 tiles).
 - **Santuario** (`shrine`): los fantasmas que llegan a 2 tiles vuelven a la vida. Tiene que haber
+- **Forja y yunque** (`forge`, `anvil`): para fundir mineral y fabricar. Los árboles (`oak`,
+  `pine`) dan troncos y las rocas (`rock`) mineral.
+- **Comerciantes**: en la capa `zonas`, un punto de clase `npc` con una propiedad `rol`
+  (`blacksmith`, `mage`, `innkeeper` o `banker`).
   al menos uno en el mapa.
 - **Zonas** (`region`): además de nombrar el lugar, son **seguras**: las criaturas no entran.
 - **Zonas** (`region`): su nombre aparece en la barra de estado cuando el jugador está adentro.
