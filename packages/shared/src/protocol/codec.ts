@@ -2,6 +2,7 @@ import { isAppearance } from '../domain/character/appearance';
 import { isEquipmentSlot } from '../domain/items/equipment';
 import { isItemKind } from '../domain/items/item-catalog';
 import { isSpellKey } from '../domain/magic/spell-catalog';
+import { isChatChannel, isSocialCommand } from '../domain/social/groups';
 import { isDirection } from '../domain/geometry/direction';
 import { isMoveMode } from '../domain/rules/movement';
 import type { Position } from '../domain/geometry/position';
@@ -91,8 +92,38 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       }
       break;
     case 'chat':
-      if (isString(data.text)) return { ok: true, message: { type: 'chat', text: data.text } };
+      if (!isString(data.text)) break;
+      if (data.channel === undefined)
+        return { ok: true, message: { type: 'chat', text: data.text } };
+      if (isChatChannel(data.channel)) {
+        return { ok: true, message: { type: 'chat', text: data.text, channel: data.channel } };
+      }
       break;
+    case 'social': {
+      if (!isSocialCommand(data.command)) break;
+      const name =
+        data.name === undefined
+          ? undefined
+          : isString(data.name) && data.name.length <= 40
+            ? data.name
+            : null;
+      const tag =
+        data.tag === undefined
+          ? undefined
+          : isString(data.tag) && data.tag.length <= 8
+            ? data.tag
+            : null;
+      if (name === null || tag === null) break;
+      return {
+        ok: true,
+        message: {
+          type: 'social',
+          command: data.command,
+          ...(name !== undefined ? { name } : {}),
+          ...(tag !== undefined ? { tag } : {}),
+        },
+      };
+    }
     case 'moveItem': {
       const to = asDestination(data.to);
       if (isId(data.itemId) && to) {
@@ -182,6 +213,8 @@ const SERVER_TYPES: ReadonlySet<ServerMessageType> = new Set<ServerMessageType>(
   'skills',
   'castStart',
   'spellEffect',
+  'mobileStatus',
+  'social',
   'system',
 ]);
 

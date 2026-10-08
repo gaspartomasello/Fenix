@@ -64,6 +64,17 @@ describe('mensajes de objetos', () => {
     expect(ok({ type: 'moveItem', itemId: 'i1', to: { type: 'bank' } })).toBe(true);
   });
 
+  it('acepta chat por canal y comandos sociales', () => {
+    const ok = (m: unknown): boolean => decodeClientMessage(JSON.stringify(m)).ok;
+    expect(ok({ type: 'chat', text: 'hola', channel: 'party' })).toBe(true);
+    expect(ok({ type: 'chat', text: 'hola', channel: 'world' })).toBe(false);
+    expect(ok({ type: 'social', command: 'party-invite', name: 'Ana' })).toBe(true);
+    expect(
+      ok({ type: 'social', command: 'guild-create', name: 'Orden del Fénix', tag: 'FNX' }),
+    ).toBe(true);
+    expect(ok({ type: 'social', command: 'party-kick' })).toBe(false);
+  });
+
   it('acepta pedidos de ataque', () => {
     expect(decodeClientMessage(JSON.stringify({ type: 'attack', targetId: 'c1' })).ok).toBe(true);
     expect(decodeClientMessage(JSON.stringify({ type: 'attack' })).ok).toBe(false);
