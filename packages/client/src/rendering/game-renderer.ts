@@ -17,7 +17,6 @@ const ZOOM_LEVELS = [1, 1.5, 2] as const;
 const GHOST_TINT = 0x8c8c9c;
 /** El hechizo de Luz agranda el halo propio durante 5 minutos reales. */
 const LIGHT_SPELL_RADIUS = 7;
-const LIGHT_SPELL_MS = 5 * 60 * 1000;
 /** Caja de un personaje en pantalla respecto de sus pies, para saber si se lo tocó. */
 const MOBILE_HIT_BOX = { halfWidth: 16, height: 64 };
 /** El personaje se dibuja un poco por debajo del centro, como en UO. */
@@ -47,7 +46,6 @@ export class GameRenderer {
     return null;
   });
   /** Hasta cuándo dura el hechizo de Luz propio. */
-  private lightBoostUntil = 0;
   private zoomIndex = 0;
   private readonly unsubscribe: (() => void)[] = [];
 
@@ -141,7 +139,7 @@ export class GameRenderer {
     if (time) {
       // De fantasma el mundo se ve gris, como en UO.
       this.scene.tint = self.dead ? GHOST_TINT : Lighting.tintFor(time.dayProgress);
-      const selfRadius = now < this.lightBoostUntil ? LIGHT_SPELL_RADIUS : undefined;
+      const selfRadius = this.game.hasEffect('night-sight') ? LIGHT_SPELL_RADIUS : undefined;
       this.lighting.update(
         time.dayProgress,
         focus,
@@ -205,13 +203,12 @@ export class GameRenderer {
         for (const entity of this.game.allEntities()) this.addView(entity);
       }),
       this.game.on('entityAdded', (entity) => this.addView(entity)),
-      this.game.on('spellEffect', (effect) => {
-        const now = performance.now();
-        this.effects.add(effect, now);
-        if (effect.spell === 'light' && effect.targetId === this.game.selfId) {
-          this.lightBoostUntil = now + LIGHT_SPELL_MS;
-        }
-      }),
+      this.game.on('spellEffect', ({ spell, casterId, targetId }) =>
+        this.effects.addSpell(spell, casterId, targetId, performance.now()),
+      ),
+      this.game.on('arrowShot', ({ attackerId, targetId }) =>
+        this.effects.addArrow(attackerId, targetId, performance.now()),
+      ),
       this.game.on('entityRemoved', (id) => {
         this.views.get(id)?.destroy();
         this.views.delete(id);

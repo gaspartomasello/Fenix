@@ -6,13 +6,15 @@ import type { ActionStep, CharacterFrame } from '@fenix/art';
  * puras (sin dibujo) para poder probarlas.
  */
 
-export type AttackStyle = 'slash' | 'thrust' | 'punch';
+export type AttackStyle = 'slash' | 'thrust' | 'punch' | 'shoot';
 
 /** Pasos de cada golpe: preparación más larga, golpe corto y seguida. */
 const ATTACK_STEPS: Readonly<Record<AttackStyle, readonly ActionStep[]>> = {
   slash: [0, 0, 1, 2, 2],
   thrust: [0, 0, 1, 1, 2],
   punch: [0, 1, 1, 2],
+  // Arco: tensar, sostener y soltar.
+  shoot: [0, 1, 1, 1, 2],
 };
 
 export function attackFrame(style: AttackStyle, progress: number): CharacterFrame {

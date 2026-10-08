@@ -1,4 +1,4 @@
-import { SPELLS, SPELL_KEYS, formatGameTime, type SpellKey } from '@fenix/shared';
+import { SPELLS, formatGameTime, isCraftSkill, type SpellKey } from '@fenix/shared';
 import { ClientGame } from '../core/client-game';
 import { InputController } from '../input/input-controller';
 import { createGateway, IS_SOLO } from '../network/create-gateway';
@@ -18,6 +18,7 @@ import { SkillsWindow } from '../ui/skills-window';
 import { SpellbookWindow } from '../ui/spellbook-window';
 import { TargetingBanner } from '../ui/targeting-banner';
 import { VitalsPanel } from '../ui/vitals-panel';
+import { EffectsBar } from '../ui/effects-bar';
 import { ITEMS, VENDORS, VENDOR_RANGE, reputationTitle, type NpcRole } from '@fenix/shared';
 import type { ItemActions } from '../ui/backpack-window';
 import { BankWindow } from '../ui/bank-window';
@@ -30,6 +31,19 @@ import { WorldItems } from './world-items';
 import { LoginScreen, type LoginRequest } from '../ui/login-screen';
 import { showOverlay } from '../ui/overlay';
 import { StatusBar } from '../ui/status-bar';
+
+/** Lo que hace falta para pedirle al jugador un objetivo: una persona, criatura o lugar. */
+interface Targeting {
+  readonly banner: TargetingBanner;
+  readonly worldCombat: WorldCombat;
+  readonly tilePicker: TilePicker;
+}
+
+/** El libro de hechizos y cómo lanzar uno (desde el libro o desde un pergamino). */
+interface Magic {
+  readonly spellbook: SpellbookWindow;
+  readonly cast: (spell: SpellKey, scrollId?: string) => void;
+}
 
 /** Ventanas de la economía que otras partes de la sesión necesitan abrir o actualizar. */
 interface EconomyUi {
@@ -133,9 +147,12 @@ export class GameSession {
         !worldCombat.hasTargetAt(point) &&
         !worldNpcs.hasNpcAt(point),
     });
-    const spellbook = this.setUpMagic(worldCombat);
+    const banner = new TargetingBanner();
+    this.hosts.ui.append(banner.element);
+    const targeting: Targeting = { banner, worldCombat, tilePicker };
+    const magic = this.setUpMagic(targeting);
     this.setUpSocial();
-    this.setUpInventory(drag, worldItems, tooltip, spellbook, economy, tilePicker, renderer);
+    this.setUpInventory(drag, worldItems, tooltip, magic, economy, targeting, renderer);
     this.setUpVitals();
     const chat = new ChatPanel((text) => this.game.say(text));
     const status = new StatusBar();
@@ -210,7 +227,9 @@ export class GameSession {
   private setUpVitals(): void {
     const panel = new VitalsPanel();
     const ghost = new GhostBanner();
-    this.hosts.ui.append(panel.element, ghost.element);
+    const effects = new EffectsBar(clock);
+    this.hosts.ui.append(panel.element, effects.element, ghost.element);
+    this.game.on('effectsChanged', (state) => effects.update(state));
     const render = (): void => {
       const state = this.game.vitals;
       if (!state) return;
@@ -252,36 +271,62 @@ export class GameSession {
     );
   }
 
-  /** Libro de hechizos, habilidades, elegir objetivo y atajos 1–5. Devuelve el libro. */
-  private setUpMagic(worldCombat: WorldCombat): SpellbookWindow {
-    const banner = new TargetingBanner();
-    const cast = (spell: SpellKey): void => {
+  /**
+   * Libro de hechizos, habilidades y atajos 1–7. Cada hechizo pide su
+   * objetivo: nada (a uno mismo), alguien (para ayudar o dañar) o un lugar.
+   */
+  private setUpMagic({ banner, worldCombat, tilePicker }: Targeting): Magic {
+    const cast = (spell: SpellKey, scrollId?: string): void => {
       const definition = SPELLS[spell];
-      if (definition.target === 'self') {
-        this.game.castSpell(spell);
-        return;
+      const from = scrollId ? { scrollId } : {};
+      const done = (): void => banner.hide();
+      switch (definition.target) {
+        case 'self':
+          this.game.castSpell(spell, from);
+          return;
+        case 'location':
+          banner.show(`${definition.name}: tocá el lugar al que querés ir (Escape cancela).`);
+          tilePicker.pick((position) => {
+            done();
+            this.game.castSpell(spell, { ...from, position });
+          }, done);
+          return;
+        case 'harmful': {
+          // Con un objetivo de combate elegido, se usa ese; si no, se elige con un clic.
+          const target = this.game.targetId;
+          if (target) {
+            this.game.castSpell(spell, { ...from, targetId: target });
+            return;
+          }
+          banner.show(`${definition.name}: tocá a quién se lo querés lanzar (Escape cancela).`);
+          worldCombat.pickMobile(
+            (targetId) => {
+              done();
+              this.game.castSpell(spell, { ...from, targetId });
+            },
+            done,
+            { people: true, self: false },
+          );
+          return;
+        }
+        case 'beneficial':
+          banner.show(
+            `${definition.name}: tocá a quién se lo querés lanzar, o a vos (Escape cancela).`,
+          );
+          worldCombat.pickMobile(
+            (targetId) => {
+              done();
+              this.game.castSpell(spell, { ...from, targetId });
+            },
+            done,
+            { people: true, self: true },
+          );
       }
-      // Con un objetivo de combate elegido, se usa ese; si no, se elige con un clic.
-      const target = this.game.targetId;
-      if (target) {
-        this.game.castSpell(spell, target);
-        return;
-      }
-      banner.show(
-        `${definition.name}: tocá la criatura a la que se lo querés lanzar (Escape cancela).`,
-      );
-      worldCombat.pickCreature(
-        (id) => {
-          banner.hide();
-          this.game.castSpell(spell, id);
-        },
-        () => banner.hide(),
-      );
     };
 
-    const spellbook = new SpellbookWindow(cast);
+    const spellbook = new SpellbookWindow((spell) => cast(spell));
     const skills = new SkillsWindow();
-    this.hosts.ui.append(spellbook.window.element, skills.window.element, banner.element);
+    this.hosts.ui.append(spellbook.window.element, skills.window.element);
     const render = (): void => {
       const values = this.game.skills;
       spellbook.render(values);
@@ -292,7 +337,8 @@ export class GameSession {
 
     window.addEventListener('keydown', (e) => {
       if (e.target instanceof HTMLInputElement || e.ctrlKey || e.metaKey || e.altKey) return;
-      const spell = SPELL_KEYS[Number(e.key) - 1];
+      const index = Number(e.key) - 1;
+      const spell = index >= 0 && index < 7 ? spellbook.spellAt(index) : undefined;
       if (spell) {
         e.preventDefault();
         cast(spell);
@@ -302,7 +348,7 @@ export class GameSession {
       { label: 'Hechizos', key: 'l', onPress: () => spellbook.window.toggle() },
       { label: 'Habilidades', key: 'k', onPress: () => skills.window.toggle() },
     );
-    return spellbook;
+    return { spellbook, cast };
   }
 
   /** Ventanas de mochila y equipo, sus botones y la sincronización con el estado. */
@@ -310,33 +356,56 @@ export class GameSession {
     drag: DragController,
     worldItems: WorldItems,
     tooltip: WorldTooltip,
-    spellbook: SpellbookWindow,
+    magic: Magic,
     economy: EconomyUi,
-    tilePicker: TilePicker,
+    { banner, tilePicker, worldCombat }: Targeting,
     renderer: GameRenderer,
   ): void {
     const self = this.game.self;
     if (!self) return;
-    const banner = new TargetingBanner();
-    this.hosts.ui.append(banner.element);
-    // Doble clic: algunos objetos abren ventanas o piden elegir un lugar en vez de avisar al servidor.
+    const done = (): void => banner.hide();
+    // Doble clic: algunos objetos abren ventanas o piden elegir un objetivo en vez de avisar al servidor.
     const actions = {
       ...worldItems.actions,
       useItem: (itemId: string) => {
         const item = this.game.findItem(itemId);
-        const use = item ? ITEMS[item.kind].use : 'none';
-        if (use === 'spellbook') spellbook.window.show();
-        else if (use === 'craft') economy.crafting.window.show();
-        else if (use === 'tool' && item) {
-          banner.show('Tocá un árbol o una roca al lado tuyo (Escape cancela).');
-          tilePicker.pick(
-            (tile) => {
-              banner.hide();
+        const definition = item ? ITEMS[item.kind] : undefined;
+        switch (definition?.use) {
+          case 'spellbook':
+            magic.spellbook.window.show();
+            return;
+          case 'craft':
+            if (definition.crafts && isCraftSkill(definition.crafts))
+              economy.crafting.open(definition.crafts);
+            return;
+          case 'scroll':
+            if (definition.spell) magic.cast(definition.spell, itemId);
+            return;
+          case 'bandage':
+            banner.show('Tocá a quién querés vendar, o a vos (Escape cancela).');
+            worldCombat.pickMobile(
+              (targetId) => {
+                done();
+                this.game.useOn(itemId, targetId);
+              },
+              done,
+              { people: true, self: true },
+            );
+            return;
+          case 'tool':
+            banner.show(
+              item?.kind === 'fishing-pole'
+                ? 'Tocá el agua, a unos pasos, para pescar (Escape cancela).'
+                : 'Tocá un árbol o una roca al lado tuyo (Escape cancela).',
+            );
+            tilePicker.pick((tile) => {
+              done();
               this.game.gather(itemId, tile);
-            },
-            () => banner.hide(),
-          );
-        } else worldItems.actions.useItem(itemId);
+            }, done);
+            return;
+          default:
+            worldItems.actions.useItem(itemId);
+        }
       },
     };
     economy.setItemActions(actions);

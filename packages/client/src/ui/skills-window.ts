@@ -1,5 +1,6 @@
 import {
   SKILL_DESCRIPTIONS,
+  SKILL_GROUPS,
   SKILL_KEYS,
   SKILL_NAMES,
   SKILL_TOTAL_CAP,
@@ -9,7 +10,7 @@ import {
 import { el } from './dom';
 import { GameWindow } from './game-window';
 
-/** Lista de habilidades con su valor y el total respecto del tope. */
+/** Habilidades agrupadas (combate, magia, recolección, oficios) y el total respecto del tope. */
 export class SkillsWindow {
   readonly window: GameWindow;
   private readonly list: HTMLElement;
@@ -28,9 +29,12 @@ export class SkillsWindow {
 
   render(values: SkillValues): void {
     this.list.replaceChildren(
-      ...SKILL_KEYS.flatMap((key) => [
-        el('dt', { text: SKILL_NAMES[key], attrs: { title: SKILL_DESCRIPTIONS[key] } }),
-        el('dd', { text: formatSkill(values[key]) }),
+      ...SKILL_GROUPS.flatMap((group) => [
+        el('dt', { className: 'skills-group', text: group.name }),
+        ...group.skills.flatMap((key) => [
+          el('dt', { text: SKILL_NAMES[key], attrs: { title: SKILL_DESCRIPTIONS[key] } }),
+          el('dd', { text: formatSkill(values[key]) }),
+        ]),
       ]),
     );
     const sum = SKILL_KEYS.reduce((acc, key) => acc + values[key], 0);

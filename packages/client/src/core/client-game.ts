@@ -7,7 +7,11 @@ import {
   effectiveMoveMode,
   moveDuration,
   sanitizeChatText,
+  type Attributes,
   type BackpackItemSnapshot,
+  type EffectKind,
+  type EffectSnapshot,
+  type Position,
   type ChatChannel,
   type SocialCommand,
   type SocialMessage,
@@ -62,9 +66,27 @@ export interface ClientGameEvents extends Record<string, unknown> {
   skillsChanged: SkillValues;
   /** Un hechizo salió: para dibujar su efecto. */
   spellEffect: { casterId: EntityId; targetId: EntityId; spell: SpellKey };
+  /** Un disparo con arco: para dibujar la flecha. */
+  arrowShot: { attackerId: EntityId; targetId: EntityId };
+  /** Cambiaron los efectos activos propios o los atributos. */
+  effectsChanged: EffectsState;
   socialChanged: SocialState;
   /** Modo guerra: permite atacar a otras personas. */
   warModeChanged: boolean;
+}
+
+/** Efectos activos propios; `receivedAt` sirve para descontar el tiempo que pasa. */
+export interface EffectsState {
+  readonly effects: readonly EffectSnapshot[];
+  readonly attributes: Attributes;
+  readonly receivedAt: number;
+}
+
+/** Dónde va un hechizo y, si se lee de un pergamino, cuál. */
+export interface CastTarget {
+  readonly targetId?: EntityId;
+  readonly position?: Position;
+  readonly scrollId?: EntityId;
 }
 
 export interface Inventory {
@@ -90,6 +112,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   private _skills: SkillValues | null = null;
   private _social: SocialState | null = null;
   private _warMode = false;
+  private _effects: EffectsState | null = null;
 
   constructor(
     private readonly gateway: ServerGateway,
@@ -120,6 +143,18 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
 
   get social(): SocialState | null {
     return this._social;
+  }
+
+  get effects(): EffectsState | null {
+    return this._effects;
+  }
+
+  /** ¿Tiene ahora este efecto (y no se le terminó todavía)? */
+  hasEffect(kind: EffectKind): boolean {
+    const state = this._effects;
+    if (!state) return false;
+    const elapsed = this.clock() - state.receivedAt;
+    return state.effects.some((e) => e.kind === kind && e.remainingMs > elapsed);
   }
 
   get warMode(): boolean {
@@ -176,6 +211,8 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   requestStep(direction: Direction, mode: MoveMode): void {
     const self = this.self;
     if (!self || !this.predictor) return;
+    // Paralizado no se puede mover (el servidor rechazaría el paso).
+    if (this.hasEffect('paralyzed')) return;
     // Sin energía no se puede correr: misma regla que aplica el servidor.
     const stamina = this._vitals?.vitals.stamina ?? 1;
     const request = this.predictor.tryStep(
@@ -259,12 +296,21 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     this.gateway.send({ type: 'attack', targetId });
   }
 
-  /** Lanzar un hechizo; los que van a una criatura necesitan `targetId`. */
-  castSpell(spell: SpellKey, targetId?: EntityId): void {
+  /** Lanzar un hechizo: a alguien (`targetId`), a un lugar (`position`) o desde un pergamino. */
+  castSpell(spell: SpellKey, target: CastTarget = {}): void {
     if (!this.self) return;
-    this.gateway.send(
-      targetId ? { type: 'castSpell', spell, targetId } : { type: 'castSpell', spell },
-    );
+    this.gateway.send({
+      type: 'castSpell',
+      spell,
+      ...(target.targetId ? { targetId: target.targetId } : {}),
+      ...(target.position ? { position: target.position } : {}),
+      ...(target.scrollId ? { scrollId: target.scrollId } : {}),
+    });
+  }
+
+  /** Usar un objeto sobre alguien (vendarlo). */
+  useOn(itemId: EntityId, targetId: EntityId): void {
+    if (this.self) this.gateway.send({ type: 'useOn', itemId, targetId });
   }
 
   gather(toolId: EntityId, position: { x: number; y: number }): void {
@@ -364,6 +410,20 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this.predictor?.reject();
         this.self?.teleport(message.position, message.direction);
         break;
+      case 'mobileTeleported': {
+        const entity = this.entities.get(message.id);
+        if (message.id === this.selfIdValue) this.predictor?.reject();
+        entity?.teleport(message.position, entity.direction);
+        break;
+      }
+      case 'effects':
+        this._effects = {
+          effects: message.effects,
+          attributes: message.attributes,
+          receivedAt: now,
+        };
+        this.emit('effectsChanged', this._effects);
+        break;
       case 'chat':
         if (message.channel === 'say') this.entities.get(message.id)?.say(message.text, now);
         this.emit('log', {
@@ -432,8 +492,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         break;
       case 'spellEffect': {
         const target = this.entities.get(message.targetId);
-        if (target && message.amount > 0) {
-          const healing = SPELLS[message.spell].target === 'self';
+        const kind = SPELLS[message.spell].effect.kind;
+        if (target && message.amount > 0 && (kind === 'heal' || kind === 'damage')) {
+          const healing = kind === 'heal';
           target.addCombatText(
             healing ? `+${message.amount}` : String(message.amount),
             healing
@@ -483,6 +544,8 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       } else attacker.lungeToward(target.position, now);
     }
     if (!target) return;
+    if (message.ranged)
+      this.emit('arrowShot', { attackerId: message.attackerId, targetId: message.targetId });
     if (!message.hit) target.addCombatText('¡Falla!', 'miss', now);
     else if (message.blocked) target.addCombatText('¡Bloqueado!', 'miss', now);
     else
