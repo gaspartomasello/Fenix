@@ -50,14 +50,27 @@ function gait(
 ): { pairA: number; pairB: number; lift: number } {
   switch (frame) {
     case 0:
+    case 'run-0':
       return { pairA: stride, pairB: -stride, lift: 0 };
     case 2:
+    case 'run-2':
       return { pairA: -stride, pairB: stride, lift: 0 };
-    case 'idle':
-      return { pairA: 0, pairB: 0, lift: 0 };
-    default:
+    case 1:
+    case 3:
+    case 'run-1':
+    case 'run-3':
       return { pairA: 0, pairB: 0, lift: 1 };
+    default:
+      return { pairA: 0, pairB: 0, lift: 0 };
   }
+}
+
+/** Mordida: en el golpe la cabeza se estira hacia adelante y abajo. */
+function biteOffset(frame: CharacterFrame, reach: number): Vec3 {
+  if (typeof frame !== 'string') return [0, 0, 0];
+  if (/^(slash|thrust|punch)-1$/.test(frame)) return [0, -reach * 0.5, reach];
+  if (/^(slash|thrust|punch)-0$/.test(frame)) return [0, reach * 0.2, -reach * 0.3];
+  return [0, 0, 0];
 }
 
 /** Pelaje: vientre más claro, lomo más oscuro y algo de textura. */
@@ -114,7 +127,7 @@ function drawWolf(canvas: VolumeCanvas, frame: CharacterFrame): void {
   );
 
   // Cuello y cabeza con hocico largo.
-  const head: Vec3 = [0, 17 + bob, 9.6];
+  const head: Vec3 = add([0, 17 + bob, 9.6], biteOffset(frame, 2.6));
   canvas.limb([0, 14 + bob, 5.6], head, 3, 2.6, body);
   canvas.sphere(head, 3.2, body);
   canvas.ellipsoid(add(head, [0, -1, 3.3]), axesAlong([0, -0.2, 1]), [1.6, 1.5, 2.8], (s) =>
@@ -168,7 +181,7 @@ function drawRat(canvas: VolumeCanvas, frame: CharacterFrame): void {
   });
 
   // Cabeza puntiaguda, orejas redondas, ojos rojos.
-  const head: Vec3 = [0, 5 + bob, 4.6];
+  const head: Vec3 = add([0, 5 + bob, 4.6], biteOffset(frame, 1.4));
   canvas.ellipsoid(head, axesAlong([0, -0.25, 1]), [2, 2, 3], body);
   canvas.sphere(add(head, [0, -0.7, 2.9]), 0.7, solid(PINK));
   for (const side of [1, -1] as const) {
