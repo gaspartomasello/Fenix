@@ -2,12 +2,13 @@ import {
   CHARACTER_ART_HEIGHT,
   CHARACTER_FEET_Y,
   CHARACTER_HEAD_Y,
-  WALK_FRAMES,
+  attackStyleFor,
   type CharacterFrame,
 } from '@fenix/art';
 import { Container, Graphics, Sprite, Text } from 'pixi.js';
 import type { Notoriety } from '@fenix/shared';
 import { COMBAT_TEXT_MS, type CombatText, type Entity } from '../core/entity';
+import { Fidgets, attackFrame, castFrame, stepFrame, type AttackStyle } from './animation';
 import { characterDepth } from './depth';
 import { CHARACTER_SCALE, tileToScreen } from './iso';
 import type { TextureCache } from './texture-cache';
@@ -55,6 +56,7 @@ export class CharacterView {
   private shownHealth = -1;
   private shownName = '';
   private readonly combatLabels = new Map<CombatText, Text>();
+  private readonly fidgets = new Fidgets(performance.now());
 
   constructor(
     private readonly entity: Entity,
@@ -200,12 +202,23 @@ export class CharacterView {
       .fill({ color });
   }
 
-  /** Cada paso recorre medio ciclo; pasos pares e impares alternan la pierna. */
+  /** Prioridad: golpe o hechizo, después caminar o correr, después algún gesto de reposo. */
   private currentFrame(now: number): CharacterFrame {
-    const progress = this.entity.stepProgress(now);
-    if (progress === null) return 'idle';
-    const half = this.entity.stepCount % 2 === 0 ? 0 : 2;
-    return WALK_FRAMES[half + (progress < 0.5 ? 0 : 1)] ?? 'idle';
+    const entity = this.entity;
+    const action = entity.actionAt(now);
+    const progress = entity.stepProgress(now);
+    const idle = !action && progress === null && !entity.dead;
+    const fidget = entity.isHumanoid ? this.fidgets.frame(now, idle) : null;
+    if (action?.kind === 'attack') return attackFrame(this.attackStyle(), action.progress);
+    if (action?.kind === 'cast') return castFrame(action.elapsed);
+    if (progress !== null) return stepFrame(entity.stepCount, progress, entity.running);
+    return fidget ?? 'idle';
+  }
+
+  /** Gesto del golpe: según el arma de la persona; el esqueleto tira tajos y las bestias muerden. */
+  private attackStyle(): AttackStyle {
+    if (this.entity.body === 'human') return attackStyleFor(this.entity.equipment.rightHand);
+    return this.entity.body === 'skeleton' ? 'slash' : 'punch';
   }
 
   /** Números de daño que suben y se desvanecen. */

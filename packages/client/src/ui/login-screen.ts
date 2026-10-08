@@ -4,6 +4,8 @@ import {
   Direction,
   FACIAL_HAIR,
   FACIAL_HAIR_NAMES,
+  GENDERS,
+  GENDER_NAMES,
   HAIR_STYLES,
   HAIR_STYLE_NAMES,
   HAIR_HUES,
@@ -48,6 +50,8 @@ export class LoginScreen {
   private readonly errorText: HTMLElement;
   private readonly submitButton: HTMLButtonElement;
   private readonly preview: HTMLCanvasElement;
+  /** Las mujeres no eligen barba. */
+  private readonly beardRow: HTMLElement;
   private previewTurn = 0;
   private readonly previewTimer: number;
 
@@ -84,6 +88,7 @@ export class LoginScreen {
       text: 'Entrar al mundo',
       attrs: { type: 'submit' },
     });
+    this.beardRow = this.optionRow('Barba', FACIAL_HAIR, FACIAL_HAIR_NAMES, 'facialHair');
     this.preview = el('canvas', { className: 'login-preview', attrs: { 'aria-hidden': 'true' } });
 
     const form = el('form', { className: 'login-form' }, [
@@ -96,11 +101,12 @@ export class LoginScreen {
           ? 'Si el personaje ya existe, entrás con su contraseña; si no, se crea con la apariencia que elijas.'
           : 'Tu personaje se guarda en este navegador. Si ya existe, se usa su apariencia guardada.',
       }),
+      this.optionRow('Cuerpo', GENDERS, GENDER_NAMES, 'gender'),
       this.swatchRow('Ropa', CLOTH_HUES, 'clothHue'),
       this.swatchRow('Piel', SKIN_TONES, 'skinTone'),
       this.swatchRow('Pelo', HAIR_HUES, 'hairHue'),
       this.optionRow('Peinado', HAIR_STYLES, HAIR_STYLE_NAMES, 'hairStyle'),
-      this.optionRow('Barba', FACIAL_HAIR, FACIAL_HAIR_NAMES, 'facialHair'),
+      this.beardRow,
       this.errorText,
       this.submitButton,
     ]);
@@ -188,7 +194,7 @@ export class LoginScreen {
   }
 
   /** Fila de opciones con nombre (peinado, barba). */
-  private optionRow<K extends 'hairStyle' | 'facialHair'>(
+  private optionRow<K extends 'gender' | 'hairStyle' | 'facialHair'>(
     label: string,
     options: readonly NonNullable<Appearance[K]>[],
     names: Readonly<Record<NonNullable<Appearance[K]>, string>>,
@@ -204,6 +210,7 @@ export class LoginScreen {
       button.addEventListener('click', () => {
         this.appearance = { ...this.appearance, [key]: option };
         buttons.forEach((b, i) => b.setAttribute('aria-pressed', String(options[i] === option)));
+        if (key === 'gender') this.applyGender(option === 'female');
         this.drawPreview();
       });
       return button;
@@ -212,6 +219,22 @@ export class LoginScreen {
       el('span', { className: 'swatch-label', text: label }),
       el('div', { className: 'swatches', attrs: { role: 'group', 'aria-label': label } }, buttons),
     ]);
+  }
+
+  /** Al elegir mujer: sin barba y con pelo largo, si todavía tenía el peinado de hombre. */
+  private applyGender(female: boolean): void {
+    this.beardRow.hidden = female;
+    if (!female) return;
+    const hairStyle =
+      !this.appearance.hairStyle || this.appearance.hairStyle === 'short'
+        ? 'long'
+        : this.appearance.hairStyle;
+    this.appearance = { ...this.appearance, facialHair: 'none', hairStyle };
+    this.element
+      .querySelectorAll<HTMLButtonElement>('[aria-label="Peinado"] .option-chip')
+      .forEach((b) =>
+        b.setAttribute('aria-pressed', String(b.textContent === HAIR_STYLE_NAMES[hairStyle])),
+      );
   }
 
   private drawPreview(): void {

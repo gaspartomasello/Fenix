@@ -40,7 +40,7 @@ export class MovementPredictor {
     this.pending.add(this.seq);
 
     if (canStep(this.map, self.position, direction)) {
-      self.moveTo(step(self.position, direction), direction, duration, now);
+      self.moveTo(step(self.position, direction), direction, duration, now, mode);
     } else {
       // Contra un obstáculo el personaje solo gira, igual que en el servidor.
       self.face(direction);

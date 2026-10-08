@@ -902,3 +902,7 @@ body {
   color: var(--color-accent);
   border-color: var(--color-accent);
 }
+
+.swatch-row[hidden] {
+  display: none;
+}
