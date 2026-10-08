@@ -46,6 +46,15 @@ Pixel art generado por código sobre un buffer RGBA (`PixelImage`), sin DOM: ter
 mezclados, personajes en 8 direcciones y objetos fijos. Lo usan el cliente (convertido a texturas)
 y la herramienta que exporta los tilesets de Tiled.
 
+Personajes y criaturas usan el motor de volumen (`volume.ts`): cada uno es un modelo 3D muy simple
+(esferas, elipsoides, extremidades y planos) armado sobre un esqueleto animado (`humanoidRig`).
+`Camera` lo gira según la dirección y lo inclina como la vista isométrica; `VolumeCanvas` lo pinta
+pixel a pixel con profundidad, luz en cinco tonos (`ramp`), detalles pegados a la superficie
+(`decal`: ojos, boca) y contornos. Los materiales son funciones que deciden el color de cada pixel
+según su posición y normal en el modelo (cinturón, malla, pelo, pelaje). Las ocho direcciones salen
+del mismo modelo, sin espejar, así el arma queda siempre en la mano derecha. Los personajes se
+dibujan con el doble de detalle que el resto del arte y se muestran sin escalar (`CHARACTER_SCALE`).
+
 ## @fenix/content
 
 Datos del mundo editables con Tiled: el pueblo (`maps/`) y los tilesets generados (`tilesets/`).

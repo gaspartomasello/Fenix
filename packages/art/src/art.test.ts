@@ -2,6 +2,7 @@ import {
   ALL_DIRECTIONS,
   CREATURE_KINDS,
   DEFAULT_APPEARANCE,
+  Direction,
   ITEM_KINDS,
   STATIC_KINDS,
   Terrain,
@@ -84,5 +85,32 @@ describe('arte procedural (sin DOM)', () => {
     expect(drawTerrainTile(Terrain.Stone, 0, { north: Terrain.Grass }).data).toEqual(
       drawTerrainTile(Terrain.Stone, 0).data,
     );
+  });
+});
+
+describe('personajes con volumen', () => {
+  const pixels = (image: { data: Uint8ClampedArray }): string =>
+    Buffer.from(image.data).toString('base64');
+
+  it('peinado, barba y ropa de oficio cambian el dibujo', () => {
+    const base = drawCharacterFrame(DEFAULT_APPEARANCE, Direction.SouthEast, 'idle');
+    for (const variant of [
+      drawCharacterFrame({ ...DEFAULT_APPEARANCE, hairStyle: 'long' }, Direction.SouthEast, 'idle'),
+      drawCharacterFrame(
+        { ...DEFAULT_APPEARANCE, facialHair: 'beard' },
+        Direction.SouthEast,
+        'idle',
+      ),
+      drawCharacterFrame(DEFAULT_APPEARANCE, Direction.SouthEast, 'idle', {}, 'mage'),
+    ]) {
+      expect(pixels(variant)).not.toBe(pixels(base));
+    }
+  });
+
+  it('las direcciones opuestas no son simples espejos (el arma sigue en la mano derecha)', () => {
+    const armed = { rightHand: 'short-sword', leftHand: 'wooden-shield' } as const;
+    const east = drawCharacterFrame(DEFAULT_APPEARANCE, Direction.East, 'idle', armed);
+    const south = drawCharacterFrame(DEFAULT_APPEARANCE, Direction.South, 'idle', armed);
+    expect(pixels(south)).not.toBe(pixels(east.mirrored()));
   });
 });

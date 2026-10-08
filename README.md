@@ -115,3 +115,6 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
    automático de posición, vitales, habilidades, objetos, banco, reputación y gremio; el modo
    solo guarda en el navegador. Imagen Docker y despliegue en Render
    ([docs/DEPLOY.md](docs/DEPLOY.md)).
+9. ✅ **Gráficos de personajes y criaturas**: modelos de volumen con luz y sombras, el doble de
+   detalle, peinados y barbas, ropa de oficio para la gente del pueblo, y rata, lobo y esqueleto
+   redibujados.
