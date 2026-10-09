@@ -15,11 +15,20 @@ export const CHARACTER_HEAD_Y = 12;
 const HUMAN_ZOOM = 1.12;
 
 /**
- * Acciones animadas, cada una en pasos: correr, golpe en arco (espada, hacha),
- * estocada (daga), puñetazo, lanzar un hechizo, y dos gestos de reposo:
+ * Acciones animadas, cada una en pasos: correr, golpe en arco (espada, hacha,
+ * maza), estocada (daga, estoque, lanza), puñetazo, disparo con arco, lanzar un hechizo, y dos gestos de reposo:
  * girar los hombros y cambiar el peso de pierna.
  */
-export const ACTION_KINDS = ['run', 'slash', 'thrust', 'punch', 'cast', 'shrug', 'stance'] as const;
+export const ACTION_KINDS = [
+  'run',
+  'slash',
+  'thrust',
+  'punch',
+  'shoot',
+  'cast',
+  'shrug',
+  'stance',
+] as const;
 export type ActionKind = (typeof ACTION_KINDS)[number];
 export type ActionStep = 0 | 1 | 2 | 3;
 
@@ -28,9 +37,19 @@ export type CharacterFrame = 'idle' | 0 | 1 | 2 | 3 | `${ActionKind}-${ActionSte
 export const WALK_FRAMES: readonly CharacterFrame[] = [0, 1, 2, 3];
 
 /** Con qué gesto ataca según lo que tenga en la mano derecha. */
-export function attackStyleFor(weapon: ItemKind | undefined): 'slash' | 'thrust' | 'punch' {
+export function attackStyleFor(
+  weapon: ItemKind | undefined,
+): 'slash' | 'thrust' | 'punch' | 'shoot' {
   if (!weapon) return 'punch';
-  return weapon === 'dagger' ? 'thrust' : 'slash';
+  if (weapon === 'bow') return 'shoot';
+  return THRUSTING.has(weapon) ? 'thrust' : 'slash';
+}
+
+const THRUSTING: ReadonlySet<ItemKind> = new Set<ItemKind>(['dagger', 'kryss', 'spear']);
+
+/** Armas que se llevan en la mano izquierda (el arco, como en UO). */
+export function heldInLeftHand(weapon: ItemKind | undefined): boolean {
+  return weapon === 'bow';
 }
 
 /**
@@ -271,6 +290,32 @@ const ACTIONS: Readonly<Record<ActionKind, readonly BodyPose[]>> = {
       lean: 0.4,
     },
   ],
+  // Disparo: de costado, el arco al frente con la izquierda; la derecha tensa la cuerda
+  // hasta la cara y la suelta.
+  shoot: [
+    {
+      right: BRACED,
+      left: BRACED,
+      leftArm: { raise: 1.5, spread: 0.05, bend: 0.1 },
+      rightArm: { raise: 1.45, spread: -0.35, bend: 0.6 },
+      twist: 0.55,
+    },
+    {
+      right: BRACED,
+      left: BRACED,
+      leftArm: { raise: 1.55, spread: 0.05, bend: 0.05 },
+      rightArm: { raise: 1.35, spread: -0.2, bend: 2.3 },
+      twist: 0.65,
+      lean: -0.3,
+    },
+    {
+      right: BRACED,
+      left: BRACED,
+      leftArm: { raise: 1.5, spread: 0.05, bend: 0.1 },
+      rightArm: { raise: 1.2, spread: 0.45, bend: 1.6 },
+      twist: 0.6,
+    },
+  ],
   // Hechizo: las manos se levantan al frente y luego hacia arriba.
   cast: [
     {
@@ -352,6 +397,8 @@ export interface Rig {
   readonly sway: number;
   /** Fase del ciclo (0–3), para que la tela ondee distinto en cada paso. */
   readonly phase: number;
+  /** Tensando la cuerda del arco (la cuerda va a la mano derecha). */
+  readonly drawing: boolean;
 }
 
 const THIGH = 12;
@@ -451,6 +498,7 @@ export function humanoidRig(
     arms,
     sway,
     phase: step,
+    drawing: frame === 'shoot-0' || frame === 'shoot-1',
   };
 }
 

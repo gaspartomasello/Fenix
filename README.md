@@ -41,15 +41,20 @@ Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña 
 
 ### Variables de entorno del servidor
 
-| Variable      | Por defecto   | Descripción                                |
-| ------------- | ------------- | ------------------------------------------ |
-| `PORT`        | `3000`        | Puerto HTTP/WebSocket                      |
-| `HOST`        | `0.0.0.0`     | Interfaz donde escucha                     |
-| `MAP_SEED`    | `1997`        | Semilla del mapa generado                  |
-| `MAP_SIZE`    | `128`         | Lado del mapa en tiles                     |
-| `START_HOUR`  | `8`           | Hora del juego con la que arranca el mundo |
-| `CLIENT_DIST` | `client/dist` | Carpeta del cliente compilado a servir     |
-| `DATA_DIR`    | `data`        | Carpeta de los personajes guardados        |
+| Variable          | Por defecto   | Descripción                                |
+| ----------------- | ------------- | ------------------------------------------ |
+| `PORT`            | `3000`        | Puerto HTTP/WebSocket                      |
+| `HOST`            | `0.0.0.0`     | Interfaz donde escucha                     |
+| `MAP_SEED`        | `1997`        | Semilla del mapa generado                  |
+| `MAP_SIZE`        | `128`         | Lado del mapa en tiles                     |
+| `START_HOUR`      | `8`           | Hora del juego con la que arranca el mundo |
+| `CLIENT_DIST`     | `client/dist` | Carpeta del cliente compilado a servir     |
+| `DATA_DIR`        | `data`        | Carpeta de los personajes guardados        |
+| `TEST_CHARACTERS` | (vacío)       | Personajes de prueba, separados por coma   |
+
+Un **personaje de prueba** entra cada vez con todas las habilidades y atributos al máximo, la
+vida y el maná llenos, 999.999 monedas de oro y 1000 de cada reactivo. En el modo solo lo es
+**Gaspar**; en el servidor en línea, solo los nombres que diga `TEST_CHARACTERS`.
 
 ## Controles
 
@@ -67,13 +72,19 @@ Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña 
   levantarlo.
 - **Clic** (o toque) sobre una criatura: atacarla. El personaje golpea solo mientras la tenga al
   lado. **Escape**: dejar de atacar.
-- **L**: libro de hechizos. **K**: habilidades. **1 a 5**: lanzar un hechizo (los de ataque van al
-  objetivo de combate o piden tocar una criatura).
+- **L**: libro de hechizos, con una página por círculo. **1 a 8**: lanzar los hechizos de la página
+  abierta. Los de ataque van al objetivo de combate o piden tocar a alguien; los de ayuda piden
+  tocar a alguien o a uno mismo, y Teletransporte un lugar. **K**: habilidades, por grupo.
+- **Doble clic sobre una venda** y tocar a alguien (o a uno mismo): vendarlo. Sobre un pergamino:
+  lanzar su hechizo sin libro ni reactivos. Sobre una poción: tomarla (queda la botella).
+- **Clic sobre una criatura con un arco en la mano**: dispararle de lejos (gasta flechas).
 - **Tocar a un comerciante** (estando cerca): comprar y vender. A la banquera: abrir la caja del
   banco y arrastrar objetos entre la mochila y el banco.
 - **Doble clic sobre el hacha o el pico**, y después tocar un árbol o una roca al lado: talar o
-  minar. Doble clic sobre el mineral al lado de la forja: fundirlo. Doble clic sobre el martillo
-  de herrero: abrir la herrería (al lado del yunque y la forja).
+  minar. Sobre la caña de pescar, y tocar el agua: pescar. Doble clic sobre el mineral al lado de
+  la forja: fundirlo. Doble clic sobre la herramienta de un oficio (martillo de herrero,
+  costurero, serrucho, juego de flechero, mortero, pluma de escriba, sartén): abrir su ventana con
+  las recetas.
 - **O**: ventana social (reputación, grupo, gremio e invitaciones). **Tab**: modo guerra, para
   poder atacar a otras personas fuera del pueblo.
 - **Chat**: `/g mensaje` habla al grupo, `/gr mensaje` al gremio, `/invitar nombre`,
@@ -126,3 +137,16 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
    hechizos, mordida de las bestias y gestos de reposo cada tanto (girar los hombros, cambiar el
    peso de pierna). La capa envuelve el cuerpo y vuela según se camine, corra o pelee. Objetos
    redibujados con volumen y vistos desde arriba, y ventana de personaje al estilo de UO.
+10. ✅ **Habilidades, hechizos, objetos y oficios como en UO**: 22 habilidades en cuatro grupos
+    (combate, magia, recolección y oficios) con tope total de 700; fuerza, destreza e
+    inteligencia suben al usarlas (hasta 100 cada una y 225 entre las tres). 34 hechizos en ocho
+    círculos, con los reactivos de UO (musgo de sangre y belladona incluidos), objetivo a uno
+    mismo, a otro o a un lugar, y Resistencia mágica. El octavo círculo trae Terremoto,
+    Resurrección e invocaciones (vórtice de energía, elementales de aire, tierra, fuego y agua, y
+    demonio) que pelean para su dueño un rato. Efectos que duran: subir o bajar atributos, Protección
+    (los golpes no cortan el hechizo), veneno, parálisis y visión nocturna. Vendas con Primeros
+    auxilios y Anatomía, pociones de los colores de UO, pergaminos. Mazas, estoque, lanza, espada
+    ancha, katana, martillo de guerra y arco con flechas (de lejos, a dos manos); cuero
+    tachonado, armadura de placas, túnica y sombrero de mago. Siete oficios con herramienta,
+    materiales y lugar: herrería, sastrería, carpintería, flechería, alquimia, inscripción y
+    cocina; y pesca.

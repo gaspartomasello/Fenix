@@ -215,7 +215,7 @@ describe('ciclo del juego: combate', () => {
 
     arena.notifier.clear();
     arena.app.handle(ana, { type: 'castSpell', spell: 'magic-arrow' });
-    expect(texts()).toEqual(['Elegí una criatura como objetivo.']);
+    expect(texts()).toEqual(['Elegí a quién lanzarle el hechizo.']);
 
     arena.notifier.clear();
     player.combat.spendMana(100);

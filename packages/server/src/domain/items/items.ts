@@ -1,5 +1,4 @@
 import {
-  HEALING,
   BACKPACK_AREA,
   ITEM_ICON_SIZE,
   ITEMS,
@@ -37,8 +36,8 @@ export interface ItemChanges {
   readonly looks: Set<EntityId>;
   /** Mensaje para quien actuó. */
   message?: string;
-  /** Efecto sobre quien lo usó (comida, pociones). */
-  effect?: { readonly heal: number; readonly stamina: number };
+  /** Lo que se comió o tomó: su efecto lo aplica `consumables.ts`. */
+  consumed?: ItemKind;
 }
 
 export type ItemResult = { ok: true; changes: ItemChanges } | { ok: false; reason: string };
@@ -213,14 +212,9 @@ export class Items {
     const changes = emptyChanges();
     switch (definition.use) {
       case 'eat':
-        this.consumeOne(item, changes);
-        changes.message = `Comiste ${describeItem(item.kind)}.`;
-        changes.effect = { heal: HEALING.apple, stamina: 10 };
-        return { ok: true, changes };
       case 'drink':
         this.consumeOne(item, changes);
-        changes.message = `Tomaste ${describeItem(item.kind)}. Te sentís mejor.`;
-        changes.effect = { heal: HEALING.potion, stamina: 0 };
+        changes.consumed = item.kind;
         return { ok: true, changes };
       case 'equip':
         if (item.location.type === 'equipment')
@@ -230,6 +224,8 @@ export class Items {
       case 'tool':
       case 'craft':
       case 'smelt':
+      case 'bandage':
+      case 'scroll':
         // Se resuelven en otros casos de uso (o en el cliente): acá no hay nada que hacer.
         return { ok: true, changes };
       case 'none': {
@@ -315,6 +311,23 @@ export class Items {
         { type: 'backpack', ownerId, position: this.freeSpot(ownerId) },
         changes,
       );
+    }
+    // Un arma de dos manos no deja usar escudo (y al revés): lo otro vuelve a la mochila.
+    const otherSlot = slot === 'rightHand' ? 'leftHand' : slot === 'leftHand' ? 'rightHand' : null;
+    const other = otherSlot
+      ? this.equipmentOf(ownerId).find(
+          (i) => i.location.type === 'equipment' && i.location.slot === otherSlot,
+        )
+      : undefined;
+    if (other && (ITEMS[item.kind].twoHanded || ITEMS[other.kind].twoHanded)) {
+      if (this.backpackOf(ownerId).length >= MAX_BACKPACK_ITEMS)
+        return fail('Tu mochila está llena.');
+      this.relocate(
+        other,
+        { type: 'backpack', ownerId, position: this.freeSpot(ownerId) },
+        changes,
+      );
+      changes.message = `Guardaste ${describeItem(other.kind)}: necesitás las dos manos.`;
     }
     this.relocate(item, { type: 'equipment', ownerId, slot }, changes);
     return { ok: true, changes };

@@ -1,4 +1,12 @@
-import { effectiveMoveMode, type Direction, type EntityId, type MoveMode } from '@fenix/shared';
+import {
+  effectiveMoveMode,
+  type Direction,
+  type EntityId,
+  type MobileMovedMessage,
+  type MobileTeleportedMessage,
+  type MoveMode,
+  type Position,
+} from '@fenix/shared';
 import type { Player } from '../../domain/player';
 import type { World } from '../../domain/world';
 import type { ItemNotifications } from '../item-notifications';
@@ -42,7 +50,13 @@ export class MovePlayer {
 
     this.notifier.send(playerId, { type: 'moveAck', seq, position: player.position });
     if (effectiveMode === 'run' && player.registerRunStep()) this.mobiles.sendVitals(player);
-    this.updateVisibility(player, before, effectiveMode);
+    this.updateVisibility(player, before, {
+      type: 'mobileMoved',
+      id: player.id,
+      position: player.position,
+      direction: player.direction,
+      mode: effectiveMode,
+    });
     this.notifications.sendGroundDiff(
       playerId,
       groundBefore,
@@ -50,11 +64,32 @@ export class MovePlayer {
     );
   }
 
+  /** Mueve al jugador al instante (teletransporte) y avisa a todos, incluido él. */
+  teleport(player: Player, position: Position): void {
+    const before = this.idsNear(player);
+    const groundBefore = new Set(
+      this.notifications.groundSnapshotsNear(player.id).map((i) => i.id),
+    );
+    player.teleport(position);
+    const message = { type: 'mobileTeleported', id: player.id, position } as const;
+    this.notifier.send(player.id, message);
+    this.updateVisibility(player, before, message);
+    this.notifications.sendGroundDiff(
+      player.id,
+      groundBefore,
+      this.notifications.groundSnapshotsNear(player.id),
+    );
+  }
+
   /**
    * Quienes seguían viendo al jugador reciben el paso; quienes entran o salen
    * del rango de visión lo ven aparecer o desaparecer, y viceversa.
    */
-  private updateVisibility(player: Player, before: Set<EntityId>, mode: MoveMode): void {
+  private updateVisibility(
+    player: Player,
+    before: Set<EntityId>,
+    moved: MobileMovedMessage | MobileTeleportedMessage,
+  ): void {
     const after = this.idsNear(player);
     const stayed = [...after].filter((id) => before.has(id));
     const entered = [...after].filter((id) => !before.has(id));
@@ -62,13 +97,7 @@ export class MovePlayer {
     // Solo los jugadores reciben mensajes; el que se movió ve aparecer o desaparecer a todos.
     const isPlayer = (id: EntityId): boolean => this.world.get(id) !== undefined;
 
-    this.notifier.sendMany(stayed.filter(isPlayer), {
-      type: 'mobileMoved',
-      id: player.id,
-      position: player.position,
-      direction: player.direction,
-      mode,
-    });
+    this.notifier.sendMany(stayed.filter(isPlayer), moved);
     this.notifier.sendMany(entered.filter(isPlayer), {
       type: 'mobileAppeared',
       mobile: this.world.snapshotOf(player),

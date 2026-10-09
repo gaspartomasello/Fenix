@@ -1,14 +1,18 @@
 import {
+  ATTRIBUTE_NAMES,
   CREATURE_FAME,
   REGEN_INTERVAL_MS,
   SPELLS,
   describeItem,
   step,
   tileDistance,
+  wearsMetalArmor,
   type Position,
 } from '@fenix/shared';
-import { trySwing, type SwingResult } from '../domain/combat/combat';
-import { CORPSE_MS, RESPAWN_MS, type Creature } from '../domain/creatures/creature';
+import { outOfAmmo, trySwing, type SwingResult } from '../domain/combat/combat';
+import { resolveBandage } from '../domain/healing/bandage';
+import { commitAggression } from './use-cases/aggression';
+import { CORPSE_MS, Creature, RESPAWN_MS } from '../domain/creatures/creature';
 import { canMoveTo, chooseStep, updateTarget } from '../domain/creatures/creature-ai';
 import { rollLoot } from '../domain/creatures/loot';
 import { resolveCast } from '../domain/magic/spellcasting';
@@ -40,6 +44,8 @@ export class GameLoop {
     private readonly ids: IdGenerator,
     private readonly random: RandomSource,
     private readonly social: SocialNotifications,
+    /** Mueve a un jugador al instante, avisando a quienes lo ven. */
+    private readonly teleport: (player: Player, position: Position) => void,
   ) {
     this.shrines = world.map.statics.filter((s) => s.kind === 'shrine');
   }
@@ -50,6 +56,79 @@ export class GameLoop {
   }
 
   private readonly roll = (): number => this.random.next();
+  private readonly newId = (): string => this.ids.next();
+
+  /** Efectos que vencen y pulsos de veneno, que pueden matar. */
+  private tickEffects(mobile: Mobile, now: number): void {
+    const tick = mobile.combat.tickEffects(now, this.roll);
+    if (tick.poisonDamage > 0) {
+      this.mobiles.broadcastHealth(mobile);
+      if (mobile instanceof Player) this.mobiles.sendVitals(mobile);
+    }
+    if (tick.changed && mobile instanceof Player) this.mobiles.sendEffects(mobile);
+    if (tick.killed) {
+      const poisoner = tick.poisonerId ? this.world.getMobile(tick.poisonerId) : undefined;
+      if (mobile instanceof Player)
+        this.notifier.send(mobile.id, { type: 'system', text: 'El veneno terminó con vos.' });
+      this.handleKill(poisoner, mobile, now);
+    }
+  }
+
+  /** Avisa los atributos que subieron entrenando (y los vitales, cuyos máximos cambian). */
+  private announceStatGains(player: Player): void {
+    if (player.statGains.length === 0) return;
+    for (const key of player.statGains.splice(0)) {
+      this.notifier.send(player.id, {
+        type: 'system',
+        text: `Tu ${ATTRIBUTE_NAMES[key].toLowerCase()} subió a ${player.combat.baseAttributes[key]}.`,
+      });
+    }
+    this.mobiles.sendEffects(player);
+  }
+
+  /** Un golpe corta la concentración de quien está lanzando, salvo con Protección. */
+  private disrupt(mobile: Mobile): void {
+    if (!(mobile instanceof Player) || !mobile.pendingCast) return;
+    if (mobile.combat.effect('protection')) return;
+    mobile.pendingCast = null;
+    this.notifier.send(mobile.id, {
+      type: 'system',
+      text: 'Te desconcentraste y el hechizo se perdió.',
+    });
+  }
+
+  private finishBandage(player: Player): void {
+    const outcome = resolveBandage(player, this.world, this.roll);
+    if (!outcome) return;
+    const say = (text: string): void => this.notifier.send(player.id, { type: 'system', text });
+    switch (outcome.kind) {
+      case 'lost-target':
+        say('Te alejaste demasiado y la venda no sirvió.');
+        return;
+      case 'failed':
+        say('La venda no quedó bien puesta.');
+        break;
+      case 'healed': {
+        const { target, amount, cured } = outcome;
+        const self = target.id === player.id;
+        const parts = [
+          cured ? 'sacaste el veneno' : '',
+          amount > 0 ? `curaste ${amount} puntos de vida` : '',
+        ].filter(Boolean);
+        say(
+          parts.length > 0
+            ? `${capitalize(parts.join(' y '))}${self ? '' : ` a ${target.name}`}.`
+            : 'El veneno no te dejó curar las heridas.',
+        );
+        this.mobiles.broadcastHealth(target);
+        if (target instanceof Player) {
+          this.mobiles.sendVitals(target);
+          if (cured) this.mobiles.sendEffects(target);
+        }
+      }
+    }
+    this.mobiles.skillGains(outcome.gains.map((skill) => ({ player, skill })));
+  }
 
   private tickPlayer(player: Player, now: number): void {
     if (player.reputation.refresh(now)) this.social.statusChanged(player);
@@ -57,7 +136,11 @@ export class GameLoop {
       this.tryResurrect(player, now);
       return;
     }
+    this.announceStatGains(player);
+    this.tickEffects(player, now);
+    if (player.combat.isDead) return;
     if (player.pendingCast && now >= player.pendingCast.resolveAt) this.finishCast(player, now);
+    if (player.pendingBandage && now >= player.pendingBandage.resolveAt) this.finishBandage(player);
 
     const targetId = player.combat.targetId;
     if (targetId) {
@@ -65,28 +148,34 @@ export class GameLoop {
       if (!target || target.combat.isDead) {
         player.combat.targetId = null;
         this.mobiles.sendTarget(player);
+      } else if (outOfAmmo(player, this.world)) {
+        player.combat.targetId = null;
+        this.mobiles.sendTarget(player);
+        this.notifier.send(player.id, { type: 'system', text: 'No te quedan flechas.' });
       } else {
         const result = trySwing(player, target, this.world, now, this.roll);
         if (result) this.resolveSwing(result, now);
       }
     }
 
-    // Meditación: hasta 3 veces más rápido el maná con la habilidad al máximo.
-    const meditation = player.skills.get('meditation');
+    // Meditación: hasta 3 veces más rápido el maná con la habilidad al máximo,
+    // pero no funciona con armadura de metal (como en UO).
+    const meditates = !wearsMetalArmor(this.world.items.lookOf(player.id));
+    const meditation = meditates ? player.skills.get('meditation') : 0;
     const manaInterval = REGEN_INTERVAL_MS.mana * (1 - meditation / 1500);
     const regen = player.combat.regenerate(now, manaInterval);
     if (regen.hits || regen.mana || regen.stamina) {
       this.mobiles.sendVitals(player);
       if (regen.hits) this.mobiles.broadcastHealth(player);
     }
-    if (regen.mana && player.skills.tryGain('meditation', this.roll)) {
+    if (meditates && regen.mana && player.skills.tryGain('meditation', this.roll)) {
       this.mobiles.skillGains([{ player, skill: 'meditation' }]);
     }
   }
 
   private finishCast(player: Player, now: number): void {
     const spellKey = player.pendingCast?.spell;
-    const outcome = resolveCast(player, this.world, this.roll);
+    const outcome = resolveCast(player, this.world, this.newId, now, this.roll);
     if (!outcome || !spellKey) return;
     const spell = SPELLS[spellKey];
     if (player.skills.tryGain('magery', this.roll))
@@ -103,10 +192,46 @@ export class GameLoop {
         this.notifier.send(player.id, { type: 'system', text: `${spell.name}: el hechizo falló.` });
         return;
       case 'success': {
-        const { target, amount, killed } = outcome;
-        this.mobiles.spellEffect(player, target, spellKey, amount);
+        const { target, amount, killed, resisted, effectsChanged, moveTo, message } = outcome;
+        if (moveTo) this.teleport(player, moveTo);
+        if (outcome.summoned) this.mobiles.appear(outcome.summoned);
+        if (outcome.revived && target instanceof Player) {
+          this.mobiles.sendVitals(target);
+          this.notifier.send(target.id, {
+            type: 'system',
+            text: `¡${player.name} te devolvió la vida!`,
+          });
+        }
+        for (const hit of outcome.areaHits ?? []) {
+          this.mobiles.spellEffect(player, hit.target, spellKey, hit.amount, hit.resisted);
+          this.mobiles.broadcastHealth(hit.target);
+          this.disrupt(hit.target);
+          if (hit.target instanceof Player) {
+            this.mobiles.sendVitals(hit.target);
+            commitAggression(player, hit.target, now, this.notifier, this.social);
+          }
+          if (hit.killed) this.handleKill(player, hit.target, now);
+        }
+        this.mobiles.spellEffect(player, target, spellKey, amount, resisted);
         this.mobiles.broadcastHealth(target);
-        if (target instanceof Player) this.mobiles.sendVitals(target);
+        this.mobiles.sendVitals(player);
+        if (target instanceof Player && target !== player) this.mobiles.sendVitals(target);
+        for (const changed of effectsChanged)
+          if (changed instanceof Player) this.mobiles.sendEffects(changed);
+        if (outcome.itemChanges) this.items.publish(outcome.itemChanges, player.id);
+        if (message) this.notifier.send(player.id, { type: 'system', text: message });
+        if (spell.target === 'harmful') {
+          if (spell.effect.kind === 'damage' && amount > 0) this.disrupt(target);
+          if (target instanceof Player) {
+            if (resisted)
+              this.notifier.send(target.id, {
+                type: 'system',
+                text: 'Tu Resistencia mágica aguantó parte del hechizo.',
+              });
+            if (target.skills.tryGain('magic-resist', this.roll))
+              this.mobiles.skillGains([{ player: target, skill: 'magic-resist' }]);
+          }
+        }
         if (killed) this.handleKill(player, target, now);
       }
     }
@@ -120,8 +245,19 @@ export class GameLoop {
       }
       return;
     }
+    // Una invocación se desvanece al terminar su tiempo.
+    if (creature.expiresAt !== null && now >= creature.expiresAt && !creature.combat.isDead) {
+      this.dismiss(creature);
+      return;
+    }
+    if (!creature.combat.isDead) this.tickEffects(creature, now);
     if (creature.combat.isDead) {
       if (creature.despawnAt !== null && now >= creature.despawnAt) {
+        // Las invocaciones no reaparecen: se van del mundo.
+        if (creature.ownerId) {
+          this.dismiss(creature);
+          return;
+        }
         this.mobiles.disappear(creature);
         creature.gone = true;
         creature.respawnAt = now + RESPAWN_MS;
@@ -134,7 +270,7 @@ export class GameLoop {
       const result = trySwing(creature, target, this.world, now, this.roll);
       if (result) this.resolveSwing(result, now);
     }
-    if (now >= creature.nextMoveAt) {
+    if (now >= creature.nextMoveAt && !creature.combat.isParalyzed) {
       const direction = chooseStep(creature, target, this.world, this.roll);
       creature.nextMoveAt =
         now + creature.definition.moveMs * (direction === null && !target ? 3 : 1);
@@ -149,15 +285,35 @@ export class GameLoop {
     if (!target && creature.combat.regenerate(now).hits) this.mobiles.broadcastHealth(creature);
   }
 
+  /** Saca una invocación del mundo (se le terminó el tiempo, murió o se fue su dueño). */
+  dismiss(creature: Creature): void {
+    this.mobiles.disappear(creature);
+    creature.gone = true;
+    this.world.removeCreature(creature.id);
+  }
+
   private resolveSwing(result: SwingResult, now: number): void {
+    // Una criatura salvaje sin pelea se da vuelta contra quien la golpea (persona o invocación).
+    const { attacker, target } = result;
+    if (target instanceof Creature && !target.ownerId && target.combat.targetId === null)
+      target.combat.targetId = attacker.id;
     this.mobiles.swing(result);
+    if (result.itemChanges) this.items.publish(result.itemChanges, result.attacker.id);
+    if (result.hit && !result.blocked && result.damage > 0) this.disrupt(result.target);
     if (result.killed) this.handleKill(result.attacker, result.target, now);
   }
 
   /** Muerte de un jugador (queda fantasma) o de una criatura (botín y reaparición). */
-  private handleKill(killer: Mobile, victim: Mobile, now: number): void {
+  private handleKill(killedBy: Mobile | undefined, victim: Mobile, now: number): void {
+    // Lo que mata una invocación cuenta para su dueño.
+    const killer =
+      killedBy instanceof Creature && killedBy.ownerId
+        ? (this.world.get(killedBy.ownerId) ?? killedBy)
+        : killedBy;
     if (victim instanceof Player) {
       victim.pendingCast = null;
+      victim.pendingBandage = null;
+      this.mobiles.sendEffects(victim);
       victim.combat.targetId = null;
       this.mobiles.broadcastHealth(victim);
       this.mobiles.sendVitals(victim);
@@ -166,7 +322,7 @@ export class GameLoop {
         type: 'system',
         text: 'Moriste. Caminá hasta el santuario de Puerto Ceniza para volver a la vida.',
       });
-      if (killer instanceof Player) this.handlePlayerKill(killer, victim, now);
+      if (killer instanceof Player && killer !== victim) this.handlePlayerKill(killer, victim, now);
       return;
     }
 

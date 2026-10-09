@@ -1028,3 +1028,77 @@ body {
     font-size: 0.7rem;
   }
 }
+
+/* ── Etapa 10: oficios, libro por círculos y efectos ──────────────── */
+
+.skills-list dt.skills-group {
+  grid-column: 1 / -1;
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.skills-list {
+  max-height: min(60vh, 520px);
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.tabs--circles .tab {
+  min-width: 2rem;
+  padding: 0.3rem 0.5rem;
+}
+
+.shop-group {
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.effects-bar {
+  position: absolute;
+  top: calc(142px + env(safe-area-inset-top, 0px));
+  left: 12px;
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+
+.effects-bar[hidden] {
+  display: none;
+}
+
+.effect {
+  padding: 2px 8px;
+  font-size: 0.78rem;
+  color: #bfe3ff;
+  background: rgba(10, 20, 40, 0.75);
+  border: 1px solid #4a7aa8;
+  border-radius: var(--radius);
+}
+
+.effect--harmful {
+  color: #ffc9c0;
+  background: rgba(40, 10, 10, 0.75);
+  border-color: #a84a3a;
+}
+
+.tabs--circles + .spell-list {
+  max-height: min(56vh, 470px);
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.skills-attributes {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-accent);
+}

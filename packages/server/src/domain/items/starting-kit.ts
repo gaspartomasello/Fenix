@@ -11,6 +11,9 @@ export const STARTING_KIT: readonly { kind: ItemKind; amount: number }[] = [
   { kind: 'ginseng', amount: 10 },
   { kind: 'sulfurous-ash', amount: 15 },
   { kind: 'black-pearl', amount: 5 },
-  { kind: 'mandrake-root', amount: 3 },
-  { kind: 'spiders-silk', amount: 3 },
+  { kind: 'mandrake-root', amount: 5 },
+  { kind: 'spiders-silk', amount: 10 },
+  { kind: 'blood-moss', amount: 5 },
+  { kind: 'nightshade', amount: 5 },
+  { kind: 'bandage', amount: 10 },
 ];

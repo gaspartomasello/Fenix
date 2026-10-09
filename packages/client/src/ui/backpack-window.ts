@@ -69,7 +69,11 @@ export class BackpackWindow {
     const icon = el(
       'button',
       { className: 'item-icon', attrs: { type: 'button', title: label, 'aria-label': label } },
-      [el('img', { attrs: { src: itemIconUrl(item.kind), alt: '', draggable: 'false' } })],
+      [
+        el('img', {
+          attrs: { src: itemIconUrl(item.kind, item.amount), alt: '', draggable: 'false' },
+        }),
+      ],
     );
     if (item.amount > 1)
       icon.append(el('span', { className: 'item-amount', text: String(item.amount) }));
@@ -83,7 +87,7 @@ export class BackpackWindow {
       this.drag.begin(
         {
           id: item.id,
-          iconUrl: itemIconUrl(item.kind),
+          iconUrl: itemIconUrl(item.kind, item.amount),
           onDrop: (target) => {
             const to = destinationFor(target, this.actions, item.kind);
             if (to) this.actions.moveItem(item.id, to);

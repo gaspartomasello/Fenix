@@ -52,7 +52,7 @@ export class WorldItems {
     this.drag.begin(
       {
         id: item.id,
-        iconUrl: itemIconUrl(item.kind),
+        iconUrl: itemIconUrl(item.kind, item.amount),
         onDrop: (target) => {
           const to = destinationFor(target, this.actions, item.kind);
           if (to) this.game.moveItem(item.id, to);

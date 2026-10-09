@@ -3,7 +3,7 @@ import type { SkillGain, SwingResult } from '../domain/combat/combat';
 import type { Mobile } from '../domain/mobile';
 import { Player } from '../domain/player';
 import type { World } from '../domain/world';
-import type { Notifier } from './ports';
+import type { Clock, Notifier } from './ports';
 
 /**
  * Avisos sobre jugadores y criaturas: vitales propios, vida de quienes se
@@ -13,7 +13,18 @@ export class MobileNotifications {
   constructor(
     private readonly world: World,
     private readonly notifier: Notifier,
+    private readonly clock: Clock,
   ) {}
+
+  /** Efectos activos propios y atributos, con lo que cambió (y los vitales, cuyos máximos dependen de ellos). */
+  sendEffects(player: Player): void {
+    this.notifier.send(player.id, {
+      type: 'effects',
+      effects: player.combat.effectsSnapshot(this.clock.now()),
+      attributes: player.combat.attributes,
+    });
+    this.sendVitals(player);
+  }
 
   sendVitals(player: Player): void {
     this.notifier.send(player.id, {
@@ -35,14 +46,15 @@ export class MobileNotifications {
   }
 
   swing(result: SwingResult): void {
-    const { attacker, target, hit, blocked, damage } = result;
-    this.notifier.sendMany(this.watchers(target), {
+    const { attacker, target, hit, blocked, damage, ranged } = result;
+    this.notifier.sendMany(new Set([...this.watchers(target), ...this.watchers(attacker)]), {
       type: 'swing',
       attackerId: attacker.id,
       targetId: target.id,
       hit,
       blocked,
       damage,
+      ...(ranged ? { ranged } : {}),
     });
     this.skillGains(result.gains);
     if (hit && !blocked) {
@@ -76,13 +88,20 @@ export class MobileNotifications {
     });
   }
 
-  spellEffect(caster: Mobile, target: Mobile, spell: SpellKey, amount: number): void {
-    this.notifier.sendMany(this.watchers(target), {
+  spellEffect(
+    caster: Mobile,
+    target: Mobile,
+    spell: SpellKey,
+    amount: number,
+    resisted: boolean,
+  ): void {
+    this.notifier.sendMany(new Set([...this.watchers(target), ...this.watchers(caster)]), {
       type: 'spellEffect',
       casterId: caster.id,
       targetId: target.id,
       spell,
       amount,
+      ...(resisted ? { resisted } : {}),
     });
   }
 

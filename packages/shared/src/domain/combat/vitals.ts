@@ -33,5 +33,11 @@ export function fullVitals({ strength, dexterity, intelligence }: Attributes): V
 /** Cada cuánto se recupera un punto fuera de combate. */
 export const REGEN_INTERVAL_MS = { hits: 3000, mana: 2000, stamina: 1000 } as const;
 
-/** Cuánta vida se recupera con objetos. */
-export const HEALING = { potion: 20, apple: 3 } as const;
+/** Vida que devuelve la poción de curación. */
+export const HEALING_POTION = [12, 22] as const;
+/** Energía que devuelve la poción de vigor. */
+export const REFRESH_POTION = 25;
+/** Cuánto suben fuerza o destreza las pociones, y por cuánto tiempo. */
+export const POTION_BOOST = { amount: 10, durationMs: 120_000 } as const;
+/** Fuerza de la poción de purificación contra el veneno (0–1). */
+export const CURE_POTION_POWER = 0.6;

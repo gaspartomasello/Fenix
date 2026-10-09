@@ -1,36 +1,55 @@
 import {
+  ATTRIBUTE_NAMES,
   SKILL_DESCRIPTIONS,
+  SKILL_GROUPS,
   SKILL_KEYS,
   SKILL_NAMES,
   SKILL_TOTAL_CAP,
   formatSkill,
+  type Attributes,
   type SkillValues,
 } from '@fenix/shared';
 import { el } from './dom';
 import { GameWindow } from './game-window';
 
-/** Lista de habilidades con su valor y el total respecto del tope. */
+/** Habilidades agrupadas (combate, magia, recolección, oficios) y el total respecto del tope. */
 export class SkillsWindow {
   readonly window: GameWindow;
   private readonly list: HTMLElement;
   private readonly total: HTMLElement;
+  private readonly attributes: HTMLElement;
 
   constructor() {
     this.window = new GameWindow('habilidades', 'Habilidades', { x: 16, y: 150 });
+    this.attributes = el('p', { className: 'skills-attributes' });
     this.list = el('dl', { className: 'skills-list' });
     this.total = el('p', { className: 'window-hint' });
     this.window.body.append(
+      this.attributes,
       this.list,
       this.total,
-      el('p', { className: 'window-hint', text: 'Suben de a 0,1 cada vez que las usás.' }),
+      el('p', {
+        className: 'window-hint',
+        text: 'Suben de a 0,1 cada vez que las usás, y con ellas tus atributos.',
+      }),
     );
+  }
+
+  /** Fuerza, destreza e inteligencia (con lo que suman o restan los efectos). */
+  renderAttributes(attributes: Attributes): void {
+    this.attributes.textContent = (['strength', 'dexterity', 'intelligence'] as const)
+      .map((key) => `${ATTRIBUTE_NAMES[key]} ${attributes[key]}`)
+      .join(' · ');
   }
 
   render(values: SkillValues): void {
     this.list.replaceChildren(
-      ...SKILL_KEYS.flatMap((key) => [
-        el('dt', { text: SKILL_NAMES[key], attrs: { title: SKILL_DESCRIPTIONS[key] } }),
-        el('dd', { text: formatSkill(values[key]) }),
+      ...SKILL_GROUPS.flatMap((group) => [
+        el('dt', { className: 'skills-group', text: group.name }),
+        ...group.skills.flatMap((key) => [
+          el('dt', { text: SKILL_NAMES[key], attrs: { title: SKILL_DESCRIPTIONS[key] } }),
+          el('dd', { text: formatSkill(values[key]) }),
+        ]),
       ]),
     );
     const sum = SKILL_KEYS.reduce((acc, key) => acc + values[key], 0);

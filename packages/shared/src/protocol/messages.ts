@@ -3,7 +3,8 @@ import type { Direction } from '../domain/geometry/direction';
 import type { Position } from '../domain/geometry/position';
 import type { EquipmentSlot } from '../domain/items/equipment';
 import type { ItemKind } from '../domain/items/item-catalog';
-import type { Vitals } from '../domain/combat/vitals';
+import type { Attributes, Vitals } from '../domain/combat/vitals';
+import type { EffectSnapshot } from '../domain/magic/effects';
 import type { Body } from '../domain/creatures/creature-catalog';
 import type { NpcRole } from '../domain/economy/vendors';
 import type { ChatChannel, SocialCommand } from '../domain/social/groups';
@@ -124,11 +125,23 @@ export interface StopAttackRequest {
   readonly type: 'stopAttack';
 }
 
-/** Lanzar un hechizo; `targetId` para los que van a una criatura. */
+/**
+ * Lanzar un hechizo: `targetId` para los que van a alguien, `position` para
+ * los que van a un lugar. Con `scrollId`, se lee de un pergamino.
+ */
 export interface CastSpellRequest {
   readonly type: 'castSpell';
   readonly spell: SpellKey;
   readonly targetId?: EntityId;
+  readonly position?: Position;
+  readonly scrollId?: EntityId;
+}
+
+/** Usar un objeto sobre alguien (por ejemplo, vendarlo). */
+export interface UseOnRequest {
+  readonly type: 'useOn';
+  readonly itemId: EntityId;
+  readonly targetId: EntityId;
 }
 
 /** Recolectar del árbol o roca en esa posición, con la herramienta indicada. */
@@ -166,6 +179,7 @@ export type ClientMessage =
   | AttackRequest
   | StopAttackRequest
   | CastSpellRequest
+  | UseOnRequest
   | GatherRequest
   | BuyRequest
   | SellRequest
@@ -284,6 +298,8 @@ export interface SwingMessage {
   /** El escudo del objetivo detuvo el golpe. */
   readonly blocked: boolean;
   readonly damage: number;
+  /** Disparo a distancia (con arco): se ve la flecha. */
+  readonly ranged?: boolean;
 }
 
 /** Habilidades propias (en décimas). */
@@ -307,6 +323,22 @@ export interface SpellEffectMessage {
   readonly spell: SpellKey;
   /** Cuánto curó o dañó (0 si no aplica). */
   readonly amount: number;
+  /** La Resistencia mágica del objetivo aguantó parte del hechizo. */
+  readonly resisted?: boolean;
+}
+
+/** Efectos activos propios (hechizos, pociones, veneno) y atributos con sus cambios. */
+export interface EffectsMessage {
+  readonly type: 'effects';
+  readonly effects: readonly EffectSnapshot[];
+  readonly attributes: Attributes;
+}
+
+/** Alguien apareció en otro lugar al instante (teletransporte). */
+export interface MobileTeleportedMessage {
+  readonly type: 'mobileTeleported';
+  readonly id: EntityId;
+  readonly position: Position;
 }
 
 /** Cambió la reputación o el gremio de alguien a la vista. */
@@ -367,6 +399,8 @@ export type ServerMessage =
   | SkillsMessage
   | CastStartMessage
   | SpellEffectMessage
+  | EffectsMessage
+  | MobileTeleportedMessage
   | MobileStatusMessage
   | SocialMessage
   | SystemMessage;

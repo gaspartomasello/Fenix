@@ -8,6 +8,7 @@ import {
   type CharacterFrame,
 } from './character-art';
 import type { PixelImage, Rgb } from './pixel-art';
+import { drawSummonFrame, isSummonKind } from './summon-art';
 import {
   VolumeCanvas,
   add,
@@ -29,6 +30,7 @@ export function drawCreatureFrame(
   frame: CharacterFrame,
 ): PixelImage {
   if (kind === 'skeleton') return drawSkeletonFrame(direction, frame);
+  if (isSummonKind(kind)) return drawSummonFrame(kind, direction, frame);
   const zoom = kind === 'rat' ? 1.6 : 1.25;
   const canvas = new VolumeCanvas(
     CHARACTER_ART_WIDTH,

@@ -16,7 +16,8 @@ export class EmbeddedGateway implements GameGateway {
     this.handlers.onStatus('connecting');
     // Carga diferida: el código del servidor solo se descarga en modo solo.
     const { createEmbeddedServer } = await import('@fenix/server/embedded');
-    const server = createEmbeddedServer({ storage: browserStorage });
+    // En el modo solo, Gaspar entra como personaje de prueba (todo al máximo).
+    const server = createEmbeddedServer({ storage: browserStorage, testCharacters: ['Gaspar'] });
     // Guardar al cerrar o esconder la pestaña (en el celular puede no volver).
     const save = (): void => server.saveAll();
     window.addEventListener('pagehide', save);

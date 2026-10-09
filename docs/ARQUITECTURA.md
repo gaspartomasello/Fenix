@@ -171,6 +171,7 @@ objetivo y turno de golpe. El cliente solo elige objetivo (`attack`); el golpe l
   rango, lo persiguen y atacan; no entran a zonas con nombre (los pueblos son seguros) y vuelven a
   su lugar si se alejan demasiado;
 - resuelve golpes con `resolveAttack` (acierto por destreza, daño del arma, la armadura absorbe);
+  el arco dispara desde lejos y gasta una flecha por tiro;
 - regenera vitales, tira el botín de las criaturas muertas y las hace reaparecer a los 30 s;
 - resucita a los fantasmas que llegan a 2 tiles del santuario.
 
@@ -182,17 +183,48 @@ Cada jugador tiene un `SkillSet` (valores en décimas). Al pelear, practica el a
 Parada si lo atacan con escudo); al regenerar maná, Meditación; al lanzar, Magia. El acierto usa la
 fórmula de UO con las habilidades de ambos.
 
-Lanzar (`castSpell`) valida libro, Magia mínima, maná, reactivos y objetivo, y gasta todo de
-entrada (`startCast`); el `GameLoop` resuelve el hechizo al terminar su tiempo (`resolveCast`):
-tirada de éxito según Magia y efecto (curar, dañar o luz). Los efectos visuales los dibuja
+Los hechizos (`spell-catalog.ts`) van en ocho círculos, como en UO: cada círculo fija maná, Magia
+mínima y tiempo de lanzamiento, y cada hechizo dice a quién va (`self`, `beneficial`, `harmful` o
+`location`) y qué hace (`SpellEffect`: daño, curación, atributos, cura, veneno, parálisis,
+teletransporte, comida, drenar maná, protección, visión nocturna, daño en área, resurrección o
+invocación).
+
+Las **invocaciones** son `Creature` con dueño (`ownerId`) y vencimiento (`expiresAt`): atacan al
+objetivo de su dueño o a quien lo ataque, si no lo siguen (pueden entrar al pueblo), lo que matan
+cuenta para él, no reaparecen y se van cuando vencen, mueren o su dueño se desconecta. Hay como
+mucho dos por jugador.
+
+Los **atributos** (fuerza, destreza e inteligencia) se entrenan como en UO: cada uso de una
+habilidad (`SkillSet` avisa a `Player`) puede subir uno de los suyos (`SKILL_STATS`), no muy
+seguido, hasta 100 cada uno y 225 entre los tres. Se guardan con el personaje y cambian los
+máximos de vida, maná y energía.
+
+Lanzar (`castSpell`) valida libro (o pergamino), Magia mínima, maná, reactivos y objetivo, y gasta
+todo de entrada (`startCast`); atacar con un hechizo a un inocente es un crimen, igual que con un
+arma. El `GameLoop` resuelve el hechizo al terminar su tiempo (`resolveCast`): tirada de éxito
+según Magia, Resistencia mágica del objetivo (reduce a la mitad daño o duración) y efecto. Un golpe
+recibido mientras se lanza corta el hechizo, salvo con Protección. Los efectos visuales los dibuja
 `EffectsLayer` en el cliente a partir de `spellEffect`.
+
+Los **efectos que duran** viven en el `Combatant`: atributos subidos o bajados (que recalculan los
+máximos de vida, maná y energía), Protección, veneno (quita vida cada 2 s y no deja regenerar),
+parálisis (se corta con un golpe) y visión nocturna. El `GameLoop` los hace vencer y aplica el
+veneno; el dueño recibe la lista con `effects`, que el cliente muestra en la barra de efectos.
+
+Vendas (`domain/healing/bandage.ts`, mensaje `useOn`) y pociones (`domain/items/consumables.ts`)
+siguen las mismas reglas de UO: la venda tarda según la destreza, cura según Primeros auxilios y
+Anatomía y, con 60 en ambas, puede sacar el veneno.
 
 ### Economía
 
 Los personajes del pueblo son `Npc` (mobiles que no pelean ni se mueven), cargados desde objetos
 de clase `npc` en Tiled. Las reglas de `domain/economy/economy.ts` validan distancia, oro,
 herramientas, habilidad y materiales: recolectar de árboles y rocas (cada lugar se agota y se
-recupera con `ResourceSpots`), fundir junto a la forja, fabricar junto al yunque, comprar y vender.
+recupera con `ResourceSpots`) o pescar en el agua, fundir junto a la forja, fabricar, comprar y
+vender. Cada oficio (`crafting.ts`) tiene su herramienta, recetas por grupo con materiales y
+habilidad mínima, y a veces un lugar (la herrería pide yunque y forja; cocinar, el fuego); los
+pergaminos de Inscripción gastan además los reactivos y el maná del hechizo. Si sale mal se pierde
+la mitad del material.
 El banco es otra ubicación de los objetos (`bank`), que solo se puede tocar cerca de la banquera.
 `EconomyActions` publica los cambios y las prácticas de habilidad.
 

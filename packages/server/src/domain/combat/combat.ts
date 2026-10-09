@@ -1,13 +1,15 @@
 import {
+  MELEE_RANGE,
   armorOf,
-  inMeleeRange,
   resolveAttack,
+  tileDistance,
   weaponOf,
   type DefenderStats,
   type SkillKey,
   type Weapon,
 } from '@fenix/shared';
 import { Creature } from '../creatures/creature';
+import { emptyChanges, type ItemChanges } from '../items/items';
 import type { Mobile } from '../mobile';
 import { Player } from '../player';
 import type { World } from '../world';
@@ -27,9 +29,13 @@ export interface SwingResult {
   readonly killed: boolean;
   /** Habilidades que subieron con este golpe. */
   readonly gains: readonly SkillGain[];
+  /** Disparo a distancia. */
+  readonly ranged: boolean;
+  /** Munición gastada (flechas). */
+  readonly itemChanges: ItemChanges | null;
 }
 
-function weaponFor(mobile: Mobile, world: World): Weapon {
+export function weaponFor(mobile: Mobile, world: World): Weapon {
   return mobile instanceof Creature
     ? mobile.definition.weapon
     : weaponOf(world.items.lookOf(mobile.id));
@@ -45,13 +51,21 @@ function defenseFor(mobile: Mobile, world: World): DefenderStats {
   if (mobile instanceof Player) {
     const look = world.items.lookOf(mobile.id);
     return {
-      armor: armorOf(look),
+      armor: armorOf(look) + (mobile.combat.effect('protection')?.amount ?? 0),
       skill: fightingSkill(mobile, world),
       parrying: look.leftHand ? mobile.skills.get('parrying') : 0,
     };
   }
-  const armor = mobile instanceof Creature ? mobile.definition.armor : 0;
+  const armor =
+    (mobile instanceof Creature ? mobile.definition.armor : 0) +
+    (mobile.combat.effect('protection')?.amount ?? 0);
   return { armor, skill: fightingSkill(mobile, world), parrying: 0 };
+}
+
+/** ¿Le faltan flechas para el arma que tiene en la mano? */
+export function outOfAmmo(player: Player, world: World): boolean {
+  const ammo = weaponFor(player, world).ammo;
+  return ammo !== undefined && world.items.countInBackpack(player.id, ammo) === 0;
 }
 
 /**
@@ -67,10 +81,18 @@ export function trySwing(
   random: () => number,
 ): SwingResult | null {
   if (attacker.combat.isDead || target.combat.isDead) return null;
-  if (!inMeleeRange(attacker.position, target.position)) return null;
+  if (attacker.combat.isParalyzed) return null;
+  const weapon = weaponFor(attacker, world);
+  const range = weapon.range ?? MELEE_RANGE;
+  if (tileDistance(attacker.position, target.position) > range) return null;
   if (now < attacker.combat.nextSwingAt) return null;
 
-  const weapon = weaponFor(attacker, world);
+  // Los arcos gastan una flecha por disparo; sin flechas no se dispara.
+  let itemChanges: ItemChanges | null = null;
+  if (weapon.ammo && attacker instanceof Player) {
+    itemChanges = emptyChanges();
+    if (!world.items.consumeFromBackpack(attacker.id, weapon.ammo, 1, itemChanges)) return null;
+  }
   attacker.combat.nextSwingAt = now + weapon.swingMs;
   const tactics = attacker instanceof Player ? attacker.skills.get('tactics') : 500;
   const defense = defenseFor(target, world);
@@ -107,5 +129,7 @@ export function trySwing(
     damage: outcome.damage,
     killed,
     gains,
+    ranged: range > MELEE_RANGE,
+    itemChanges,
   };
 }

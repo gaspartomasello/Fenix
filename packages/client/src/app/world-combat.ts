@@ -2,6 +2,12 @@ import type { ClientGame } from '../core/client-game';
 import type { GameRenderer } from '../rendering/game-renderer';
 import type { WorldTooltip } from '../ui/world-tooltip';
 
+/** Qué se puede elegir además de criaturas: otras personas y uno mismo. */
+export interface PickOptions {
+  readonly people: boolean;
+  readonly self: boolean;
+}
+
 /**
  * Pelear desde el mundo: clic (o toque) sobre una criatura para atacarla
  * (o sobre otra persona, en modo guerra), Escape para dejar de atacar, y su
@@ -10,7 +16,11 @@ import type { WorldTooltip } from '../ui/world-tooltip';
 export class WorldCombat {
   private readonly abort = new AbortController();
   /** Mientras se elige objetivo, el próximo clic sobre una criatura va acá en vez de atacar. */
-  private picking: { onPick: (id: string) => void; onCancel: () => void } | null = null;
+  private picking: {
+    onPick: (id: string) => void;
+    onCancel: () => void;
+    options: PickOptions;
+  } | null = null;
 
   constructor(
     private readonly game: ClientGame,
@@ -32,10 +42,17 @@ export class WorldCombat {
     );
   }
 
-  /** El próximo clic sobre una criatura la elige como objetivo (Escape cancela). */
-  pickCreature(onPick: (id: string) => void, onCancel: () => void): void {
+  /**
+   * El próximo clic sobre una criatura (o, según `options`, una persona o
+   * uno mismo) la elige como objetivo. Escape cancela.
+   */
+  pickMobile(
+    onPick: (id: string) => void,
+    onCancel: () => void,
+    options: PickOptions = { people: false, self: false },
+  ): void {
     this.cancelPick();
-    this.picking = { onPick, onCancel };
+    this.picking = { onPick, onCancel, options };
   }
 
   get isPicking(): boolean {
@@ -53,11 +70,19 @@ export class WorldCombat {
     return this.targetAt(point) !== null;
   }
 
-  /** Criatura bajo el punto; en modo guerra (y sin elegir hechizo) también personas. */
+  /**
+   * Criatura bajo el punto; en modo guerra también personas. Al elegir un
+   * objetivo, lo que pidan las opciones (personas, uno mismo).
+   */
   private targetAt(point: { x: number; y: number }): string | null {
     const creature = this.renderer.creatureAt(point);
-    if (creature || this.picking || !this.game.warMode) return creature;
-    return this.renderer.playerAt(point);
+    if (creature) return creature;
+    const options = this.picking?.options;
+    if (options) {
+      if (options.self) return this.renderer.humanAt(point);
+      return options.people ? this.renderer.playerAt(point) : null;
+    }
+    return this.game.warMode ? this.renderer.playerAt(point) : null;
   }
 
   destroy(): void {

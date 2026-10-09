@@ -1,6 +1,13 @@
 import {
   PLAYER_ATTRIBUTES,
+  SKILL_STATS,
   STARTING_SKILLS,
+  STAT_GAIN_MIN_USES,
+  STAT_TOTAL_CAP,
+  statGainChance,
+  type AttributeKey,
+  type Attributes,
+  type SkillKey,
   type SpellKey,
   RUN_STEPS_PER_STAMINA,
   canStep,
@@ -30,6 +37,15 @@ export const MOVE_IDLE_CREDIT_MS = 200;
 
 export type MoveOutcome = { ok: true } | { ok: false; reason: 'too-fast' | 'blocked' };
 
+export interface PendingCast {
+  readonly spell: SpellKey;
+  /** A quién va (uno mismo en los que no eligen objetivo). */
+  readonly targetId: EntityId;
+  /** A qué lugar va (teletransporte). */
+  readonly position?: Position;
+  readonly resolveAt: number;
+}
+
 export interface PlayerProps {
   readonly id: EntityId;
   readonly name: string;
@@ -38,6 +54,8 @@ export interface PlayerProps {
   readonly direction: Direction;
   /** Habilidades guardadas; un personaje nuevo empieza con las iniciales. */
   readonly skills?: SkillValues;
+  /** Atributos guardados (fuerza, destreza, inteligencia). */
+  readonly attributes?: Attributes;
 }
 
 export class Player implements Mobile {
@@ -45,11 +63,16 @@ export class Player implements Mobile {
   readonly name: string;
   readonly body = 'human' as const;
   readonly appearance: Appearance;
-  readonly combat = new Combatant(PLAYER_ATTRIBUTES);
+  readonly combat: Combatant;
   readonly skills: SkillSet;
   readonly reputation = new Reputation();
   /** Hechizo que está lanzando, que se resuelve en `resolveAt`. */
-  pendingCast: { spell: SpellKey; targetId: EntityId; resolveAt: number } | null = null;
+  pendingCast: PendingCast | null = null;
+  /** Venda que está poniendo, que termina en `resolveAt`. */
+  pendingBandage: { targetId: EntityId; resolveAt: number } | null = null;
+  /** Atributos que subieron y todavía no se avisaron. */
+  readonly statGains: AttributeKey[] = [];
+  private usesSinceStatGain = 0;
   /** Cuándo puede volver a recolectar o fabricar. */
   nextActionAt = 0;
   private runSteps = 0;
@@ -61,7 +84,10 @@ export class Player implements Mobile {
     this.id = props.id;
     this.name = props.name;
     this.appearance = props.appearance;
-    this.skills = new SkillSet(props.skills ?? STARTING_SKILLS);
+    this.combat = new Combatant(props.attributes ?? PLAYER_ATTRIBUTES);
+    this.skills = new SkillSet(props.skills ?? STARTING_SKILLS, (key, random) =>
+      this.trainAttributes(key, random),
+    );
     this._position = props.position;
     this._direction = props.direction;
   }
@@ -76,6 +102,7 @@ export class Player implements Mobile {
 
   /** Intenta dar un paso. Aun si el paso es bloqueado, el personaje gira. */
   tryMove(map: TileMap, direction: Direction, mode: MoveMode, now: number): MoveOutcome {
+    if (this.combat.isParalyzed) return { ok: false, reason: 'blocked' };
     if (this.nextMoveAt - now > MOVE_EARLY_TOLERANCE_MS) {
       return { ok: false, reason: 'too-fast' };
     }
@@ -86,6 +113,29 @@ export class Player implements Mobile {
     this._position = step(this._position, direction);
     this.nextMoveAt = Math.max(this.nextMoveAt, now - MOVE_IDLE_CREDIT_MS) + moveDuration(mode);
     return { ok: true };
+  }
+
+  /**
+   * Usar una habilidad entrena sus atributos, como en UO: sube de a un punto,
+   * no muy seguido, hasta 100 cada uno y 225 entre los tres.
+   */
+  private trainAttributes(skill: SkillKey, random: () => number): void {
+    this.usesSinceStatGain += 1;
+    if (this.usesSinceStatGain < STAT_GAIN_MIN_USES) return;
+    const base = this.combat.baseAttributes;
+    if (base.strength + base.dexterity + base.intelligence >= STAT_TOTAL_CAP) return;
+    for (const [index, key] of SKILL_STATS[skill].entries()) {
+      if (random() >= statGainChance(base[key], index === 0)) continue;
+      this.combat.raiseAttribute(key);
+      this.statGains.push(key);
+      this.usesSinceStatGain = 0;
+      return;
+    }
+  }
+
+  /** Aparece en otro lugar al instante (teletransporte). */
+  teleport(position: Position): void {
+    this._position = position;
   }
 
   /** Cuenta un paso corriendo; cada RUN_STEPS_PER_STAMINA gasta un punto de energía. */

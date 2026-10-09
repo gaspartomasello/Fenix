@@ -1,42 +1,109 @@
+import { SPELLS, SPELL_KEYS, type SpellKey } from '../magic/spell-catalog';
+import type { SkillKey } from '../skills/skill-catalog';
 import type { EquipmentSlot } from './equipment';
 
 /** Tipos de objeto del juego. La clave es la que se usa en mapas y en la red. */
-export const ITEM_KINDS = [
+export const BASE_ITEM_KINDS = [
   'gold',
+  // Comida y bebida
   'apple',
+  'raw-fish',
+  'fish-steak',
+  'raw-ribs',
+  'cooked-ribs',
   'healing-potion',
+  'cure-potion',
+  'refresh-potion',
+  'strength-potion',
+  'agility-potion',
+  'empty-bottle',
+  'bandage',
+  // Armas
   'dagger',
+  'kryss',
+  'spear',
   'short-sword',
+  'broadsword',
+  'katana',
   'axe',
+  'mace',
+  'war-hammer',
+  'bow',
+  'arrow',
+  // Armaduras y ropa
   'wooden-shield',
   'leather-cap',
   'iron-helmet',
+  'plate-helm',
+  'wizard-hat',
   'leather-armor',
+  'studded-leather',
   'chainmail',
+  'plate-chest',
+  'robe',
   'cloak',
   'trousers',
+  'leather-leggings',
+  'plate-legs',
   'boots',
+  // Magia
   'spellbook',
+  'blank-scroll',
   'black-pearl',
+  'blood-moss',
   'garlic',
   'ginseng',
   'mandrake-root',
+  'nightshade',
   'spiders-silk',
   'sulfurous-ash',
+  // Herramientas
   'pickaxe',
+  'fishing-pole',
   'smith-hammer',
+  'sewing-kit',
+  'saw',
+  'fletching-kit',
+  'mortar-pestle',
+  'scribe-pen',
+  'skillet',
+  // Materiales
   'logs',
+  'boards',
   'iron-ore',
   'iron-ingot',
+  'cloth',
+  'hides',
 ] as const;
 
-export type ItemKind = (typeof ITEM_KINDS)[number];
+export type BaseItemKind = (typeof BASE_ITEM_KINDS)[number];
+/** Pergamino de un hechizo: se lanza una vez sin gastar reactivos. */
+export type ScrollKind = `scroll-${SpellKey}`;
+export type ItemKind = BaseItemKind | ScrollKind;
+
+export const SCROLL_KINDS: readonly ScrollKind[] = SPELL_KEYS.map((k) => `scroll-${k}` as const);
+export const ITEM_KINDS: readonly ItemKind[] = [...BASE_ITEM_KINDS, ...SCROLL_KINDS];
 
 /**
- * Qué pasa con doble clic. `tool`: elegir un árbol o roca para recolectar;
- * `craft`: abrir la herrería; `smelt`: fundir mineral cerca de una forja.
+ * Qué pasa con doble clic. `tool`: elegir un lugar para recolectar (árbol,
+ * roca, agua); `craft`: abrir la ventana del oficio; `smelt`: fundir mineral
+ * cerca de una forja; `bandage`: elegir a quién vendar; `scroll`: lanzar el
+ * hechizo del pergamino.
  */
-export type ItemUse = 'eat' | 'drink' | 'equip' | 'spellbook' | 'tool' | 'craft' | 'smelt' | 'none';
+export type ItemUse =
+  | 'eat'
+  | 'drink'
+  | 'equip'
+  | 'spellbook'
+  | 'tool'
+  | 'craft'
+  | 'smelt'
+  | 'bandage'
+  | 'scroll'
+  | 'none';
+
+/** Lo que hace una poción al tomarla. */
+export type PotionEffect = 'heal' | 'cure' | 'refresh' | 'strength' | 'agility';
 
 export interface ItemDefinition {
   readonly kind: ItemKind;
@@ -51,239 +118,210 @@ export interface ItemDefinition {
   readonly use: ItemUse;
   /** Color con el que se ve puesto (ropa y armaduras). */
   readonly color?: number;
+  /** Ocupa las dos manos (no se puede usar escudo). */
+  readonly twoHanded?: boolean;
+  /** Herramienta: qué oficio abre. */
+  readonly crafts?: SkillKey;
+  /** Comida: cuánta vida devuelve. */
+  readonly food?: number;
+  /** Poción: qué hace. */
+  readonly potion?: PotionEffect;
+  /** Pergamino: qué hechizo tiene. */
+  readonly spell?: SpellKey;
 }
 
-const item = (definition: ItemDefinition): ItemDefinition => definition;
+type Spec = Omit<ItemDefinition, 'kind' | 'stackable' | 'use'> &
+  Partial<Pick<ItemDefinition, 'stackable' | 'use'>>;
 
-export const ITEMS: Readonly<Record<ItemKind, ItemDefinition>> = {
-  gold: item({
-    kind: 'gold',
-    name: 'moneda de oro',
-    plural: 'monedas de oro',
-    article: 'una',
-    stackable: true,
-    use: 'none',
-  }),
-  apple: item({
-    kind: 'apple',
+const BASE: Readonly<Record<BaseItemKind, Spec>> = {
+  gold: { name: 'moneda de oro', plural: 'monedas de oro', article: 'una', stackable: true },
+  apple: {
     name: 'manzana',
     plural: 'manzanas',
     article: 'una',
     stackable: true,
     use: 'eat',
-  }),
-  'healing-potion': item({
-    kind: 'healing-potion',
-    name: 'poción de curación',
-    plural: 'pociones de curación',
+    food: 3,
+  },
+  'raw-fish': { name: 'pescado crudo', plural: 'pescados crudos', article: 'un', stackable: true },
+  'fish-steak': {
+    name: 'filete de pescado',
+    plural: 'filetes de pescado',
+    article: 'un',
+    stackable: true,
+    use: 'eat',
+    food: 8,
+  },
+  'raw-ribs': {
+    name: 'costilla cruda',
+    plural: 'costillas crudas',
     article: 'una',
     stackable: true,
-    use: 'drink',
-  }),
-  dagger: item({
-    kind: 'dagger',
-    name: 'daga',
-    plural: 'dagas',
+  },
+  'cooked-ribs': {
+    name: 'costilla asada',
+    plural: 'costillas asadas',
     article: 'una',
-    stackable: false,
-    slot: 'rightHand',
-    use: 'equip',
-  }),
-  'short-sword': item({
-    kind: 'short-sword',
-    name: 'espada corta',
-    plural: 'espadas cortas',
+    stackable: true,
+    use: 'eat',
+    food: 10,
+  },
+  'healing-potion': potion('poción de curación', 'pociones de curación', 'heal'),
+  'cure-potion': potion('poción de purificación', 'pociones de purificación', 'cure'),
+  'refresh-potion': potion('poción de vigor', 'pociones de vigor', 'refresh'),
+  'strength-potion': potion('poción de fuerza', 'pociones de fuerza', 'strength'),
+  'agility-potion': potion('poción de agilidad', 'pociones de agilidad', 'agility'),
+  'empty-bottle': {
+    name: 'botella vacía',
+    plural: 'botellas vacías',
     article: 'una',
-    stackable: false,
-    slot: 'rightHand',
-    use: 'equip',
-  }),
-  axe: item({
-    kind: 'axe',
-    name: 'hacha',
-    plural: 'hachas',
-    article: 'un',
-    stackable: false,
-    slot: 'rightHand',
-    use: 'tool',
-  }),
-  'wooden-shield': item({
-    kind: 'wooden-shield',
-    name: 'escudo de madera',
-    plural: 'escudos de madera',
-    article: 'un',
-    stackable: false,
-    slot: 'leftHand',
-    use: 'equip',
-    color: 0x8a5a2e,
-  }),
-  'leather-cap': item({
-    kind: 'leather-cap',
-    name: 'gorro de cuero',
-    plural: 'gorros de cuero',
-    article: 'un',
-    stackable: false,
-    slot: 'head',
-    use: 'equip',
-    color: 0x7a4e2a,
-  }),
-  'iron-helmet': item({
-    kind: 'iron-helmet',
-    name: 'yelmo de hierro',
-    plural: 'yelmos de hierro',
-    article: 'un',
-    stackable: false,
-    slot: 'head',
-    use: 'equip',
-    color: 0x9aa0a8,
-  }),
-  'leather-armor': item({
-    kind: 'leather-armor',
-    name: 'pechera de cuero',
-    plural: 'pecheras de cuero',
-    article: 'una',
-    stackable: false,
-    slot: 'torso',
-    use: 'equip',
-    color: 0x7a4e2a,
-  }),
-  chainmail: item({
-    kind: 'chainmail',
-    name: 'cota de malla',
-    plural: 'cotas de malla',
-    article: 'una',
-    stackable: false,
-    slot: 'torso',
-    use: 'equip',
-    color: 0x8e949c,
-  }),
-  cloak: item({
-    kind: 'cloak',
-    name: 'capa',
-    plural: 'capas',
-    article: 'una',
-    stackable: false,
-    slot: 'cloak',
-    use: 'equip',
-    color: 0x7a1f2a,
-  }),
-  trousers: item({
-    kind: 'trousers',
-    name: 'pantalón',
-    plural: 'pantalones',
-    article: 'un',
-    stackable: false,
-    slot: 'legs',
-    use: 'equip',
-    color: 0x3a4a6a,
-  }),
-  boots: item({
-    kind: 'boots',
-    name: 'par de botas',
-    plural: 'pares de botas',
-    article: 'un',
-    stackable: false,
-    slot: 'feet',
-    use: 'equip',
-    color: 0x3a2a1c,
-  }),
-  spellbook: item({
-    kind: 'spellbook',
+    stackable: true,
+  },
+  bandage: { name: 'venda', plural: 'vendas', article: 'una', stackable: true, use: 'bandage' },
+
+  dagger: weapon('daga', 'dagas', 'una'),
+  kryss: weapon('estoque', 'estoques', 'un'),
+  spear: { ...weapon('lanza', 'lanzas', 'una'), twoHanded: true },
+  'short-sword': weapon('espada corta', 'espadas cortas', 'una'),
+  broadsword: weapon('espada ancha', 'espadas anchas', 'una'),
+  katana: weapon('katana', 'katanas', 'una'),
+  axe: { ...weapon('hacha', 'hachas', 'un'), use: 'tool' },
+  mace: weapon('maza', 'mazas', 'una'),
+  'war-hammer': { ...weapon('martillo de guerra', 'martillos de guerra', 'un'), twoHanded: true },
+  bow: { ...weapon('arco', 'arcos', 'un'), twoHanded: true },
+  arrow: { name: 'flecha', plural: 'flechas', article: 'una', stackable: true },
+
+  'wooden-shield': wear('escudo de madera', 'escudos de madera', 'un', 'leftHand', 0x8a5a2e),
+  'leather-cap': wear('gorro de cuero', 'gorros de cuero', 'un', 'head', 0x7a4e2a),
+  'iron-helmet': wear('yelmo de hierro', 'yelmos de hierro', 'un', 'head', 0x9aa0a8),
+  'plate-helm': wear('yelmo cerrado', 'yelmos cerrados', 'un', 'head', 0xa8aeb6),
+  'wizard-hat': wear('sombrero de mago', 'sombreros de mago', 'un', 'head', 0x3a2a6a),
+  'leather-armor': wear('pechera de cuero', 'pecheras de cuero', 'una', 'torso', 0x7a4e2a),
+  'studded-leather': wear('pechera tachonada', 'pecheras tachonadas', 'una', 'torso', 0x5e3c22),
+  chainmail: wear('cota de malla', 'cotas de malla', 'una', 'torso', 0x8e949c),
+  'plate-chest': wear('peto de placas', 'petos de placas', 'un', 'torso', 0xa8aeb6),
+  robe: wear('túnica', 'túnicas', 'una', 'torso', 0x3a2a6a),
+  cloak: wear('capa', 'capas', 'una', 'cloak', 0x7a1f2a),
+  trousers: wear('pantalón', 'pantalones', 'un', 'legs', 0x3a4a6a),
+  'leather-leggings': wear(
+    'par de perneras de cuero',
+    'pares de perneras de cuero',
+    'un',
+    'legs',
+    0x6a4426,
+  ),
+  'plate-legs': wear(
+    'par de grebas de placas',
+    'pares de grebas de placas',
+    'un',
+    'legs',
+    0xa8aeb6,
+  ),
+  boots: wear('par de botas', 'pares de botas', 'un', 'feet', 0x3a2a1c),
+
+  spellbook: {
     name: 'libro de hechizos',
     plural: 'libros de hechizos',
     article: 'un',
-    stackable: false,
     use: 'spellbook',
-  }),
-  'black-pearl': item({
-    kind: 'black-pearl',
-    name: 'perla negra',
-    plural: 'perlas negras',
-    article: 'una',
-    stackable: true,
-    use: 'none',
-  }),
-  garlic: item({
-    kind: 'garlic',
-    name: 'diente de ajo',
-    plural: 'dientes de ajo',
+  },
+  'blank-scroll': {
+    name: 'pergamino en blanco',
+    plural: 'pergaminos en blanco',
     article: 'un',
     stackable: true,
-    use: 'none',
-  }),
-  ginseng: item({
-    kind: 'ginseng',
-    name: 'raíz de ginseng',
-    plural: 'raíces de ginseng',
+  },
+  'black-pearl': reagent('perla negra', 'perlas negras', 'una'),
+  'blood-moss': reagent('musgo de sangre', 'musgos de sangre', 'un'),
+  garlic: reagent('diente de ajo', 'dientes de ajo', 'un'),
+  ginseng: reagent('raíz de ginseng', 'raíces de ginseng', 'una'),
+  'mandrake-root': reagent('raíz de mandrágora', 'raíces de mandrágora', 'una'),
+  nightshade: reagent('belladona', 'belladonas', 'una'),
+  'spiders-silk': reagent('seda de araña', 'sedas de araña', 'una'),
+  'sulfurous-ash': reagent('ceniza sulfurosa', 'cenizas sulfurosas', 'una'),
+
+  pickaxe: { ...weapon('pico', 'picos', 'un'), use: 'tool' },
+  'fishing-pole': {
+    name: 'caña de pescar',
+    plural: 'cañas de pescar',
     article: 'una',
-    stackable: true,
-    use: 'none',
-  }),
-  'mandrake-root': item({
-    kind: 'mandrake-root',
-    name: 'raíz de mandrágora',
-    plural: 'raíces de mandrágora',
-    article: 'una',
-    stackable: true,
-    use: 'none',
-  }),
-  'spiders-silk': item({
-    kind: 'spiders-silk',
-    name: 'seda de araña',
-    plural: 'sedas de araña',
-    article: 'una',
-    stackable: true,
-    use: 'none',
-  }),
-  'sulfurous-ash': item({
-    kind: 'sulfurous-ash',
-    name: 'ceniza sulfurosa',
-    plural: 'cenizas sulfurosas',
-    article: 'una',
-    stackable: true,
-    use: 'none',
-  }),
-  pickaxe: item({
-    kind: 'pickaxe',
-    name: 'pico',
-    plural: 'picos',
-    article: 'un',
-    stackable: false,
-    slot: 'rightHand',
     use: 'tool',
-  }),
-  'smith-hammer': item({
-    kind: 'smith-hammer',
-    name: 'martillo de herrero',
-    plural: 'martillos de herrero',
-    article: 'un',
-    stackable: false,
-    use: 'craft',
-  }),
-  logs: item({
-    kind: 'logs',
-    name: 'tronco',
-    plural: 'troncos',
-    article: 'un',
-    stackable: true,
-    use: 'none',
-  }),
-  'iron-ore': item({
-    kind: 'iron-ore',
+  },
+  'smith-hammer': tool('martillo de herrero', 'martillos de herrero', 'un', 'blacksmithy'),
+  'sewing-kit': tool('costurero', 'costureros', 'un', 'tailoring'),
+  saw: tool('serrucho', 'serruchos', 'un', 'carpentry'),
+  'fletching-kit': tool('juego de flechero', 'juegos de flechero', 'un', 'bowcraft'),
+  'mortar-pestle': tool('mortero', 'morteros', 'un', 'alchemy'),
+  'scribe-pen': tool('pluma de escriba', 'plumas de escriba', 'una', 'inscription'),
+  skillet: tool('sartén', 'sartenes', 'una', 'cooking'),
+
+  logs: { name: 'tronco', plural: 'troncos', article: 'un', stackable: true },
+  boards: { name: 'tabla', plural: 'tablas', article: 'una', stackable: true },
+  'iron-ore': {
     name: 'mineral de hierro',
     plural: 'minerales de hierro',
     article: 'un',
     stackable: true,
     use: 'smelt',
-  }),
-  'iron-ingot': item({
-    kind: 'iron-ingot',
+  },
+  'iron-ingot': {
     name: 'lingote de hierro',
     plural: 'lingotes de hierro',
     article: 'un',
     stackable: true,
-    use: 'none',
+  },
+  cloth: { name: 'rollo de tela', plural: 'rollos de tela', article: 'un', stackable: true },
+  hides: { name: 'piel', plural: 'pieles', article: 'una', stackable: true },
+};
+
+function potion(name: string, plural: string, effect: PotionEffect): Spec {
+  return { name, plural, article: 'una', stackable: true, use: 'drink', potion: effect };
+}
+function weapon(name: string, plural: string, article: 'un' | 'una'): Spec {
+  return { name, plural, article, slot: 'rightHand', use: 'equip' };
+}
+function wear(
+  name: string,
+  plural: string,
+  article: 'un' | 'una',
+  slot: EquipmentSlot,
+  color: number,
+): Spec {
+  return { name, plural, article, slot, use: 'equip', color };
+}
+function reagent(name: string, plural: string, article: 'un' | 'una'): Spec {
+  return { name, plural, article, stackable: true };
+}
+function tool(name: string, plural: string, article: 'un' | 'una', crafts: SkillKey): Spec {
+  return { name, plural, article, use: 'craft', crafts };
+}
+
+const scrolls = Object.fromEntries(
+  SPELL_KEYS.map((spell): [ScrollKind, ItemDefinition] => {
+    const kind = `scroll-${spell}` as const;
+    return [
+      kind,
+      {
+        kind,
+        name: `pergamino de ${SPELLS[spell].name}`,
+        plural: `pergaminos de ${SPELLS[spell].name}`,
+        article: 'un',
+        stackable: true,
+        use: 'scroll',
+        spell,
+      },
+    ];
   }),
+) as Record<ScrollKind, ItemDefinition>;
+
+export const ITEMS: Readonly<Record<ItemKind, ItemDefinition>> = {
+  ...(Object.fromEntries(
+    BASE_ITEM_KINDS.map((kind) => {
+      const spec = BASE[kind];
+      return [kind, { kind, stackable: false, use: 'none', ...spec }];
+    }),
+  ) as Record<BaseItemKind, ItemDefinition>),
+  ...scrolls,
 };
 
 export function isItemKind(value: unknown): value is ItemKind {
@@ -297,5 +335,5 @@ export function describeItem(kind: ItemKind, amount = 1): string {
   return `${amount} ${definition.plural}`;
 }
 
-/** Máximo de unidades en una pila. */
+/** Máximo de unidades en una pila, como en UO. */
 export const MAX_STACK = 60_000;

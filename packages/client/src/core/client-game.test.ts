@@ -346,4 +346,33 @@ describe('ClientGame', () => {
       expect(bruno?.guildTag).toBe('FNX');
     });
   });
+
+  it('guarda los efectos activos, deja de moverse paralizado y vuelve a moverse al vencer', () => {
+    game.apply({
+      type: 'effects',
+      effects: [{ kind: 'paralyzed', amount: 0, remainingMs: 3000 }],
+      attributes: { strength: 50, dexterity: 40, intelligence: 30 },
+    });
+    expect(game.hasEffect('paralyzed')).toBe(true);
+    game.requestStep(Direction.East, 'walk');
+    expect(sent.filter((m) => m.type === 'move')).toHaveLength(0);
+    now += 3001;
+    expect(game.hasEffect('paralyzed')).toBe(false);
+    game.requestStep(Direction.East, 'walk');
+    expect(sent.filter((m) => m.type === 'move')).toHaveLength(1);
+  });
+
+  it('el teletransporte mueve al instante y los hechizos llevan lugar o pergamino', () => {
+    game.apply({ type: 'mobileTeleported', id: 'ana', position: { x: 2, y: 0 } });
+    expect(game.self?.position).toEqual({ x: 2, y: 0 });
+    game.castSpell('teleport', { position: { x: 1, y: 0 }, scrollId: 'p9' });
+    expect(sent.at(-1)).toEqual({
+      type: 'castSpell',
+      spell: 'teleport',
+      position: { x: 1, y: 0 },
+      scrollId: 'p9',
+    });
+    game.useOn('venda', 'bruno');
+    expect(sent.at(-1)).toEqual({ type: 'useOn', itemId: 'venda', targetId: 'bruno' });
+  });
 });
