@@ -1,11 +1,20 @@
-import { Direction, inViewRange, type EntityId, type Position, type TileMap } from '@fenix/shared';
+import {
+  Direction,
+  inViewRange,
+  type EntityId,
+  type PlayerSnapshot,
+  type Position,
+  type TileMap,
+} from '@fenix/shared';
+import { Items } from './items/items';
 import { Player, type PlayerProps } from './player';
 
 export const MAX_PLAYERS = 100;
 
-/** Agregado raíz del mundo: el mapa y los jugadores conectados. */
+/** Agregado raíz del mundo: el mapa, los jugadores conectados y los objetos. */
 export class World {
   private readonly players = new Map<EntityId, Player>();
+  readonly items = new Items();
 
   constructor(
     readonly map: TileMap,
@@ -39,10 +48,17 @@ export class World {
     return player;
   }
 
+  /** Saca al jugador del mundo junto con lo que lleva (todavía no hay persistencia). */
   remove(id: EntityId): Player | undefined {
     const player = this.players.get(id);
     this.players.delete(id);
+    this.items.removeOwnedBy(id);
     return player;
+  }
+
+  /** Lo que ven los demás de un jugador, incluido lo que tiene puesto. */
+  snapshotOf(player: Player): PlayerSnapshot {
+    return { ...player.toSnapshot(), equipment: this.items.lookOf(player.id) };
   }
 
   get(id: EntityId): Player | undefined {

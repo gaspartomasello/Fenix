@@ -39,6 +39,36 @@ describe('decodeClientMessage', () => {
   });
 });
 
+describe('mensajes de objetos', () => {
+  it('acepta mover a suelo, mochila o equipo', () => {
+    for (const to of [
+      { type: 'ground', position: { x: 3, y: 4 } },
+      { type: 'backpack' },
+      { type: 'backpack', position: { x: 10, y: 20 } },
+      { type: 'equipment', slot: 'head' },
+    ]) {
+      expect(decodeClientMessage(JSON.stringify({ type: 'moveItem', itemId: 'i1', to })).ok).toBe(
+        true,
+      );
+    }
+  });
+
+  it('rechaza destinos inválidos', () => {
+    for (const to of [
+      { type: 'ground' },
+      { type: 'ground', position: { x: 1.5, y: 0 } },
+      { type: 'equipment', slot: 'tail' },
+      { type: 'bank' },
+      null,
+    ]) {
+      expect(decodeClientMessage(JSON.stringify({ type: 'moveItem', itemId: 'i1', to })).ok).toBe(
+        false,
+      );
+    }
+    expect(decodeClientMessage(JSON.stringify({ type: 'useItem', itemId: '' })).ok).toBe(false);
+  });
+});
+
 describe('decodeServerMessage', () => {
   it('reconoce tipos conocidos y rechaza el resto', () => {
     expect(

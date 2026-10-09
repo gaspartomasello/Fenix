@@ -18,6 +18,8 @@ export interface InputControllerOptions {
   /** Posición en pantalla del personaje propio. */
   readonly selfScreenPosition: () => ScreenPoint;
   readonly onZoom: (delta: 1 | -1) => void;
+  /** Si devuelve false, tocar ese punto no mueve al personaje (por ejemplo, hay un objeto). */
+  readonly canSteerFrom?: (point: ScreenPoint) => boolean;
 }
 
 /**
@@ -45,9 +47,11 @@ export class InputController {
       'pointerdown',
       (e) => {
         if (!isSteeringPointer(e)) return;
+        const point = this.localPoint(e);
+        if (e.pointerType !== 'mouse' && options.canSteerFrom?.(point) === false) return;
         e.preventDefault();
         this.steering = true;
-        this.pointer = this.localPoint(e);
+        this.pointer = point;
         surface.setPointerCapture(e.pointerId);
       },
       { signal },

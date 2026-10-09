@@ -26,11 +26,12 @@ npm run tilesets -w @fenix/content
 1. Instalá Tiled y abrí `packages/content/maps/puerto-ceniza.json`.
 2. Usá las tres capas que el juego entiende:
 
-| Capa      | Tipo             | Qué va                                                                    |
-| --------- | ---------------- | ------------------------------------------------------------------------- |
-| `terreno` | Capa de patrones | Un tile del tileset `terreno` por casilla. Vacío = lo que genere la isla. |
-| `objetos` | Capa de patrones | Un objeto del tileset `objetos` por casilla.                              |
-| `zonas`   | Capa de objetos  | Un punto llamado `aparicion` y rectángulos de clase `region`.             |
+| Capa              | Tipo             | Qué va                                                                                          |
+| ----------------- | ---------------- | ----------------------------------------------------------------------------------------------- |
+| `terreno`         | Capa de patrones | Un tile del tileset `terreno` por casilla. Vacío = lo que genere la isla.                       |
+| `objetos`         | Capa de patrones | Un objeto del tileset `objetos` por casilla.                                                    |
+| `zonas`           | Capa de objetos  | Un punto llamado `aparicion` y rectángulos de clase `region`.                                   |
+| `objetos-sueltos` | Capa de objetos  | Puntos con el nombre de un objeto (`short-sword`, `gold`…) y una propiedad `cantidad` opcional. |
 
 3. Guardá (Ctrl+S) y corré `npm test`: el test del cargador valida el mapa y avisa con un mensaje
    claro si algo está mal (por ejemplo, un objeto puesto en la capa de terreno).
@@ -48,3 +49,7 @@ npm run tilesets -w @fenix/content
 - **Faroles** iluminan de noche (radio de 5 tiles).
 - **Zonas** (`region`): su nombre aparece en la barra de estado cuando el jugador está adentro.
 - **Aparición**: el punto `aparicion` debe caer en un tile transitable; el test lo verifica.
+- **Objetos sueltos**: se pueden levantar. Nombres válidos: `gold`, `apple`, `healing-potion`,
+  `dagger`, `short-sword`, `axe`, `wooden-shield`, `leather-cap`, `iron-helmet`, `leather-armor`,
+  `chainmail`, `cloak`, `trousers`, `boots`. Todavía no reaparecen: vuelven al reiniciar el
+  servidor.

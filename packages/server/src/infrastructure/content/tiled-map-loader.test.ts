@@ -27,6 +27,22 @@ function tinyMap(terrain: number[], objects: number[] = [0, 0]): unknown {
           { id: 2, name: 'Muelle', type: 'region', x: 0, y: 0, width: 88, height: 44 },
         ],
       },
+      {
+        type: 'objectgroup',
+        name: 'objetos-sueltos',
+        objects: [
+          {
+            id: 3,
+            name: 'gold',
+            point: true,
+            x: 22,
+            y: 22,
+            width: 0,
+            height: 0,
+            properties: [{ name: 'cantidad', type: 'int', value: 25 }],
+          },
+        ],
+      },
     ],
   };
 }
@@ -38,6 +54,7 @@ describe('loadTiledMap', () => {
     expect(region.statics).toEqual([{ kind: 'oak', x: 1, y: 0 }]);
     expect(region.spawn).toEqual({ x: 1, y: 0 });
     expect(region.regions).toEqual([{ name: 'Muelle', x: 0, y: 0, width: 2, height: 1 }]);
+    expect(region.items).toEqual([{ kind: 'gold', amount: 25, position: { x: 0, y: 0 } }]);
   });
 
   it('explica qué está mal en un mapa inválido', () => {
@@ -52,5 +69,6 @@ describe('loadTiledMap', () => {
     expect(town.spawn).not.toBeNull();
     expect(town.statics.length).toBeGreaterThan(50);
     expect(town.regions.map((r) => r.name)).toContain('Puerto Ceniza');
+    expect(town.items.length).toBeGreaterThan(5);
   });
 });

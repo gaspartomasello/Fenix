@@ -1,6 +1,8 @@
 import { validateCharacterName, type Appearance, type EntityId } from '@fenix/shared';
+import { STARTING_KIT } from '../../domain/items/starting-kit';
 import type { WorldClock } from '../../domain/world-clock';
 import type { World } from '../../domain/world';
+import type { ItemNotifications } from '../item-notifications';
 import type { Clock, IdGenerator, Notifier, RandomSource } from '../ports';
 
 export interface JoinWorldInput {
@@ -18,6 +20,7 @@ export class JoinWorld {
     private readonly ids: IdGenerator,
     private readonly random: RandomSource,
     private readonly notifier: Notifier,
+    private readonly notifications: ItemNotifications,
   ) {}
 
   /**
@@ -36,6 +39,14 @@ export class JoinWorld {
       { id: this.ids.next(), name: validation.name, appearance: input.appearance },
       () => this.random.next(),
     );
+    for (const { kind, amount } of STARTING_KIT) {
+      this.world.items.add(this.ids.next(), kind, amount, {
+        type: 'backpack',
+        ownerId: player.id,
+        position: { x: 0, y: 0 },
+      });
+    }
+    this.arrangeBackpack(player.id);
     return { ok: true, playerId: player.id };
   }
 
@@ -49,16 +60,33 @@ export class JoinWorld {
       type: 'welcome',
       selfId: playerId,
       map: this.world.map.toData(),
-      players: [player, ...nearby].map((p) => p.toSnapshot()),
+      players: [player, ...nearby].map((p) => this.world.snapshotOf(p)),
       time: this.worldClock.timeAt(this.clock.now()),
     });
+    this.notifications.sendInventory(playerId);
+    this.notifications.sendGroundDiff(
+      playerId,
+      new Set(),
+      this.notifications.groundSnapshotsNear(playerId),
+    );
     this.notifier.sendMany(
       nearby.map((p) => p.id),
-      { type: 'playerAppeared', player: player.toSnapshot() },
+      { type: 'playerAppeared', player: this.world.snapshotOf(player) },
     );
     this.notifier.broadcast(
       { type: 'system', text: `${player.name} entró al mundo.` },
       { except: playerId },
     );
+  }
+
+  /** Acomoda el kit inicial en la grilla de la mochila. */
+  private arrangeBackpack(ownerId: EntityId): void {
+    this.world.items.backpackOf(ownerId).forEach((item, index) => {
+      item.location = {
+        type: 'backpack',
+        ownerId,
+        position: { x: (index % 5) * 44, y: Math.floor(index / 5) * 44 },
+      };
+    });
   }
 }

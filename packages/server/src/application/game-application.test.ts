@@ -190,6 +190,57 @@ describe('GameApplication', () => {
     });
   });
 
+  describe('objetos', () => {
+    it('al entrar recibe su mochila con el kit inicial y los objetos cercanos del suelo', () => {
+      ctx.world.items.add('floor', 'apple', 2, { type: 'ground', position: { x: 0, y: 0 } });
+      ctx.notifier.clear();
+      const ana = ctx.join('Ana');
+      const [inventory] = ctx.notifier.ofType('inventory');
+      if (inventory?.message.type !== 'inventory') throw new Error('sin inventario');
+      expect(inventory.to).toBe(ana);
+      expect(inventory.message.backpack.map((i) => i.kind)).toEqual([
+        'gold',
+        'dagger',
+        'apple',
+        'healing-potion',
+      ]);
+      expect(ctx.notifier.ofType('groundItems')).toEqual([
+        {
+          to: ana,
+          message: {
+            type: 'groundItems',
+            added: [expect.objectContaining({ id: 'floor' })],
+            removed: [],
+          },
+        },
+      ]);
+    });
+
+    it('al equiparse algo, quienes lo ven reciben su nuevo aspecto', () => {
+      const ana = ctx.join('Ana');
+      const bruno = ctx.join('Bruno');
+      const dagger = ctx.world.items.backpackOf(ana).find((i) => i.kind === 'dagger');
+      ctx.notifier.clear();
+      ctx.app.handle(ana, { type: 'useItem', itemId: dagger?.id ?? '' });
+      expect(
+        ctx.notifier
+          .ofType('playerEquipment')
+          .map((d) => d.to)
+          .sort(),
+      ).toEqual([ana, bruno].sort());
+      expect(ctx.notifier.ofType('inventory').map((d) => d.to)).toEqual([ana]);
+    });
+
+    it('avisa por qué no se pudo mover un objeto', () => {
+      const ana = ctx.join('Ana');
+      ctx.notifier.clear();
+      ctx.app.handle(ana, { type: 'moveItem', itemId: 'nada', to: { type: 'backpack' } });
+      expect(ctx.notifier.ofType('system')).toEqual([
+        { to: ana, message: { type: 'system', text: 'Ese objeto ya no está.' } },
+      ]);
+    });
+  });
+
   describe('chat y salida', () => {
     it('difunde el chat limpio con el nombre del jugador', () => {
       const ana = ctx.join('Ana');

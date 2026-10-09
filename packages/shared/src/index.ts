@@ -9,5 +9,8 @@ export * from './domain/rules/daylight';
 export * from './domain/rules/visibility';
 export * from './domain/character/appearance';
 export * from './domain/character/name';
+export * from './domain/items/equipment';
+export * from './domain/items/item-catalog';
+export * from './domain/items/item-rules';
 export * from './protocol/messages';
 export * from './protocol/codec';

@@ -1,7 +1,9 @@
 import { isAppearance } from '../domain/character/appearance';
+import { isEquipmentSlot } from '../domain/items/equipment';
 import { isDirection } from '../domain/geometry/direction';
 import { isMoveMode } from '../domain/rules/movement';
-import type { ClientMessage, ServerMessage, ServerMessageType } from './messages';
+import type { Position } from '../domain/geometry/position';
+import type { ClientMessage, ItemDestination, ServerMessage, ServerMessageType } from './messages';
 
 /** Tamaño máximo aceptado para un mensaje entrante del cliente (bytes). */
 export const MAX_CLIENT_MESSAGE_BYTES = 1024;
@@ -26,6 +28,33 @@ function parseObject(raw: string): Record<string, unknown> | null {
 const isString = (v: unknown): v is string => typeof v === 'string';
 const isSeq = (v: unknown): v is number =>
   typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
+const isId = (v: unknown): v is string => typeof v === 'string' && v.length > 0 && v.length <= 64;
+
+function asPosition(value: unknown): Position | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const { x, y } = value as Record<string, unknown>;
+  return Number.isInteger(x) && Number.isInteger(y) ? { x: x as number, y: y as number } : null;
+}
+
+function asDestination(value: unknown): ItemDestination | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const v = value as Record<string, unknown>;
+  switch (v.type) {
+    case 'ground': {
+      const position = asPosition(v.position);
+      return position ? { type: 'ground', position } : null;
+    }
+    case 'backpack': {
+      if (v.position === undefined) return { type: 'backpack' };
+      const position = asPosition(v.position);
+      return position ? { type: 'backpack', position } : null;
+    }
+    case 'equipment':
+      return isEquipmentSlot(v.slot) ? { type: 'equipment', slot: v.slot } : null;
+    default:
+      return null;
+  }
+}
 
 /**
  * Decodifica y valida un mensaje del cliente. Todo lo que llega del cliente
@@ -57,6 +86,16 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
     case 'chat':
       if (isString(data.text)) return { ok: true, message: { type: 'chat', text: data.text } };
       break;
+    case 'moveItem': {
+      const to = asDestination(data.to);
+      if (isId(data.itemId) && to) {
+        return { ok: true, message: { type: 'moveItem', itemId: data.itemId, to } };
+      }
+      break;
+    }
+    case 'useItem':
+      if (isId(data.itemId)) return { ok: true, message: { type: 'useItem', itemId: data.itemId } };
+      break;
   }
   return { ok: false, error: `Mensaje inválido: ${String(data.type)}` };
 }
@@ -70,6 +109,9 @@ const SERVER_TYPES: ReadonlySet<ServerMessageType> = new Set<ServerMessageType>(
   'moveAck',
   'moveRejected',
   'chat',
+  'groundItems',
+  'inventory',
+  'playerEquipment',
   'system',
 ]);
 

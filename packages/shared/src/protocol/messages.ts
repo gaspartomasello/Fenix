@@ -1,11 +1,16 @@
 import type { Appearance } from '../domain/character/appearance';
 import type { Direction } from '../domain/geometry/direction';
 import type { Position } from '../domain/geometry/position';
+import type { EquipmentSlot } from '../domain/items/equipment';
+import type { ItemKind } from '../domain/items/item-catalog';
 import type { WorldTime } from '../domain/rules/daylight';
 import type { MoveMode } from '../domain/rules/movement';
 import type { TileMapData } from '../domain/world/tile-map';
 
 export type EntityId = string;
+
+/** Lo que se ve puesto un personaje: qué objeto hay en cada lugar del cuerpo. */
+export type EquipmentLook = Partial<Readonly<Record<EquipmentSlot, ItemKind>>>;
 
 /** Lo que un cliente necesita saber de otro jugador para mostrarlo. */
 export interface PlayerSnapshot {
@@ -14,7 +19,33 @@ export interface PlayerSnapshot {
   readonly position: Position;
   readonly direction: Direction;
   readonly appearance: Appearance;
+  readonly equipment: EquipmentLook;
 }
+
+export interface ItemSnapshot {
+  readonly id: EntityId;
+  readonly kind: ItemKind;
+  readonly amount: number;
+}
+
+export interface GroundItemSnapshot extends ItemSnapshot {
+  readonly position: Position;
+}
+
+/** Objeto en la mochila; `position` es su lugar en pixeles dentro de la ventana. */
+export interface BackpackItemSnapshot extends ItemSnapshot {
+  readonly position: Position;
+}
+
+export interface EquippedItemSnapshot extends ItemSnapshot {
+  readonly slot: EquipmentSlot;
+}
+
+/** A dónde se mueve un objeto al soltarlo. */
+export type ItemDestination =
+  | { readonly type: 'ground'; readonly position: Position }
+  | { readonly type: 'backpack'; readonly position?: Position }
+  | { readonly type: 'equipment'; readonly slot: EquipmentSlot };
 
 // ── Cliente → Servidor ────────────────────────────────────────────────
 
@@ -37,7 +68,20 @@ export interface ChatRequest {
   readonly text: string;
 }
 
-export type ClientMessage = JoinRequest | MoveRequest | ChatRequest;
+export interface MoveItemRequest {
+  readonly type: 'moveItem';
+  readonly itemId: EntityId;
+  readonly to: ItemDestination;
+}
+
+/** Doble clic: comer, beber, equipar o sacarse un objeto. */
+export interface UseItemRequest {
+  readonly type: 'useItem';
+  readonly itemId: EntityId;
+}
+
+export type ClientMessage =
+  JoinRequest | MoveRequest | ChatRequest | MoveItemRequest | UseItemRequest;
 
 // ── Servidor → Cliente ────────────────────────────────────────────────
 
@@ -97,6 +141,27 @@ export interface ChatMessage {
   readonly text: string;
 }
 
+/** Cambios en los objetos del suelo dentro del rango de visión. */
+export interface GroundItemsMessage {
+  readonly type: 'groundItems';
+  readonly added: readonly GroundItemSnapshot[];
+  readonly removed: readonly EntityId[];
+}
+
+/** Contenido completo de la mochila y el equipo propios. */
+export interface InventoryMessage {
+  readonly type: 'inventory';
+  readonly backpack: readonly BackpackItemSnapshot[];
+  readonly equipment: readonly EquippedItemSnapshot[];
+}
+
+/** Cambió lo que se ve puesto un jugador. */
+export interface PlayerEquipmentMessage {
+  readonly type: 'playerEquipment';
+  readonly id: EntityId;
+  readonly equipment: EquipmentLook;
+}
+
 export interface SystemMessage {
   readonly type: 'system';
   readonly text: string;
@@ -111,6 +176,9 @@ export type ServerMessage =
   | MoveAckMessage
   | MoveRejectedMessage
   | ChatMessage
+  | GroundItemsMessage
+  | InventoryMessage
+  | PlayerEquipmentMessage
   | SystemMessage;
 
 export type ServerMessageType = ServerMessage['type'];

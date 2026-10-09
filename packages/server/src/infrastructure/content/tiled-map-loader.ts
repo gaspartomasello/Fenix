@@ -6,7 +6,10 @@ import {
   type TiledTileset,
 } from '@fenix/content';
 import {
+  isItemKind,
   isStaticKind,
+  MAX_STACK,
+  type ItemKind,
   terrainByKey,
   type Position,
   type RegionData,
@@ -27,6 +30,13 @@ export class MapFormatError extends Error {
  * Porción de mundo diseñada a mano. Los tiles sin terreno (`null`) se dejan
  * como los genere el mundo procedural.
  */
+/** Objeto suelto puesto a mano en el mapa (una espada en una mesa, oro en el piso…). */
+export interface PlacedItem {
+  readonly kind: ItemKind;
+  readonly amount: number;
+  readonly position: Position;
+}
+
 export interface MapRegion {
   readonly width: number;
   readonly height: number;
@@ -34,6 +44,7 @@ export interface MapRegion {
   readonly statics: readonly StaticPlacement[];
   readonly regions: readonly RegionData[];
   readonly spawn: Position | null;
+  readonly items: readonly PlacedItem[];
 }
 
 const FLIP_FLAGS = 0xf0000000;
@@ -112,7 +123,24 @@ export function loadTiledMap(
     }
   }
 
-  return { width: map.width, height: map.height, terrain, statics, regions, spawn };
+  const itemsLayer = layer<TiledObjectLayer>(TILED.itemsLayer, 'objectgroup');
+  const items: PlacedItem[] = (itemsLayer?.objects ?? []).map((object) => {
+    if (!isItemKind(object.name)) {
+      return fail(`"${object.name}" no es un objeto conocido (capa "${TILED.itemsLayer}")`);
+    }
+    const rawAmount = object.properties?.find((p) => p.name === TILED.amountProperty)?.value ?? 1;
+    const amount = Number(rawAmount);
+    if (!Number.isInteger(amount) || amount < 1 || amount > MAX_STACK) {
+      fail(`cantidad inválida para "${object.name}": ${String(rawAmount)}`);
+    }
+    const position = { x: Math.floor(toTile(object.x)), y: Math.floor(toTile(object.y)) };
+    if (position.x < 0 || position.y < 0 || position.x >= map.width || position.y >= map.height) {
+      fail(`"${object.name}" está fuera del mapa`);
+    }
+    return { kind: object.name, amount, position };
+  });
+
+  return { width: map.width, height: map.height, terrain, statics, regions, spawn, items };
 }
 
 function buildGidTable(

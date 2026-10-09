@@ -25,13 +25,14 @@ una capa que no debe, el lint falla.
 
 Código que cliente y servidor deben compartir exactamente. No tiene dependencias externas.
 
-| Módulo             | Contenido                                                         |
-| ------------------ | ----------------------------------------------------------------- |
-| `domain/geometry`  | `Position`, `Direction` (numeración de UO), pasos y distancias    |
-| `domain/world`     | `Terrain`, `TileMap`                                              |
-| `domain/rules`     | Movimiento (`canStep`, tiempos de paso), chat (límites, limpieza) |
-| `domain/character` | Apariencia y validación de nombres                                |
-| `protocol`         | Mensajes cliente↔servidor tipados y su codec con validación       |
+| Módulo             | Contenido                                                             |
+| ------------------ | --------------------------------------------------------------------- |
+| `domain/geometry`  | `Position`, `Direction` (numeración de UO), pasos y distancias        |
+| `domain/world`     | `Terrain`, `TileMap`                                                  |
+| `domain/rules`     | Movimiento (`canStep`, tiempos de paso), chat (límites, limpieza)     |
+| `domain/character` | Apariencia y validación de nombres                                    |
+| `domain/items`     | Catálogo de objetos, lugares del equipo, alcance y límites de mochila |
+| `protocol`         | Mensajes cliente↔servidor tipados y su codec con validación           |
 
 Que `canStep` sea compartido es clave: el cliente predice con la **misma regla** que valida el
 servidor, por eso las correcciones son raras.
@@ -59,8 +60,9 @@ infrastructure ──► application ──► domain
 ```
 
 - **domain/**: `Player` (movimiento con control de cadencia anti-speedhack), `World` (agregado
-  raíz: mapa + jugadores, consultas por rango de visión) y `WorldClock` (hora del mundo). Sin
-  dependencias de Node ni de red.
+  raíz: mapa + jugadores + objetos, consultas por rango de visión), `WorldClock` (hora del
+  mundo) e `Items` (reglas de objetos: alcance de 2 tiles, apilado, límite de mochila, un objeto
+  por lugar del cuerpo, comer, beber, equipar). Sin dependencias de Node ni de red.
 - **application/**: un caso de uso por acción (`JoinWorld`, `MovePlayer`, `SendChat`,
   `LeaveWorld`) y la fachada `GameApplication`. Habla con el exterior solo mediante **puertos**
   (`Clock`, `IdGenerator`, `RandomSource`, `Notifier`), lo que permite testear sin red.
@@ -97,6 +99,8 @@ app (orquestación)
 - **rendering/** solo **lee** el estado del core y lo dibuja. `TextureCache` es el único punto
   donde el arte generado (`assets/`) se convierte en texturas de Pixi.
 - **ui/** usa DOM nativo, separado del canvas. Los componentes reciben callbacks; no conocen la red.
+  Las ventanas (mochila, equipo) se arrastran; `DragController` implementa arrastrar y soltar con
+  eventos de puntero, así funciona igual con mouse y con el dedo.
 - **network/** elige el transporte al compilar: `WebSocketGateway` (online) o `EmbeddedGateway`
   (modo solo, `vite --mode solo`). Es la única capa que puede importar el servidor embebido; en
   el build online ese código ni siquiera se incluye.
@@ -119,6 +123,14 @@ ClientGame.requestStep
 
 Los demás jugadores se interpolan entre tiles durante la duración del paso (400 ms caminando,
 200 ms corriendo, como en UO).
+
+### Objetos
+
+El cliente nunca mueve un objeto por su cuenta: envía `moveItem` (arrastrar y soltar) o
+`useItem` (doble clic) y el servidor valida y responde. `ItemNotifications` reparte los cambios:
+los del suelo a quienes los ven (`groundItems`), la mochila y el equipo a su dueño (`inventory`)
+y lo que alguien tiene puesto a quienes lo ven (`playerEquipment`), que lo dibujan sobre el
+personaje. Si algo no se puede, el jugador recibe el motivo en el chat.
 
 ### Rango de visión
 

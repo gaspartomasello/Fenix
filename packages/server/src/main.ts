@@ -1,9 +1,8 @@
 import { fileURLToPath } from 'node:url';
 import { GameApplication } from './application/game-application';
-import { World } from './domain/world';
 import { WorldClock } from './domain/world-clock';
 import { loadConfig } from './infrastructure/config';
-import { buildWorld } from './infrastructure/content/world-builder';
+import { createWorld } from './infrastructure/content/world-builder';
 import { createHttpServer } from './infrastructure/http/static-server';
 import { GameSocketServer } from './infrastructure/network/game-socket-server';
 import { SessionRegistry } from './infrastructure/network/session-registry';
@@ -15,16 +14,15 @@ import { UuidGenerator } from './infrastructure/system/uuid-generator';
 function main(): void {
   // src/main.ts y dist/main.js están al mismo nivel: el cliente queda en ../../client/dist.
   const config = loadConfig(fileURLToPath(new URL('../../client/dist', import.meta.url)));
-  const { map, spawnPoint } = buildWorld({ size: config.mapSize, seed: config.mapSeed });
-
-  const world = new World(map, spawnPoint);
+  const ids = new UuidGenerator();
+  const world = createWorld({ size: config.mapSize, seed: config.mapSeed }, ids);
   const sessions = new SessionRegistry();
   const clock = new SystemClock();
   const app = new GameApplication({
     world,
     worldClock: new WorldClock(clock.now(), config.startHour),
     clock,
-    ids: new UuidGenerator(),
+    ids,
     random: new SeededRandom(Date.now()),
     notifier: sessions,
   });

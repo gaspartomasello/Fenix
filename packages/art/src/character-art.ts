@@ -1,4 +1,10 @@
-import { Direction, type Appearance } from '@fenix/shared';
+import {
+  Direction,
+  ITEMS,
+  type Appearance,
+  type EquipmentLook,
+  type ItemKind,
+} from '@fenix/shared';
 import { hexToRgb, PixelImage, shade, type Rgb } from './pixel-art';
 
 /** Tamaño lógico del sprite (se escala x2 al dibujar). */
@@ -40,13 +46,19 @@ interface Palette {
   readonly eye: Rgb;
 }
 
-function paletteFor(appearance: Appearance): Palette {
+/** Color de un objeto puesto, si tiene. */
+function wornColor(kind: ItemKind | undefined): Rgb | null {
+  const color = kind ? ITEMS[kind].color : undefined;
+  return color === undefined ? null : hexToRgb(color);
+}
+
+function paletteFor(appearance: Appearance, equipment: EquipmentLook): Palette {
   return {
     skin: hexToRgb(appearance.skinTone),
-    cloth: hexToRgb(appearance.clothHue),
+    cloth: wornColor(equipment.torso) ?? hexToRgb(appearance.clothHue),
     hair: hexToRgb(appearance.hairHue),
-    pants: [74, 58, 42],
-    boots: [44, 31, 23],
+    pants: wornColor(equipment.legs) ?? [74, 58, 42],
+    boots: wornColor(equipment.feet) ?? [44, 31, 23],
     belt: [59, 42, 26],
     buckle: [201, 164, 58],
     eye: [26, 22, 20],
@@ -102,19 +114,21 @@ function poseFor(frame: CharacterFrame): Pose {
   }
 }
 
-/** Dibuja un frame del personaje mirando en `direction`. */
+/** Dibuja un frame del personaje mirando en `direction`, con lo que tenga puesto. */
 export function drawCharacterFrame(
   appearance: Appearance,
   direction: Direction,
   frame: CharacterFrame,
+  equipment: EquipmentLook = {},
 ): PixelImage {
   const { view, mirror } = VIEW_BY_DIRECTION[direction];
   const image = new PixelImage(CHARACTER_ART_WIDTH, CHARACTER_ART_HEIGHT);
   const pose = poseFor(frame);
-  const palette = paletteFor(appearance);
+  const palette = paletteFor(appearance, equipment);
   const body = new Brush(image, pose.bob);
   const legs = new Brush(image, 0);
 
+  drawEquipmentBehind(body, view, equipment);
   switch (view) {
     case 'front':
     case 'back':
@@ -128,9 +142,94 @@ export function drawCharacterFrame(
       drawSide(body, legs, palette, pose);
       break;
   }
+  drawEquipmentInFront(body, view, pose, equipment);
 
   image.outline([27, 19, 14]);
   return mirror ? image.mirrored() : image;
+}
+
+// ── Equipo ──────────────────────────────────────────────────────────
+
+const STEEL: Rgb = [176, 182, 190];
+const HANDLE: Rgb = [92, 62, 38];
+
+/** Lo que va detrás del cuerpo: la capa (vista de frente o de costado) y el escudo de perfil. */
+function drawEquipmentBehind(b: Brush, view: View, equipment: EquipmentLook): void {
+  const cloak = wornColor(equipment.cloak);
+  if (cloak) {
+    if (view === 'front') b.shaded(4, 12, 12, 18, shade(cloak, 0.8));
+    if (view === 'front3') b.shaded(5, 12, 10, 18, shade(cloak, 0.8));
+    if (view === 'side') b.shaded(4, 12, 5, 18, cloak);
+  }
+  const shield = wornColor(equipment.leftHand);
+  if (shield && view === 'side') b.shaded(5, 14, 4, 9, shade(shield, 0.8));
+}
+
+/** Lo que va delante: capa vista de espaldas, gorro o yelmo, arma y escudo. */
+function drawEquipmentInFront(b: Brush, view: View, pose: Pose, equipment: EquipmentLook): void {
+  const cloak = wornColor(equipment.cloak);
+  if (cloak && (view === 'back' || view === 'back3')) {
+    const x = view === 'back' ? 5 : 6;
+    const w = view === 'back' ? 10 : 8;
+    b.shaded(x, 12, w, 19, cloak);
+    b.rect(x, 12, w, 1, shade(cloak, 1.25));
+    b.rect(x, 30, w, 1, shade(cloak, 0.7));
+  }
+
+  if (equipment.head) drawHeadgear(b, view, equipment.head);
+
+  const shield = wornColor(equipment.leftHand);
+  if (shield) {
+    const at: Partial<Record<View, number>> = { front: 15, back: 1, front3: 2, back3: 2 };
+    const x = at[view];
+    if (x !== undefined) {
+      b.shaded(x, 15, 4, 8, shield);
+      b.rect(x, 15, 4, 1, shade(shield, 1.3));
+      if (view !== 'back') b.dot(x + 1, 18, [200, 170, 80]);
+    }
+  }
+
+  if (equipment.rightHand) {
+    const hands: Record<View, [number, number]> = {
+      front: [3, 22 + pose.armSwing],
+      back: [15, 22 - pose.armSwing],
+      front3: [14, 22 + pose.armSwing],
+      back3: [14, 22 + pose.armSwing],
+      side: [9 + pose.armSwing * 2, 22],
+    };
+    const [x, y] = hands[view];
+    drawWeapon(b, x, y, equipment.rightHand);
+  }
+}
+
+function drawHeadgear(b: Brush, view: View, kind: ItemKind): void {
+  const color = wornColor(kind) ?? STEEL;
+  const left = view === 'side' ? 7 : 6;
+  const width = view === 'side' ? 7 : 8;
+  if (kind === 'iron-helmet') {
+    b.rect(left + 1, 1, width - 2, 1, shade(color, 1.2));
+    b.shaded(left, 2, width, 4, color);
+    if (view === 'front' || view === 'front3')
+      b.rect(view === 'front' ? 9 : 10, 5, 2, 3, shade(color, 0.85));
+    if (view === 'side') b.rect(12, 5, 1, 3, shade(color, 0.85));
+  } else {
+    b.shaded(left, 2, width, 3, color);
+    b.rect(left - 1, 5, width + 2, 1, shade(color, 0.75));
+  }
+}
+
+/** Arma en la mano: `x`, `y` es la posición de la mano. */
+function drawWeapon(b: Brush, x: number, y: number, kind: ItemKind): void {
+  if (kind === 'axe') {
+    b.rect(x, y - 6, 1, 12, HANDLE);
+    b.rect(x - 2, y - 6, 2, 4, STEEL);
+    b.dot(x - 3, y - 5, shade(STEEL, 0.8));
+    return;
+  }
+  const length = kind === 'dagger' ? 4 : 8;
+  b.rect(x - 1, y + 1, 3, 1, [150, 120, 60]);
+  b.rect(x, y + 2, 1, length, STEEL);
+  b.dot(x, y + 2, shade(STEEL, 1.2));
 }
 
 function drawLeg(brush: Brush, x: number, lifted: boolean, p: Palette, dim = 1): void {

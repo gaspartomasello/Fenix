@@ -4,7 +4,13 @@ import { InputController } from '../input/input-controller';
 import { createGateway, IS_SOLO } from '../network/create-gateway';
 import type { GameGateway } from '../network/game-gateway';
 import { GameRenderer } from '../rendering/game-renderer';
+import { BackpackWindow } from '../ui/backpack-window';
 import { ChatPanel } from '../ui/chat-panel';
+import { DragController } from '../ui/drag-controller';
+import { EquipmentWindow } from '../ui/equipment-window';
+import { HudButtons } from '../ui/hud-buttons';
+import { WorldTooltip } from '../ui/world-tooltip';
+import { WorldItems } from './world-items';
 import { LoginScreen, type LoginRequest } from '../ui/login-screen';
 import { showOverlay } from '../ui/overlay';
 import { StatusBar } from '../ui/status-bar';
@@ -73,11 +79,16 @@ export class GameSession {
     this.login.destroy();
 
     const renderer = await GameRenderer.create(this.hosts.game, this.game);
+    const drag = new DragController(this.hosts.ui);
+    const tooltip = new WorldTooltip();
+    const worldItems = new WorldItems(this.game, renderer, drag, tooltip);
     const input = new InputController({
       surface: renderer.canvas,
       selfScreenPosition: () => renderer.selfScreenPosition(),
       onZoom: (delta) => renderer.stepZoom(delta),
+      canSteerFrom: (point) => !worldItems.hasItemAt(point),
     });
+    this.setUpInventory(drag, worldItems, tooltip);
     const chat = new ChatPanel((text) => this.game.say(text));
     const status = new StatusBar();
     this.hosts.ui.append(status.element, chat.element);
@@ -105,6 +116,35 @@ export class GameSession {
       requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
+  }
+
+  /** Ventanas de mochila y equipo, sus botones y la sincronización con el estado. */
+  private setUpInventory(
+    drag: DragController,
+    worldItems: WorldItems,
+    tooltip: WorldTooltip,
+  ): void {
+    const self = this.game.self;
+    if (!self) return;
+    const backpack = new BackpackWindow(drag, worldItems.actions);
+    const equipment = new EquipmentWindow(drag, worldItems.actions, self.appearance);
+    const buttons = new HudButtons([
+      { label: 'Mochila', key: 'b', onPress: () => backpack.window.toggle() },
+      { label: 'Equipo', key: 'c', onPress: () => equipment.window.toggle() },
+    ]);
+    this.hosts.ui.append(
+      backpack.window.element,
+      equipment.window.element,
+      buttons.element,
+      tooltip.element,
+    );
+
+    const render = (): void => {
+      backpack.render(this.game.inventory.backpack);
+      equipment.render(this.game.inventory.equipment);
+    };
+    this.game.on('inventoryChanged', render);
+    render();
   }
 
   private onDisconnected(): void {

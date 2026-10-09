@@ -3,6 +3,7 @@ import {
   type Appearance,
   type Direction,
   type EntityId,
+  type EquipmentLook,
   type PlayerSnapshot,
   type Position,
 } from '@fenix/shared';
@@ -42,6 +43,7 @@ export class Entity {
   private movement: Movement | null = null;
   private _stepCount = 0;
   private _overhead: OverheadText[] = [];
+  private _equipment: EquipmentLook;
 
   constructor(snapshot: PlayerSnapshot) {
     this.id = snapshot.id;
@@ -49,6 +51,16 @@ export class Entity {
     this.appearance = snapshot.appearance;
     this._position = snapshot.position;
     this._direction = snapshot.direction;
+    this._equipment = snapshot.equipment;
+  }
+
+  /** Lo que tiene puesto (se ve sobre el personaje). */
+  get equipment(): EquipmentLook {
+    return this._equipment;
+  }
+
+  setEquipment(equipment: EquipmentLook): void {
+    this._equipment = equipment;
   }
 
   /** Tile lógico actual (destino del paso en curso). */
