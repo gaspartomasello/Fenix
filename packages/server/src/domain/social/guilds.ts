@@ -67,7 +67,20 @@ export class Guilds {
     return { ok: true, value: guild };
   }
 
-  /** Agrega un miembro directamente (por ejemplo, al cargar datos guardados). */
+  /** Al cargar un personaje guardado: vuelve a su gremio, o lo refunda si ya no existe. */
+  restore(memberName: string, name: string, tag: string): Guild | null {
+    if (this.of(memberName)) return this.of(memberName) ?? null;
+    let guild = this.guilds.find((g) => key(g.name) === key(name));
+    if (!guild) {
+      if (this.guilds.some((g) => g.tag === tag)) return null;
+      guild = new Guild(name, tag);
+      this.guilds.push(guild);
+    }
+    this.join(guild, memberName);
+    return guild;
+  }
+
+  /** Agrega un miembro directamente. */
   join(guild: Guild, name: string): void {
     guild.members.add(name);
     this.byMember.set(key(name), guild);

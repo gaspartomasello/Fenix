@@ -48,6 +48,15 @@ export class Reputation {
     return this.refresh(now);
   }
 
+  /** Vuelve a la reputación guardada; las muertes empiezan a olvidarse desde ahora. */
+  restore(saved: { fame: number; karma: number; murders: number }, now: number): void {
+    this.fame = clamp(saved.fame, FAME_MAX);
+    this.karma = clamp(saved.karma, KARMA_MAX);
+    this.murders = Math.max(0, saved.murders);
+    this.murderDecayAt = now + MURDER_DECAY_MS;
+    this.refresh(now);
+  }
+
   award(fame: number, karma: number): void {
     this.fame = clamp(this.fame + fame, FAME_MAX);
     this.karma = clamp(this.karma + karma, KARMA_MAX);

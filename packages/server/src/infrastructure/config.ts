@@ -9,6 +9,8 @@ export interface ServerConfig {
   readonly mapSize: number;
   /** Hora del juego con la que arranca el mundo (0–24). */
   readonly startHour: number;
+  /** Carpeta donde se guardan los personajes. */
+  readonly dataDir: string;
 }
 
 function intFromEnv(name: string, fallback: number): number {
@@ -32,5 +34,6 @@ export function loadConfig(defaultClientDist: string): ServerConfig {
     mapSeed: intFromEnv('MAP_SEED', 1997),
     mapSize: intFromEnv('MAP_SIZE', 128),
     startHour: intFromEnv('START_HOUR', 8),
+    dataDir: process.env.DATA_DIR ?? 'data',
   };
 }

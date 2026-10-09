@@ -48,17 +48,26 @@ export class World {
     return [...this.players.values()].some((p) => p.name.toLocaleLowerCase() === lower);
   }
 
-  spawn(props: Omit<PlayerProps, 'position' | 'direction'>, random: () => number): Player {
+  /**
+   * Pone un jugador en el mundo: en el lugar guardado si sigue siendo
+   * transitable, o cerca del punto de aparición.
+   */
+  spawn(
+    props: Omit<PlayerProps, 'position' | 'direction'>,
+    random: () => number,
+    saved?: { position: Position; direction: Direction },
+  ): Player {
+    const useSaved = saved && this.map.isWalkable(saved.position);
     const player = new Player({
       ...props,
-      position: this.findSpawnPosition(random),
-      direction: Direction.South,
+      position: useSaved ? saved.position : this.findSpawnPosition(random),
+      direction: useSaved ? saved.direction : Direction.South,
     });
     this.players.set(player.id, player);
     return player;
   }
 
-  /** Saca al jugador del mundo junto con lo que lleva (todavía no hay persistencia). */
+  /** Saca al jugador del mundo junto con lo que lleva (antes hay que guardarlo). */
   remove(id: EntityId): Player | undefined {
     const player = this.players.get(id);
     this.players.delete(id);

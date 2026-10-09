@@ -4,8 +4,10 @@ import {
   Direction,
   HAIR_HUES,
   NAME_MAX_LENGTH,
+  PASSWORD_MAX_LENGTH,
   SKIN_TONES,
   validateCharacterName,
+  validatePassword,
   type Appearance,
 } from '@fenix/shared';
 import { drawCharacterFrame } from '@fenix/art';
@@ -15,10 +17,13 @@ import { el, hexColor } from './dom';
 export interface LoginRequest {
   readonly name: string;
   readonly appearance: Appearance;
+  readonly password?: string;
 }
 
 export interface LoginScreenOptions {
   readonly subtitle: string;
+  /** En línea cada personaje tiene contraseña; el modo solo no la pide. */
+  readonly askPassword: boolean;
   readonly onSubmit: (request: LoginRequest) => void;
 }
 
@@ -35,6 +40,7 @@ export class LoginScreen {
   readonly element: HTMLElement;
   private appearance: Appearance = DEFAULT_APPEARANCE;
   private readonly nameInput: HTMLInputElement;
+  private readonly passwordInput: HTMLInputElement | null;
   private readonly errorText: HTMLElement;
   private readonly submitButton: HTMLButtonElement;
   private readonly preview: HTMLCanvasElement;
@@ -43,7 +49,7 @@ export class LoginScreen {
 
   private readonly onSubmit: (request: LoginRequest) => void;
 
-  constructor({ subtitle, onSubmit }: LoginScreenOptions) {
+  constructor({ subtitle, askPassword, onSubmit }: LoginScreenOptions) {
     this.onSubmit = onSubmit;
     this.nameInput = el('input', {
       className: 'field',
@@ -56,6 +62,18 @@ export class LoginScreen {
         'aria-label': 'Nombre del personaje',
       },
     });
+    this.passwordInput = askPassword
+      ? el('input', {
+          className: 'field',
+          attrs: {
+            type: 'password',
+            maxlength: String(PASSWORD_MAX_LENGTH),
+            placeholder: 'Contraseña',
+            autocomplete: 'current-password',
+            'aria-label': 'Contraseña',
+          },
+        })
+      : null;
     this.errorText = el('p', { className: 'login-error', attrs: { role: 'alert' } });
     this.submitButton = el('button', {
       className: 'button',
@@ -67,6 +85,13 @@ export class LoginScreen {
     const form = el('form', { className: 'login-form' }, [
       this.preview,
       this.nameInput,
+      ...(this.passwordInput ? [this.passwordInput] : []),
+      el('p', {
+        className: 'login-hint',
+        text: askPassword
+          ? 'Si el personaje ya existe, entrás con su contraseña; si no, se crea con la apariencia que elijas.'
+          : 'Tu personaje se guarda en este navegador. Si ya existe, se usa su apariencia guardada.',
+      }),
       this.swatchRow('Ropa', CLOTH_HUES, 'clothHue'),
       this.swatchRow('Piel', SKIN_TONES, 'skinTone'),
       this.swatchRow('Pelo', HAIR_HUES, 'hairHue'),
@@ -118,9 +143,21 @@ export class LoginScreen {
       this.showError(validation.reason);
       return;
     }
+    const password = this.passwordInput?.value;
+    if (password !== undefined) {
+      const check = validatePassword(password);
+      if (!check.ok) {
+        this.showError(check.reason);
+        return;
+      }
+    }
     this.errorText.textContent = '';
     this.setBusy(true);
-    this.onSubmit({ name: validation.name, appearance: this.appearance });
+    this.onSubmit({
+      name: validation.name,
+      appearance: this.appearance,
+      ...(password === undefined ? {} : { password }),
+    });
   }
 
   private swatchRow(label: string, colors: readonly number[], key: keyof Appearance): HTMLElement {

@@ -185,6 +185,18 @@ asesino), y cada muerte se olvida a la media hora.
 En el cliente, `parseChatInput` (en `core`) traduce los comandos del chat, el modo guerra es
 estado local de `ClientGame` y `SocialWindow` muestra todo con botones.
 
+### Persistencia
+
+Un personaje se guarda como datos planos (`SavedCharacter`, en `domain/persistence`):
+apariencia, posición, vitales, habilidades, reputación, gremio y sus objetos (mochila, equipo y
+banco). `parseSavedCharacter` valida lo leído y descarta lo dañado. La aplicación solo conoce
+dos puertos: `CharacterStore` (dónde se guarda) y `PasswordHasher`. `CharacterPersistence`
+verifica la contraseña al entrar, guarda al registrarse, cada 30 segundos y al salir.
+
+Implementaciones: `JsonFileCharacterStore` (servidor, escritura atómica y agrupada),
+`KeyValueCharacterStore` (modo solo, sobre `localStorage`) y `ScryptPasswordHasher`. El modo
+solo no pide contraseña: el servidor embebido se compone sin hasher.
+
 ### Rango de visión
 
 Cada jugador solo recibe lo que pasa a 18 tiles o menos (como en UO): al moverse, el servidor

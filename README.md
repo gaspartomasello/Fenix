@@ -49,6 +49,7 @@ Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña 
 | `MAP_SIZE`    | `128`         | Lado del mapa en tiles                     |
 | `START_HOUR`  | `8`           | Hora del juego con la que arranca el mundo |
 | `CLIENT_DIST` | `client/dist` | Carpeta del cliente compilado a servir     |
+| `DATA_DIR`    | `data`        | Carpeta de los personajes guardados        |
 
 ## Controles
 
@@ -87,6 +88,7 @@ packages/
 └── client/   Cliente web: core → render / UI / input / red
 docs/
 ├── ARQUITECTURA.md
+├── DEPLOY.md  Cómo poner el servidor en línea
 └── MAPAS.md   Cómo diseñar mapas con Tiled
 ```
 
@@ -109,4 +111,7 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
 7. ✅ **Social**: grupos de hasta seis, gremios con siglas sobre el nombre, chat de grupo y de
    gremio, combate entre jugadores fuera del pueblo (modo guerra), reputación con criminales y
    asesinos (nombre azul, gris o rojo), fama y karma.
-8. Persistencia y deploy: cuentas, guardado, servidor 24/7.
+8. ✅ **Persistencia y despliegue**: personajes con contraseña (hash `scrypt`), guardado
+   automático de posición, vitales, habilidades, objetos, banco, reputación y gremio; el modo
+   solo guarda en el navegador. Imagen Docker y despliegue en Render
+   ([docs/DEPLOY.md](docs/DEPLOY.md)).

@@ -3,6 +3,10 @@ import { encodeMessage } from '@fenix/shared';
 import { GameApplication } from './application/game-application';
 import { WorldClock } from './domain/world-clock';
 import { createWorld } from './infrastructure/content/world-builder';
+import {
+  KeyValueCharacterStore,
+  type KeyValueStorage,
+} from './infrastructure/persistence/key-value-character-store';
 import { ClientSession } from './infrastructure/network/client-session';
 import { SessionRegistry } from './infrastructure/network/session-registry';
 import { SeededRandom } from './infrastructure/system/seeded-random';
@@ -19,7 +23,11 @@ export interface EmbeddedServerOptions {
   readonly mapSeed?: number;
   readonly mapSize?: number;
   readonly startHour?: number;
+  /** Dónde guardar el personaje (el `localStorage` del navegador); sin esto no se guarda. */
+  readonly storage?: KeyValueStorage;
 }
+
+export type { KeyValueStorage };
 
 export interface EmbeddedConnection {
   send(message: ClientMessage): void;
@@ -29,6 +37,8 @@ export interface EmbeddedConnection {
 export interface EmbeddedServer {
   /** Conecta un cliente; `deliver` recibe cada mensaje del servidor serializado. */
   connect(deliver: (data: string) => void): EmbeddedConnection;
+  /** Guarda ya (por ejemplo, al cerrar o esconder la pestaña). */
+  saveAll(): void;
 }
 
 export function createEmbeddedServer(options: EmbeddedServerOptions = {}): EmbeddedServer {
@@ -43,6 +53,7 @@ export function createEmbeddedServer(options: EmbeddedServerOptions = {}): Embed
     ids,
     random: new SeededRandom(Date.now()),
     notifier: sessions,
+    ...(options.storage ? { characters: new KeyValueCharacterStore(options.storage) } : {}),
   });
 
   startTicker(
@@ -59,5 +70,6 @@ export function createEmbeddedServer(options: EmbeddedServerOptions = {}): Embed
         close: () => session.close(),
       };
     },
+    saveAll: () => app.saveAll(),
   };
 }

@@ -71,7 +71,10 @@ export type ItemDestination =
 export interface JoinRequest {
   readonly type: 'join';
   readonly name: string;
+  /** Apariencia para un personaje nuevo; uno guardado conserva la suya. */
   readonly appearance: Appearance;
+  /** Contraseña del personaje (el modo solo no la pide). */
+  readonly password?: string;
 }
 
 export interface MoveRequest {

@@ -1,5 +1,12 @@
 import type { EntityId, ServerMessage } from '@fenix/shared';
-import type { Clock, IdGenerator, Notifier, RandomSource } from '../application/ports';
+import type {
+  CharacterStore,
+  Clock,
+  IdGenerator,
+  Notifier,
+  RandomSource,
+} from '../application/ports';
+import type { SavedCharacter } from '../domain/persistence/saved-character';
 
 export class FakeClock implements Clock {
   constructor(public time = 1000) {}
@@ -54,5 +61,20 @@ export class RecordingNotifier implements Notifier {
 
   clear(): void {
     this.deliveries.length = 0;
+  }
+}
+
+/** Almacén de personajes en memoria para los tests de la aplicación. */
+export class FakeCharacterStore implements CharacterStore {
+  readonly characters = new Map<string, SavedCharacter>();
+  saves: string[] = [];
+
+  find(name: string): SavedCharacter | undefined {
+    return this.characters.get(name.toLocaleLowerCase());
+  }
+
+  save(character: SavedCharacter): void {
+    this.saves.push(character.name);
+    this.characters.set(character.name.toLocaleLowerCase(), character);
   }
 }
