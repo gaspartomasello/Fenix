@@ -2,7 +2,9 @@ import {
   CHARACTER_ART_HEIGHT,
   CHARACTER_FEET_Y,
   CHARACTER_HEAD_Y,
+  ART_DETAIL,
   MOUNTED_ART_HEIGHT,
+  WALK_FRAMES,
   MOUNTED_FEET_Y,
   MOUNTED_HEAD_Y,
   attackStyleFor,
@@ -64,6 +66,8 @@ export class CharacterView {
   private readonly shadow = new Graphics();
   /** Montura con la que se armó el lienzo (al montar o desmontar cambia). */
   private shownMount: string | null = null;
+  /** Ciclo de caminar o correr ya pedido de antemano (dirección, modo, aspecto). */
+  private preparedCycle = '';
 
   constructor(
     private readonly entity: Entity,
@@ -71,7 +75,8 @@ export class CharacterView {
     private readonly isSelf: boolean,
     private readonly ownPet = false,
   ) {
-    this.sprite.scale.set(CHARACTER_SCALE);
+    // Las texturas vienen al doble de detalle: se muestran a la mitad.
+    this.sprite.scale.set(CHARACTER_SCALE / ART_DETAIL);
     this.targetRing.visible = false;
 
     this.nameLabel = new Text({
@@ -197,6 +202,7 @@ export class CharacterView {
           )
         : this.textures.creature(this.entity.body, this.entity.direction, frame);
     this.applyDeathLook();
+    this.prepareCycle();
 
     this.targetRing.visible = state.targeted && !this.entity.dead;
     this.syncHealthBar(state.targeted);
@@ -207,6 +213,36 @@ export class CharacterView {
 
   destroy(): void {
     this.container.destroy({ children: true });
+  }
+
+  /**
+   * Pide de antemano el ciclo de caminar (o correr) hacia donde mira: se
+   * dibuja de a poco y, cuando se mueve, ya está listo (sin tirones).
+   */
+  private prepareCycle(): void {
+    const entity = this.entity;
+    if (entity.dead) return;
+    const running = entity.running;
+    const frames = WALK_FRAMES.map((k): CharacterFrame => (running ? `run-${k}` : k));
+    if (entity.body !== 'human') {
+      const key = `${entity.direction}:${running}`;
+      if (key === this.preparedCycle) return;
+      this.preparedCycle = key;
+      this.textures.prepareCreature(entity.body, entity.direction, frames);
+      return;
+    }
+    const worn = Object.values(entity.equipment).join(',');
+    const key = `${entity.direction}:${running}:${entity.mount ?? ''}:${worn}`;
+    if (key === this.preparedCycle) return;
+    this.preparedCycle = key;
+    this.textures.prepareCharacter(
+      entity.appearance,
+      entity.direction,
+      frames,
+      entity.equipment,
+      entity.npc,
+      entity.mount,
+    );
   }
 
   /** Nombre con las siglas del gremio, coloreado según la reputación. */

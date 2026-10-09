@@ -1,29 +1,20 @@
-import type { CharacterFrame } from './humanoid-rig';
+import { cyclePhase, type CharacterFrame } from './humanoid-rig';
 import { noise, tone, type Material, type Ramp, type Vec3 } from './volume';
 
 /**
  * Patas en diagonal: delantera derecha con trasera izquierda y al revés.
- * Devuelve cuánto avanza cada pata (en px) según el frame.
+ * Devuelve cuánto avanza cada pata (en px) según el frame, con un ciclo
+ * continuo (más cuadros, movimiento más suave).
  */
 export function gait(
   frame: CharacterFrame,
   stride: number,
 ): { pairA: number; pairB: number; lift: number } {
-  switch (frame) {
-    case 0:
-    case 'run-0':
-      return { pairA: stride, pairB: -stride, lift: 0 };
-    case 2:
-    case 'run-2':
-      return { pairA: -stride, pairB: stride, lift: 0 };
-    case 1:
-    case 3:
-    case 'run-1':
-    case 'run-3':
-      return { pairA: 0, pairB: 0, lift: 1 };
-    default:
-      return { pairA: 0, pairB: 0, lift: 0 };
-  }
+  const cycle = cyclePhase(frame);
+  if (!cycle) return { pairA: 0, pairB: 0, lift: 0 };
+  const angle = cycle.phase * Math.PI * 2;
+  const pairA = stride * Math.cos(angle);
+  return { pairA, pairB: -pairA, lift: Math.abs(Math.sin(angle)) };
 }
 
 /** Mordida: en el golpe la cabeza se estira hacia adelante y abajo. */

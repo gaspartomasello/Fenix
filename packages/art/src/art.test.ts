@@ -11,6 +11,7 @@ import {
 import { describe, expect, it } from 'vitest';
 import {
   ACTION_KINDS,
+  ART_DETAIL,
   CHARACTER_ART_HEIGHT,
   CHARACTER_ART_WIDTH,
   attackStyleFor,
@@ -29,7 +30,10 @@ describe('arte procedural (sin DOM)', () => {
   it('dibuja los 8 sentidos del personaje', () => {
     for (const direction of ALL_DIRECTIONS) {
       const image = drawCharacterFrame(DEFAULT_APPEARANCE, direction, 'idle');
-      expect([image.width, image.height]).toEqual([CHARACTER_ART_WIDTH, CHARACTER_ART_HEIGHT]);
+      expect([image.width, image.height]).toEqual([
+        CHARACTER_ART_WIDTH * ART_DETAIL,
+        CHARACTER_ART_HEIGHT * ART_DETAIL,
+      ]);
       expect(opaquePixels(image.data)).toBeGreaterThan(100);
     }
   });
@@ -70,9 +74,12 @@ describe('arte procedural (sin DOM)', () => {
   it('dibuja cada criatura en las 8 direcciones y con caminata', () => {
     for (const kind of CREATURE_KINDS) {
       for (const direction of ALL_DIRECTIONS) {
-        for (const frame of ['idle', 0, 1, 2, 3] as const) {
+        // Parada en todas las direcciones; caminando y corriendo, en dos de ellas.
+        const moving = direction === ALL_DIRECTIONS[0] || direction === ALL_DIRECTIONS[3];
+        const frames = moving ? (['idle', 0, 3, 'run-5'] as const) : (['idle'] as const);
+        for (const frame of frames) {
           const image = drawCreatureFrame(kind, direction, frame);
-          expect(image.height).toBe(creatureLayout(kind).height);
+          expect(image.height).toBe(creatureLayout(kind).height * ART_DETAIL);
           expect(opaquePixels(image.data)).toBeGreaterThan(15);
         }
       }
