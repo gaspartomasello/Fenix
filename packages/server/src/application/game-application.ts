@@ -1,4 +1,5 @@
 import type { ClientMessage, EntityId } from '@fenix/shared';
+import type { WorldClock } from '../domain/world-clock';
 import type { World } from '../domain/world';
 import type { Clock, IdGenerator, Notifier, RandomSource } from './ports';
 import { JoinWorld, type JoinWorldResult } from './use-cases/join-world';
@@ -8,6 +9,7 @@ import { SendChat } from './use-cases/send-chat';
 
 export interface GameApplicationDeps {
   readonly world: World;
+  readonly worldClock: WorldClock;
   readonly clock: Clock;
   readonly ids: IdGenerator;
   readonly random: RandomSource;
@@ -24,8 +26,8 @@ export class GameApplication {
   private readonly movePlayer: MovePlayer;
   private readonly sendChat: SendChat;
 
-  constructor({ world, clock, ids, random, notifier }: GameApplicationDeps) {
-    this.joinWorld = new JoinWorld(world, ids, random, notifier);
+  constructor({ world, worldClock, clock, ids, random, notifier }: GameApplicationDeps) {
+    this.joinWorld = new JoinWorld(world, worldClock, clock, ids, random, notifier);
     this.leaveWorld = new LeaveWorld(world, notifier);
     this.movePlayer = new MovePlayer(world, clock, notifier);
     this.sendChat = new SendChat(world, notifier);

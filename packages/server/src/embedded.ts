@@ -2,7 +2,8 @@ import type { ClientMessage } from '@fenix/shared';
 import { encodeMessage } from '@fenix/shared';
 import { GameApplication } from './application/game-application';
 import { World } from './domain/world';
-import { generateIslandMap } from './infrastructure/content/procedural-map';
+import { WorldClock } from './domain/world-clock';
+import { buildWorld } from './infrastructure/content/world-builder';
 import { ClientSession } from './infrastructure/network/client-session';
 import { SessionRegistry } from './infrastructure/network/session-registry';
 import { SeededRandom } from './infrastructure/system/seeded-random';
@@ -17,6 +18,7 @@ import { UuidGenerator } from './infrastructure/system/uuid-generator';
 export interface EmbeddedServerOptions {
   readonly mapSeed?: number;
   readonly mapSize?: number;
+  readonly startHour?: number;
 }
 
 export interface EmbeddedConnection {
@@ -30,16 +32,16 @@ export interface EmbeddedServer {
 }
 
 export function createEmbeddedServer(options: EmbeddedServerOptions = {}): EmbeddedServer {
-  const size = options.mapSize ?? 96;
-  const { map, spawnPoint } = generateIslandMap({
-    width: size,
-    height: size,
+  const { map, spawnPoint } = buildWorld({
+    size: options.mapSize ?? 128,
     seed: options.mapSeed ?? 1997,
   });
   const sessions = new SessionRegistry();
+  const clock = new SystemClock();
   const app = new GameApplication({
     world: new World(map, spawnPoint),
-    clock: new SystemClock(),
+    worldClock: new WorldClock(clock.now(), options.startHour),
+    clock,
     ids: new UuidGenerator(),
     random: new SeededRandom(Date.now()),
     notifier: sessions,

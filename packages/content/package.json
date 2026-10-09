@@ -1,0 +1,20 @@
+{
+  "name": "@fenix/content",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Contenido del mundo: mapas y tilesets editables con Tiled",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "tilesets": "tsx scripts/export-tilesets.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@fenix/shared": "0.1.0"
+  },
+  "devDependencies": {
+    "@fenix/art": "0.1.0"
+  }
+}

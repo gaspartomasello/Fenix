@@ -39,6 +39,10 @@ export class RecordingNotifier implements Notifier {
     this.deliveries.push({ to: playerId, message });
   }
 
+  sendMany(playerIds: Iterable<EntityId>, message: ServerMessage): void {
+    for (const to of playerIds) this.deliveries.push({ to, message });
+  }
+
   broadcast(message: ServerMessage, options?: { except?: EntityId }): void {
     this.deliveries.push({ to: 'all', except: options?.except, message });
   }

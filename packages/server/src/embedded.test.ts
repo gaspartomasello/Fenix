@@ -20,7 +20,7 @@ function inbox(): { messages: ServerMessage[]; deliver: (data: string) => void }
 
 describe('createEmbeddedServer', () => {
   it('permite jugar sin red: ingresar, moverse y hablar', () => {
-    const server = createEmbeddedServer({ mapSize: 48 });
+    const server = createEmbeddedServer({ mapSize: 64 });
     const client = inbox();
     const connection = server.connect(client.deliver);
 
@@ -37,7 +37,7 @@ describe('createEmbeddedServer', () => {
   });
 
   it('valida los mensajes igual que el servidor en red', () => {
-    const server = createEmbeddedServer({ mapSize: 48 });
+    const server = createEmbeddedServer({ mapSize: 64 });
     const client = inbox();
     server
       .connect(client.deliver)

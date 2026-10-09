@@ -1,16 +1,21 @@
 # Arquitectura
 
-Fenix es un monorepo de npm workspaces con tres paquetes. Las dependencias siempre apuntan
+Fenix es un monorepo de npm workspaces con cinco paquetes. Las dependencias siempre apuntan
 **hacia adentro**: las reglas del juego no conocen la red, el dibujo ni la base de datos.
 
 ```
-            ┌──────────────────────────┐
-            │      @fenix/shared       │  dominio puro + protocolo
-            └──────────────────────────┘
-                 ▲                ▲
-   ┌─────────────┴───┐      ┌─────┴──────────────┐
-   │  @fenix/server  │      │   @fenix/client    │
-   └─────────────────┘      └────────────────────┘
+                    ┌──────────────────────────┐
+                    │      @fenix/shared       │  dominio puro + protocolo
+                    └──────────────────────────┘
+                      ▲          ▲          ▲
+        ┌─────────────┴──┐  ┌────┴───────┐  ┌┴─────────────┐
+        │ @fenix/content │  │ @fenix/art │  │              │
+        │ mapas Tiled    │  │ pixel art  │  │              │
+        └────────────────┘  └────────────┘  │              │
+                ▲                  ▲        │              │
+        ┌───────┴────────┐  ┌──────┴────────┴─┐            │
+        │ @fenix/server  │◄─┤ @fenix/client   │ (solo el modo solo usa el servidor embebido)
+        └────────────────┘  └─────────────────┘
 ```
 
 Las reglas de capas están en `eslint.config.js` (`no-restricted-imports`): si un módulo importa
@@ -31,6 +36,18 @@ Código que cliente y servidor deben compartir exactamente. No tiene dependencia
 Que `canStep` sea compartido es clave: el cliente predice con la **misma regla** que valida el
 servidor, por eso las correcciones son raras.
 
+## @fenix/art
+
+Pixel art generado por código sobre un buffer RGBA (`PixelImage`), sin DOM: terreno con bordes
+mezclados, personajes en 8 direcciones y objetos fijos. Lo usan el cliente (convertido a texturas)
+y la herramienta que exporta los tilesets de Tiled.
+
+## @fenix/content
+
+Datos del mundo editables con Tiled: el pueblo (`maps/`) y los tilesets generados (`tilesets/`).
+Exporta los archivos como `unknown`; el servidor los valida al cargarlos. Ver
+[MAPAS.md](MAPAS.md).
+
 ## @fenix/server
 
 Servidor **autoritativo**: decide todo. El cliente solo envía intenciones.
@@ -41,8 +58,9 @@ infrastructure ──► application ──► domain
   config, mapa)     puertos)          reglas puras)
 ```
 
-- **domain/**: `Player` (movimiento con control de cadencia anti-speedhack) y `World` (agregado
-  raíz: mapa + jugadores). Sin dependencias de Node ni de red.
+- **domain/**: `Player` (movimiento con control de cadencia anti-speedhack), `World` (agregado
+  raíz: mapa + jugadores, consultas por rango de visión) y `WorldClock` (hora del mundo). Sin
+  dependencias de Node ni de red.
 - **application/**: un caso de uso por acción (`JoinWorld`, `MovePlayer`, `SendChat`,
   `LeaveWorld`) y la fachada `GameApplication`. Habla con el exterior solo mediante **puertos**
   (`Clock`, `IdGenerator`, `RandomSource`, `Notifier`), lo que permite testear sin red.
@@ -50,7 +68,8 @@ infrastructure ──► application ──► domain
   - `network/`: `GameSocketServer` (WebSocket, rate limit, heartbeat) y `SessionRegistry`
     (implementa `Notifier`).
   - `http/`: sirve el cliente compilado y `/health`.
-  - `content/`: generador procedural del mapa (se reemplazará por mapas diseñados).
+  - `content/`: cargador de mapas de Tiled (valida y traduce), generador procedural de la isla
+    (bosques, rocas, flores) y `buildWorld`, que estampa el pueblo diseñado en el centro.
   - `system/`: reloj, ids, PRNG.
 - **main.ts**: raíz de composición del servidor en red (HTTP + WebSocket).
 - **embedded.ts**: segunda raíz de composición, sin red ni dependencias de Node, para correr el
@@ -101,13 +120,24 @@ ClientGame.requestStep
 Los demás jugadores se interpolan entre tiles durante la duración del paso (400 ms caminando,
 200 ms corriendo, como en UO).
 
-## Arte
+### Rango de visión
 
-Todo el arte se genera por código en `client/src/assets/`:
+Cada jugador solo recibe lo que pasa a 18 tiles o menos (como en UO): al moverse, el servidor
+calcula quién entra y quién sale de su rango y envía `playerAppeared` / `playerDisappeared` en
+ambos sentidos. El chat también se oye solo dentro de ese rango.
 
-- Terreno: rombos de 22×22 escalados ×2 (44×44 en pantalla, el tamaño de tile de UO).
-- Personajes: 20×35 escalados ×2, 5 vistas dibujadas + 3 espejadas = 8 direcciones,
-  con ciclo de caminata de 4 frames y colores de ropa, piel y pelo.
+## Render
+
+- **Terreno** (`TerrainLayer`): rombos de 22×22 escalados ×2 (44×44 en pantalla, el tamaño de
+  tile de UO), con bordes mezclados según los vecinos, en bloques de 16×16 que se ocultan fuera
+  de cámara.
+- **Objetos y personajes** comparten una capa ordenada por profundidad (`x + y`), así se puede
+  pasar por detrás de un árbol o una pared. `StaticLayer` solo crea sprites de los bloques
+  visibles y vuelve translúcido lo que tapa al personaje.
+- **Día y noche** (`Lighting`): el mundo se tiñe según la hora y los faroles y el jugador suman
+  luz con mezcla aditiva.
+- Personajes: 20×35 escalados ×2, 5 vistas dibujadas + 3 espejadas = 8 direcciones, con ciclo de
+  caminata de 4 frames.
 
 ## Convenciones
 

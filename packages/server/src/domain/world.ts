@@ -1,4 +1,4 @@
-import { Direction, type EntityId, type Position, type TileMap } from '@fenix/shared';
+import { Direction, inViewRange, type EntityId, type Position, type TileMap } from '@fenix/shared';
 import { Player, type PlayerProps } from './player';
 
 export const MAX_PLAYERS = 100;
@@ -51,6 +51,13 @@ export class World {
 
   allPlayers(): readonly Player[] {
     return [...this.players.values()];
+  }
+
+  /** Jugadores que ven la posición dada (rango de visión de UO). */
+  playersNear(position: Position, options: { except?: EntityId } = {}): Player[] {
+    return [...this.players.values()].filter(
+      (p) => p.id !== options.except && inViewRange(p.position, position),
+    );
   }
 
   /** Un tile transitable cercano al punto de aparición, para no apilar a todos. */

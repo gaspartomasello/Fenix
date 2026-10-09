@@ -1,0 +1,50 @@
+# Diseñar mapas con Tiled
+
+El pueblo de **Puerto Ceniza** está diseñado en [Tiled](https://www.mapeditor.org), un editor de
+mapas gratuito. El resto de la isla (bosques, costas, lagos) lo genera el servidor; el pueblo se
+estampa en el centro.
+
+## Archivos
+
+```
+packages/content/
+├── maps/puerto-ceniza.json     El pueblo (mapa de Tiled en formato JSON)
+└── tilesets/
+    ├── terreno.json / .png     Pasto, tierra, arena, empedrado, agua, madera
+    └── objetos.json / .png     Árboles, rocas, paredes, cercas, faroles…
+```
+
+Los tilesets se generan a partir del arte del juego. **No se editan a mano**: si cambia el arte o
+se agregan terrenos u objetos, se regeneran con:
+
+```bash
+npm run tilesets -w @fenix/content
+```
+
+## Editar el pueblo
+
+1. Instalá Tiled y abrí `packages/content/maps/puerto-ceniza.json`.
+2. Usá las tres capas que el juego entiende:
+
+| Capa      | Tipo             | Qué va                                                                    |
+| --------- | ---------------- | ------------------------------------------------------------------------- |
+| `terreno` | Capa de patrones | Un tile del tileset `terreno` por casilla. Vacío = lo que genere la isla. |
+| `objetos` | Capa de patrones | Un objeto del tileset `objetos` por casilla.                              |
+| `zonas`   | Capa de objetos  | Un punto llamado `aparicion` y rectángulos de clase `region`.             |
+
+3. Guardá (Ctrl+S) y corré `npm test`: el test del cargador valida el mapa y avisa con un mensaje
+   claro si algo está mal (por ejemplo, un objeto puesto en la capa de terreno).
+
+## Reglas útiles
+
+- **Objetos que bloquean**: árboles, rocas, paredes, cercas, barriles, cajones, el aljibe y los
+  faroles no se pueden atravesar. Flores, arbustos y carteles sí.
+- **Paredes**: `wall-x` va sobre el borde superior derecho del tile y `wall-y` sobre el superior
+  izquierdo. Para una casa con interior de `x0..x1`, `y0..y1`:
+  - pared norte: `wall-x` en la fila `y0`; pared oeste: `wall-y` en la columna `x0`;
+  - pared sur: `wall-x` en la fila `y1 + 1`; pared este: `wall-y` en la columna `x1 + 1`;
+  - `wall-corner` en `(x0, y0)` y `wall-post` en `(x1 + 1, y1 + 1)`;
+  - una puerta es un hueco en la pared sur o este.
+- **Faroles** iluminan de noche (radio de 5 tiles).
+- **Zonas** (`region`): su nombre aparece en la barra de estado cuando el jugador está adentro.
+- **Aparición**: el punto `aparicion` debe caer en un tile transitable; el test lo verifica.

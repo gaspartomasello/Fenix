@@ -1,6 +1,7 @@
 import type { Appearance } from '../domain/character/appearance';
 import type { Direction } from '../domain/geometry/direction';
 import type { Position } from '../domain/geometry/position';
+import type { WorldTime } from '../domain/rules/daylight';
 import type { MoveMode } from '../domain/rules/movement';
 import type { TileMapData } from '../domain/world/tile-map';
 
@@ -44,7 +45,9 @@ export interface WelcomeMessage {
   readonly type: 'welcome';
   readonly selfId: EntityId;
   readonly map: TileMapData;
+  /** Jugadores dentro del rango de visión (incluido el propio). */
   readonly players: readonly PlayerSnapshot[];
+  readonly time: WorldTime;
 }
 
 export interface JoinRejectedMessage {
@@ -52,13 +55,15 @@ export interface JoinRejectedMessage {
   readonly reason: string;
 }
 
-export interface PlayerJoinedMessage {
-  readonly type: 'playerJoined';
+/** Un jugador entró en el rango de visión (o al mundo, cerca). */
+export interface PlayerAppearedMessage {
+  readonly type: 'playerAppeared';
   readonly player: PlayerSnapshot;
 }
 
-export interface PlayerLeftMessage {
-  readonly type: 'playerLeft';
+/** Un jugador salió del rango de visión (o del mundo). */
+export interface PlayerDisappearedMessage {
+  readonly type: 'playerDisappeared';
   readonly id: EntityId;
 }
 
@@ -100,8 +105,8 @@ export interface SystemMessage {
 export type ServerMessage =
   | WelcomeMessage
   | JoinRejectedMessage
-  | PlayerJoinedMessage
-  | PlayerLeftMessage
+  | PlayerAppearedMessage
+  | PlayerDisappearedMessage
   | PlayerMovedMessage
   | MoveAckMessage
   | MoveRejectedMessage

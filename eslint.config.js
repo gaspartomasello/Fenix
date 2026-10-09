@@ -25,6 +25,22 @@ const layerRules = [
     },
   },
   {
+    files: ['packages/art/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@fenix/server*', '@fenix/client*', '@fenix/content*', 'pixi.js', 'node:*'],
+              message: 'El arte es puro: solo depende de shared.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['packages/server/src/domain/**/*.ts'],
     rules: {
       'no-restricted-imports': [
@@ -87,7 +103,8 @@ const layerRules = [
                 '**/ui/**',
                 '**/network/**',
                 '**/input/**',
-                '**/assets/**',
+                '**/platform/**',
+                '@fenix/art',
               ],
               message: 'El core del cliente no conoce render, UI ni red.',
             },

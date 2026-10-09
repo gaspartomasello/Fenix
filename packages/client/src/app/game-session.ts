@@ -1,3 +1,4 @@
+import { formatGameTime } from '@fenix/shared';
 import { ClientGame } from '../core/client-game';
 import { InputController } from '../input/input-controller';
 import { createGateway, IS_SOLO } from '../network/create-gateway';
@@ -91,11 +92,14 @@ export class GameSession {
 
       const self = this.game.self;
       if (self) {
+        const time = this.game.worldTime();
         status.update({
           name: self.name,
+          region: this.game.currentRegion()?.name ?? 'Tierras salvajes',
+          time: time ? formatGameTime(time.dayProgress) : '--:--',
           x: self.position.x,
           y: self.position.y,
-          online: this.game.playerCount,
+          visible: this.game.visibleCount,
         });
       }
       requestAnimationFrame(frame);

@@ -7,6 +7,8 @@ export interface ServerConfig {
   readonly clientDist: string | null;
   readonly mapSeed: number;
   readonly mapSize: number;
+  /** Hora del juego con la que arranca el mundo (0–24). */
+  readonly startHour: number;
 }
 
 function intFromEnv(name: string, fallback: number): number {
@@ -28,6 +30,7 @@ export function loadConfig(defaultClientDist: string): ServerConfig {
     clientDist:
       process.env.CLIENT_DIST ?? (existsSync(defaultClientDist) ? defaultClientDist : null),
     mapSeed: intFromEnv('MAP_SEED', 1997),
-    mapSize: intFromEnv('MAP_SIZE', 96),
+    mapSize: intFromEnv('MAP_SIZE', 128),
+    startHour: intFromEnv('START_HOUR', 8),
   };
 }

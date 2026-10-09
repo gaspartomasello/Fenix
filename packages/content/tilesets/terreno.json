@@ -1,0 +1,73 @@
+{
+  "type": "tileset",
+  "name": "terreno",
+  "tilewidth": 44,
+  "tileheight": 44,
+  "tilecount": 6,
+  "columns": 6,
+  "image": "terreno.png",
+  "imagewidth": 264,
+  "imageheight": 44,
+  "tiles": [
+    {
+      "id": 0,
+      "properties": [
+        {
+          "name": "terrain",
+          "type": "string",
+          "value": "grass"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "properties": [
+        {
+          "name": "terrain",
+          "type": "string",
+          "value": "dirt"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "properties": [
+        {
+          "name": "terrain",
+          "type": "string",
+          "value": "sand"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "properties": [
+        {
+          "name": "terrain",
+          "type": "string",
+          "value": "stone"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "properties": [
+        {
+          "name": "terrain",
+          "type": "string",
+          "value": "water"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "properties": [
+        {
+          "name": "terrain",
+          "type": "string",
+          "value": "wood"
+        }
+      ]
+    }
+  ]
+}

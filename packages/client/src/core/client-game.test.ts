@@ -36,14 +36,27 @@ describe('ClientGame', () => {
     game.apply({
       type: 'welcome',
       selfId: 'ana',
-      map: { width: 4, height: 1, terrain: [G, G, G, W] },
+      map: {
+        width: 4,
+        height: 1,
+        terrain: [G, G, G, W],
+        statics: [],
+        regions: [{ name: 'Muelle', x: 0, y: 0, width: 2, height: 1 }],
+      },
+      time: { dayProgress: 0.5, dayLengthMs: 10_000 },
       players: [snapshot('ana', 0, 0), snapshot('bruno', 2, 0)],
     });
   });
 
+  it('extrapola la hora del mundo y sabe en qué zona está', () => {
+    now += 2_500;
+    expect(game.worldTime()?.dayProgress).toBeCloseTo(0.75);
+    expect(game.currentRegion()?.name).toBe('Muelle');
+  });
+
   it('carga el mundo inicial', () => {
     expect(game.self?.name).toBe('ANA');
-    expect(game.playerCount).toBe(2);
+    expect(game.visibleCount).toBe(2);
   });
 
   describe('predicción de movimiento', () => {
@@ -132,11 +145,13 @@ describe('ClientGame', () => {
       const removed: string[] = [];
       game.on('entityAdded', (e) => added.push(e.id));
       game.on('entityRemoved', (id) => removed.push(id));
-      game.apply({ type: 'playerJoined', player: snapshot('carla', 1, 0) });
-      game.apply({ type: 'playerLeft', id: 'bruno' });
+      game.apply({ type: 'playerAppeared', player: snapshot('carla', 1, 0) });
+      game.apply({ type: 'playerAppeared', player: snapshot('carla', 1, 0) });
+      game.apply({ type: 'playerDisappeared', id: 'bruno' });
+      game.apply({ type: 'playerDisappeared', id: 'ana' });
       expect(added).toEqual(['carla']);
       expect(removed).toEqual(['bruno']);
-      expect(game.playerCount).toBe(2);
+      expect(game.visibleCount).toBe(2);
     });
   });
 

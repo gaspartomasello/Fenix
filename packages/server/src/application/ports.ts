@@ -22,5 +22,7 @@ export interface RandomSource {
 /** Entrega mensajes del protocolo a los jugadores conectados. */
 export interface Notifier {
   send(playerId: EntityId, message: ServerMessage): void;
+  /** Envía el mismo mensaje a varios jugadores (se serializa una vez). */
+  sendMany(playerIds: Iterable<EntityId>, message: ServerMessage): void;
   broadcast(message: ServerMessage, options?: { except?: EntityId }): void;
 }

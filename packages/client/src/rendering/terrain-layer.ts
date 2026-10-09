@@ -3,7 +3,7 @@ import { Container, Rectangle, Sprite } from 'pixi.js';
 import { ART_SCALE, TILE_HALF, tileToScreen } from './iso';
 import type { TextureCache } from './texture-cache';
 
-const CHUNK_SIZE = 16;
+export const CHUNK_SIZE = 16;
 
 /**
  * Dibuja el terreno en bloques de 16×16 tiles y oculta los que quedan fuera
@@ -43,7 +43,13 @@ export class TerrainLayer {
       for (let x = cx; x < Math.min(cx + CHUNK_SIZE, map.width); x++) {
         const terrain = map.terrainAt({ x, y });
         if (terrain === undefined) continue;
-        const sprite = new Sprite(textures.terrain(terrain, variantFor(x, y)));
+        const neighbors = {
+          north: map.terrainAt({ x, y: y - 1 }),
+          east: map.terrainAt({ x: x + 1, y }),
+          south: map.terrainAt({ x, y: y + 1 }),
+          west: map.terrainAt({ x: x - 1, y }),
+        };
+        const sprite = new Sprite(textures.terrain(terrain, variantFor(x, y), neighbors));
         const center = tileToScreen({ x, y });
         sprite.anchor.set(0.5);
         sprite.scale.set(ART_SCALE);
@@ -64,7 +70,7 @@ export class TerrainLayer {
 }
 
 /** Variante estable por tile, para romper la repetición del terreno. */
-function variantFor(x: number, y: number): number {
+export function variantFor(x: number, y: number): number {
   const h = Math.imul(x, 73856093) ^ Math.imul(y, 19349663);
   return (h >>> 0) % 997;
 }

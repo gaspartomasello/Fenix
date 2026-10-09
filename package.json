@@ -9,6 +9,8 @@
   },
   "workspaces": [
     "packages/shared",
+    "packages/art",
+    "packages/content",
     "packages/server",
     "packages/client"
   ],

@@ -2,9 +2,11 @@ import { el } from './dom';
 
 export interface StatusInfo {
   readonly name: string;
+  readonly region: string;
+  readonly time: string;
   readonly x: number;
   readonly y: number;
-  readonly online: number;
+  readonly visible: number;
 }
 
 /** Barra superior con el personaje, la posición y la gente conectada. */
@@ -19,13 +21,16 @@ export class StatusBar {
       this.text,
       el('span', {
         className: 'status-help',
-        text: 'Flechas/WASD, clic derecho o tocá para moverte · Shift corre · Rueda: zoom',
+        text: 'Flechas/WASD, clic derecho o tocá para moverte · Shift: correr · Rueda del mouse: acercar o alejar',
       }),
     ]);
   }
 
-  update({ name, x, y, online }: StatusInfo): void {
-    const value = `${name} · (${x}, ${y}) · ${online} en línea`;
+  update({ name, region, time, x, y, visible }: StatusInfo): void {
+    const others = visible - 1;
+    const company =
+      others === 0 ? 'nadie cerca' : others === 1 ? '1 jugador cerca' : `${others} jugadores cerca`;
+    const value = `${name} · ${region} (${x}, ${y}) · ${time} · ${company}`;
     if (value === this.last) return;
     this.last = value;
     this.text.textContent = value;

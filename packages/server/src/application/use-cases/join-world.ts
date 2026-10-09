@@ -1,6 +1,7 @@
 import { validateCharacterName, type Appearance, type EntityId } from '@fenix/shared';
+import type { WorldClock } from '../../domain/world-clock';
 import type { World } from '../../domain/world';
-import type { IdGenerator, Notifier, RandomSource } from '../ports';
+import type { Clock, IdGenerator, Notifier, RandomSource } from '../ports';
 
 export interface JoinWorldInput {
   readonly name: string;
@@ -12,6 +13,8 @@ export type JoinWorldResult = { ok: true; playerId: EntityId } | { ok: false; re
 export class JoinWorld {
   constructor(
     private readonly world: World,
+    private readonly worldClock: WorldClock,
+    private readonly clock: Clock,
     private readonly ids: IdGenerator,
     private readonly random: RandomSource,
     private readonly notifier: Notifier,
@@ -36,20 +39,22 @@ export class JoinWorld {
     return { ok: true, playerId: player.id };
   }
 
-  /** Envía el estado inicial al nuevo jugador y lo anuncia al resto. */
+  /** Envía el estado inicial al nuevo jugador y lo muestra a quienes están cerca. */
   announce(playerId: EntityId): void {
     const player = this.world.get(playerId);
     if (!player) return;
+    const nearby = this.world.playersNear(player.position, { except: playerId });
 
     this.notifier.send(playerId, {
       type: 'welcome',
       selfId: playerId,
       map: this.world.map.toData(),
-      players: this.world.allPlayers().map((p) => p.toSnapshot()),
+      players: [player, ...nearby].map((p) => p.toSnapshot()),
+      time: this.worldClock.timeAt(this.clock.now()),
     });
-    this.notifier.broadcast(
-      { type: 'playerJoined', player: player.toSnapshot() },
-      { except: playerId },
+    this.notifier.sendMany(
+      nearby.map((p) => p.id),
+      { type: 'playerAppeared', player: player.toSnapshot() },
     );
     this.notifier.broadcast(
       { type: 'system', text: `${player.name} entró al mundo.` },
