@@ -165,6 +165,13 @@ export interface SellRequest {
   readonly itemId: EntityId;
 }
 
+/** Cambiar la hora del mundo (solo personajes de prueba, para probar la noche). */
+export interface SetHourRequest {
+  readonly type: 'setHour';
+  /** Hora del juego, de 0 a 24. */
+  readonly hour: number;
+}
+
 export interface CraftRequest {
   readonly type: 'craft';
   readonly recipe: string;
@@ -184,6 +191,7 @@ export type ClientMessage =
   | BuyRequest
   | SellRequest
   | CraftRequest
+  | SetHourRequest
   | SocialRequest;
 
 // ── Servidor → Cliente ────────────────────────────────────────────────
@@ -341,6 +349,12 @@ export interface MobileTeleportedMessage {
   readonly position: Position;
 }
 
+/** La hora del mundo cambió de golpe (un personaje de prueba la movió). */
+export interface WorldTimeMessage {
+  readonly type: 'worldTime';
+  readonly time: WorldTime;
+}
+
 /** Cambió la reputación o el gremio de alguien a la vista. */
 export interface MobileStatusMessage {
   readonly type: 'mobileStatus';
@@ -401,6 +415,7 @@ export type ServerMessage =
   | SpellEffectMessage
   | EffectsMessage
   | MobileTeleportedMessage
+  | WorldTimeMessage
   | MobileStatusMessage
   | SocialMessage
   | SystemMessage;

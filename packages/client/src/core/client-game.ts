@@ -73,6 +73,8 @@ export interface ClientGameEvents extends Record<string, unknown> {
   socialChanged: SocialState;
   /** Modo guerra: permite atacar a otras personas. */
   warModeChanged: boolean;
+  /** El jugador pidió salir del juego (`/desconectar`). */
+  logoutRequested: null;
 }
 
 /** Efectos activos propios; `receivedAt` sirve para descontar el tiempo que pasa. */
@@ -245,6 +247,12 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       case 'answer':
         this.answerInvite(input.accept);
         return;
+      case 'logout':
+        this.emit('logoutRequested', null);
+        return;
+      case 'hour':
+        this.gateway.send({ type: 'setHour', hour: input.hour });
+        return;
       case 'help':
         CHAT_HELP.forEach((line) => this.notify(line));
         return;
@@ -416,6 +424,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         entity?.teleport(message.position, entity.direction);
         break;
       }
+      case 'worldTime':
+        this.time = { value: message.time, receivedAt: now };
+        break;
       case 'effects':
         this._effects = {
           effects: message.effects,

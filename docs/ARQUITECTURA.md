@@ -43,7 +43,8 @@ servidor, por eso las correcciones son raras.
 ## @fenix/art
 
 Pixel art generado por código sobre un buffer RGBA (`PixelImage`), sin DOM: terreno con bordes
-mezclados, personajes en 8 direcciones y objetos fijos. Lo usan el cliente (convertido a texturas)
+mezclados, personajes en 8 direcciones y objetos fijos, todo a resolución de pantalla (sin
+agrandar). Lo usan el cliente (convertido a texturas)
 y la herramienta que exporta los tilesets de Tiled.
 
 Personajes y criaturas usan el motor de volumen (`volume.ts`): cada uno es un modelo 3D muy simple
@@ -71,6 +72,13 @@ y como ícono. La ventana de personaje (`PaperdollView`) detecta qué objeto hay
 comparando el dibujo con y sin cada pieza puesta. La usan la ventana propia (`EquipmentWindow`,
 con casilleros que se pueden arrastrar y botones) y la de mirar a otros (`PaperdollViewer`,
 que abre `WorldPaperdolls` con doble clic sobre una persona).
+
+El mundo usa otra proyección del mismo motor (`WorldProjection`), la de UO: el suelo se ve como el
+rombo de 44×44 del tile, sin achatarse, y la altura sube derecho en la pantalla. Así los objetos
+fijos (`static-art.ts`: árboles, rocas, paredes, cercas, barriles, cajas, pozo, faroles, santuario,
+forja, yunque) calzan con las baldosas y se iluminan igual que los personajes. El terreno
+(`terrain-art.ts`) se pinta pixel a pixel con ruido periódico: se repite exacto en cada tile, así
+los vecinos empalman sin costura; las variantes cambian el centro del tile y comparten los bordes.
 
 ## @fenix/content
 
@@ -264,16 +272,19 @@ gremio llega a sus miembros estén donde estén).
 
 ## Render
 
-- **Terreno** (`TerrainLayer`): rombos de 22×22 escalados ×2 (44×44 en pantalla, el tamaño de
-  tile de UO), con bordes mezclados según los vecinos, en bloques de 16×16 que se ocultan fuera
-  de cámara.
+- **Terreno** (`TerrainLayer`): rombos de 44×44 (el tamaño de tile de UO) dibujados a
+  resolución completa, con bordes mezclados según los vecinos, en bloques de 16×16 que se
+  ocultan fuera de cámara.
 - **Objetos y personajes** comparten una capa ordenada por profundidad (`x + y`), así se puede
   pasar por detrás de un árbol o una pared. `StaticLayer` solo crea sprites de los bloques
   visibles y vuelve translúcido lo que tapa al personaje.
-- **Día y noche** (`Lighting`): el mundo se tiñe según la hora y los faroles y el jugador suman
-  luz con mezcla aditiva.
-- Personajes: 20×35 escalados ×2, 5 vistas dibujadas + 3 espejadas = 8 direcciones, con ciclo de
-  caminata de 4 frames.
+- **Día y noche** (`Lighting`): un mapa de luz a media resolución que multiplica todo lo que
+  se ve. Se arma cada cuadro con el color de ambiente según la hora (oscuro y azulado de noche)
+  y los halos cálidos de los faroles, la forja, el santuario y el propio jugador, sumados. Así
+  la luz ilumina el terreno, las paredes, las criaturas y los personajes que toca en vez de
+  taparlos. Los hechizos y las flechas van por encima (brillan de noche). Con Visión nocturna
+  no hay oscuridad: se ve como de día.
+- Personajes: modelos de volumen en 8 direcciones, con caminata, carrera y acciones.
 
 ## Convenciones
 

@@ -1,4 +1,5 @@
-import type { ClientMessage, EntityId } from '@fenix/shared';
+import { formatGameTime, type ClientMessage, type EntityId } from '@fenix/shared';
+import { isTestCharacter } from '../domain/testing/test-character';
 import type { WorldClock } from '../domain/world-clock';
 import type { World } from '../domain/world';
 import { GameLoop } from './game-loop';
@@ -60,6 +61,10 @@ export class GameApplication {
   private readonly mobiles: MobileNotifications;
   private readonly world: World;
   private readonly persistence: CharacterPersistence;
+  private readonly worldClock: WorldClock;
+  private readonly clock: Clock;
+  private readonly notifier: Notifier;
+  private readonly testCharacters: readonly string[];
 
   constructor({
     world,
@@ -73,6 +78,10 @@ export class GameApplication {
     testCharacters = [],
   }: GameApplicationDeps) {
     this.world = world;
+    this.worldClock = worldClock;
+    this.clock = clock;
+    this.notifier = notifier;
+    this.testCharacters = testCharacters;
     this.persistence = new CharacterPersistence(world, characters, passwords);
     const notifications = new ItemNotifications(world, notifier);
     this.mobiles = new MobileNotifications(world, notifier, clock);
@@ -216,10 +225,33 @@ export class GameApplication {
       case 'social':
         this.socialActions.execute(playerId, message);
         break;
+      case 'setHour':
+        this.setHour(playerId, message.hour);
+        break;
       case 'join':
         // Ya está en el mundo: se ignora un segundo ingreso.
         break;
     }
+  }
+
+  /** `/hora`: un personaje de prueba mueve la hora del mundo, para todos. */
+  private setHour(playerId: EntityId, hour: number): void {
+    const player = this.world.get(playerId);
+    if (!player) return;
+    if (!isTestCharacter(player.name, this.testCharacters)) {
+      this.notifier.send(playerId, {
+        type: 'system',
+        text: 'Solo los personajes de prueba pueden cambiar la hora.',
+      });
+      return;
+    }
+    const now = this.clock.now();
+    this.worldClock.setHour(hour, now);
+    this.notifier.broadcast({ type: 'worldTime', time: this.worldClock.timeAt(now) });
+    this.notifier.send(playerId, {
+      type: 'system',
+      text: `Ahora son las ${formatGameTime(hour / 24)}.`,
+    });
   }
 
   leave(playerId: EntityId): void {

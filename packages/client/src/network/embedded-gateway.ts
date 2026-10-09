@@ -17,7 +17,13 @@ export class EmbeddedGateway implements GameGateway {
     // Carga diferida: el código del servidor solo se descarga en modo solo.
     const { createEmbeddedServer } = await import('@fenix/server/embedded');
     // En el modo solo, Gaspar entra como personaje de prueba (todo al máximo).
-    const server = createEmbeddedServer({ storage: browserStorage, testCharacters: ['Gaspar'] });
+    // `?hora=22` en la dirección arranca el mundo a esa hora (para probar la noche).
+    const hour = Number(new URLSearchParams(window.location.search).get('hora'));
+    const server = createEmbeddedServer({
+      storage: browserStorage,
+      testCharacters: ['Gaspar'],
+      ...(Number.isFinite(hour) && hour > 0 && hour < 24 ? { startHour: hour } : {}),
+    });
     // Guardar al cerrar o esconder la pestaña (en el celular puede no volver).
     const save = (): void => server.saveAll();
     window.addEventListener('pagehide', save);
