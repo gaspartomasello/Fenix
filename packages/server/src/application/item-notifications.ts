@@ -8,6 +8,9 @@ import type { Notifier } from './ports';
  * mochila, a su dueño; lo que alguien tiene puesto, a quienes lo ven.
  */
 export class ItemNotifications {
+  /** Lo arma `Corpses`: avisa que cambió lo que hay dentro de un cuerpo. */
+  onCorpseChanged: (corpseId: EntityId) => void = () => {};
+
   constructor(
     private readonly world: World,
     private readonly notifier: Notifier,
@@ -33,6 +36,7 @@ export class ItemNotifications {
     }
     for (const ownerId of changes.inventories) this.sendInventory(ownerId);
     for (const ownerId of changes.looks) this.sendLook(ownerId);
+    for (const corpseId of changes.corpses) this.onCorpseChanged(corpseId);
     if (changes.message) this.notifier.send(actorId, { type: 'system', text: changes.message });
   }
 

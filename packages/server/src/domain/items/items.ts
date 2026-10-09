@@ -34,6 +34,8 @@ export interface ItemChanges {
   readonly inventories: Set<EntityId>;
   /** Dueños cuyo aspecto (lo que tienen puesto) cambió. */
   readonly looks: Set<EntityId>;
+  /** Cuerpos cuyo contenido cambió. */
+  readonly corpses: Set<EntityId>;
   /** Mensaje para quien actuó. */
   message?: string;
   /** Lo que se comió o tomó: su efecto lo aplica `consumables.ts`. */
@@ -47,6 +49,7 @@ export const emptyChanges = (): ItemChanges => ({
   groundAdded: [],
   inventories: new Set(),
   looks: new Set(),
+  corpses: new Set(),
 });
 
 const fail = (reason: string): ItemResult => ({ ok: false, reason });
@@ -107,6 +110,42 @@ export class Items {
     this.add(ids(), kind, amount, { type: 'backpack', ownerId, position: this.freeSpot(ownerId) });
     changes.inventories.add(ownerId);
     return true;
+  }
+
+  /** Lo que hay dentro de un cuerpo. */
+  corpseOf(corpseId: EntityId): Item[] {
+    return this.all().filter(
+      (i) => i.location.type === 'corpse' && i.location.corpseId === corpseId,
+    );
+  }
+
+  /**
+   * Pone el botín dentro de un cuerpo, acomodado en una grilla como en una
+   * mochila. Devuelve los objetos creados.
+   */
+  fillCorpse(
+    corpseId: EntityId,
+    at: Position,
+    drops: readonly { kind: ItemKind; amount: number }[],
+    ids: () => EntityId,
+  ): Item[] {
+    const columns = Math.floor(BACKPACK_AREA.width / ITEM_ICON_SIZE);
+    return drops.map((drop, index) =>
+      this.add(ids(), drop.kind, drop.amount, {
+        type: 'corpse',
+        corpseId,
+        at,
+        position: clampToBackpack({
+          x: (index % columns) * ITEM_ICON_SIZE,
+          y: Math.floor(index / columns) * ITEM_ICON_SIZE,
+        }),
+      }),
+    );
+  }
+
+  /** El cuerpo se deshizo: lo que quedaba adentro se pierde con él. */
+  removeCorpse(corpseId: EntityId): void {
+    for (const item of this.corpseOf(corpseId)) this.byId.delete(item.id);
   }
 
   equipmentOf(ownerId: EntityId): Item[] {
@@ -249,6 +288,11 @@ export class Items {
     if (item.location.type === 'ground') {
       return withinReach(actor.position, item.location.position) ? null : 'Está demasiado lejos.';
     }
+    if (item.location.type === 'corpse') {
+      return withinReach(actor.position, item.location.at)
+        ? null
+        : 'El cuerpo está demasiado lejos.';
+    }
     return item.location.ownerId === actor.id ? null : 'Eso no es tuyo.';
   }
 
@@ -286,9 +330,10 @@ export class Items {
     if (this.backpackOf(ownerId).length >= MAX_BACKPACK_ITEMS)
       return fail('Tu mochila está llena.');
     const target = position ? clampToBackpack(position) : this.freeSpot(ownerId);
-    const fromGround = item.location.type === 'ground';
+    const from = item.location.type;
     this.relocate(item, { type: 'backpack', ownerId, position: target }, changes);
-    if (fromGround) changes.message = `Levantaste ${describeItem(item.kind, item.amount)}.`;
+    if (from === 'ground') changes.message = `Levantaste ${describeItem(item.kind, item.amount)}.`;
+    if (from === 'corpse') changes.message = `Tomaste ${describeItem(item.kind, item.amount)}.`;
     return { ok: true, changes };
   }
 
@@ -363,6 +408,10 @@ export class Items {
     if (location.type === 'ground') {
       if (side === 'from') changes.groundRemoved.push({ id: item.id, position: location.position });
       else changes.groundAdded.push(item);
+      return;
+    }
+    if (location.type === 'corpse') {
+      changes.corpses.add(location.corpseId);
       return;
     }
     changes.inventories.add(location.ownerId);

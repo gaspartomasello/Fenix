@@ -121,6 +121,11 @@ export class CharacterView {
     return this.entity.body !== 'human' && !this.entity.dead;
   }
 
+  /** El cuerpo de una criatura muerta (se revisa con doble clic). */
+  get isCreatureCorpse(): boolean {
+    return this.entity.body !== 'human' && this.entity.dead;
+  }
+
   /** Una persona (jugador, fantasma o alguien del pueblo), no una criatura. */
   get isHuman(): boolean {
     return this.entity.body === 'human';

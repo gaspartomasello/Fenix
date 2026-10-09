@@ -216,6 +216,11 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       if (data.to === 'cave' || data.to === 'lair')
         return { ok: true, message: { type: 'testTravel', to: data.to } };
       break;
+    case 'openCorpse':
+    case 'lootAll':
+      if (isId(data.corpseId))
+        return { ok: true, message: { type: data.type, corpseId: data.corpseId } };
+      break;
     case 'useItem':
       if (isId(data.itemId)) return { ok: true, message: { type: 'useItem', itemId: data.itemId } };
       break;
@@ -247,6 +252,8 @@ const SERVER_TYPES: ReadonlySet<ServerMessageType> = new Set<ServerMessageType>(
   'worldTime',
   'mobileStatus',
   'social',
+  'corpse',
+  'corpseClosed',
   'system',
 ]);
 

@@ -376,4 +376,29 @@ describe('ClientGame', () => {
     game.useOn('venda', 'bruno');
     expect(sent.at(-1)).toEqual({ type: 'useOn', itemId: 'venda', targetId: 'bruno' });
   });
+
+  it('revisa un cuerpo: la ventana se abre solo con el doble clic propio', () => {
+    const changes: { items: number; opened: boolean }[] = [];
+    game.on('corpseChanged', ({ corpse, opened }) =>
+      changes.push({ items: corpse?.items.length ?? -1, opened }),
+    );
+    const gold = { id: 'oro', kind: 'gold', amount: 12, position: { x: 0, y: 0 } } as const;
+
+    game.openCorpse('rata');
+    expect(sent.at(-1)).toEqual({ type: 'openCorpse', corpseId: 'rata' });
+    game.apply({ type: 'corpse', corpseId: 'rata', name: 'rata gigante', items: [gold] });
+    expect(game.findItem('oro')).toEqual(gold);
+    // Alguien sacó algo: se actualiza sin volver a abrirse.
+    game.apply({ type: 'corpse', corpseId: 'rata', name: 'rata gigante', items: [] });
+    game.lootAll('rata');
+    expect(sent.at(-1)).toEqual({ type: 'lootAll', corpseId: 'rata' });
+    game.apply({ type: 'corpseClosed', corpseId: 'rata' });
+
+    expect(changes).toEqual([
+      { items: 1, opened: true },
+      { items: 0, opened: false },
+      { items: -1, opened: false },
+    ]);
+    expect(game.corpse).toBeNull();
+  });
 });

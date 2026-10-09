@@ -2,6 +2,7 @@ import { formatGameTime, type ClientMessage, type EntityId, type Position } from
 import { isTestCharacter } from '../domain/testing/test-character';
 import type { WorldClock } from '../domain/world-clock';
 import type { World } from '../domain/world';
+import { Corpses } from './corpses';
 import { GameLoop } from './game-loop';
 import { ItemNotifications } from './item-notifications';
 import { MobileNotifications } from './mobile-notifications';
@@ -58,6 +59,7 @@ export class GameApplication {
   private readonly socialActions: SocialActions;
   private readonly social: SocialNotifications;
   private readonly loop: GameLoop;
+  private readonly corpses: Corpses;
   private readonly mobiles: MobileNotifications;
   private readonly world: World;
   private readonly persistence: CharacterPersistence;
@@ -130,6 +132,7 @@ export class GameApplication {
       this.social,
       notifier,
     );
+    this.corpses = new Corpses(world, clock, ids, notifications, notifier);
     this.loop = new GameLoop(
       world,
       this.mobiles,
@@ -139,6 +142,7 @@ export class GameApplication {
       random,
       this.social,
       (player, position) => this.movePlayer.teleport(player, position),
+      this.corpses,
     );
   }
 
@@ -231,6 +235,12 @@ export class GameApplication {
       case 'testTravel':
         this.testTravel(playerId, message.to);
         break;
+      case 'openCorpse':
+        this.corpses.open(playerId, message.corpseId);
+        break;
+      case 'lootAll':
+        this.corpses.lootAll(playerId, message.corpseId);
+        break;
       case 'join':
         // Ya está en el mundo: se ignora un segundo ingreso.
         break;
@@ -300,6 +310,7 @@ export class GameApplication {
       this.socialActions.disconnect(player);
       this.persistence.release(player);
     }
+    this.corpses.forget(playerId);
     this.leaveWorld.execute(playerId);
   }
 }

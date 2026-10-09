@@ -25,6 +25,7 @@ import { resolveCast } from '../domain/magic/spellcasting';
 import type { Mobile } from '../domain/mobile';
 import { Player } from '../domain/player';
 import type { World } from '../domain/world';
+import type { Corpses } from './corpses';
 import type { ItemNotifications } from './item-notifications';
 import type { MobileNotifications } from './mobile-notifications';
 import type { IdGenerator, Notifier, RandomSource } from './ports';
@@ -52,6 +53,7 @@ export class GameLoop {
     private readonly social: SocialNotifications,
     /** Mueve a un jugador al instante, avisando a quienes lo ven. */
     private readonly teleport: (player: Player, position: Position) => void,
+    private readonly corpses: Corpses,
   ) {
     this.shrines = world.map.statics.filter((s) => s.kind === 'shrine');
   }
@@ -265,6 +267,7 @@ export class GameLoop {
           return;
         }
         this.mobiles.disappear(creature);
+        this.corpses.remove(creature.id);
         creature.gone = true;
         creature.respawnAt = now + RESPAWN_MS;
       }
@@ -445,24 +448,17 @@ export class GameLoop {
     this.social.sendSocial(killer);
   }
 
+  /** El botín queda dentro del cuerpo, que se revisa con doble clic. */
   private dropLoot(creature: Creature): void {
+    // Las invocaciones no dejan nada: se desvanecen.
+    if (creature.ownerId) return;
     const drops = rollLoot(creature.definition, this.roll);
-    for (const drop of drops) {
-      const item = this.world.items.add(this.ids.next(), drop.kind, drop.amount, {
-        type: 'ground',
-        position: creature.position,
-      });
-      this.items.publish(
-        { groundRemoved: [], groundAdded: [item], inventories: new Set(), looks: new Set() },
-        creature.id,
-      );
-    }
+    if (!this.corpses.fill(creature, drops)) return;
     const names = drops.map((d) => describeItem(d.kind, d.amount));
-    if (names.length === 0) return;
     for (const id of this.mobiles.watchers(creature)) {
       this.notifier.send(id, {
         type: 'system',
-        text: `${capitalize(creature.definition.article)} ${creature.name} dejó: ${names.join(', ')}.`,
+        text: `El cuerpo ${creature.definition.article === 'una' ? 'de la' : 'del'} ${creature.name} tiene: ${names.join(', ')}. Doble clic para revisarlo.`,
       });
     }
   }
