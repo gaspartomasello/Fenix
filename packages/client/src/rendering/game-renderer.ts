@@ -106,9 +106,9 @@ export class GameRenderer {
       if (!accept(view)) continue;
       const { x, y } = view.feet;
       const inside =
-        Math.abs(world.x - x) <= MOBILE_HIT_BOX.halfWidth &&
+        Math.abs(world.x - x) <= MOBILE_HIT_BOX.halfWidth * (view.spriteHeight > 70 ? 2.5 : 1) &&
         world.y <= y + 6 &&
-        world.y >= y - MOBILE_HIT_BOX.height;
+        world.y >= y - Math.max(MOBILE_HIT_BOX.height, view.spriteHeight);
       if (inside && (!best || y > best.y)) best = { id: view.entityId, y };
     }
     return best?.id ?? null;

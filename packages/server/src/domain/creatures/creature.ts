@@ -5,6 +5,7 @@ import {
   type CreatureKind,
   type EntityId,
   type Position,
+  type SpellKey,
 } from '@fenix/shared';
 import { Combatant } from '../combat/combatant';
 import type { Mobile } from '../mobile';
@@ -30,6 +31,14 @@ export class Creature implements Mobile {
   respawnAt: number | null = null;
   /** Ya no está en el mundo (murió y su cuerpo desapareció). */
   gone = false;
+  /** Hechizo que está lanzando (las que saben magia). */
+  pendingCast: { spell: SpellKey; targetId: EntityId; resolveAt: number } | null = null;
+  /** Cuándo puede volver a lanzar un hechizo o escupir fuego. */
+  nextSpellAt = 0;
+  nextBreathAt = 0;
+  /** Vida recuperada en fracciones, hasta juntar un punto (regeneración). */
+  regenCarry = 0;
+  lastTickAt = 0;
   /** Invocada: jugador que la llamó (pelea para él) y cuándo se desvanece. */
   readonly ownerId: EntityId | null;
   readonly expiresAt: number | null;
@@ -52,14 +61,23 @@ export class Creature implements Mobile {
   /** Vuelve a aparecer en su lugar, con la vida llena. */
   respawn(): void {
     this.combat = this.freshCombatant();
+    this.pendingCast = null;
     this.position = this.home;
     this.despawnAt = null;
     this.respawnAt = null;
     this.gone = false;
   }
 
+  /** ¿Está huyendo? (las que escapan cuando les queda poca vida). */
+  get fleeing(): boolean {
+    const fleeAt = this.definition.abilities?.fleeAt;
+    return fleeAt !== undefined && this.combat.health <= fleeAt;
+  }
+
   private freshCombatant(): Combatant {
-    const { strength, dexterity, maxHits } = this.definition;
-    return new Combatant({ strength, dexterity, intelligence: 0 }, maxHits);
+    const { strength, dexterity, maxHits, abilities } = this.definition;
+    // Las que saben magia tienen maná (para que les puedan drenar).
+    const intelligence = abilities?.spells ? 60 : 0;
+    return new Combatant({ strength, dexterity, intelligence }, maxHits);
   }
 }

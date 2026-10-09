@@ -3,6 +3,7 @@ import {
   CHARACTER_FEET_Y,
   CHARACTER_HEAD_Y,
   attackStyleFor,
+  creatureLayout,
   type CharacterFrame,
 } from '@fenix/art';
 import { Container, Graphics, Sprite, Text } from 'pixi.js';
@@ -24,8 +25,6 @@ const NAME_COLOR_NOTORIETY: Readonly<Record<Notoriety, number>> = {
 const NAME_COLOR_CREATURE = 0xd0c8b8;
 /** Amarillo suave para los personajes del pueblo. */
 const NAME_COLOR_NPC = 0xf2dd8a;
-/** Altura de la cabeza sobre los pies, en pantalla. */
-const SPRITE_HEIGHT = (CHARACTER_FEET_Y - CHARACTER_HEAD_Y) * CHARACTER_SCALE;
 const HEALTH_BAR_WIDTH = 32;
 const COMBAT_TEXT_COLORS: Readonly<Record<CombatText['kind'], number>> = {
   'damage-taken': 0xff5a4a,
@@ -57,15 +56,26 @@ export class CharacterView {
   private shownName = '';
   private readonly combatLabels = new Map<CombatText, Text>();
   private readonly fidgets = new Fidgets(performance.now());
+  /** Altura de la cabeza sobre los pies, en pantalla (depende del cuerpo). */
+  readonly spriteHeight: number;
 
   constructor(
     private readonly entity: Entity,
     private readonly textures: TextureCache,
     private readonly isSelf: boolean,
   ) {
-    const shadow = new Graphics().ellipse(0, 0, 13, 6).fill({ color: 0x000000, alpha: 0.28 });
+    // El dragón tiene un lienzo más grande: cada cuerpo dice dónde apoya y dónde termina.
+    const layout =
+      entity.body === 'human'
+        ? { height: CHARACTER_ART_HEIGHT, feetY: CHARACTER_FEET_Y, headY: CHARACTER_HEAD_Y }
+        : creatureLayout(entity.body);
+    const big = layout.height > CHARACTER_ART_HEIGHT;
+    this.spriteHeight = (layout.feetY - layout.headY) * CHARACTER_SCALE;
+    const shadow = new Graphics()
+      .ellipse(0, 0, big ? 40 : 13, big ? 16 : 6)
+      .fill({ color: 0x000000, alpha: 0.28 });
 
-    this.sprite.anchor.set(0.5, CHARACTER_FEET_Y / CHARACTER_ART_HEIGHT);
+    this.sprite.anchor.set(0.5, layout.feetY / layout.height);
     this.sprite.scale.set(CHARACTER_SCALE);
     this.targetRing.visible = false;
 
@@ -82,10 +92,10 @@ export class CharacterView {
     });
     this.syncName();
     this.nameLabel.anchor.set(0.5, 1);
-    this.nameLabel.position.set(0, -SPRITE_HEIGHT - 8);
-    this.healthBar.position.set(-HEALTH_BAR_WIDTH / 2, -SPRITE_HEIGHT - 6);
-    this.overhead.position.set(0, -SPRITE_HEIGHT - 26);
-    this.combatTexts.position.set(0, -SPRITE_HEIGHT + 8);
+    this.nameLabel.position.set(0, -this.spriteHeight - 8);
+    this.healthBar.position.set(-HEALTH_BAR_WIDTH / 2, -this.spriteHeight - 6);
+    this.overhead.position.set(0, -this.spriteHeight - 26);
+    this.combatTexts.position.set(0, -this.spriteHeight + 8);
 
     this.container.addChild(
       this.targetRing,

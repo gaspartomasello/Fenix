@@ -86,6 +86,15 @@ export function chooseStep(
   random: () => number,
 ): Direction | null {
   if (target) {
+    // Herida, huye; si sabe magia, pelea a distancia; si no, se acerca.
+    if (creature.fleeing) return stepAway(creature, target.position, world);
+    const distance = tileDistance(creature.position, target.position);
+    const range = creature.definition.abilities?.spells?.range;
+    if (range !== undefined) {
+      if (distance < range - 1) return stepAway(creature, target.position, world);
+      if (distance <= range) return null;
+      return stepTowards(creature, target.position, world);
+    }
     if (inMeleeRange(creature.position, target.position)) return null;
     return stepTowards(creature, target.position, world);
   }
@@ -104,6 +113,17 @@ export function chooseStep(
   if (direction === null || !canMoveTo(creature, direction, world)) return null;
   const next = step(creature.position, direction);
   return tileDistance(next, creature.home) <= WANDER_RANGE ? direction : null;
+}
+
+/** Paso alejándose de un punto (para huir o tomar distancia). */
+function stepAway(creature: Creature, from: Position, world: World): Direction | null {
+  const toward = directionBetween(creature.position, from);
+  if (toward === null) return null;
+  for (const turn of [4, 3, 5, 2, 6]) {
+    const direction = ((toward + turn) % 8) as Direction;
+    if (canMoveTo(creature, direction, world)) return direction;
+  }
+  return null;
 }
 
 /** Paso directo hacia el destino; si está bloqueado, prueba los dos laterales. */

@@ -1,6 +1,7 @@
 import {
   ATTRIBUTE_NAMES,
   CREATURE_FAME,
+  poisonDurationMs,
   REGEN_INTERVAL_MS,
   SPELLS,
   describeItem,
@@ -11,6 +12,11 @@ import {
 } from '@fenix/shared';
 import { outOfAmmo, trySwing, type SwingResult } from '../domain/combat/combat';
 import { resolveBandage } from '../domain/healing/bandage';
+import {
+  breatheFire,
+  resolveCreatureCast,
+  startCreatureCast,
+} from '../domain/creatures/creature-magic';
 import { commitAggression } from './use-cases/aggression';
 import { CORPSE_MS, Creature, RESPAWN_MS } from '../domain/creatures/creature';
 import { canMoveTo, chooseStep, updateTarget } from '../domain/creatures/creature-ai';
@@ -266,7 +272,9 @@ export class GameLoop {
     }
 
     const target = updateTarget(creature, this.world);
-    if (target) {
+    this.creatureAbilities(creature, target, now);
+    if (creature.combat.isDead) return;
+    if (target && !creature.fleeing) {
       const result = trySwing(creature, target, this.world, now, this.roll);
       if (result) this.resolveSwing(result, now);
     }
@@ -285,6 +293,59 @@ export class GameLoop {
     if (!target && creature.combat.regenerate(now).hits) this.mobiles.broadcastHealth(creature);
   }
 
+  /**
+   * Lo que hace cada criatura además de pegar: regenerarse, lanzar
+   * hechizos (o curarse) y escupir fuego.
+   */
+  private creatureAbilities(creature: Creature, target: Mobile | null, now: number): void {
+    const abilities = creature.definition.abilities;
+    const elapsed = creature.lastTickAt ? now - creature.lastTickAt : 0;
+    creature.lastTickAt = now;
+    if (!abilities) return;
+    if (abilities.regeneration && creature.combat.health < 1) {
+      creature.regenCarry += (abilities.regeneration * elapsed) / 1000;
+      const whole = Math.floor(creature.regenCarry);
+      if (whole > 0) {
+        creature.regenCarry -= whole;
+        creature.combat.heal(whole);
+        this.mobiles.broadcastHealth(creature);
+      }
+    }
+    const cast = resolveCreatureCast(creature, this.world, now, this.roll);
+    if (cast) {
+      this.mobiles.spellEffect(creature, cast.target, cast.spell, cast.amount, cast.resisted);
+      this.afterHarm(creature, cast.target, cast.amount, cast.killed, cast.effectsChanged, now);
+    }
+    if (!target || creature.fleeing) return;
+    const spell = startCreatureCast(creature, target, now, this.roll);
+    if (spell) this.mobiles.castStart(creature, spell);
+    // El aliento no sale siempre que puede: así no es predecible.
+    const hits =
+      this.roll() < 0.5 ? breatheFire(creature, target, this.world, now, this.roll) : null;
+    for (const hit of hits ?? []) {
+      this.mobiles.spellEffect(creature, hit.target, 'flamestrike', hit.amount, false);
+      this.afterHarm(creature, hit.target, hit.amount, hit.killed, false, now);
+    }
+  }
+
+  /** Avisos después de que una criatura dañó o hechizó a alguien. */
+  private afterHarm(
+    attacker: Mobile,
+    target: Mobile,
+    amount: number,
+    killed: boolean,
+    effectsChanged: boolean,
+    now: number,
+  ): void {
+    this.mobiles.broadcastHealth(target);
+    if (target instanceof Player) {
+      this.mobiles.sendVitals(target);
+      if (effectsChanged) this.mobiles.sendEffects(target);
+    }
+    if (amount > 0 && target !== attacker) this.disrupt(target);
+    if (killed) this.handleKill(attacker, target, now);
+  }
+
   /** Saca una invocación del mundo (se le terminó el tiempo, murió o se fue su dueño). */
   dismiss(creature: Creature): void {
     this.mobiles.disappear(creature);
@@ -298,6 +359,21 @@ export class GameLoop {
     if (target instanceof Creature && !target.ownerId && target.combat.targetId === null)
       target.combat.targetId = attacker.id;
     this.mobiles.swing(result);
+    // Algunas criaturas envenenan al morder.
+    const venom = attacker instanceof Creature ? attacker.definition.abilities?.poison : undefined;
+    if (venom && result.hit && !result.blocked && !result.killed && this.roll() < venom.chance) {
+      target.combat.applyEffect(
+        'poison',
+        venom.level,
+        poisonDurationMs(venom.level),
+        now,
+        attacker.id,
+      );
+      if (target instanceof Player) {
+        this.mobiles.sendEffects(target);
+        this.notifier.send(target.id, { type: 'system', text: '¡Te envenenaron!' });
+      }
+    }
     if (result.itemChanges) this.items.publish(result.itemChanges, result.attacker.id);
     if (result.hit && !result.blocked && result.damage > 0) this.disrupt(result.target);
     if (result.killed) this.handleKill(result.attacker, result.target, now);
