@@ -13,13 +13,15 @@ function createApp() {
     statics: [],
   });
   const world = new World(map, { x: 2, y: 2 });
+  const notifier = new RecordingNotifier();
+  const worldClock = new WorldClock(0);
   const app = new GameApplication({
     world,
-    worldClock: new WorldClock(0),
+    worldClock,
     clock: new FakeClock(0),
     ids: new SequentialIds(),
     random: new FixedRandom(0.5),
-    notifier: new RecordingNotifier(),
+    notifier,
     testCharacters: ['Gaspar'],
   });
   const join = (name: string) => {
@@ -29,7 +31,7 @@ function createApp() {
     if (!player) throw new Error('sin jugador');
     return player;
   };
-  return { world, join };
+  return { world, join, app, notifier, worldClock };
 }
 
 describe('personaje de prueba', () => {
@@ -53,5 +55,16 @@ describe('personaje de prueba', () => {
     const ana = join('Ana');
     expect(ana.skills.get('magery')).toBe(300);
     expect(world.items.countInBackpack(ana.id, 'gold')).toBe(50);
+  });
+
+  it('solo un personaje de prueba puede cambiar la hora con /hora, y la ven todos', () => {
+    const { join, app, notifier, worldClock } = createApp();
+    const ana = join('Ana');
+    const gaspar = join('Gaspar');
+    app.handle(ana.id, { type: 'setHour', hour: 22 });
+    expect(worldClock.timeAt(0).dayProgress).toBeCloseTo(8.5 / 24);
+    app.handle(gaspar.id, { type: 'setHour', hour: 22 });
+    expect(worldClock.timeAt(0).dayProgress).toBeCloseTo(22 / 24);
+    expect(notifier.ofType('worldTime').at(-1)?.to).toBe('all');
   });
 });

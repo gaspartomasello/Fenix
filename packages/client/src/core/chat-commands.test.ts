@@ -39,4 +39,11 @@ describe('comandos del chat', () => {
       text: 'No conozco el comando /volar. Escribí /ayuda.',
     });
   });
+
+  it('/hora pide una hora válida', () => {
+    expect(parseChatInput('/hora 22')).toEqual({ kind: 'hour', hour: 22 });
+    expect(parseChatInput('/hora 6,5')).toEqual({ kind: 'hour', hour: 6.5 });
+    expect(parseChatInput('/hora 30').kind).toBe('error');
+    expect(parseChatInput('/hora').kind).toBe('error');
+  });
 });

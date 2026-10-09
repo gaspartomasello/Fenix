@@ -11,6 +11,8 @@ export type ChatInput =
     }
   /** `/aceptar` y `/rechazar`: el cliente decide si es para el grupo o el gremio. */
   | { readonly kind: 'answer'; readonly accept: boolean }
+  /** `/hora 22`: mover la hora del mundo (solo personajes de prueba). */
+  | { readonly kind: 'hour'; readonly hour: number }
   | { readonly kind: 'help' }
   | { readonly kind: 'error'; readonly text: string };
 
@@ -24,6 +26,7 @@ export const CHAT_HELP = [
   '/fundar SIGLAS Nombre del gremio — fundar un gremio',
   '/reclutar nombre — invitar a alguien a tu gremio',
   '/dejargremio — dejar el gremio',
+  '/hora 22 — cambiar la hora del mundo (solo personajes de prueba)',
 ] as const;
 
 /** Interpreta una línea del chat: texto común o un comando que empieza con "/". */
@@ -59,6 +62,12 @@ export function parseChatInput(raw: string): ChatInput {
       return args ? { kind: 'social', command: 'guild-invite', name: args } : needs('el nombre');
     case 'dejargremio':
       return { kind: 'social', command: 'guild-leave' };
+    case 'hora': {
+      const hour = Number(args.replace(',', '.'));
+      return args && Number.isFinite(hour) && hour >= 0 && hour < 24
+        ? { kind: 'hour', hour }
+        : needs('la hora, de 0 a 23 (por ejemplo: /hora 22)');
+    }
     case 'ayuda':
     case '?':
       return { kind: 'help' };

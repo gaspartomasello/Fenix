@@ -54,8 +54,8 @@ Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña 
 
 Un **personaje de prueba** entra cada vez con todas las habilidades y atributos al máximo, la
 vida y el maná llenos, 999.999 monedas de oro y 1000 de cada reactivo. En el modo solo lo es
-**Gaspar**; en el servidor en línea, solo los nombres que diga `TEST_CHARACTERS`. En el modo
-solo, `?hora=22` en la dirección arranca el mundo a esa hora (para probar la noche).
+**Gaspar**; en el servidor en línea, solo los nombres que diga `TEST_CHARACTERS`. Un personaje de
+prueba puede escribir `/hora 22` en el chat para cambiar la hora del mundo (para probar la noche).
 
 ## Controles
 

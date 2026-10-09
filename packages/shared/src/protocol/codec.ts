@@ -208,6 +208,10 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
         return { ok: true, message: { type: 'craft', recipe: data.recipe } };
       }
       break;
+    case 'setHour':
+      if (typeof data.hour === 'number' && data.hour >= 0 && data.hour < 24)
+        return { ok: true, message: { type: 'setHour', hour: data.hour } };
+      break;
     case 'useItem':
       if (isId(data.itemId)) return { ok: true, message: { type: 'useItem', itemId: data.itemId } };
       break;
@@ -236,6 +240,7 @@ const SERVER_TYPES: ReadonlySet<ServerMessageType> = new Set<ServerMessageType>(
   'spellEffect',
   'effects',
   'mobileTeleported',
+  'worldTime',
   'mobileStatus',
   'social',
   'system',
