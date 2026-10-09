@@ -46,6 +46,32 @@ Pixel art generado por código sobre un buffer RGBA (`PixelImage`), sin DOM: ter
 mezclados, personajes en 8 direcciones y objetos fijos. Lo usan el cliente (convertido a texturas)
 y la herramienta que exporta los tilesets de Tiled.
 
+Personajes y criaturas usan el motor de volumen (`volume.ts`): cada uno es un modelo 3D muy simple
+(esferas, elipsoides, extremidades y planos) armado sobre un esqueleto animado (`humanoidRig`).
+`Camera` lo gira según la dirección y lo inclina como la vista isométrica; `VolumeCanvas` lo pinta
+pixel a pixel con profundidad, luz en cinco tonos (`ramp`), detalles pegados a la superficie
+(`decal`: ojos, boca) y contornos. Los materiales son funciones que deciden el color de cada pixel
+según su posición y normal en el modelo (cinturón, malla, pelo, pelaje). Las ocho direcciones salen
+del mismo modelo, sin espejar, así el arma queda siempre en la mano derecha. Los personajes se
+dibujan con el doble de detalle que el resto del arte y se muestran sin escalar (`CHARACTER_SCALE`).
+
+El esqueleto de las personas está en `humanoid-rig.ts`: cada cuadro (`CharacterFrame`) es una pose
+de piernas, brazos, giro de hombros, inclinación y peso; así se arman la caminata, la carrera, los
+golpes de cada arma (`attackStyleFor`), el hechizo y los gestos de reposo. La cabeza
+(`humanoid-head.ts`) es un cráneo ovalado con mandíbula, mentón y arco de las cejas, con los
+peinados como máscaras sobre una cáscara de pelo. En el cliente, `Entity` guarda la acción en curso
+(golpe o hechizo, según los mensajes del servidor) y si corre; `rendering/animation.ts` decide el
+cuadro de cada momento y programa los gestos de reposo (`Fidgets`) para que lleguen cada tanto y
+no se repitan seguidos.
+
+La capa es una tela curva que cuelga de los hombros: en cada fila se aleja de la espalda lo
+necesario para que las piernas no la atraviesen y vuela hacia atrás según `Rig.sway`. Los objetos
+(`item-art.ts`) también son modelos de volumen, vistos desde arriba, en dos tamaños: en el suelo
+y como ícono. La ventana de personaje (`PaperdollView`) detecta qué objeto hay bajo el puntero
+comparando el dibujo con y sin cada pieza puesta. La usan la ventana propia (`EquipmentWindow`,
+con casilleros que se pueden arrastrar y botones) y la de mirar a otros (`PaperdollViewer`,
+que abre `WorldPaperdolls` con doble clic sobre una persona).
+
 ## @fenix/content
 
 Datos del mundo editables con Tiled: el pueblo (`maps/`) y los tilesets generados (`tilesets/`).

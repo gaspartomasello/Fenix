@@ -15,19 +15,36 @@ import type { Mobile } from '../mobile';
 /** Cómo se ve cada personaje del pueblo. */
 const LOOKS: Readonly<Record<NpcRole, { appearance: Appearance; equipment: EquipmentLook }>> = {
   blacksmith: {
-    appearance: { ...DEFAULT_APPEARANCE, clothHue: CLOTH_HUES[7] },
+    appearance: { ...DEFAULT_APPEARANCE, clothHue: CLOTH_HUES[7], facialHair: 'beard' },
     equipment: { torso: 'leather-armor', rightHand: 'pickaxe', feet: 'boots' },
   },
   mage: {
-    appearance: { ...DEFAULT_APPEARANCE, clothHue: CLOTH_HUES[4], hairHue: 0xd9c27e },
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      clothHue: CLOTH_HUES[4],
+      hairHue: 0xd9c27e,
+      gender: 'female',
+      hairStyle: 'long',
+    },
     equipment: { cloak: 'cloak' },
   },
   innkeeper: {
-    appearance: { ...DEFAULT_APPEARANCE, clothHue: CLOTH_HUES[6], skinTone: 0xe0ac69 },
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      clothHue: CLOTH_HUES[6],
+      skinTone: 0xe0ac69,
+      facialHair: 'mustache',
+    },
     equipment: { legs: 'trousers' },
   },
   banker: {
-    appearance: { ...DEFAULT_APPEARANCE, clothHue: CLOTH_HUES[1], hairHue: 0x8a8a8a },
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      clothHue: CLOTH_HUES[1],
+      hairHue: 0x8a8a8a,
+      gender: 'female',
+      hairStyle: 'bun',
+    },
     equipment: { feet: 'boots', legs: 'trousers' },
   },
 };

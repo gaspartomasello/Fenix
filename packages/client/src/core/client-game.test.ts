@@ -213,7 +213,7 @@ describe('ClientGame', () => {
       expect(sent.at(-1)).toMatchObject({ type: 'move', mode: 'walk' });
     });
 
-    it('muestra los golpes: embestida del atacante y número sobre el objetivo', () => {
+    it('muestra los golpes: gesto o embestida del atacante y número sobre el objetivo', () => {
       game.apply({ type: 'mobileAppeared', mobile: snapshot('rata', 1, 0) });
       game.apply({
         type: 'swing',
@@ -235,6 +235,23 @@ describe('ClientGame', () => {
       expect(game.self?.combatTexts.map((t) => [t.text, t.kind])).toEqual([['3', 'damage-taken']]);
       expect(rat?.combatTexts.map((t) => t.text)).toEqual(['¡Falla!']);
       now += 100;
+      // La rata embiste; la persona hace el gesto de su arma mirando a la rata.
+      expect(game.self?.actionAt(now)?.kind).toBe('attack');
+      expect(game.self?.direction).toBe(Direction.East);
+    });
+
+    it('la rata embiste al morder', () => {
+      game.apply({ type: 'mobileAppeared', mobile: snapshot('rata', 1, 0) });
+      game.apply({
+        type: 'swing',
+        attackerId: 'rata',
+        targetId: 'ana',
+        hit: false,
+        blocked: false,
+        damage: 0,
+      });
+      now += 100;
+      const rat = [...game.allEntities()].find((e) => e.id === 'rata');
       expect(rat?.lungeOffset(now).x).not.toBe(0);
     });
 

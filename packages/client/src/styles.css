@@ -388,42 +388,6 @@ body {
   pointer-events: none;
 }
 
-.equipment-layout {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.equipment-column {
-  display: grid;
-  gap: 0.4rem;
-}
-
-.equipment-slot-wrap {
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-}
-
-.equipment-slot {
-  width: 48px;
-  height: 48px;
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px dashed var(--color-panel-border);
-  border-radius: var(--radius);
-}
-
-.equipment-slot-label {
-  font-size: 0.68rem;
-  color: var(--color-text-muted);
-}
-
-.equipment-preview {
-  width: 80px;
-  height: 140px;
-  image-rendering: pixelated;
-}
-
 .drag-ghost {
   position: fixed;
   top: 0;
@@ -885,4 +849,182 @@ body {
   margin: 0;
   font-size: 0.8rem;
   color: var(--color-text-muted);
+}
+
+.option-chip {
+  padding: 0.25rem 0.55rem;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.option-chip[aria-pressed='true'] {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.swatch-row[hidden] {
+  display: none;
+}
+
+/* ── Ventana de personaje (estilo UO) ─────────────────────────────── */
+
+.paperdoll {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.03) 0 6px,
+      rgba(0, 0, 0, 0.05) 6px 12px
+    ),
+    linear-gradient(#6f6c66, #4c4a46);
+  border: 3px solid #2e2c29;
+  border-radius: 22px;
+  box-shadow:
+    inset 0 0 0 2px #8f8b84,
+    inset 0 0 22px rgba(0, 0, 0, 0.6);
+}
+
+.paperdoll-frame {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  gap: 0.6rem;
+  align-items: stretch;
+}
+
+/* Casilleros con lo que tiene puesto, a la izquierda. */
+.paperdoll-slots {
+  display: grid;
+  align-content: space-between;
+  gap: 0.3rem;
+  padding: 0.3rem 0;
+}
+
+.paperdoll-slot {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(#3a3733, #1f1d1b);
+  border: 2px solid #8f8b84;
+  border-radius: 6px;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.8);
+}
+
+.paperdoll-slot--filled {
+  border-color: #c9a45c;
+  cursor: grab;
+}
+
+.paperdoll-slot img {
+  width: 40px;
+  height: 40px;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+/* El personaje, de frente, sobre fondo oscuro como en UO. */
+.paperdoll-sheet {
+  display: grid;
+  place-items: center;
+  padding: 0.4rem 0.6rem;
+  background: radial-gradient(ellipse at 50% 45%, #2b2a33, #0d0c10 75%);
+  border: 3px solid #2e2c29;
+  border-radius: 10px;
+  box-shadow:
+    inset 0 0 0 1px #8f8b84,
+    inset 0 0 20px #000;
+}
+
+.paperdoll-figure {
+  width: 132px;
+  height: 234px;
+  image-rendering: pixelated;
+  touch-action: none;
+}
+
+/* Botones a la derecha, repartidos a lo alto del personaje. */
+.paperdoll-buttons {
+  display: grid;
+  align-content: space-between;
+  gap: 0.4rem;
+  padding: 0.3rem 0;
+}
+
+.paperdoll-button {
+  min-width: 6.8rem;
+  padding: 0.3rem 0.6rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #f6e7b0;
+  background: linear-gradient(#3e5f9e, #22396b);
+  border: 2px solid #c9a45c;
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+}
+
+.paperdoll-button:hover,
+.paperdoll-button:focus-visible {
+  border-color: #ffe08a;
+  outline: none;
+}
+
+.paperdoll-button[aria-pressed='true'] {
+  background: linear-gradient(#a53a2e, #6a1a14);
+  border-color: #ff8a6a;
+}
+
+/* Placa con nombre y título, abajo. */
+.paperdoll-plate {
+  display: grid;
+  justify-items: center;
+  padding: 0.4rem 0.8rem;
+  background: linear-gradient(#e8dcbc, #c9b88f);
+  border: 2px solid #2e2c29;
+  border-radius: 8px;
+  box-shadow: inset 0 0 8px rgba(80, 60, 20, 0.5);
+}
+
+.paperdoll-name {
+  margin: 0;
+  font-weight: bold;
+  font-size: 1rem;
+  color: #22305a;
+}
+
+.paperdoll-name[data-notoriety='criminal'] {
+  color: #5a5a5a;
+}
+
+.paperdoll-name[data-notoriety='murderer'] {
+  color: #8a1a14;
+}
+
+.paperdoll-title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: #4a3a22;
+}
+
+@media (max-width: 640px) {
+  .paperdoll-figure {
+    width: 88px;
+    height: 156px;
+  }
+
+  .paperdoll-button {
+    min-width: 5.2rem;
+    font-size: 0.7rem;
+  }
 }

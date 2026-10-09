@@ -52,7 +52,7 @@ export class BankWindow {
               id: item.id,
               iconUrl: itemIconUrl(item.kind),
               onDrop: (target) => {
-                const to = destinationFor(target, this.actions);
+                const to = destinationFor(target, this.actions, item.kind);
                 if (to) this.actions.moveItem(item.id, to);
               },
               onDoubleTap: () => this.actions.moveItem(item.id, { type: 'backpack' }),

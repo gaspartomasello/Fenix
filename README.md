@@ -57,8 +57,12 @@ Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña 
 - **Clic derecho sostenido** (o **tocar y mantener** en el celular): caminar hacia el cursor;
   lejos del personaje, correr.
 - **Enter**: hablar. **Escape**: cancelar.
-- **B**: mochila. **C**: equipo (también con los botones de abajo a la derecha).
-- **Arrastrar** un objeto: moverlo entre el suelo, la mochila y los casilleros del equipo.
+- **B**: mochila. **C**: ventana de personaje, como en UO: casilleros con lo que tiene puesto a la
+  izquierda, el personaje grande y de frente, botones a las demás ventanas a la derecha y una placa
+  con nombre y título. **Doble clic sobre otra persona** (o alguien del pueblo): ver su ventana de
+  personaje, sin botones.
+- **Arrastrar** un objeto: moverlo entre el suelo y la mochila. Soltarlo sobre el personaje o en su
+  casillero de la ventana de personaje lo equipa; arrastrarlo desde ahí hacia afuera lo saca.
 - **Doble clic** (o doble toque): comer, beber, ponerse o sacarse algo; sobre un objeto del suelo,
   levantarlo.
 - **Clic** (o toque) sobre una criatura: atacarla. El personaje golpea solo mientras la tenga al
@@ -115,3 +119,10 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
    automático de posición, vitales, habilidades, objetos, banco, reputación y gremio; el modo
    solo guarda en el navegador. Imagen Docker y despliegue en Render
    ([docs/DEPLOY.md](docs/DEPLOY.md)).
+9. ✅ **Gráficos de personajes y criaturas**: modelos de volumen con luz y sombras, el doble de
+   detalle, cabeza ovalada realista, cuerpo de hombre o de mujer, nueve peinados y barbas, ropa de
+   oficio para la gente del pueblo, y rata, lobo y esqueleto redibujados. Animaciones: caminar y
+   correr (distintas), golpe en arco con espada o hacha, estocada con daga, puñetazo, lanzar
+   hechizos, mordida de las bestias y gestos de reposo cada tanto (girar los hombros, cambiar el
+   peso de pierna). La capa envuelve el cuerpo y vuela según se camine, corra o pelee. Objetos
+   redibujados con volumen y vistos desde arriba, y ventana de personaje al estilo de UO.

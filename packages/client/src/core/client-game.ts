@@ -3,6 +3,7 @@ import {
   TileMap,
   advanceTime,
   bodyMoveMs,
+  directionBetween,
   effectiveMoveMode,
   moveDuration,
   sanitizeChatText,
@@ -25,7 +26,7 @@ import {
   type WorldTime,
 } from '@fenix/shared';
 import { CHAT_HELP, parseChatInput } from './chat-commands';
-import { Entity } from './entity';
+import { ATTACK_ANIMATION_MS, Entity } from './entity';
 import { EventEmitter } from './event-emitter';
 import { MovementPredictor } from './movement-predictor';
 import type { ServerGateway } from './ports';
@@ -352,7 +353,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         const entity = this.entities.get(message.id);
         if (entity && message.id !== this.selfIdValue) {
           const duration = bodyMoveMs(entity.body, moveDuration(message.mode));
-          entity.moveTo(message.position, message.direction, duration, now);
+          entity.moveTo(message.position, message.direction, duration, now, message.mode);
         }
         break;
       }
@@ -427,6 +428,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         break;
       case 'castStart':
         this.entities.get(message.casterId)?.say(`${SPELLS[message.spell].words}`, now);
+        this.entities.get(message.casterId)?.startAction('cast', now, SPELLS[message.spell].castMs);
         break;
       case 'spellEffect': {
         const target = this.entities.get(message.targetId);
@@ -472,7 +474,14 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   private applySwing(message: Extract<ServerMessage, { type: 'swing' }>, now: number): void {
     const attacker = this.entities.get(message.attackerId);
     const target = this.entities.get(message.targetId);
-    if (attacker && target) attacker.lungeToward(target.position, now);
+    if (attacker && target) {
+      // Personas y esqueletos hacen el gesto de su arma, mirando al objetivo; las bestias embisten.
+      if (attacker.isHumanoid) {
+        const facing = directionBetween(attacker.position, target.position);
+        if (facing !== null && attacker.stepProgress(now) === null) attacker.face(facing);
+        attacker.startAction('attack', now, ATTACK_ANIMATION_MS);
+      } else attacker.lungeToward(target.position, now);
+    }
     if (!target) return;
     if (!message.hit) target.addCombatText('¡Falla!', 'miss', now);
     else if (message.blocked) target.addCombatText('¡Bloqueado!', 'miss', now);

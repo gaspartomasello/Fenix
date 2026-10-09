@@ -7,6 +7,7 @@ import {
   type EquipmentLook,
   type NpcRole,
   type MobileSnapshot,
+  type MoveMode,
   type Notoriety,
   type Position,
 } from '@fenix/shared';
@@ -44,6 +45,15 @@ interface Lunge {
 
 export const COMBAT_TEXT_MS = 1200;
 export const LUNGE_MS = 220;
+/** Cuánto dura el gesto de un golpe. */
+export const ATTACK_ANIMATION_MS = 480;
+
+/** Algo que el personaje está haciendo y se anima: atacar o lanzar un hechizo. */
+export interface EntityAction {
+  readonly kind: 'attack' | 'cast';
+  readonly startedAt: number;
+  readonly duration: number;
+}
 
 const MAX_OVERHEAD_TEXTS = 3;
 
@@ -71,6 +81,8 @@ export class Entity {
   private _dead: boolean;
   private _combatTexts: CombatText[] = [];
   private lunge: Lunge | null = null;
+  private _action: EntityAction | null = null;
+  private _running = false;
   private _notoriety: Notoriety;
   private _guildTag: string | null;
 
@@ -130,6 +142,32 @@ export class Entity {
     this._combatTexts = [...this._combatTexts, { text, kind, startedAt: now }].slice(-4);
   }
 
+  /** Personas y esqueletos: se animan con gestos (las bestias embisten). */
+  get isHumanoid(): boolean {
+    return this.body === 'human' || this.body === 'skeleton';
+  }
+
+  /** Si el último paso fue corriendo. */
+  get running(): boolean {
+    return this._running;
+  }
+
+  startAction(kind: EntityAction['kind'], now: number, duration: number): void {
+    this._action = { kind, startedAt: now, duration };
+  }
+
+  /** La acción en curso y su avance (0–1), o null si no hace nada. */
+  actionAt(now: number): { kind: EntityAction['kind']; progress: number; elapsed: number } | null {
+    const action = this._action;
+    if (!action) return null;
+    const elapsed = now - action.startedAt;
+    if (elapsed >= action.duration) {
+      this._action = null;
+      return null;
+    }
+    return { kind: action.kind, progress: elapsed / action.duration, elapsed };
+  }
+
   /** Inicia una embestida hacia `toward` (en tiles). */
   lungeToward(toward: FractionalPosition, now: number): void {
     const dx = Math.sign(toward.x - this._position.x);
@@ -177,8 +215,15 @@ export class Entity {
   }
 
   /** Inicia un paso animado desde donde se esté dibujando ahora hacia `to`. */
-  moveTo(to: Position, direction: Direction, duration: number, now: number): void {
+  moveTo(
+    to: Position,
+    direction: Direction,
+    duration: number,
+    now: number,
+    mode: MoveMode = 'walk',
+  ): void {
     this.movement = { from: this.renderPosition(now), startedAt: now, duration };
+    this._running = mode === 'run';
     this._position = to;
     this._direction = direction;
     this._stepCount += 1;

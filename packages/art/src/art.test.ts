@@ -2,12 +2,19 @@ import {
   ALL_DIRECTIONS,
   CREATURE_KINDS,
   DEFAULT_APPEARANCE,
+  Direction,
+  HAIR_STYLES,
   ITEM_KINDS,
   STATIC_KINDS,
   Terrain,
 } from '@fenix/shared';
 import { describe, expect, it } from 'vitest';
-import { CHARACTER_ART_HEIGHT, CHARACTER_ART_WIDTH, drawCharacterFrame } from './character-art';
+import {
+  ACTION_KINDS,
+  CHARACTER_ART_HEIGHT,
+  CHARACTER_ART_WIDTH,
+  drawCharacterFrame,
+} from './character-art';
 import { drawCreatureFrame } from './creature-art';
 import { ITEM_ART_SIZE, drawItem } from './item-art';
 import { STATIC_ART_HEIGHT, STATIC_ART_WIDTH, drawStatic } from './static-art';
@@ -83,6 +90,68 @@ describe('arte procedural (sin DOM)', () => {
     // El empedrado no se mezcla.
     expect(drawTerrainTile(Terrain.Stone, 0, { north: Terrain.Grass }).data).toEqual(
       drawTerrainTile(Terrain.Stone, 0).data,
+    );
+  });
+});
+
+describe('personajes con volumen', () => {
+  const pixels = (image: { data: Uint8ClampedArray }): string => image.data.join(',');
+
+  it('peinado, barba y ropa de oficio cambian el dibujo', () => {
+    const base = drawCharacterFrame(DEFAULT_APPEARANCE, Direction.SouthEast, 'idle');
+    for (const variant of [
+      drawCharacterFrame({ ...DEFAULT_APPEARANCE, hairStyle: 'long' }, Direction.SouthEast, 'idle'),
+      drawCharacterFrame(
+        { ...DEFAULT_APPEARANCE, facialHair: 'beard' },
+        Direction.SouthEast,
+        'idle',
+      ),
+      drawCharacterFrame(DEFAULT_APPEARANCE, Direction.SouthEast, 'idle', {}, 'mage'),
+    ]) {
+      expect(pixels(variant)).not.toBe(pixels(base));
+    }
+  });
+
+  it('las direcciones opuestas no son simples espejos (el arma sigue en la mano derecha)', () => {
+    const armed = { rightHand: 'short-sword', leftHand: 'wooden-shield' } as const;
+    const east = drawCharacterFrame(DEFAULT_APPEARANCE, Direction.East, 'idle', armed);
+    const south = drawCharacterFrame(DEFAULT_APPEARANCE, Direction.South, 'idle', armed);
+    expect(pixels(south)).not.toBe(pixels(east.mirrored()));
+  });
+});
+
+describe('animaciones y cuerpos', () => {
+  const pixels = (image: { data: Uint8ClampedArray }): string => image.data.join(',');
+
+  it('todas las acciones se dibujan en las 8 direcciones', () => {
+    for (const kind of ACTION_KINDS) {
+      for (const direction of ALL_DIRECTIONS) {
+        const image = drawCharacterFrame(DEFAULT_APPEARANCE, direction, `${kind}-1`, {
+          rightHand: 'short-sword',
+        });
+        expect(image.data.some((v, i) => i % 4 === 3 && v > 0)).toBe(true);
+      }
+    }
+  });
+
+  it('correr no es caminar rápido, y cada arma tiene su gesto', () => {
+    const at = (frame: Parameters<typeof drawCharacterFrame>[2]) =>
+      pixels(drawCharacterFrame(DEFAULT_APPEARANCE, Direction.NorthEast, frame));
+    expect(at('run-0')).not.toBe(at(0));
+    expect(at('slash-1')).not.toBe(at('thrust-1'));
+    expect(at('cast-1')).not.toBe(at('idle'));
+  });
+
+  it('el cuerpo de mujer y cada peinado se ven distintos', () => {
+    const female = { ...DEFAULT_APPEARANCE, gender: 'female' } as const;
+    const seen = new Set(
+      HAIR_STYLES.map((hairStyle) =>
+        pixels(drawCharacterFrame({ ...female, hairStyle }, Direction.North, 'idle')),
+      ),
+    );
+    expect(seen.size).toBe(HAIR_STYLES.length);
+    expect(pixels(drawCharacterFrame(female, Direction.SouthEast, 'idle'))).not.toBe(
+      pixels(drawCharacterFrame(DEFAULT_APPEARANCE, Direction.SouthEast, 'idle')),
     );
   });
 });

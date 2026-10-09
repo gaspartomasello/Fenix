@@ -8,6 +8,8 @@ import { BackpackWindow } from '../ui/backpack-window';
 import { ChatPanel } from '../ui/chat-panel';
 import { DragController } from '../ui/drag-controller';
 import { EquipmentWindow } from '../ui/equipment-window';
+import { PaperdollViewer } from '../ui/paperdoll-viewer';
+import { WorldPaperdolls } from './world-paperdolls';
 import { HudButtons, type HudButton } from '../ui/hud-buttons';
 import { SocialWindow } from '../ui/social-window';
 import { WorldTooltip } from '../ui/world-tooltip';
@@ -16,7 +18,7 @@ import { SkillsWindow } from '../ui/skills-window';
 import { SpellbookWindow } from '../ui/spellbook-window';
 import { TargetingBanner } from '../ui/targeting-banner';
 import { VitalsPanel } from '../ui/vitals-panel';
-import { ITEMS, VENDORS, VENDOR_RANGE, type NpcRole } from '@fenix/shared';
+import { ITEMS, VENDORS, VENDOR_RANGE, reputationTitle, type NpcRole } from '@fenix/shared';
 import type { ItemActions } from '../ui/backpack-window';
 import { BankWindow } from '../ui/bank-window';
 import { CraftingWindow } from '../ui/crafting-window';
@@ -133,7 +135,7 @@ export class GameSession {
     });
     const spellbook = this.setUpMagic(worldCombat);
     this.setUpSocial();
-    this.setUpInventory(drag, worldItems, tooltip, spellbook, economy, tilePicker);
+    this.setUpInventory(drag, worldItems, tooltip, spellbook, economy, tilePicker, renderer);
     this.setUpVitals();
     const chat = new ChatPanel((text) => this.game.say(text));
     const status = new StatusBar();
@@ -311,6 +313,7 @@ export class GameSession {
     spellbook: SpellbookWindow,
     economy: EconomyUi,
     tilePicker: TilePicker,
+    renderer: GameRenderer,
   ): void {
     const self = this.game.self;
     if (!self) return;
@@ -338,13 +341,38 @@ export class GameSession {
     };
     economy.setItemActions(actions);
     const backpack = new BackpackWindow(drag, actions);
-    const equipment = new EquipmentWindow(drag, actions, self.appearance);
+    // Como en UO, la ventana de personaje tiene a mano las demás ventanas.
+    const equipment = new EquipmentWindow(drag, actions, self.appearance, [
+      { label: 'Mochila', onPress: () => backpack.window.toggle() },
+      ...this.hudExtras.map((b) => ({
+        label: b.label,
+        onPress: b.onPress,
+        ...(b.pressed ? { pressed: b.pressed } : {}),
+      })),
+    ]);
     const buttons = (this.hud = new HudButtons([
       { label: 'Mochila', key: 'b', onPress: () => backpack.window.toggle() },
-      { label: 'Equipo', key: 'c', onPress: () => equipment.window.toggle() },
+      { label: 'Personaje', key: 'c', onPress: () => equipment.window.toggle() },
       ...this.hudExtras,
     ]));
     buttons.refresh();
+    equipment.refreshButtons();
+    this.game.on('warModeChanged', () => equipment.refreshButtons());
+    const identity = (): void => {
+      const social = this.game.social;
+      equipment.setIdentity({
+        name: self.name,
+        title: reputationTitle(social?.fame ?? 0, social?.karma ?? 0),
+        notoriety: social?.notoriety ?? 'innocent',
+        guildTag: social?.guild?.tag ?? null,
+      });
+    };
+    this.game.on('socialChanged', identity);
+    identity();
+    // Doble clic sobre una persona: su ventana de personaje (la propia, con botones).
+    const viewer = new PaperdollViewer();
+    this.hosts.ui.append(viewer.window.element);
+    new WorldPaperdolls(this.game, renderer, viewer, () => equipment.window.show());
     this.hosts.ui.append(
       backpack.window.element,
       equipment.window.element,

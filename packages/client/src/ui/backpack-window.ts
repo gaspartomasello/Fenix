@@ -1,9 +1,11 @@
 import {
   BACKPACK_AREA,
+  ITEMS,
   ITEM_ICON_SIZE,
   describeItem,
   type BackpackItemSnapshot,
   type ItemDestination,
+  type ItemKind,
 } from '@fenix/shared';
 import { el } from './dom';
 import type { DragController, DropTarget } from './drag-controller';
@@ -18,8 +20,16 @@ export interface ItemActions {
 }
 
 /** Traduce el lugar donde se soltó un objeto en un destino para el servidor. */
-export function destinationFor(target: DropTarget, actions: ItemActions): ItemDestination | null {
+export function destinationFor(
+  target: DropTarget,
+  actions: ItemActions,
+  kind: ItemKind,
+): ItemDestination | null {
   switch (target.kind) {
+    case 'paperdoll': {
+      const slot = ITEMS[kind].slot;
+      return slot ? { type: 'equipment', slot } : null;
+    }
     case 'backpack':
       return { type: 'backpack', position: target.position };
     case 'bank':
@@ -75,7 +85,7 @@ export class BackpackWindow {
           id: item.id,
           iconUrl: itemIconUrl(item.kind),
           onDrop: (target) => {
-            const to = destinationFor(target, this.actions);
+            const to = destinationFor(target, this.actions, item.kind);
             if (to) this.actions.moveItem(item.id, to);
           },
           onDoubleTap: () => this.actions.useItem(item.id),

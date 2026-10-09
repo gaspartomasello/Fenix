@@ -46,6 +46,7 @@ export class GameWindow {
 
   setTitle(title: string): void {
     this.title.textContent = title;
+    this.element.setAttribute('aria-label', title);
   }
 
   get visible(): boolean {
