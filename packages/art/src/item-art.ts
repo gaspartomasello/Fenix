@@ -149,6 +149,59 @@ const PAINTERS: Readonly<Record<ItemKind, Painter>> = {
     img.fillEllipse(11, 14, 6, 3.5, (x) => (x < 11 ? [226, 200, 90] : [190, 166, 70]));
     img.fillEllipse(11, 12, 3.5, 2, [240, 220, 120]);
   },
+  pickaxe(img) {
+    for (let i = 0; i < 13; i++) img.set(5 + i, 18 - i, WOOD);
+    img.fillPolygon(
+      [
+        { x: 9, y: 3 },
+        { x: 20, y: 8 },
+        { x: 19, y: 10 },
+        { x: 13, y: 7 },
+        { x: 8, y: 6 },
+      ],
+      STEEL,
+    );
+  },
+  'smith-hammer'(img) {
+    for (let i = 0; i < 12; i++) img.set(6 + i, 18 - i, WOOD);
+    img.fillRect(12, 3, 8, 6, shade(STEEL, 0.85));
+    img.fillRect(12, 3, 8, 1, STEEL);
+  },
+  logs(img) {
+    for (const [x, y] of [
+      [4, 11],
+      [4, 15],
+      [8, 7],
+    ] as const) {
+      img.fillRect(x, y, 13, 4, WOOD);
+      img.fillRect(x, y, 13, 1, shade(WOOD, 1.25));
+      img.fillEllipse(x + 13, y + 2, 2, 2, [196, 160, 110]);
+    }
+  },
+  'iron-ore'(img) {
+    for (const [x, y, r] of [
+      [8, 13, 4],
+      [14, 12, 3.5],
+      [11, 9, 3],
+    ] as const) {
+      img.fillEllipse(x, y, r, r * 0.85, (px) => shade([96, 84, 80], px < x ? 1.2 : 0.85));
+    }
+    img.set(9, 12, [190, 120, 90]);
+    img.set(14, 11, [190, 120, 90]);
+  },
+  'iron-ingot'(img) {
+    for (const y of [13, 9]) {
+      img.fillPolygon(
+        [
+          { x: 5, y: y + 4 },
+          { x: 8, y },
+          { x: 17, y },
+          { x: 19, y: y + 4 },
+        ],
+        (x) => shade(STEEL, x < 11 ? 1.05 : 0.8),
+      );
+    }
+  },
   boots(img, color) {
     for (const x of [4, 12]) {
       img.fillRect(x, 6, 4, 10, shade(color, x === 4 ? 1.15 : 0.9));

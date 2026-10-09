@@ -32,6 +32,7 @@ const WEAPONS: Partial<Record<ItemKind, Weapon>> = {
     skill: 'swordsmanship',
   },
   axe: { name: 'hacha', minDamage: 7, maxDamage: 14, swingMs: 2750, skill: 'swordsmanship' },
+  pickaxe: { name: 'pico', minDamage: 3, maxDamage: 9, swingMs: 2500, skill: 'swordsmanship' },
 };
 
 /** Protección de cada pieza de armadura. */

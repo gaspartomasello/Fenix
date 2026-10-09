@@ -45,6 +45,8 @@ export class Player implements Mobile {
   readonly skills = new SkillSet(STARTING_SKILLS);
   /** Hechizo que está lanzando, que se resuelve en `resolveAt`. */
   pendingCast: { spell: SpellKey; targetId: EntityId; resolveAt: number } | null = null;
+  /** Cuándo puede volver a recolectar o fabricar. */
+  nextActionAt = 0;
   private runSteps = 0;
   private _position: Position;
   private _direction: Direction;
@@ -100,6 +102,7 @@ export class Player implements Mobile {
       body: this.body,
       health: this.combat.health,
       dead: this.combat.isDead,
+      npc: null,
     };
   }
 }

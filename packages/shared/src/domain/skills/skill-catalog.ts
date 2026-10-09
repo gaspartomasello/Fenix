@@ -10,6 +10,9 @@ export const SKILL_KEYS = [
   'parrying',
   'magery',
   'meditation',
+  'mining',
+  'lumberjacking',
+  'blacksmithy',
 ] as const;
 
 export type SkillKey = (typeof SKILL_KEYS)[number];
@@ -23,6 +26,9 @@ export const SKILL_NAMES: Readonly<Record<SkillKey, string>> = {
   parrying: 'Parada',
   magery: 'Magia',
   meditation: 'Meditación',
+  mining: 'Minería',
+  lumberjacking: 'Leñador',
+  blacksmithy: 'Herrería',
 };
 
 export const SKILL_DESCRIPTIONS: Readonly<Record<SkillKey, string>> = {
@@ -33,6 +39,9 @@ export const SKILL_DESCRIPTIONS: Readonly<Record<SkillKey, string>> = {
   parrying: 'Bloquear golpes con un escudo.',
   magery: 'Lanzar hechizos sin que fallen.',
   meditation: 'Recuperar maná más rápido.',
+  mining: 'Sacar mineral de las rocas con un pico.',
+  lumberjacking: 'Talar árboles con un hacha.',
+  blacksmithy: 'Fabricar armas y armaduras en el yunque.',
 };
 
 /** Máximo de una habilidad y de la suma de todas (en décimas). */
@@ -47,6 +56,9 @@ export const STARTING_SKILLS: SkillValues = {
   parrying: 150,
   magery: 300,
   meditation: 200,
+  mining: 100,
+  lumberjacking: 100,
+  blacksmithy: 100,
 };
 
 export function isSkillKey(value: unknown): value is SkillKey {

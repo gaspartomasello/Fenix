@@ -34,6 +34,7 @@ Código que cliente y servidor deben compartir exactamente. No tiene dependencia
 | `domain/items`                      | Catálogo de objetos, lugares del equipo, alcance y límites de mochila  |
 | `domain/combat`, `domain/creatures` | Vitales, armas, armaduras, golpe y daño; catálogo de criaturas y botín |
 | `domain/skills`, `domain/magic`     | Habilidades (suben de a 0,1 con tope total) y hechizos con reactivos   |
+| `domain/economy`                    | Comerciantes y precios, recursos por objeto fijo, recetas de herrería  |
 | `protocol`                          | Mensajes cliente↔servidor tipados y su codec con validación            |
 
 Que `canStep` sea compartido es clave: el cliente predice con la **misma regla** que valida el
@@ -159,6 +160,15 @@ Lanzar (`castSpell`) valida libro, Magia mínima, maná, reactivos y objetivo, y
 entrada (`startCast`); el `GameLoop` resuelve el hechizo al terminar su tiempo (`resolveCast`):
 tirada de éxito según Magia y efecto (curar, dañar o luz). Los efectos visuales los dibuja
 `EffectsLayer` en el cliente a partir de `spellEffect`.
+
+### Economía
+
+Los personajes del pueblo son `Npc` (mobiles que no pelean ni se mueven), cargados desde objetos
+de clase `npc` en Tiled. Las reglas de `domain/economy/economy.ts` validan distancia, oro,
+herramientas, habilidad y materiales: recolectar de árboles y rocas (cada lugar se agota y se
+recupera con `ResourceSpots`), fundir junto a la forja, fabricar junto al yunque, comprar y vender.
+El banco es otra ubicación de los objetos (`bank`), que solo se puede tocar cerca de la banquera.
+`EconomyActions` publica los cambios y las prácticas de habilidad.
 
 ### Rango de visión
 

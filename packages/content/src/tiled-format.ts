@@ -74,6 +74,8 @@ export const TILED = {
   amountProperty: 'cantidad',
   spawnObject: 'aparicion',
   regionClass: 'region',
+  npcClass: 'npc',
+  roleProperty: 'rol',
   terrainProperty: 'terrain',
   staticProperty: 'static',
 } as const;

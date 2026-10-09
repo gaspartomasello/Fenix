@@ -5,6 +5,7 @@ import type { EquipmentSlot } from '../domain/items/equipment';
 import type { ItemKind } from '../domain/items/item-catalog';
 import type { Vitals } from '../domain/combat/vitals';
 import type { Body } from '../domain/creatures/creature-catalog';
+import type { NpcRole } from '../domain/economy/vendors';
 import type { SpellKey } from '../domain/magic/spell-catalog';
 import type { SkillValues } from '../domain/skills/skill-catalog';
 import type { WorldTime } from '../domain/rules/daylight';
@@ -30,6 +31,8 @@ export interface MobileSnapshot {
   readonly health: number;
   /** Muerto: un fantasma, en el caso de los jugadores. */
   readonly dead: boolean;
+  /** Si es un personaje del pueblo (comerciante, banquera), su oficio. */
+  readonly npc: NpcRole | null;
 }
 
 export interface ItemSnapshot {
@@ -55,6 +58,7 @@ export interface EquippedItemSnapshot extends ItemSnapshot {
 export type ItemDestination =
   | { readonly type: 'ground'; readonly position: Position }
   | { readonly type: 'backpack'; readonly position?: Position }
+  | { readonly type: 'bank'; readonly position?: Position }
   | { readonly type: 'equipment'; readonly slot: EquipmentSlot };
 
 // ── Cliente → Servidor ────────────────────────────────────────────────
@@ -107,6 +111,32 @@ export interface CastSpellRequest {
   readonly targetId?: EntityId;
 }
 
+/** Recolectar del árbol o roca en esa posición, con la herramienta indicada. */
+export interface GatherRequest {
+  readonly type: 'gather';
+  readonly toolId: EntityId;
+  readonly position: Position;
+}
+
+export interface BuyRequest {
+  readonly type: 'buy';
+  readonly vendorId: EntityId;
+  readonly kind: ItemKind;
+  readonly amount: number;
+}
+
+/** Vender un objeto de la mochila entero (toda la pila). */
+export interface SellRequest {
+  readonly type: 'sell';
+  readonly vendorId: EntityId;
+  readonly itemId: EntityId;
+}
+
+export interface CraftRequest {
+  readonly type: 'craft';
+  readonly recipe: string;
+}
+
 export type ClientMessage =
   | JoinRequest
   | MoveRequest
@@ -115,7 +145,11 @@ export type ClientMessage =
   | UseItemRequest
   | AttackRequest
   | StopAttackRequest
-  | CastSpellRequest;
+  | CastSpellRequest
+  | GatherRequest
+  | BuyRequest
+  | SellRequest
+  | CraftRequest;
 
 // ── Servidor → Cliente ────────────────────────────────────────────────
 
@@ -187,6 +221,8 @@ export interface InventoryMessage {
   readonly type: 'inventory';
   readonly backpack: readonly BackpackItemSnapshot[];
   readonly equipment: readonly EquippedItemSnapshot[];
+  /** Caja del banco (se puede usar cerca de la banquera). */
+  readonly bank: readonly BackpackItemSnapshot[];
 }
 
 /** Cambió lo que se ve puesto un jugador. */

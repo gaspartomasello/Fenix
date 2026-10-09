@@ -23,11 +23,20 @@ export const ITEM_KINDS = [
   'mandrake-root',
   'spiders-silk',
   'sulfurous-ash',
+  'pickaxe',
+  'smith-hammer',
+  'logs',
+  'iron-ore',
+  'iron-ingot',
 ] as const;
 
 export type ItemKind = (typeof ITEM_KINDS)[number];
 
-export type ItemUse = 'eat' | 'drink' | 'equip' | 'spellbook' | 'none';
+/**
+ * Qué pasa con doble clic. `tool`: elegir un árbol o roca para recolectar;
+ * `craft`: abrir la herrería; `smelt`: fundir mineral cerca de una forja.
+ */
+export type ItemUse = 'eat' | 'drink' | 'equip' | 'spellbook' | 'tool' | 'craft' | 'smelt' | 'none';
 
 export interface ItemDefinition {
   readonly kind: ItemKind;
@@ -96,7 +105,7 @@ export const ITEMS: Readonly<Record<ItemKind, ItemDefinition>> = {
     article: 'un',
     stackable: false,
     slot: 'rightHand',
-    use: 'equip',
+    use: 'tool',
   }),
   'wooden-shield': item({
     kind: 'wooden-shield',
@@ -231,6 +240,47 @@ export const ITEMS: Readonly<Record<ItemKind, ItemDefinition>> = {
     name: 'ceniza sulfurosa',
     plural: 'cenizas sulfurosas',
     article: 'una',
+    stackable: true,
+    use: 'none',
+  }),
+  pickaxe: item({
+    kind: 'pickaxe',
+    name: 'pico',
+    plural: 'picos',
+    article: 'un',
+    stackable: false,
+    slot: 'rightHand',
+    use: 'tool',
+  }),
+  'smith-hammer': item({
+    kind: 'smith-hammer',
+    name: 'martillo de herrero',
+    plural: 'martillos de herrero',
+    article: 'un',
+    stackable: false,
+    use: 'craft',
+  }),
+  logs: item({
+    kind: 'logs',
+    name: 'tronco',
+    plural: 'troncos',
+    article: 'un',
+    stackable: true,
+    use: 'none',
+  }),
+  'iron-ore': item({
+    kind: 'iron-ore',
+    name: 'mineral de hierro',
+    plural: 'minerales de hierro',
+    article: 'un',
+    stackable: true,
+    use: 'smelt',
+  }),
+  'iron-ingot': item({
+    kind: 'iron-ingot',
+    name: 'lingote de hierro',
+    plural: 'lingotes de hierro',
+    article: 'un',
     stackable: true,
     use: 'none',
   }),

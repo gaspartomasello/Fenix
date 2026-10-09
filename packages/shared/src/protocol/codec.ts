@@ -1,5 +1,6 @@
 import { isAppearance } from '../domain/character/appearance';
 import { isEquipmentSlot } from '../domain/items/equipment';
+import { isItemKind } from '../domain/items/item-catalog';
 import { isSpellKey } from '../domain/magic/spell-catalog';
 import { isDirection } from '../domain/geometry/direction';
 import { isMoveMode } from '../domain/rules/movement';
@@ -52,6 +53,11 @@ function asDestination(value: unknown): ItemDestination | null {
     }
     case 'equipment':
       return isEquipmentSlot(v.slot) ? { type: 'equipment', slot: v.slot } : null;
+    case 'bank': {
+      if (v.position === undefined) return { type: 'bank' };
+      const position = asPosition(v.position);
+      return position ? { type: 'bank', position } : null;
+    }
     default:
       return null;
   }
@@ -109,6 +115,45 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
           ok: true,
           message: { type: 'castSpell', spell: data.spell, targetId: data.targetId },
         };
+      }
+      break;
+    case 'gather': {
+      const position = asPosition(data.position);
+      if (isId(data.toolId) && position) {
+        return { ok: true, message: { type: 'gather', toolId: data.toolId, position } };
+      }
+      break;
+    }
+    case 'buy':
+      if (
+        isId(data.vendorId) &&
+        isItemKind(data.kind) &&
+        Number.isInteger(data.amount) &&
+        (data.amount as number) >= 1 &&
+        (data.amount as number) <= 1000
+      ) {
+        return {
+          ok: true,
+          message: {
+            type: 'buy',
+            vendorId: data.vendorId,
+            kind: data.kind,
+            amount: data.amount as number,
+          },
+        };
+      }
+      break;
+    case 'sell':
+      if (isId(data.vendorId) && isId(data.itemId)) {
+        return {
+          ok: true,
+          message: { type: 'sell', vendorId: data.vendorId, itemId: data.itemId },
+        };
+      }
+      break;
+    case 'craft':
+      if (typeof data.recipe === 'string' && data.recipe.length <= 40) {
+        return { ok: true, message: { type: 'craft', recipe: data.recipe } };
       }
       break;
     case 'useItem':

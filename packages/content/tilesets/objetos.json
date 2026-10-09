@@ -3,10 +3,10 @@
   "name": "objetos",
   "tilewidth": 88,
   "tileheight": 132,
-  "tilecount": 17,
-  "columns": 17,
+  "tilecount": 19,
+  "columns": 19,
   "image": "objetos.png",
-  "imagewidth": 1496,
+  "imagewidth": 1672,
   "imageheight": 132,
   "tileoffset": {
     "x": -22,
@@ -180,6 +180,26 @@
           "name": "static",
           "type": "string",
           "value": "shrine"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "forge"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "anvil"
         }
       ]
     }

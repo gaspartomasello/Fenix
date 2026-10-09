@@ -53,6 +53,17 @@ describe('mensajes de objetos', () => {
     }
   });
 
+  it('acepta pedidos de comercio, recolección y fabricación', () => {
+    const ok = (m: unknown): boolean => decodeClientMessage(JSON.stringify(m)).ok;
+    expect(ok({ type: 'buy', vendorId: 'n1', kind: 'apple', amount: 3 })).toBe(true);
+    expect(ok({ type: 'buy', vendorId: 'n1', kind: 'apple', amount: 0 })).toBe(false);
+    expect(ok({ type: 'buy', vendorId: 'n1', kind: 'dragon', amount: 1 })).toBe(false);
+    expect(ok({ type: 'sell', vendorId: 'n1', itemId: 'i1' })).toBe(true);
+    expect(ok({ type: 'gather', toolId: 't', position: { x: 1, y: 2 } })).toBe(true);
+    expect(ok({ type: 'craft', recipe: 'dagger' })).toBe(true);
+    expect(ok({ type: 'moveItem', itemId: 'i1', to: { type: 'bank' } })).toBe(true);
+  });
+
   it('acepta pedidos de ataque', () => {
     expect(decodeClientMessage(JSON.stringify({ type: 'attack', targetId: 'c1' })).ok).toBe(true);
     expect(decodeClientMessage(JSON.stringify({ type: 'attack' })).ok).toBe(false);
@@ -64,7 +75,7 @@ describe('mensajes de objetos', () => {
       { type: 'ground' },
       { type: 'ground', position: { x: 1.5, y: 0 } },
       { type: 'equipment', slot: 'tail' },
-      { type: 'bank' },
+      { type: 'bank', position: { x: 'a', y: 0 } },
       null,
     ]) {
       expect(decodeClientMessage(JSON.stringify({ type: 'moveItem', itemId: 'i1', to })).ok).toBe(

@@ -7,6 +7,7 @@ import { MobileNotifications } from './mobile-notifications';
 import type { Clock, IdGenerator, Notifier, RandomSource } from './ports';
 import { Attack } from './use-cases/attack';
 import { CastSpell } from './use-cases/cast-spell';
+import { EconomyActions } from './use-cases/economy-actions';
 import { MoveItem } from './use-cases/move-item';
 import { UseItem } from './use-cases/use-item';
 import { JoinWorld, type JoinWorldResult } from './use-cases/join-world';
@@ -36,6 +37,7 @@ export class GameApplication {
   private readonly useItem: UseItem;
   private readonly attack: Attack;
   private readonly castSpell: CastSpell;
+  private readonly economy: EconomyActions;
   private readonly loop: GameLoop;
   private readonly mobiles: MobileNotifications;
   private readonly world: World;
@@ -48,8 +50,17 @@ export class GameApplication {
     this.leaveWorld = new LeaveWorld(world, notifier);
     this.movePlayer = new MovePlayer(world, clock, notifier, notifications, this.mobiles);
     this.sendChat = new SendChat(world, notifier);
-    this.moveItem = new MoveItem(world, notifications, notifier);
-    this.useItem = new UseItem(world, notifications, notifier, this.mobiles);
+    this.economy = new EconomyActions(
+      world,
+      clock,
+      ids,
+      random,
+      notifications,
+      this.mobiles,
+      notifier,
+    );
+    this.moveItem = new MoveItem(world, notifications, notifier, this.economy);
+    this.useItem = new UseItem(world, notifications, notifier, this.mobiles, this.economy);
     this.attack = new Attack(world, this.mobiles, notifier);
     this.castSpell = new CastSpell(world, clock, this.mobiles, notifications, notifier);
     this.loop = new GameLoop(world, this.mobiles, notifications, notifier, ids, random);
@@ -102,6 +113,18 @@ export class GameApplication {
         break;
       case 'castSpell':
         this.castSpell.execute(playerId, message.spell, message.targetId);
+        break;
+      case 'gather':
+        this.economy.gather(playerId, message.toolId, message.position);
+        break;
+      case 'buy':
+        this.economy.buy(playerId, message.vendorId, message.kind, message.amount);
+        break;
+      case 'sell':
+        this.economy.sell(playerId, message.vendorId, message.itemId);
+        break;
+      case 'craft':
+        this.economy.craft(playerId, message.recipe);
         break;
       case 'join':
         // Ya está en el mundo: se ignora un segundo ingreso.

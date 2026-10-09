@@ -84,10 +84,19 @@ export class GameRenderer {
 
   /** Criatura viva bajo un punto de la pantalla (la de más adelante si hay varias). */
   creatureAt(point: ScreenPoint): EntityId | null {
+    return this.mobileAt(point, (view) => view.isAliveCreature);
+  }
+
+  /** Personaje del pueblo bajo un punto de la pantalla. */
+  npcAt(point: ScreenPoint): EntityId | null {
+    return this.mobileAt(point, (view) => view.isNpc);
+  }
+
+  private mobileAt(point: ScreenPoint, accept: (view: CharacterView) => boolean): EntityId | null {
     const world = this.toWorld(point);
     let best: { id: EntityId; y: number } | null = null;
     for (const view of this.views.values()) {
-      if (!view.isAliveCreature) continue;
+      if (!accept(view)) continue;
       const { x, y } = view.feet;
       const inside =
         Math.abs(world.x - x) <= MOBILE_HIT_BOX.halfWidth &&
