@@ -1,4 +1,11 @@
-import { SKILL_KEYS, SKILL_MAX, STAT_CAP, type EntityId, type ItemKind } from '@fenix/shared';
+import {
+  MAX_STACK,
+  SKILL_KEYS,
+  SKILL_MAX,
+  STAT_CAP,
+  type EntityId,
+  type ItemKind,
+} from '@fenix/shared';
 import { emptyChanges, type ItemChanges } from '../items/items';
 import type { Player } from '../player';
 import type { World } from '../world';
@@ -35,8 +42,13 @@ export function equipTestCharacter(player: Player, world: World, ids: () => Enti
 
   const changes = emptyChanges();
   for (const { kind, amount } of TEST_SUPPLIES) {
-    const missing = amount - world.items.countInBackpack(player.id, kind);
-    if (missing > 0) world.items.addToBackpack(player.id, kind, missing, ids, changes);
+    // El oro no entra en una sola pila: se reparte en pilas de hasta MAX_STACK.
+    let missing = amount - world.items.countInBackpack(player.id, kind);
+    while (missing > 0) {
+      const pile = Math.min(missing, MAX_STACK);
+      if (!world.items.addToBackpack(player.id, kind, pile, ids, changes)) break;
+      missing -= pile;
+    }
   }
   return changes;
 }

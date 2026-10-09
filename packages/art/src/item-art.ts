@@ -88,23 +88,7 @@ type Model = (c: VolumeCanvas, color: Ramp) => void;
 
 const MODELS: Readonly<Record<BaseItemKind, Model>> = {
   gold(c) {
-    const coins: Vec3[] = [
-      [-2.6, 0.5, 1.2],
-      [1.4, 0.5, 2],
-      [0, 0.5, -1.6],
-      [2.8, 0.5, -0.8],
-      [-1, 1.4, 0.4],
-      [1.2, 1.4, 0],
-      [0.2, 2.3, 0.6],
-    ];
-    coins.forEach((at, i) => {
-      const tilt = axesAlong([Math.sin(i * 2.1), 0.25 * Math.cos(i * 1.7), Math.cos(i * 2.1)]);
-      c.ellipsoid(at, tilt, [2, 0.45, 2], (s) =>
-        s.n[1] > 0.7
-          ? tone(GOLD, s.light + 0.1, Math.hypot(s.p[0] - at[0], s.p[2] - at[2]) < 1.1 ? 0 : 1)
-          : tone(GOLD, s.light, -1),
-      );
-    });
+    coins(c, 7);
   },
   apple(c) {
     const red = ramp([196, 40, 44]);
@@ -706,8 +690,52 @@ function helmet(c: VolumeCanvas): void {
   c.limb([0, 3.4, 4.1], [0, 0.6, 4.6], 0.6, 0.5, metal(STEEL));
 }
 
+/**
+ * Cuántas monedas se dibujan según la cantidad, como en UO: una moneda, un
+ * puñado, una pila o una montaña.
+ */
+const GOLD_PILES: readonly { readonly from: number; readonly coins: number }[] = [
+  { from: 1, coins: 1 },
+  { from: 2, coins: 3 },
+  { from: 6, coins: 7 },
+  { from: 51, coins: 16 },
+  { from: 1001, coins: 34 },
+];
+
+/** Variante de dibujo según la cantidad (hoy solo cambia el oro). */
+export function itemVariant(kind: ItemKind, amount: number): number {
+  if (kind !== 'gold') return 0;
+  let variant = 0;
+  GOLD_PILES.forEach((pile, i) => {
+    if (amount >= pile.from) variant = i;
+  });
+  return variant;
+}
+
+/** Monedas apiladas en un montículo: más alto y ancho cuantas más haya. */
+function coins(c: VolumeCanvas, count: number): void {
+  const spread = 0.8 + Math.sqrt(count) * 0.95;
+  const height = 0.4 + Math.sqrt(count) * 0.75;
+  const rim = ramp([150, 104, 30]);
+  for (let i = 0; i < count; i++) {
+    // Espiral de abajo hacia arriba: las primeras forman la base, las últimas la punta.
+    const t = count === 1 ? 0 : i / (count - 1);
+    const radius = spread * (1 - t) ** 0.8 * (0.55 + noise(i, 7) * 0.45);
+    const angle = i * 2.4;
+    const at: Vec3 = [Math.cos(angle) * radius, 0.4 + t * height, Math.sin(angle) * radius];
+    const tilt = axesAlong([Math.sin(i * 2.1), 0.35 * Math.cos(i * 1.7), Math.cos(i * 2.1)]);
+    c.ellipsoid(at, tilt, [1.55, 0.36, 1.55], (s) => {
+      // Cara clara con un borde más oscuro; el canto, oscuro.
+      if (s.n[1] < 0.55) return tone(rim, s.light);
+      const d = Math.hypot(s.p[0] - at[0], s.p[2] - at[2]);
+      if (d > 1.15) return tone(rim, s.light + 0.2, 1);
+      return s.light > 0.82 ? [255, 244, 190] : tone(GOLD, s.light + 0.05, d < 0.6 ? 1 : 0);
+    });
+  }
+}
+
 /** Ícono de un objeto: en el suelo o, más grande, en las ventanas. */
-export function drawItem(kind: ItemKind, style: ItemStyle = 'ground'): PixelImage {
+export function drawItem(kind: ItemKind, style: ItemStyle = 'ground', amount = 1): PixelImage {
   const camera = new Camera(
     0.45,
     ITEM_ART_SIZE / 2,
@@ -718,7 +746,8 @@ export function drawItem(kind: ItemKind, style: ItemStyle = 'ground'): PixelImag
   const canvas = new VolumeCanvas(ITEM_ART_SIZE, ITEM_ART_SIZE, camera);
   const definition = ITEMS[kind];
   const color = ramp(definition.color === undefined ? [128, 128, 128] : hexToRgb(definition.color));
-  if (definition.spell)
+  if (kind === 'gold') coins(canvas, GOLD_PILES[itemVariant(kind, amount)]?.coins ?? 7);
+  else if (definition.spell)
     scroll(canvas, ramp(CIRCLE_RIBBON[SPELLS[definition.spell].circle - 1] ?? [200, 60, 50]));
   else MODELS[kind as BaseItemKind](canvas, color);
   return canvas.toImage(OUTLINE);

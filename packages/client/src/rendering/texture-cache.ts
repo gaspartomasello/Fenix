@@ -2,6 +2,7 @@ import {
   drawCharacterFrame,
   drawCreatureFrame,
   drawItem,
+  itemVariant,
   drawStatic,
   drawTerrainTile,
   STATIC_VARIANTS,
@@ -72,8 +73,10 @@ export class TextureCache {
     );
   }
 
-  item(kind: ItemKind): Texture {
-    return this.getOrCreate(`i:${kind}`, () => drawItem(kind));
+  item(kind: ItemKind, amount = 1): Texture {
+    return this.getOrCreate(`i:${kind}:${itemVariant(kind, amount)}`, () =>
+      drawItem(kind, 'ground', amount),
+    );
   }
 
   /** Textura arbitraria generada una sola vez (por ejemplo, el halo de luz). */

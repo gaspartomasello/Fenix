@@ -21,7 +21,7 @@ export class ItemLayer {
     for (const id of removed) this.remove(id);
     for (const item of added) {
       this.remove(item.id);
-      const sprite = new Sprite(this.textures.item(item.kind));
+      const sprite = new Sprite(this.textures.item(item.kind, item.amount));
       const screen = tileToScreen(item.position);
       sprite.anchor.set(0.5);
       sprite.scale.set(CHARACTER_SCALE);

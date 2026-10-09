@@ -17,7 +17,7 @@ import {
   drawCharacterFrame,
 } from './character-art';
 import { drawCreatureFrame } from './creature-art';
-import { ITEM_ART_SIZE, drawItem } from './item-art';
+import { ITEM_ART_SIZE, drawItem, itemVariant } from './item-art';
 import { STATIC_ART_HEIGHT, STATIC_ART_WIDTH, drawStatic } from './static-art';
 import { TERRAIN_ART_SIZE, drawTerrainTile } from './terrain-art';
 
@@ -175,5 +175,12 @@ describe('animaciones y cuerpos', () => {
     expect(look({ legs: 'plate-legs' })).not.toBe(look({ legs: 'leather-leggings' }));
     expect(attackStyleFor('bow')).toBe('shoot');
     expect(attackStyleFor('kryss')).toBe('thrust');
+  });
+
+  it('el oro se dibuja según la cantidad: de una moneda a una montaña', () => {
+    const seen = new Set([1, 3, 20, 500, 60_000].map((n) => pixels(drawItem('gold', 'ground', n))));
+    expect(seen.size).toBe(5);
+    expect(itemVariant('gold', 60_000)).toBeGreaterThan(itemVariant('gold', 1));
+    expect(itemVariant('apple', 60_000)).toBe(0);
   });
 });
