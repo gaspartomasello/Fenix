@@ -36,6 +36,8 @@ export interface GameApplicationDeps {
   readonly characters?: CharacterStore;
   /** Con hasher, cada personaje tiene contraseña (servidor en línea). */
   readonly passwords?: PasswordHasher;
+  /** Personajes de prueba: entran con todo al máximo (solo para probar el juego). */
+  readonly testCharacters?: readonly string[];
 }
 
 /**
@@ -68,6 +70,7 @@ export class GameApplication {
     notifier,
     characters,
     passwords,
+    testCharacters = [],
   }: GameApplicationDeps) {
     this.world = world;
     this.persistence = new CharacterPersistence(world, characters, passwords);
@@ -84,6 +87,7 @@ export class GameApplication {
       notifier,
       notifications,
       this.persistence,
+      testCharacters,
     );
     this.leaveWorld = new LeaveWorld(world, notifier);
     this.movePlayer = new MovePlayer(world, clock, notifier, notifications, this.mobiles);

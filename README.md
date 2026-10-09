@@ -41,15 +41,20 @@ Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña 
 
 ### Variables de entorno del servidor
 
-| Variable      | Por defecto   | Descripción                                |
-| ------------- | ------------- | ------------------------------------------ |
-| `PORT`        | `3000`        | Puerto HTTP/WebSocket                      |
-| `HOST`        | `0.0.0.0`     | Interfaz donde escucha                     |
-| `MAP_SEED`    | `1997`        | Semilla del mapa generado                  |
-| `MAP_SIZE`    | `128`         | Lado del mapa en tiles                     |
-| `START_HOUR`  | `8`           | Hora del juego con la que arranca el mundo |
-| `CLIENT_DIST` | `client/dist` | Carpeta del cliente compilado a servir     |
-| `DATA_DIR`    | `data`        | Carpeta de los personajes guardados        |
+| Variable          | Por defecto   | Descripción                                |
+| ----------------- | ------------- | ------------------------------------------ |
+| `PORT`            | `3000`        | Puerto HTTP/WebSocket                      |
+| `HOST`            | `0.0.0.0`     | Interfaz donde escucha                     |
+| `MAP_SEED`        | `1997`        | Semilla del mapa generado                  |
+| `MAP_SIZE`        | `128`         | Lado del mapa en tiles                     |
+| `START_HOUR`      | `8`           | Hora del juego con la que arranca el mundo |
+| `CLIENT_DIST`     | `client/dist` | Carpeta del cliente compilado a servir     |
+| `DATA_DIR`        | `data`        | Carpeta de los personajes guardados        |
+| `TEST_CHARACTERS` | (vacío)       | Personajes de prueba, separados por coma   |
+
+Un **personaje de prueba** entra cada vez con todas las habilidades y atributos al máximo, la
+vida y el maná llenos, 999.999 monedas de oro y 1000 de cada reactivo. En el modo solo lo es
+**Gaspar**; en el servidor en línea, solo los nombres que diga `TEST_CHARACTERS`.
 
 ## Controles
 

@@ -11,6 +11,8 @@ export interface ServerConfig {
   readonly startHour: number;
   /** Carpeta donde se guardan los personajes. */
   readonly dataDir: string;
+  /** Personajes de prueba (todo al máximo), separados por coma en TEST_CHARACTERS. */
+  readonly testCharacters: readonly string[];
 }
 
 function intFromEnv(name: string, fallback: number): number {
@@ -35,5 +37,9 @@ export function loadConfig(defaultClientDist: string): ServerConfig {
     mapSize: intFromEnv('MAP_SIZE', 128),
     startHour: intFromEnv('START_HOUR', 8),
     dataDir: process.env.DATA_DIR ?? 'data',
+    testCharacters: (process.env.TEST_CHARACTERS ?? '')
+      .split(',')
+      .map((name) => name.trim())
+      .filter(Boolean),
   };
 }

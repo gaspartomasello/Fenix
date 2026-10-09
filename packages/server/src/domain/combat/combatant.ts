@@ -79,6 +79,12 @@ export class Combatant {
     return this.base;
   }
 
+  /** Reemplaza los atributos propios (personajes de prueba) y recalcula los máximos. */
+  setBaseAttributes(attributes: Attributes): void {
+    this.base = attributes;
+    this.refreshMaxima();
+  }
+
   /** Sube un punto un atributo propio (entrenamiento) y recalcula los máximos. */
   raiseAttribute(key: AttributeKey): void {
     this.base = { ...this.base, [key]: this.base[key] + 1 };

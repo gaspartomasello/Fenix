@@ -32,6 +32,7 @@ function main(): void {
     notifier: sessions,
     characters,
     passwords: new ScryptPasswordHasher(),
+    testCharacters: config.testCharacters,
   });
 
   const stopTicker = startTicker(

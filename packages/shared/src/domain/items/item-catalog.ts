@@ -335,5 +335,5 @@ export function describeItem(kind: ItemKind, amount = 1): string {
   return `${amount} ${definition.plural}`;
 }
 
-/** Máximo de unidades en una pila. */
-export const MAX_STACK = 60_000;
+/** Máximo de unidades en una pila (alcanza para casi un millón de monedas en una). */
+export const MAX_STACK = 1_000_000;

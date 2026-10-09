@@ -25,6 +25,8 @@ export interface EmbeddedServerOptions {
   readonly startHour?: number;
   /** Dónde guardar el personaje (el `localStorage` del navegador); sin esto no se guarda. */
   readonly storage?: KeyValueStorage;
+  /** Personajes de prueba: entran con todo al máximo. */
+  readonly testCharacters?: readonly string[];
 }
 
 export type { KeyValueStorage };
@@ -54,6 +56,7 @@ export function createEmbeddedServer(options: EmbeddedServerOptions = {}): Embed
     random: new SeededRandom(Date.now()),
     notifier: sessions,
     ...(options.storage ? { characters: new KeyValueCharacterStore(options.storage) } : {}),
+    ...(options.testCharacters ? { testCharacters: options.testCharacters } : {}),
   });
 
   startTicker(
