@@ -16,7 +16,7 @@ import {
   validatePassword,
   type Appearance,
 } from '@fenix/shared';
-import { drawCharacterFrame } from '@fenix/art';
+import { ART_DETAIL, drawCharacterFrame } from '@fenix/art';
 import { toCanvas } from '../platform/canvas';
 import { el, hexColor } from './dom';
 
@@ -240,11 +240,11 @@ export class LoginScreen {
   private drawPreview(): void {
     const direction = PREVIEW_DIRECTIONS[this.previewTurn] ?? Direction.SouthEast;
     const art = toCanvas(drawCharacterFrame(this.appearance, direction, 'idle'));
-    this.preview.width = art.width * PREVIEW_SCALE;
-    this.preview.height = art.height * PREVIEW_SCALE;
+    this.preview.width = (art.width * PREVIEW_SCALE) / ART_DETAIL;
+    this.preview.height = (art.height * PREVIEW_SCALE) / ART_DETAIL;
     const ctx = this.preview.getContext('2d');
     if (!ctx) return;
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
     ctx.clearRect(0, 0, this.preview.width, this.preview.height);
     ctx.drawImage(art, 0, 0, this.preview.width, this.preview.height);
   }

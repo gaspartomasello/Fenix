@@ -15,13 +15,14 @@ import {
   cameraFor,
   heldInLeftHand,
   humanoidRig,
+  spriteCanvas,
   type CharacterFrame,
   type Rig,
 } from './humanoid-rig';
 import { MOUNTED_ART_HEIGHT, MOUNTED_ART_WIDTH, drawMount, mountedCamera } from './mount-art';
 import { hexToRgb, type PixelImage, type Rgb } from './pixel-art';
+import type { VolumeCanvas } from './volume';
 import {
-  VolumeCanvas,
   add,
   axesAlong,
   cross,
@@ -42,17 +43,21 @@ import {
 
 export {
   ACTION_KINDS,
+  ART_DETAIL,
   CHARACTER_ART_HEIGHT,
   CHARACTER_ART_WIDTH,
   CHARACTER_FEET_Y,
   CHARACTER_HEAD_Y,
   WALK_FRAMES,
+  WALK_FRAME_COUNT,
   attackStyleFor,
+  cyclePhase,
   cameraFor,
   humanoidRig,
   type ActionKind,
   type ActionStep,
   type CharacterFrame,
+  type WalkStep,
 } from './humanoid-rig';
 
 /** Color del contorno de todos los sprites. */
@@ -136,8 +141,8 @@ export function drawCharacterFrame(
 ): PixelImage {
   // Montado: lienzo más grande, la montura primero y el jinete sentado en ella.
   const canvas = mount
-    ? new VolumeCanvas(MOUNTED_ART_WIDTH, MOUNTED_ART_HEIGHT, mountedCamera(direction))
-    : new VolumeCanvas(CHARACTER_ART_WIDTH, CHARACTER_ART_HEIGHT, cameraFor(direction));
+    ? spriteCanvas(MOUNTED_ART_WIDTH, MOUNTED_ART_HEIGHT, mountedCamera(direction))
+    : spriteCanvas(CHARACTER_ART_WIDTH, CHARACTER_ART_HEIGHT, cameraFor(direction));
   const ride = mount ? drawMount(canvas, mount, frame) : null;
   const female = appearance.gender === 'female';
   const outfit = role ? OUTFITS[role] : null;
@@ -667,7 +672,7 @@ const BONE = ramp([226, 218, 196]);
 
 /** Esqueleto: huesos finos, costillas con huecos, calavera y una espada. */
 export function drawSkeletonFrame(direction: Direction, frame: CharacterFrame): PixelImage {
-  const canvas = new VolumeCanvas(CHARACTER_ART_WIDTH, CHARACTER_ART_HEIGHT, cameraFor(direction));
+  const canvas = spriteCanvas(CHARACTER_ART_WIDTH, CHARACTER_ART_HEIGHT, cameraFor(direction));
   const rig = humanoidRig(frame, true);
   const bone = solid(BONE);
 

@@ -1,5 +1,6 @@
 import {
   BACKPACK_AREA,
+  CORPSE_AREA,
   ITEM_ICON_SIZE,
   ITEMS,
   MAX_BACKPACK_ITEMS,
@@ -129,16 +130,24 @@ export class Items {
     drops: readonly { kind: ItemKind; amount: number }[],
     ids: () => EntityId,
   ): Item[] {
-    const columns = Math.floor(BACKPACK_AREA.width / ITEM_ICON_SIZE);
+    const columns = Math.floor(CORPSE_AREA.width / ITEM_ICON_SIZE);
+    const rows = Math.floor(CORPSE_AREA.height / ITEM_ICON_SIZE);
     return drops.map((drop, index) =>
       this.add(ids(), drop.kind, drop.amount, {
         type: 'corpse',
         corpseId,
         at,
-        position: clampToBackpack({
-          x: (index % columns) * ITEM_ICON_SIZE,
-          y: Math.floor(index / columns) * ITEM_ICON_SIZE,
-        }),
+        // En grilla; si no entran, se encima el resto en cascada, como en UO.
+        position:
+          index < columns * rows
+            ? {
+                x: (index % columns) * ITEM_ICON_SIZE,
+                y: Math.floor(index / columns) * ITEM_ICON_SIZE,
+              }
+            : {
+                x: (index * 11) % (CORPSE_AREA.width - ITEM_ICON_SIZE),
+                y: (index * 17) % (CORPSE_AREA.height - ITEM_ICON_SIZE),
+              },
       }),
     );
   }

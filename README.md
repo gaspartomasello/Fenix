@@ -179,3 +179,6 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
     un instante en el aire y reposo; el jinete va sentado con las piernas sobre el lomo, los pies
     en los estribos y las riendas en las manos. Caballerizo en el pueblo, montura que sigue a su
     dueño y viaja con él, montar y desmontar, el doble de velocidad y se guarda con el personaje.
+    Después: animación de ocho cuadros por ciclo al caminar, correr y galopar (con las patas
+    delanteras cruzadas), sprites al doble de detalle con sombreado suave, caballo más grande al
+    lado del jinete, y el cuerpo de una criatura se revisa en un ataúd con calavera, como en UO.

@@ -1,5 +1,6 @@
 import { isMountKind, type CreatureKind, type Direction } from '@fenix/shared';
 import { OUTLINE } from './character-art';
+import { ART_DETAIL, spriteCanvas } from './humanoid-rig';
 import { MOUNTED_ART_HEIGHT, MOUNTED_ART_WIDTH, MOUNTED_FEET_Y } from './mount-art';
 import { biteOffset, gait } from './creature-motion';
 import { drawSkullHead } from './humanoid-head';
@@ -14,9 +15,10 @@ import {
   type Rig,
 } from './humanoid-rig';
 import type { PixelImage, Rgb } from './pixel-art';
+import type { VolumeCanvas } from './volume';
 import {
   Camera,
-  VolumeCanvas,
+  clipping,
   add,
   axesAlong,
   lerp,
@@ -96,7 +98,7 @@ export function drawMonsterFrame(
 ): PixelImage {
   const layout = creatureLayout(kind);
   const camera = kind === 'dragon' ? dragonCamera(direction) : cameraFor(direction, ZOOM[kind]);
-  const canvas = new VolumeCanvas(layout.width, layout.height, camera);
+  const canvas = spriteCanvas(layout.width, layout.height, camera);
   switch (kind) {
     case 'giant-spider':
       drawSpider(canvas, frame);
@@ -124,10 +126,10 @@ export function drawMonsterFrame(
 function dragonCamera(direction: Direction): Camera {
   return new Camera(
     facingOf(direction),
-    DRAGON_LAYOUT.width / 2,
-    DRAGON_LAYOUT.feetY,
+    (DRAGON_LAYOUT.width * ART_DETAIL) / 2,
+    DRAGON_LAYOUT.feetY * ART_DETAIL,
     undefined,
-    ZOOM.dragon,
+    ZOOM.dragon * ART_DETAIL,
   );
 }
 
@@ -337,10 +339,15 @@ function robe(c: VolumeCanvas, rig: Rig, cloth: Ramp, trim: Ramp | null): void {
 /** Capucha alrededor de la calavera. */
 function hood(c: VolumeCanvas, rig: Rig, cloth: Ramp): void {
   const head = rig.head;
-  c.ellipsoid(head.at([0, 1.2, -1]), head.axes, [5.4, 6, 5.6], (s) => {
-    const local = head.local(s.p);
-    return local[2] > 2.4 && local[1] < 3 ? null : tone(cloth, s.light, -1);
-  });
+  c.ellipsoid(
+    head.at([0, 1.2, -1]),
+    head.axes,
+    [5.4, 6, 5.6],
+    clipping((s) => {
+      const local = head.local(s.p);
+      return local[2] > 2.4 && local[1] < 3 ? null : tone(cloth, s.light, -1);
+    }),
+  );
 }
 
 /** Bastón con una gema que brilla en la punta. */
@@ -415,12 +422,7 @@ function drawDragon(c: VolumeCanvas, frame: CharacterFrame): void {
   };
   const bob = step.lift;
   // Alas: membranas grandes que se abren hacia arriba y atrás.
-  const flap =
-    typeof frame === 'string' && frame.endsWith('-1')
-      ? 6
-      : typeof frame === 'number' && frame % 2 === 1
-        ? 3
-        : 0;
+  const flap = typeof frame === 'string' && frame.endsWith('-1') ? 6 : step.lift > 0.5 ? 3 : 0;
   for (const side of [1, -1] as const) {
     const root: Vec3 = [side * 5, 30 + bob, 2];
     const elbow: Vec3 = [side * 22, 46 + bob + flap, -6];

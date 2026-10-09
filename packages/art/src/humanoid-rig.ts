@@ -1,5 +1,5 @@
 import { Direction, type ItemKind } from '@fenix/shared';
-import { Camera, add, normalize, pitch, scale, sub, yaw, type Vec3 } from './volume';
+import { Camera, VolumeCanvas, add, normalize, pitch, scale, sub, yaw, type Vec3 } from './volume';
 
 /**
  * Tamaño del sprite en pixeles. Se dibuja al doble de detalle que el resto
@@ -32,9 +32,27 @@ export const ACTION_KINDS = [
 export type ActionKind = (typeof ACTION_KINDS)[number];
 export type ActionStep = 0 | 1 | 2 | 3;
 
-/** `idle` = parado; 0..3 = caminata (contacto, paso, contacto, paso); o un paso de una acción. */
-export type CharacterFrame = 'idle' | 0 | 1 | 2 | 3 | `${ActionKind}-${ActionStep}`;
-export const WALK_FRAMES: readonly CharacterFrame[] = [0, 1, 2, 3];
+/** Cuadros de un ciclo de caminata o carrera (dos pasos): más cuadros, más fluido. */
+export const WALK_FRAME_COUNT = 8;
+export type WalkStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+/**
+ * `idle` = parado; 0..7 = caminata (un ciclo de dos pasos); `run-0..7` =
+ * carrera; o un paso de una acción.
+ */
+export type CharacterFrame = 'idle' | WalkStep | `run-${WalkStep}` | `${ActionKind}-${ActionStep}`;
+export const WALK_FRAMES: readonly WalkStep[] = [0, 1, 2, 3, 4, 5, 6, 7];
+
+/**
+ * En qué punto del ciclo de caminar o correr está un cuadro (0–1, un ciclo
+ * son dos pasos), o null si no es caminar ni correr.
+ */
+export function cyclePhase(frame: CharacterFrame): { phase: number; running: boolean } | null {
+  if (typeof frame === 'number') return { phase: frame / WALK_FRAME_COUNT, running: false };
+  if (frame.startsWith('run-'))
+    return { phase: Number(frame.slice(4)) / WALK_FRAME_COUNT, running: true };
+  return null;
+}
 
 /** Con qué gesto ataca según lo que tenga en la mano derecha. */
 export function attackStyleFor(
@@ -79,7 +97,25 @@ export function cameraFor(
     feetY: CHARACTER_FEET_Y,
   },
 ): Camera {
-  return new Camera(FACING[direction], frame.width / 2, frame.feetY, undefined, zoom);
+  return new Camera(
+    FACING[direction],
+    (frame.width * ART_DETAIL) / 2,
+    frame.feetY * ART_DETAIL,
+    undefined,
+    zoom * ART_DETAIL,
+  );
+}
+
+/**
+ * Detalle de los sprites de personas, criaturas y monturas: se dibujan a
+ * este múltiplo de su tamaño en pantalla y se muestran achicados, así los
+ * bordes y las sombras quedan suaves (y nítidos al acercar la cámara).
+ */
+export const ART_DETAIL = 2;
+
+/** Lienzo de un sprite de `width`×`height` (en pixeles de pantalla), al detalle de arte. */
+export function spriteCanvas(width: number, height: number, camera: Camera): VolumeCanvas {
+  return new VolumeCanvas(width * ART_DETAIL, height * ART_DETAIL, camera);
 }
 
 /** Escala de las personas (el jinete y su montura se dibujan a la misma). */
@@ -387,10 +423,56 @@ const ACTIONS: Readonly<Record<ActionKind, readonly BodyPose[]>> = {
 
 function poseFor(frame: CharacterFrame): BodyPose {
   if (frame === 'idle') return { right: STAND, left: STAND };
-  if (typeof frame === 'number') return WALK[frame];
-  const [kind, step] = frame.split('-') as [ActionKind, string];
+  // Caminar y correr: entre las cuatro poses clave se interpola, así hay más cuadros.
+  const cycle = cyclePhase(frame);
+  if (cycle) {
+    const keys = cycle.running ? ACTIONS.run : [WALK[0], WALK[1], WALK[2], WALK[3]];
+    const at = cycle.phase * keys.length;
+    const index = Math.floor(at);
+    const a = keys[index % keys.length] ?? WALK[0];
+    const b = keys[(index + 1) % keys.length] ?? WALK[0];
+    return blendPose(a, b, at - index);
+  }
+  const [kind, step] = String(frame).split('-') as [ActionKind, string];
   const steps = ACTIONS[kind];
   return steps[Math.min(Number(step), steps.length - 1)] ?? { right: STAND, left: STAND };
+}
+
+const mix = (a: number, b: number, t: number): number => a + (b - a) * t;
+
+function blendLeg(a: LegPose, b: LegPose, t: number): LegPose {
+  return {
+    thigh: mix(a.thigh, b.thigh, t),
+    knee: mix(a.knee, b.knee, t),
+    spread: mix(a.spread ?? 0, b.spread ?? 0, t),
+  };
+}
+
+function blendArm(a: ArmPose | undefined, b: ArmPose | undefined, t: number): ArmPose | undefined {
+  if (!a || !b) return t < 0.5 ? a : b;
+  return {
+    raise: mix(a.raise, b.raise, t),
+    spread: mix(a.spread, b.spread, t),
+    bend: mix(a.bend, b.bend, t),
+  };
+}
+
+/** Pose intermedia entre dos poses clave, con un paso suave (sin tirones). */
+function blendPose(a: BodyPose, b: BodyPose, raw: number): BodyPose {
+  const t = raw * raw * (3 - 2 * raw);
+  const rightArm = blendArm(a.rightArm, b.rightArm, t);
+  const leftArm = blendArm(a.leftArm, b.leftArm, t);
+  return {
+    right: blendLeg(a.right, b.right, t),
+    left: blendLeg(a.left, b.left, t),
+    ...(rightArm ? { rightArm } : {}),
+    ...(leftArm ? { leftArm } : {}),
+    twist: mix(a.twist ?? 0, b.twist ?? 0, t),
+    hipShift: mix(a.hipShift ?? 0, b.hipShift ?? 0, t),
+    tilt: mix(a.tilt ?? 0, b.tilt ?? 0, t),
+    lean: mix(a.lean ?? 0, b.lean ?? 0, t),
+    lift: mix(a.lift ?? 0, b.lift ?? 0, t),
+  };
 }
 
 // ── Esqueleto ───────────────────────────────────────────────────────
@@ -468,8 +550,8 @@ export function humanoidRig(
   seat?: Seat,
 ): Rig {
   const base = poseFor(frame);
-  const moving = typeof frame === 'number' || frame === 'idle' || frame.startsWith('run-');
-  const galloping = typeof frame === 'string' && frame.startsWith('run-');
+  const moving = frame === 'idle' || cyclePhase(frame) !== null;
+  const galloping = cyclePhase(frame)?.running === true;
   // Montado, las piernas van siempre en la montura; los brazos llevan las
   // riendas salvo durante una acción (golpe, hechizo, disparo).
   const pose: BodyPose = seat
@@ -551,13 +633,17 @@ export function humanoidRig(
     [-1]: armFor(-1, pose.leftArm ?? defaultArm(-1)),
   } as Rig['arms'];
 
-  const running = typeof frame === 'string' && frame.startsWith('run-');
-  const walking = typeof frame === 'number';
-  const step = walking ? frame : running ? Number(frame.slice(4)) : 0;
+  const cycle = cyclePhase(frame);
+  const running = cycle?.running === true;
+  const walking = cycle !== null && !running;
+  // Paso del ciclo en la escala de las poses clave (0–4), para que la tela ondee.
+  const step = cycle ? cycle.phase * 4 : 0;
+  // La capa vuela más en el medio de cada paso.
+  const flutter = Math.abs(Math.sin(step * (Math.PI / 2)));
   const sway = running
-    ? (seat ? 6 : 4.2) + (step % 2) * 0.8
+    ? (seat ? 6 : 4.2) + flutter * 0.8
     : walking
-      ? (seat ? 2.2 : 1.1) + (step % 2) * 0.5
+      ? (seat ? 2.2 : 1.1) + flutter * 0.5
       : Math.abs(lean) * 1.1 + Math.abs(twist) * 2.5;
   return {
     pelvis,
