@@ -4,6 +4,7 @@ import {
   type Direction,
   type EquipmentLook,
   type ItemKind,
+  type MountKind,
   type NpcRole,
 } from '@fenix/shared';
 import { GOLD, STEEL, drawHumanHead, drawSkullHead } from './humanoid-head';
@@ -17,6 +18,7 @@ import {
   type CharacterFrame,
   type Rig,
 } from './humanoid-rig';
+import { MOUNTED_ART_HEIGHT, MOUNTED_ART_WIDTH, drawMount, mountedCamera } from './mount-art';
 import { hexToRgb, type PixelImage, type Rgb } from './pixel-art';
 import {
   VolumeCanvas,
@@ -129,8 +131,13 @@ export function drawCharacterFrame(
   frame: CharacterFrame,
   equipment: EquipmentLook = {},
   role: NpcRole | null = null,
+  mount: MountKind | null = null,
 ): PixelImage {
-  const canvas = new VolumeCanvas(CHARACTER_ART_WIDTH, CHARACTER_ART_HEIGHT, cameraFor(direction));
+  // Montado: lienzo más grande, la montura primero y el jinete sentado en ella.
+  const canvas = mount
+    ? new VolumeCanvas(MOUNTED_ART_WIDTH, MOUNTED_ART_HEIGHT, mountedCamera(direction))
+    : new VolumeCanvas(CHARACTER_ART_WIDTH, CHARACTER_ART_HEIGHT, cameraFor(direction));
+  const ride = mount ? drawMount(canvas, mount, frame) : null;
   const female = appearance.gender === 'female';
   const outfit = role ? OUTFITS[role] : null;
   const robed = outfit === 'robe' || equipment.torso === 'robe';
@@ -140,6 +147,7 @@ export function drawCharacterFrame(
       frame,
       equipment.rightHand !== undefined && !leftWeapon,
       BUILDS[female ? 'female' : 'male'],
+      ride?.seat,
     ),
     palette: paletteFor(appearance, equipment),
     equipment,
@@ -181,6 +189,7 @@ export function drawCharacterFrame(
     if (leftWeapon) drawBow(canvas, figure.rig);
     else drawWeapon(canvas, figure.rig, equipment.rightHand);
   }
+  ride?.tack(canvas, figure.rig);
   return canvas.toImage(OUTLINE);
 }
 
@@ -196,8 +205,10 @@ function drawLegs(
     // Pantalón (o piernas, bajo la pollera) hasta la caña de la bota; bota con borde claro.
     // Las grebas de placas son de metal con rodillera; las perneras, cuero con costuras.
     const legMaterial: Material = (s) => {
-      if (s.p[1] < 9 && !(plate && !equipment.feet))
-        return tone(p.boots, s.light, s.p[1] > 8 ? 1 : 0);
+      // La bota llega hasta 6 px sobre el tobillo (de pie o montado).
+      const bootTop = leg.ankle[1] + 6;
+      if (s.p[1] < bootTop && !(plate && !equipment.feet))
+        return tone(p.boots, s.light, s.p[1] > bootTop - 1 ? 1 : 0);
       if (plate) {
         const nearKnee = Math.hypot(...sub(s.p, leg.knee)) < 2.6;
         return nearKnee ? tone(STEEL, s.light + 0.2, 1) : metal(STEEL)(s);
@@ -216,7 +227,12 @@ function drawLegs(
   }
   if (robed || skirt) {
     // Túnica hasta el suelo, o pollera hasta la rodilla: discos que se ensanchan.
-    const bottom = robed ? 2 : rig.legs[1].knee[1] - 1;
+    // Montado, la tela cae hasta las rodillas sobre el lomo.
+    const bottom = rig.seated
+      ? Math.min(rig.legs[1].knee[1], rig.legs[-1].knee[1]) - 2
+      : robed
+        ? 2
+        : rig.legs[1].knee[1] - 1;
     const top = rig.pelvis.origin[1] + 1;
     const flare = robed ? 3.2 : 2.2;
     const fabric: Material = (s) => tone(p.cloth, s.light, Math.sin(s.p[0] * 0.9) > 0.6 ? -1 : 0);
@@ -427,7 +443,8 @@ function drawArms(
 function drawCloak(canvas: VolumeCanvas, rig: Rig, cloak: Ramp): void {
   const chest = rig.chest;
   const top = rig.arms[1].shoulder[1] + 0.8;
-  const bottom = 7;
+  // De pie llega casi al suelo; montado, cae sobre la grupa.
+  const bottom = rig.seated ? rig.pelvis.origin[1] - 8 : 7;
   const rows = 12;
   const cols = 10;
   const reach = 1.45;

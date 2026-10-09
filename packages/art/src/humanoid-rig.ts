@@ -67,10 +67,23 @@ const FACING: Readonly<Record<Direction, number>> = {
   [Direction.NorthWest]: Math.PI, // arriba
 };
 
-/** Cámara para un sprite que mira en `direction`. */
-export function cameraFor(direction: Direction, zoom = HUMAN_ZOOM): Camera {
-  return new Camera(FACING[direction], CHARACTER_ART_WIDTH / 2, CHARACTER_FEET_Y, undefined, zoom);
+/**
+ * Cámara para un sprite que mira en `direction`. `frame` cambia el lienzo
+ * (los jinetes y sus monturas usan uno más grande).
+ */
+export function cameraFor(
+  direction: Direction,
+  zoom = HUMAN_ZOOM,
+  frame: { width: number; feetY: number } = {
+    width: CHARACTER_ART_WIDTH,
+    feetY: CHARACTER_FEET_Y,
+  },
+): Camera {
+  return new Camera(FACING[direction], frame.width / 2, frame.feetY, undefined, zoom);
 }
+
+/** Escala de las personas (el jinete y su montura se dibujan a la misma). */
+export const PERSON_ZOOM = HUMAN_ZOOM;
 
 /**
  * Sistema de referencia de una parte del cuerpo (torso, cabeza): un origen y
@@ -117,6 +130,8 @@ interface LegPose {
   readonly thigh: number;
   readonly knee: number;
   readonly spread?: number;
+  /** Apertura de la pierna desde la rodilla (si no, la misma que el muslo). */
+  readonly shinSpread?: number;
 }
 
 /** Brazo: cuánto se levanta hacia adelante (0 colgando, π/2 al frente, π arriba), apertura y codo. */
@@ -399,7 +414,34 @@ export interface Rig {
   readonly phase: number;
   /** Tensando la cuerda del arco (la cuerda va a la mano derecha). */
   readonly drawing: boolean;
+  /**
+   * Hasta dónde baja la ropa larga (túnica, capa): el suelo de pie, o la
+   * altura de los estribos montado.
+   */
+  readonly hem: number;
+  /** Montado: las piernas abrazan el lomo y la ropa no llega al suelo. */
+  readonly seated: boolean;
 }
+
+/** Dónde va sentado el jinete: altura y avance de la cadera sobre la montura. */
+export interface Seat {
+  readonly y: number;
+  readonly z: number;
+  /** Media anchura del lomo a la altura de las rodillas: las piernas lo rodean. */
+  readonly girth: number;
+  /** Rebote del jinete en este frame (px), según el andar de la montura. */
+  readonly bob?: number;
+}
+
+/** Montado: las piernas abiertas sobre el lomo, rodillas dobladas, pies en los estribos. */
+const RIDING_LEG = (girth: number): LegPose => ({
+  thigh: 0.8,
+  knee: 1.45,
+  spread: Math.min(0.75, 0.3 + girth * 0.032),
+  shinSpread: 0.06,
+});
+/** Las manos al frente, sosteniendo las riendas. */
+const REINS: ArmPose = { raise: 0.7, spread: 0.08, bend: 0.85 };
 
 const THIGH = 12;
 const SHIN = 12;
@@ -423,8 +465,25 @@ export function humanoidRig(
   frame: CharacterFrame,
   armed: boolean,
   build: Build = BUILDS.male,
+  seat?: Seat,
 ): Rig {
-  const pose = poseFor(frame);
+  const base = poseFor(frame);
+  const moving = typeof frame === 'number' || frame === 'idle' || frame.startsWith('run-');
+  const galloping = typeof frame === 'string' && frame.startsWith('run-');
+  // Montado, las piernas van siempre en la montura; los brazos llevan las
+  // riendas salvo durante una acción (golpe, hechizo, disparo).
+  const pose: BodyPose = seat
+    ? {
+        ...base,
+        right: RIDING_LEG(seat.girth),
+        left: RIDING_LEG(seat.girth),
+        ...(moving ? { rightArm: REINS, leftArm: REINS } : {}),
+        lean: moving ? (galloping ? 1.8 : 0.4) : (base.lean ?? 0),
+        hipShift: 0,
+        tilt: moving ? 0 : (base.tilt ?? 0),
+        twist: moving ? 0 : (base.twist ?? 0),
+      }
+    : base;
   const k = build.stature;
   const hipShift = pose.hipShift ?? 0;
   const twist = pose.twist ?? 0;
@@ -435,29 +494,40 @@ export function humanoidRig(
   const legFor = (side: 1 | -1, leg: LegPose) => {
     const hip: Vec3 = [side * build.hip + hipShift, hipHeight, 0];
     const knee = add(hip, scale(boneDir(leg.thigh, leg.spread ?? 0, side), THIGH * k));
-    const ankle = add(knee, scale(boneDir(leg.thigh - leg.knee, leg.spread ?? 0, side), SHIN * k));
+    const ankle = add(
+      knee,
+      scale(boneDir(leg.thigh - leg.knee, leg.shinSpread ?? leg.spread ?? 0, side), SHIN * k),
+    );
     return { hip, knee, ankle, toe: add(ankle, [side * 0.4, -1.2, 4.2]) };
   };
   const rawLegs = { 1: legFor(1, pose.right), [-1]: legFor(-1, pose.left) } as Rig['legs'];
-  // Baja todo para que el pie más bajo apoye en el suelo (tobillo a 3 px).
-  const drop = Math.min(rawLegs[1].ankle[1], rawLegs[-1].ankle[1]) - 3 - (pose.lift ?? 0);
-  const lower = (p: Vec3): Vec3 => [p[0], p[1] - drop, p[2]];
+  // Baja todo para que el pie más bajo apoye en el suelo (tobillo a 3 px);
+  // montado, la cadera va a la altura de la montura.
+  const drop = seat
+    ? hipHeight - seat.y - (seat.bob ?? 0)
+    : Math.min(rawLegs[1].ankle[1], rawLegs[-1].ankle[1]) - 3 - (pose.lift ?? 0);
+  const forward = seat?.z ?? 0;
+  const lower = (p: Vec3): Vec3 => [p[0], p[1] - drop, p[2] + forward];
   const legs = {
     1: mapJoints(rawLegs[1], lower),
     [-1]: mapJoints(rawLegs[-1], lower),
   } as Rig['legs'];
 
   const hipY = hipHeight - drop;
-  const pelvis = new Basis([hipShift, hipY, 0], twist * 0.3);
-  const chest = new Basis([hipShift * 0.4, hipY + 9.5 * k, 0.2 + lean * 0.4], twist, lean * 0.09);
+  const pelvis = new Basis([hipShift, hipY, forward], twist * 0.3);
+  const chest = new Basis(
+    [hipShift * 0.4, hipY + 9.5 * k, forward + 0.2 + lean * 0.4],
+    twist,
+    lean * 0.09,
+  );
   const head = new Basis(
-    [hipShift * 0.2, hipY + 23.6 * k, 0.5 + lean * 1.1],
+    [hipShift * 0.2, hipY + 23.6 * k, forward + 0.5 + lean * 1.1],
     twist * 0.55,
     lean * 0.04,
   );
 
-  // Los brazos van al revés que las piernas al caminar.
-  const swing = typeof frame === 'number' ? 1 : 0;
+  // Los brazos van al revés que las piernas al caminar (montado, no).
+  const swing = typeof frame === 'number' && !seat ? 1 : 0;
   const defaultArm = (side: 1 | -1): ArmPose => ({
     raise: -(side === 1 ? pose.right.thigh : pose.left.thigh) * 0.8 * swing,
     spread: 0.12,
@@ -485,20 +555,22 @@ export function humanoidRig(
   const walking = typeof frame === 'number';
   const step = walking ? frame : running ? Number(frame.slice(4)) : 0;
   const sway = running
-    ? 4.2 + (step % 2) * 0.8
+    ? (seat ? 6 : 4.2) + (step % 2) * 0.8
     : walking
-      ? 1.1 + (step % 2) * 0.5
+      ? (seat ? 2.2 : 1.1) + (step % 2) * 0.5
       : Math.abs(lean) * 1.1 + Math.abs(twist) * 2.5;
   return {
     pelvis,
     chest,
     head,
-    neck: [hipShift * 0.3, hipY + 15.5 * k, 0.3 + lean * 0.8],
+    neck: [hipShift * 0.3, hipY + 15.5 * k, forward + 0.3 + lean * 0.8],
     legs,
     arms,
     sway,
     phase: step,
     drawing: frame === 'shoot-0' || frame === 'shoot-1',
+    hem: seat ? Math.min(legs[1].ankle[1], legs[-1].ankle[1]) + 2 : 0,
+    seated: seat !== undefined,
   };
 }
 
