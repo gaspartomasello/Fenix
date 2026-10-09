@@ -74,6 +74,10 @@ prueba puede escribir `/hora 22` en el chat para cambiar la hora del mundo (para
   levantarlo.
 - **Clic** (o toque) sobre una criatura: atacarla. El personaje golpea solo mientras la tenga al
   lado. **Escape**: dejar de atacar.
+- **Monturas**: en la caballeriza de Bautista se compran caballos (alazán, negro, tordillo y
+  overo), una llama o un lagarto corredor. La montura te sigue; **doble clic sobre ella** para
+  montar y **doble clic sobre vos** (o `/desmontar`) para bajarte. Montado se anda al doble de
+  rápido y galopar no cansa.
 - **Doble clic sobre el cuerpo** de una criatura muerta (o un toque): revisarlo. El botín está
   adentro: se arrastra cada objeto a la mochila o se usa **Tomar todo**.
 - **L**: libro de hechizos, con una página por círculo. **1 a 8**: lanzar los hechizos de la página
@@ -169,3 +173,9 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
     oscura a cualquier hora (los braseros iluminan las salas), criaturas más fuertes cuanto más
     hondo y el dragón en la última sala. El botín queda **dentro del cuerpo**, que se revisa con
     doble clic.
+13. ✅ **Monturas**: caballo con anatomía de verdad (pecho profundo, cruz, grupa redonda, cuello
+    arqueado, cabeza en cuña, rodillas, corvejones altos, menudillos y cascos) en cuatro
+    pelajes, llama de cuello largo y lagarto corredor bípedo. Paso de cuatro tiempos, galope con
+    un instante en el aire y reposo; el jinete va sentado con las piernas sobre el lomo, los pies
+    en los estribos y las riendas en las manos. Caballerizo en el pueblo, montura que sigue a su
+    dueño y viaja con él, montar y desmontar, el doble de velocidad y se guarda con el personaje.

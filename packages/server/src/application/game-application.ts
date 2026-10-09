@@ -3,6 +3,7 @@ import { isTestCharacter } from '../domain/testing/test-character';
 import type { WorldClock } from '../domain/world-clock';
 import type { World } from '../domain/world';
 import { Corpses } from './corpses';
+import { MountActions } from './use-cases/mount-actions';
 import { GameLoop } from './game-loop';
 import { ItemNotifications } from './item-notifications';
 import { MobileNotifications } from './mobile-notifications';
@@ -60,6 +61,7 @@ export class GameApplication {
   private readonly social: SocialNotifications;
   private readonly loop: GameLoop;
   private readonly corpses: Corpses;
+  private readonly mounts: MountActions;
   private readonly mobiles: MobileNotifications;
   private readonly world: World;
   private readonly persistence: CharacterPersistence;
@@ -133,6 +135,7 @@ export class GameApplication {
       notifier,
     );
     this.corpses = new Corpses(world, clock, ids, notifications, notifier);
+    this.mounts = new MountActions(world, ids, notifications, this.mobiles, notifier);
     this.loop = new GameLoop(
       world,
       this.mobiles,
@@ -143,6 +146,7 @@ export class GameApplication {
       this.social,
       (player, position) => this.movePlayer.teleport(player, position),
       this.corpses,
+      this.mounts,
     );
   }
 
@@ -241,6 +245,15 @@ export class GameApplication {
       case 'lootAll':
         this.corpses.lootAll(playerId, message.corpseId);
         break;
+      case 'buyMount':
+        this.mounts.buy(playerId, message.vendorId, message.mount);
+        break;
+      case 'mount':
+        this.mounts.mount(playerId, message.petId);
+        break;
+      case 'dismount':
+        this.mounts.dismount(playerId);
+        break;
       case 'join':
         // Ya está en el mundo: se ignora un segundo ingreso.
         break;
@@ -309,6 +322,9 @@ export class GameApplication {
       for (const summon of this.world.summonsOf(playerId)) this.loop.dismiss(summon);
       this.socialActions.disconnect(player);
       this.persistence.release(player);
+      // La montura suelta se guardó con él: se va del mundo hasta que vuelva.
+      const pet = this.world.petOf(playerId);
+      if (pet) this.loop.dismiss(pet);
     }
     this.corpses.forget(playerId);
     this.leaveWorld.execute(playerId);

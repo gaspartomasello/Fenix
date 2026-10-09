@@ -23,11 +23,13 @@ import { ITEMS, VENDORS, VENDOR_RANGE, reputationTitle, type NpcRole } from '@fe
 import type { ItemActions } from '../ui/backpack-window';
 import { BankWindow } from '../ui/bank-window';
 import { CorpseWindow } from '../ui/corpse-window';
+import { StableWindow } from '../ui/stable-window';
 import { CraftingWindow } from '../ui/crafting-window';
 import { ShopWindow } from '../ui/shop-window';
 import { TilePicker } from './tile-picker';
 import { WorldCombat } from './world-combat';
 import { WorldCorpses } from './world-corpses';
+import { WorldMounts } from './world-mounts';
 import { WorldNpcs } from './world-npcs';
 import { WorldItems } from './world-items';
 import { LoginScreen, type LoginRequest } from '../ui/login-screen';
@@ -141,6 +143,7 @@ export class GameSession {
     );
     const worldCombat = new WorldCombat(this.game, renderer, tooltip);
     const worldCorpses = new WorldCorpses(this.game, renderer, tooltip);
+    const worldMounts = new WorldMounts(this.game, renderer, tooltip);
     const worldItems = new WorldItems(this.game, renderer, drag, tooltip);
     const input = new InputController({
       surface: renderer.canvas,
@@ -151,6 +154,7 @@ export class GameSession {
         !worldItems.hasItemAt(point) &&
         !worldCombat.hasTargetAt(point) &&
         !worldCorpses.hasCorpseAt(point) &&
+        !worldMounts.hasPetAt(point) &&
         !worldNpcs.hasNpcAt(point),
     });
     const banner = new TargetingBanner();
@@ -196,8 +200,9 @@ export class GameSession {
       sell: (vendorId, itemId) => this.game.sell(vendorId, itemId),
     });
     const crafting = new CraftingWindow((recipe) => this.game.craft(recipe));
+    const stable = new StableWindow((vendorId, mount) => this.game.buyMount(vendorId, mount));
     let bank: BankWindow | null = null;
-    this.hosts.ui.append(shop.window.element, crafting.window.element);
+    this.hosts.ui.append(shop.window.element, crafting.window.element, stable.window.element);
 
     const ui: EconomyUi = {
       crafting,
@@ -215,6 +220,9 @@ export class GameSession {
         if (role === 'banker') {
           bank?.render(this.game.inventory.bank);
           bank?.window.show();
+        } else if (role === 'stablemaster') {
+          stable.update(this.game.inventory.backpack);
+          stable.open(id);
         } else {
           shop.open(id, role);
           shop.update(this.game.inventory.backpack);
@@ -222,6 +230,7 @@ export class GameSession {
       },
       renderInventory: () => {
         shop.update(this.game.inventory.backpack);
+        stable.update(this.game.inventory.backpack);
         bank?.render(this.game.inventory.bank);
       },
     };

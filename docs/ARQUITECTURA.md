@@ -275,6 +275,21 @@ Implementaciones: `JsonFileCharacterStore` (servidor, escritura atómica y agrup
 `KeyValueCharacterStore` (modo solo, sobre `localStorage`) y `ScryptPasswordHasher`. El modo
 solo no pide contraseña: el servidor embebido se compone sin hasher.
 
+### Monturas
+
+`MOUNTS` (shared) lista las monturas; cada una es también una `CreatureKind` mansa. Comprada en
+la caballeriza (`buyMount`), queda en el mundo como `Creature` con dueño y sin vencimiento
+(`isPet`): sigue al dueño, no pelea y viaja con él en los teletransportes. `MountActions` la monta
+(`mount`: la criatura sale del mundo y `Player.mount` guarda la especie), la baja (`dismount`, o al
+morir) y avisa con `mountChanged`. Montado, `moveDuration(mode, true)` da los tiempos de UO (200 ms
+al paso, 100 ms al galope) en el servidor y en la predicción del cliente, y correr no gasta
+energía. La montura se guarda con el personaje (montada o suelta).
+
+En el arte, `mount-art.ts` arma el animal en el mismo lienzo con profundidad que el jinete, así se
+tapan bien entre sí: cuadrúpedos con patas en cadena (antebrazo o pierna, caña, cuartilla y casco)
+y andares por fase de cada pata, y el lagarto bípedo. `humanoidRig` recibe el asiento (`Seat`) y
+sienta al jinete con la pose de montar.
+
 ### Mazmorra
 
 `world-builder.ts` arma un solo mapa: la isla a la izquierda, roca maciza en el medio y la
