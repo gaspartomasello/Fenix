@@ -323,7 +323,12 @@ gremio llega a sus miembros estén donde estén).
   taparlos. Los hechizos y las flechas van por encima (brillan de noche). Con Visión nocturna
   no hay oscuridad: se ve como de día. En una mazmorra es de noche siempre, con un ambiente más
   oscuro y sin azul de luna; los braseros iluminan las salas.
-- Personajes: modelos de volumen en 8 direcciones, con caminata, carrera y acciones.
+- Personajes: modelos de volumen en 8 direcciones, con caminata, carrera y acciones. Caminar y
+  correr tienen 8 cuadros por ciclo (las poses clave se interpolan). Personas, criaturas y
+  monturas se dibujan al doble de detalle (`ART_DETAIL`) y se muestran achicadas con filtro
+  suave; el sombreado es un degradé continuo y las extremidades son superficies lisas. El
+  cliente dibuja de antemano el ciclo hacia donde mira cada uno (`TextureCache.pump`), unos
+  milisegundos por cuadro, así moverse no da tirones.
 
 ## Convenciones
 

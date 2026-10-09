@@ -957,16 +957,51 @@ body {
   touch-action: none;
 }
 
-/* Cuerpo que se revisa: fondo más oscuro y el botón "Tomar todo" abajo. */
-.corpse-area {
-  background:
-    radial-gradient(circle at 50% 40%, rgba(120, 30, 20, 0.12), transparent 70%),
-    linear-gradient(#2e2620, #1d1813);
+/* Cuerpo que se revisa: un ataúd con calavera, como en UO, sin el marco de ventana. */
+.coffin-window {
+  min-width: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.coffin-window .window-title {
+  font-size: 0.8rem;
+}
+
+.coffin-window .window-bar {
+  background: rgba(20, 14, 10, 0.75);
+  border-radius: var(--radius);
+}
+
+.coffin-window .window-body {
+  padding: 0;
+}
+
+.coffin {
+  position: relative;
+  background-size: 100% 100%;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.55));
+}
+
+.coffin-area {
+  position: absolute;
+}
+
+.coffin-empty {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 52%;
+  margin: 0;
+  text-align: center;
+  font-style: italic;
+  color: rgba(230, 210, 180, 0.55);
 }
 
 .window-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   margin-top: 0.4rem;
 }
 

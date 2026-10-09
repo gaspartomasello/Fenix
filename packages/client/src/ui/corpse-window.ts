@@ -1,4 +1,6 @@
-import { BACKPACK_AREA, ITEM_ICON_SIZE, describeItem } from '@fenix/shared';
+import { COFFIN_HEIGHT, COFFIN_INTERIOR, COFFIN_WIDTH, drawCoffin } from '@fenix/art';
+import { CORPSE_AREA, ITEM_ICON_SIZE, describeItem } from '@fenix/shared';
+import { toCanvas } from '../platform/canvas';
 import type { CorpseContents } from '../core/client-game';
 import { destinationFor, type ItemActions } from './backpack-window';
 import { el } from './dom';
@@ -6,9 +8,18 @@ import type { DragController } from './drag-controller';
 import { GameWindow } from './game-window';
 import { itemIconUrl } from './item-icons';
 
+let coffinUrl: string | null = null;
+
+/** El ataúd se dibuja una sola vez. */
+function coffinImage(): string {
+  coffinUrl ??= toCanvas(drawCoffin()).toDataURL();
+  return coffinUrl;
+}
+
 /**
- * Lo que tiene un cuerpo: se arrastra cada objeto a la mochila (o a donde
- * se quiera), doble clic lo guarda, y "Tomar todo" se lleva todo junto.
+ * Lo que tiene un cuerpo, en un ataúd como en UO: se arrastra cada objeto a
+ * la mochila (o a donde se quiera), doble clic lo guarda, y "Tomar todo" se
+ * lleva todo junto.
  */
 export class CorpseWindow {
   readonly window: GameWindow;
@@ -21,11 +32,19 @@ export class CorpseWindow {
     private readonly actions: ItemActions,
     lootAll: (corpseId: string) => void,
   ) {
-    this.window = new GameWindow('cuerpo', 'Cuerpo', { x: 780, y: 150 });
-    this.area = el('div', { className: 'backpack-area corpse-area' });
-    this.area.style.width = `${BACKPACK_AREA.width}px`;
-    this.area.style.height = `${BACKPACK_AREA.height}px`;
-    this.empty = el('p', { className: 'window-hint', text: 'No queda nada.' });
+    this.window = new GameWindow('cuerpo', 'Cuerpo', { x: 780, y: 120 });
+    this.window.element.classList.add('coffin-window');
+    const coffin = el('div', { className: 'coffin' });
+    coffin.style.width = `${COFFIN_WIDTH}px`;
+    coffin.style.height = `${COFFIN_HEIGHT}px`;
+    coffin.style.backgroundImage = `url(${coffinImage()})`;
+    this.area = el('div', { className: 'coffin-area' });
+    this.area.style.left = `${COFFIN_INTERIOR.x}px`;
+    this.area.style.top = `${COFFIN_INTERIOR.y}px`;
+    this.area.style.width = `${CORPSE_AREA.width}px`;
+    this.area.style.height = `${CORPSE_AREA.height}px`;
+    this.empty = el('p', { className: 'coffin-empty', text: 'No queda nada.' });
+    coffin.append(this.area, this.empty);
     const takeAll = el('button', {
       className: 'paperdoll-button',
       text: 'Tomar todo',
@@ -34,11 +53,7 @@ export class CorpseWindow {
     takeAll.addEventListener('click', () => {
       if (this.corpseId) lootAll(this.corpseId);
     });
-    this.window.body.append(
-      this.area,
-      this.empty,
-      el('div', { className: 'window-actions' }, [takeAll]),
-    );
+    this.window.body.append(coffin, el('div', { className: 'window-actions' }, [takeAll]));
   }
 
   render(corpse: CorpseContents): void {

@@ -462,6 +462,7 @@ export class VolumeCanvas {
 
     const axis2 = ex * ex + ey * ey;
     const endOn = axis2 < (reach * 2) ** 2;
+    const band = endOn ? 1 : (reach * 1.05) / Math.sqrt(axis2);
     const cz = ca[2];
     // Altura de la esfera en el punto k del eje sobre (px, py), o -∞ si no lo cubre.
     let px = 0;
@@ -485,9 +486,10 @@ export class VolumeCanvas {
         const gy = py - (ca[1] + ey * along);
         if (gx * gx + gy * gy > reach * reach) continue;
         // La altura es cóncava en k: búsqueda ternaria cerca de la proyección, y los extremos.
-        // (Si la extremidad apunta casi hacia la cámara, se busca en todo el eje.)
-        let lo = endOn ? 0 : Math.max(0, along - 0.35);
-        let hi = endOn ? 1 : Math.min(1, along + 0.35);
+        // Solo puede cubrir este pixel la parte del eje a menos de un radio de la
+        // proyección (si apunta casi hacia la cámara, se busca en todo el eje).
+        let lo = endOn ? 0 : Math.max(0, along - band);
+        let hi = endOn ? 1 : Math.min(1, along + band);
         for (let i = 0; i < 9; i++) {
           const m1 = lo + (hi - lo) / 3;
           const m2 = hi - (hi - lo) / 3;
