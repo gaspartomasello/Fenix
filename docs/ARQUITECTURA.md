@@ -33,6 +33,7 @@ Código que cliente y servidor deben compartir exactamente. No tiene dependencia
 | `domain/character`                  | Apariencia y validación de nombres                                     |
 | `domain/items`                      | Catálogo de objetos, lugares del equipo, alcance y límites de mochila  |
 | `domain/combat`, `domain/creatures` | Vitales, armas, armaduras, golpe y daño; catálogo de criaturas y botín |
+| `domain/skills`, `domain/magic`     | Habilidades (suben de a 0,1 con tope total) y hechizos con reactivos   |
 | `protocol`                          | Mensajes cliente↔servidor tipados y su codec con validación            |
 
 Que `canStep` sea compartido es clave: el cliente predice con la **misma regla** que valida el
@@ -147,6 +148,17 @@ objetivo y turno de golpe. El cliente solo elige objetivo (`attack`); el golpe l
 - resucita a los fantasmas que llegan a 2 tiles del santuario.
 
 `MobileNotifications` avisa vitales al dueño, vida y golpes (`swing`) a quienes ven al mobile.
+
+### Habilidades y magia
+
+Cada jugador tiene un `SkillSet` (valores en décimas). Al pelear, practica el arma y Tácticas (y
+Parada si lo atacan con escudo); al regenerar maná, Meditación; al lanzar, Magia. El acierto usa la
+fórmula de UO con las habilidades de ambos.
+
+Lanzar (`castSpell`) valida libro, Magia mínima, maná, reactivos y objetivo, y gasta todo de
+entrada (`startCast`); el `GameLoop` resuelve el hechizo al terminar su tiempo (`resolveCast`):
+tirada de éxito según Magia y efecto (curar, dañar o luz). Los efectos visuales los dibuja
+`EffectsLayer` en el cliente a partir de `spellEffect`.
 
 ### Rango de visión
 

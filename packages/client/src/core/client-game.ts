@@ -1,4 +1,5 @@
 import {
+  SPELLS,
   TileMap,
   advanceTime,
   bodyMoveMs,
@@ -14,6 +15,8 @@ import {
   type MoveMode,
   type RegionData,
   type ServerMessage,
+  type SkillValues,
+  type SpellKey,
   type Vitals,
   type WorldTime,
 } from '@fenix/shared';
@@ -45,6 +48,9 @@ export interface ClientGameEvents extends Record<string, unknown> {
   vitalsChanged: { vitals: Vitals; dead: boolean };
   /** Cambió a quién está atacando. */
   targetChanged: EntityId | null;
+  skillsChanged: SkillValues;
+  /** Un hechizo salió: para dibujar su efecto. */
+  spellEffect: { casterId: EntityId; targetId: EntityId; spell: SpellKey };
 }
 
 export interface Inventory {
@@ -59,13 +65,14 @@ export interface Inventory {
 export class ClientGame extends EventEmitter<ClientGameEvents> {
   private readonly entities = new Map<EntityId, Entity>();
   private _map: TileMap | null = null;
-  private selfId: EntityId | null = null;
+  private selfIdValue: EntityId | null = null;
   private predictor: MovementPredictor | null = null;
   private time: { value: WorldTime; receivedAt: number } | null = null;
   private readonly ground = new Map<EntityId, GroundItemSnapshot>();
   private _inventory: Inventory = { backpack: [], equipment: [] };
   private _vitals: { vitals: Vitals; dead: boolean } | null = null;
   private _targetId: EntityId | null = null;
+  private _skills: SkillValues | null = null;
 
   constructor(
     private readonly gateway: ServerGateway,
@@ -79,7 +86,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   }
 
   get self(): Entity | undefined {
-    return this.selfId ? this.entities.get(this.selfId) : undefined;
+    return this.selfIdValue ? this.entities.get(this.selfIdValue) : undefined;
   }
 
   allEntities(): IterableIterator<Entity> {
@@ -88,6 +95,14 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
 
   get vitals(): { vitals: Vitals; dead: boolean } | null {
     return this._vitals;
+  }
+
+  get skills(): SkillValues | null {
+    return this._skills;
+  }
+
+  get selfId(): EntityId | null {
+    return this.selfIdValue;
   }
 
   get targetId(): EntityId | null {
@@ -158,7 +173,15 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
 
   /** Atacar a una criatura: el servidor golpea mientras esté al alcance. */
   attack(targetId: EntityId): void {
-    if (this.self && targetId !== this.selfId) this.gateway.send({ type: 'attack', targetId });
+    if (this.self && targetId !== this.selfIdValue) this.gateway.send({ type: 'attack', targetId });
+  }
+
+  /** Lanzar un hechizo; los que van a una criatura necesitan `targetId`. */
+  castSpell(spell: SpellKey, targetId?: EntityId): void {
+    if (!this.self) return;
+    this.gateway.send(
+      targetId ? { type: 'castSpell', spell, targetId } : { type: 'castSpell', spell },
+    );
   }
 
   stopAttack(): void {
@@ -185,7 +208,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this.entities.clear();
         this.ground.clear();
         this._map = new TileMap(message.map);
-        this.selfId = message.selfId;
+        this.selfIdValue = message.selfId;
         this.predictor = new MovementPredictor(this._map);
         this.time = { value: message.time, receivedAt: now };
         this._targetId = null;
@@ -200,13 +223,13 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         if (!this.entities.has(message.mobile.id)) this.addEntity(new Entity(message.mobile));
         break;
       case 'mobileDisappeared':
-        if (message.id !== this.selfId && this.entities.delete(message.id)) {
+        if (message.id !== this.selfIdValue && this.entities.delete(message.id)) {
           this.emit('entityRemoved', message.id);
         }
         break;
       case 'mobileMoved': {
         const entity = this.entities.get(message.id);
-        if (entity && message.id !== this.selfId) {
+        if (entity && message.id !== this.selfIdValue) {
           const duration = bodyMoveMs(entity.body, moveDuration(message.mode));
           entity.moveTo(message.position, message.direction, duration, now);
         }
@@ -250,6 +273,34 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       case 'swing':
         this.applySwing(message, now);
         break;
+      case 'skills':
+        this._skills = message.values;
+        this.emit('skillsChanged', message.values);
+        break;
+      case 'castStart':
+        this.entities.get(message.casterId)?.say(`${SPELLS[message.spell].words}`, now);
+        break;
+      case 'spellEffect': {
+        const target = this.entities.get(message.targetId);
+        if (target && message.amount > 0) {
+          const healing = SPELLS[message.spell].target === 'self';
+          target.addCombatText(
+            healing ? `+${message.amount}` : String(message.amount),
+            healing
+              ? 'heal'
+              : message.targetId === this.selfIdValue
+                ? 'damage-taken'
+                : 'damage-dealt',
+            now,
+          );
+        }
+        this.emit('spellEffect', {
+          casterId: message.casterId,
+          targetId: message.targetId,
+          spell: message.spell,
+        });
+        break;
+      }
       case 'playerEquipment':
         this.entities.get(message.id)?.setEquipment(message.equipment);
         break;
@@ -262,10 +313,11 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     if (attacker && target) attacker.lungeToward(target.position, now);
     if (!target) return;
     if (!message.hit) target.addCombatText('¡Falla!', 'miss', now);
+    else if (message.blocked) target.addCombatText('¡Bloqueado!', 'miss', now);
     else
       target.addCombatText(
         String(message.damage),
-        message.targetId === this.selfId ? 'damage-taken' : 'damage-dealt',
+        message.targetId === this.selfIdValue ? 'damage-taken' : 'damage-dealt',
         now,
       );
   }

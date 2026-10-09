@@ -1,4 +1,5 @@
 import type { ItemKind } from '../items/item-catalog';
+import type { SkillKey } from '../skills/skill-catalog';
 import type { EquipmentLook } from '../../protocol/messages';
 
 export interface Weapon {
@@ -7,14 +8,30 @@ export interface Weapon {
   readonly maxDamage: number;
   /** Tiempo entre golpes. */
   readonly swingMs: number;
+  /** Habilidad que se usa (y sube) al pelear con esta arma. */
+  readonly skill: 'wrestling' | 'swordsmanship' | 'fencing';
 }
 
-export const FISTS: Weapon = { name: 'puños', minDamage: 1, maxDamage: 4, swingMs: 1750 };
+export type CombatSkill = Weapon['skill'] & SkillKey;
+
+export const FISTS: Weapon = {
+  name: 'puños',
+  minDamage: 1,
+  maxDamage: 4,
+  swingMs: 1750,
+  skill: 'wrestling',
+};
 
 const WEAPONS: Partial<Record<ItemKind, Weapon>> = {
-  dagger: { name: 'daga', minDamage: 3, maxDamage: 7, swingMs: 1500 },
-  'short-sword': { name: 'espada corta', minDamage: 5, maxDamage: 11, swingMs: 2250 },
-  axe: { name: 'hacha', minDamage: 7, maxDamage: 14, swingMs: 2750 },
+  dagger: { name: 'daga', minDamage: 3, maxDamage: 7, swingMs: 1500, skill: 'fencing' },
+  'short-sword': {
+    name: 'espada corta',
+    minDamage: 5,
+    maxDamage: 11,
+    swingMs: 2250,
+    skill: 'swordsmanship',
+  },
+  axe: { name: 'hacha', minDamage: 7, maxDamage: 14, swingMs: 2750, skill: 'swordsmanship' },
 };
 
 /** Protección de cada pieza de armadura. */

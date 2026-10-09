@@ -34,7 +34,9 @@ export class GameWindow {
     this.element.hidden = true;
 
     const saved = loadPosition(id);
-    this.moveTo(saved ?? defaultPosition);
+    // En pantallas chicas las ventanas abren a la izquierda, sin tapar los botones.
+    const fallback = window.innerWidth <= 640 ? { x: 8, y: defaultPosition.y } : defaultPosition;
+    this.moveTo(saved ?? fallback);
 
     close.addEventListener('click', () => this.hide(), { signal: this.abort.signal });
     this.element.addEventListener('pointerdown', () => this.bringToFront(), {

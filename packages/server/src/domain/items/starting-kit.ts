@@ -6,4 +6,11 @@ export const STARTING_KIT: readonly { kind: ItemKind; amount: number }[] = [
   { kind: 'dagger', amount: 1 },
   { kind: 'apple', amount: 3 },
   { kind: 'healing-potion', amount: 1 },
+  { kind: 'spellbook', amount: 1 },
+  { kind: 'garlic', amount: 10 },
+  { kind: 'ginseng', amount: 10 },
+  { kind: 'sulfurous-ash', amount: 15 },
+  { kind: 'black-pearl', amount: 5 },
+  { kind: 'mandrake-root', amount: 3 },
+  { kind: 'spiders-silk', amount: 3 },
 ];

@@ -16,5 +16,7 @@ export * from './domain/combat/vitals';
 export * from './domain/combat/weapons';
 export * from './domain/combat/combat-rules';
 export * from './domain/creatures/creature-catalog';
+export * from './domain/skills/skill-catalog';
+export * from './domain/magic/spell-catalog';
 export * from './protocol/messages';
 export * from './protocol/codec';

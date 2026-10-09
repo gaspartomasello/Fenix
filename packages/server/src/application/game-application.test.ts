@@ -8,6 +8,7 @@ import {
   type EntityId,
 } from '@fenix/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { STARTING_KIT } from '../domain/items/starting-kit';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
@@ -198,12 +199,9 @@ describe('GameApplication', () => {
       const [inventory] = ctx.notifier.ofType('inventory');
       if (inventory?.message.type !== 'inventory') throw new Error('sin inventario');
       expect(inventory.to).toBe(ana);
-      expect(inventory.message.backpack.map((i) => i.kind)).toEqual([
-        'gold',
-        'dagger',
-        'apple',
-        'healing-potion',
-      ]);
+      expect(inventory.message.backpack.map((i) => i.kind)).toEqual(
+        STARTING_KIT.map((i) => i.kind),
+      );
       expect(ctx.notifier.ofType('groundItems')).toEqual([
         {
           to: ana,

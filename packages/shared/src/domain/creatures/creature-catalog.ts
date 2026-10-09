@@ -19,6 +19,8 @@ export interface CreatureDefinition {
   readonly strength: number;
   readonly dexterity: number;
   readonly armor: number;
+  /** Habilidad de pelea, en décimas. */
+  readonly skill: number;
   readonly weapon: Weapon;
   /** Tiempo para avanzar un tile. */
   readonly moveMs: number;
@@ -36,12 +38,14 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     strength: 10,
     dexterity: 30,
     armor: 0,
-    weapon: { name: 'mordida', minDamage: 1, maxDamage: 3, swingMs: 1800 },
+    skill: 250,
+    weapon: { name: 'mordida', minDamage: 1, maxDamage: 3, swingMs: 1800, skill: 'wrestling' },
     moveMs: 450,
     aggroRange: 4,
     loot: [
       { kind: 'gold', chance: 0.9, amount: [2, 8] },
       { kind: 'apple', chance: 0.2, amount: [1, 2] },
+      { kind: 'garlic', chance: 0.25, amount: [1, 3] },
     ],
   },
   wolf: {
@@ -52,13 +56,16 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     strength: 30,
     dexterity: 45,
     armor: 4,
-    weapon: { name: 'mordida', minDamage: 3, maxDamage: 8, swingMs: 2000 },
+    skill: 450,
+    weapon: { name: 'mordida', minDamage: 3, maxDamage: 8, swingMs: 2000, skill: 'wrestling' },
     moveMs: 340,
     aggroRange: 7,
     loot: [
       { kind: 'gold', chance: 1, amount: [6, 18] },
       { kind: 'leather-cap', chance: 0.1 },
       { kind: 'leather-armor', chance: 0.08 },
+      { kind: 'ginseng', chance: 0.3, amount: [1, 3] },
+      { kind: 'spiders-silk', chance: 0.2, amount: [1, 2] },
     ],
   },
   skeleton: {
@@ -69,7 +76,14 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     strength: 40,
     dexterity: 35,
     armor: 10,
-    weapon: { name: 'espada oxidada', minDamage: 4, maxDamage: 10, swingMs: 2400 },
+    skill: 550,
+    weapon: {
+      name: 'espada oxidada',
+      minDamage: 4,
+      maxDamage: 10,
+      swingMs: 2400,
+      skill: 'swordsmanship',
+    },
     moveMs: 480,
     aggroRange: 8,
     loot: [
@@ -79,6 +93,8 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       { kind: 'iron-helmet', chance: 0.08 },
       { kind: 'chainmail', chance: 0.05 },
       { kind: 'wooden-shield', chance: 0.1 },
+      { kind: 'black-pearl', chance: 0.4, amount: [1, 4] },
+      { kind: 'sulfurous-ash', chance: 0.4, amount: [2, 5] },
     ],
   },
 };

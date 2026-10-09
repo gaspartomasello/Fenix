@@ -5,6 +5,8 @@ import type { EquipmentSlot } from '../domain/items/equipment';
 import type { ItemKind } from '../domain/items/item-catalog';
 import type { Vitals } from '../domain/combat/vitals';
 import type { Body } from '../domain/creatures/creature-catalog';
+import type { SpellKey } from '../domain/magic/spell-catalog';
+import type { SkillValues } from '../domain/skills/skill-catalog';
 import type { WorldTime } from '../domain/rules/daylight';
 import type { MoveMode } from '../domain/rules/movement';
 import type { TileMapData } from '../domain/world/tile-map';
@@ -98,6 +100,13 @@ export interface StopAttackRequest {
   readonly type: 'stopAttack';
 }
 
+/** Lanzar un hechizo; `targetId` para los que van a una criatura. */
+export interface CastSpellRequest {
+  readonly type: 'castSpell';
+  readonly spell: SpellKey;
+  readonly targetId?: EntityId;
+}
+
 export type ClientMessage =
   | JoinRequest
   | MoveRequest
@@ -105,7 +114,8 @@ export type ClientMessage =
   | MoveItemRequest
   | UseItemRequest
   | AttackRequest
-  | StopAttackRequest;
+  | StopAttackRequest
+  | CastSpellRequest;
 
 // ── Servidor → Cliente ────────────────────────────────────────────────
 
@@ -213,7 +223,32 @@ export interface SwingMessage {
   readonly attackerId: EntityId;
   readonly targetId: EntityId;
   readonly hit: boolean;
+  /** El escudo del objetivo detuvo el golpe. */
+  readonly blocked: boolean;
   readonly damage: number;
+}
+
+/** Habilidades propias (en décimas). */
+export interface SkillsMessage {
+  readonly type: 'skills';
+  readonly values: SkillValues;
+}
+
+/** Alguien empezó a lanzar un hechizo: se ven sus palabras. */
+export interface CastStartMessage {
+  readonly type: 'castStart';
+  readonly casterId: EntityId;
+  readonly spell: SpellKey;
+}
+
+/** Un hechizo salió: efecto visual del lanzador al objetivo. */
+export interface SpellEffectMessage {
+  readonly type: 'spellEffect';
+  readonly casterId: EntityId;
+  readonly targetId: EntityId;
+  readonly spell: SpellKey;
+  /** Cuánto curó o dañó (0 si no aplica). */
+  readonly amount: number;
 }
 
 export interface SystemMessage {
@@ -237,6 +272,9 @@ export type ServerMessage =
   | MobileHealthMessage
   | CombatTargetMessage
   | SwingMessage
+  | SkillsMessage
+  | CastStartMessage
+  | SpellEffectMessage
   | SystemMessage;
 
 export type ServerMessageType = ServerMessage['type'];

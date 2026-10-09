@@ -29,7 +29,7 @@ export interface OverheadText {
 /** Número de daño (o "¡Falla!") que sube y se desvanece sobre la cabeza. */
 export interface CombatText {
   readonly text: string;
-  readonly kind: 'damage-taken' | 'damage-dealt' | 'miss';
+  readonly kind: 'damage-taken' | 'damage-dealt' | 'miss' | 'heal';
   readonly startedAt: number;
 }
 

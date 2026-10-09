@@ -35,11 +35,17 @@ export class Lighting {
     dayProgress: number,
     focus: FractionalPosition,
     lights: Iterable<{ placement: StaticPlacement; radius: number }>,
+    selfRadius = SELF_LIGHT_RADIUS,
   ): void {
     const darkness = 1 - (daylight(dayProgress) - 0.25) / 0.75;
     let used = 0;
     if (darkness > 0.02) {
-      this.place(used++, focus, SELF_LIGHT_RADIUS, darkness * 0.3);
+      this.place(
+        used++,
+        focus,
+        selfRadius,
+        darkness * (selfRadius > SELF_LIGHT_RADIUS ? 0.5 : 0.3),
+      );
       for (const { placement, radius } of lights) {
         this.place(used++, placement, radius, darkness * 0.5);
       }

@@ -20,6 +20,7 @@ const COMBAT_TEXT_COLORS: Readonly<Record<CombatText['kind'], number>> = {
   'damage-taken': 0xff5a4a,
   'damage-dealt': 0xffe27a,
   miss: 0xc8c8c8,
+  heal: 0x7ee08a,
 };
 /** Resolución de los textos: alta para que sigan nítidos con zoom. */
 const TEXT_RESOLUTION = Math.max(2, Math.ceil(window.devicePixelRatio * 2));

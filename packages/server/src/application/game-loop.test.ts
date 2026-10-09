@@ -22,7 +22,8 @@ function createArena() {
     worldClock: new WorldClock(0),
     clock,
     ids: new SequentialIds(),
-    random: new FixedRandom(),
+    // 0,2: aciertan los golpes y los hechizos, y suben las habilidades.
+    random: new FixedRandom(0.2),
     notifier,
   });
   const run = (ms: number): void => {
@@ -68,7 +69,8 @@ describe('ciclo del juego: combate', () => {
       targetId: 'rata',
     });
 
-    arena.run(8000);
+    // Con los puños y Tácticas bajas hacen falta unos 7 golpes.
+    arena.run(15000);
     expect(rat.combat.isDead || rat.gone).toBe(true);
     const texts = arena.notifier
       .ofType('system')
@@ -77,7 +79,7 @@ describe('ciclo del juego: combate', () => {
     expect(texts.some((t) => t.startsWith('Una rata gigante dejó:'))).toBe(true);
     expect(arena.world.items.groundNear({ x: 2, y: 1 }).map((i) => i.kind)).toContain('gold');
 
-    arena.run(CORPSE_MS);
+    arena.run(CORPSE_MS + 200);
     expect(rat.gone).toBe(true);
     expect(
       arena.notifier
@@ -158,6 +160,67 @@ describe('ciclo del juego: combate', () => {
       app.tick(arena.clock.now());
     }
     expect(rat.position.x).toBeGreaterThanOrEqual(4);
+  });
+
+  it('lanza una flecha mágica: gasta maná y reactivos, daña y sube Magia', () => {
+    const arena = createArena();
+    const ana = arena.join('Ana');
+    const player = arena.world.get(ana);
+    if (!player) throw new Error('sin jugador');
+    const rat = new Creature('rata', 'rat', { x: 6, y: 1 });
+    arena.world.addCreature(rat);
+    const ash = arena.world.items.countInBackpack(ana, 'sulfurous-ash');
+    const magery = player.skills.get('magery');
+    arena.notifier.clear();
+
+    arena.app.handle(ana, { type: 'castSpell', spell: 'magic-arrow', targetId: 'rata' });
+    expect(player.combat.current.mana).toBe(30 - 4);
+    expect(arena.world.items.countInBackpack(ana, 'sulfurous-ash')).toBe(ash - 1);
+    expect(arena.notifier.ofType('castStart').length).toBeGreaterThan(0);
+
+    arena.run(1000);
+    const [effect] = arena.notifier.ofType('spellEffect');
+    expect(effect?.message).toMatchObject({
+      type: 'spellEffect',
+      spell: 'magic-arrow',
+      targetId: 'rata',
+    });
+    expect(rat.combat.current.hits).toBeLessThan(14);
+    expect(player.skills.get('magery')).toBe(magery + 1);
+  });
+
+  it('se cura a sí mismo', () => {
+    const arena = createArena();
+    const ana = arena.join('Ana');
+    const player = arena.world.get(ana);
+    player?.combat.takeDamage(30);
+    arena.app.handle(ana, { type: 'castSpell', spell: 'heal' });
+    arena.run(1000);
+    expect(player?.combat.current.hits).toBeGreaterThan(45);
+  });
+
+  it('explica por qué no se puede lanzar', () => {
+    const arena = createArena();
+    const ana = arena.join('Ana');
+    const player = arena.world.get(ana);
+    if (!player) throw new Error('sin jugador');
+    const texts = (): string[] =>
+      arena.notifier
+        .ofType('system')
+        .map((d) => (d.message.type === 'system' ? d.message.text : ''));
+
+    arena.notifier.clear();
+    arena.app.handle(ana, { type: 'castSpell', spell: 'greater-heal' });
+    expect(texts()).toEqual(['Tu Magia no alcanza para Gran curación.']);
+
+    arena.notifier.clear();
+    arena.app.handle(ana, { type: 'castSpell', spell: 'magic-arrow' });
+    expect(texts()).toEqual(['Elegí una criatura como objetivo.']);
+
+    arena.notifier.clear();
+    player.combat.spendMana(100);
+    arena.app.handle(ana, { type: 'castSpell', spell: 'heal' });
+    expect(texts()).toEqual(['No tenés suficiente maná.']);
   });
 
   it('no deja atacar a otros jugadores todavía', () => {

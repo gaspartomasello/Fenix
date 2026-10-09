@@ -1,5 +1,7 @@
 import {
   PLAYER_ATTRIBUTES,
+  STARTING_SKILLS,
+  type SpellKey,
   RUN_STEPS_PER_STAMINA,
   canStep,
   moveDuration,
@@ -13,6 +15,7 @@ import {
   type TileMap,
 } from '@fenix/shared';
 import { Combatant } from './combat/combatant';
+import { SkillSet } from './skills/skill-set';
 import type { Mobile } from './mobile';
 
 /**
@@ -39,6 +42,9 @@ export class Player implements Mobile {
   readonly body = 'human' as const;
   readonly appearance: Appearance;
   readonly combat = new Combatant(PLAYER_ATTRIBUTES);
+  readonly skills = new SkillSet(STARTING_SKILLS);
+  /** Hechizo que está lanzando, que se resuelve en `resolveAt`. */
+  pendingCast: { spell: SpellKey; targetId: EntityId; resolveAt: number } | null = null;
   private runSteps = 0;
   private _position: Position;
   private _direction: Direction;

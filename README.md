@@ -62,6 +62,8 @@ Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña 
   levantarlo.
 - **Clic** (o toque) sobre una criatura: atacarla. El personaje golpea solo mientras la tenga al
   lado. **Escape**: dejar de atacar.
+- **L**: libro de hechizos. **K**: habilidades. **1 a 5**: lanzar un hechizo (los de ataque van al
+  objetivo de combate o piden tocar una criatura).
 - **Rueda del mouse**: acercar o alejar la cámara.
 
 ## Estructura
@@ -90,7 +92,8 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
 4. ✅ **Combate**: ratas, lobos y esqueletos que deambulan y atacan, vida, maná y energía, armas y
    armaduras que cuentan, botín, muerte, fantasma y resurrección en el santuario. Los pueblos son
    zonas seguras.
-5. Habilidades: mejoran con el uso, con un tope total; magia con reactivos y libro de hechizos.
+5. ✅ **Habilidades y magia**: siete habilidades que suben con el uso (Lucha, Espadas, Esgrima,
+   Tácticas, Parada, Magia, Meditación) y cinco hechizos con reactivos y libro.
 6. Economía: crafting, recolección, NPCs vendedores, banco, oro.
 7. Social: grupos, gremios, combate entre jugadores, karma y fama.
 8. Persistencia y deploy: cuentas, guardado, servidor 24/7.
