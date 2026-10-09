@@ -25,6 +25,7 @@ import type { VolumeCanvas } from './volume';
 import {
   add,
   axesAlong,
+  clipping,
   cross,
   lerp,
   metal,
@@ -698,11 +699,16 @@ export function drawSkeletonFrame(direction: Direction, frame: CharacterFrame): 
   const chest = rig.chest;
   canvas.ellipsoid(rig.pelvis.origin, rig.pelvis.axes, [4.6, 2.4, 2.8], bone);
   canvas.limb(rig.pelvis.origin, rig.neck, 1.2, 1.1, solid(BONE, -1));
-  canvas.ellipsoid(chest.origin, chest.axes, [5.8, 5.6, 3.6], (s) => {
-    const y = chest.local(s.p)[1];
-    const x = chest.local(s.p)[0];
-    return ((y + 20) % 2.6 < 1.25 || Math.abs(x) < 0.8) && y > -4.5 ? tone(BONE, s.light) : null;
-  });
+  canvas.ellipsoid(
+    chest.origin,
+    chest.axes,
+    [5.8, 5.6, 3.6],
+    clipping((s) => {
+      const y = chest.local(s.p)[1];
+      const x = chest.local(s.p)[0];
+      return ((y + 20) % 2.6 < 1.25 || Math.abs(x) < 0.8) && y > -4.5 ? tone(BONE, s.light) : null;
+    }),
+  );
   canvas.ellipsoid(chest.at([0, 4.6, 0]), chest.axes, [6.8, 1.2, 2.6], bone);
   canvas.limb(rig.neck, rig.head.at([0, -3, 0]), 1.1, 1, bone);
   drawSkullHead(canvas, rig.head, BONE);

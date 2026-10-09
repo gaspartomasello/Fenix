@@ -260,22 +260,10 @@ export function ramp(base: Rgb): Ramp {
   ];
 }
 
-/**
- * Tono de la escala según la luz; `bias` corre uno o más escalones. Entre
- * dos tonos de la escala se pasa en degradé (sombreado suave, como los
- * sprites renderizados de UO), sin escalones marcados.
- */
+/** Tono de la escala según la luz; `bias` corre uno o más escalones. */
 export function tone(colors: Ramp, light: number, bias = 0): Rgb {
-  const at = Math.max(0, Math.min(4, light * 4.6 - 0.7 + bias));
-  const low = Math.floor(at);
-  const a = colors[low] ?? colors[2];
-  const b = colors[Math.min(4, low + 1)] ?? a;
-  const t = at - low;
-  return [
-    Math.round(a[0] + (b[0] - a[0]) * t),
-    Math.round(a[1] + (b[1] - a[1]) * t),
-    Math.round(a[2] + (b[2] - a[2]) * t),
-  ];
+  const index = Math.max(0, Math.min(4, Math.floor(light * 4.6 - 0.2) + bias));
+  return colors[index] ?? colors[2];
 }
 
 /** Material liso de un color. */
@@ -436,86 +424,13 @@ export class VolumeCanvas {
     this.ellipsoid(center, IDENTITY, [radius, radius, radius], material);
   }
 
-  /**
-   * Extremidad redondeada de `a` a `b`, que se afina de `ra` a `rb`: la
-   * superficie que barre una esfera al recorrer el eje (un "tubo" liso).
-   * Para cada pixel se busca el punto del eje cuya esfera queda más
-   * adelante; de ahí salen la profundidad y la normal.
-   */
+  /** Extremidad redondeada de `a` a `b`, que se afina de `ra` a `rb`. */
   limb(a: Vec3, b: Vec3, ra: number, rb: number, material: Material): void {
-    const zoom = this.camera.zoom;
-    const ca = this.camera.point(a);
-    const cb = this.camera.point(b);
-    const r0 = ra * zoom;
-    const r1 = rb * zoom;
-    const reach = Math.max(r0, r1);
-    const minX = Math.max(0, Math.floor(Math.min(ca[0], cb[0]) - reach));
-    const maxX = Math.min(this.width - 1, Math.ceil(Math.max(ca[0], cb[0]) + reach));
-    const minY = Math.max(0, Math.floor(Math.min(ca[1], cb[1]) - reach));
-    const maxY = Math.min(this.height - 1, Math.ceil(Math.max(ca[1], cb[1]) + reach));
-    const ex = cb[0] - ca[0];
-    const ey = cb[1] - ca[1];
-    const ez = cb[2] - ca[2];
-    const er = r1 - r0;
-    const depth = this.depth;
-    const width = this.width;
-
-    const axis2 = ex * ex + ey * ey;
-    const endOn = axis2 < (reach * 2) ** 2;
-    const band = endOn ? 1 : (reach * 1.05) / Math.sqrt(axis2);
-    const cz = ca[2];
-    // Altura de la esfera en el punto k del eje sobre (px, py), o -∞ si no lo cubre.
-    let px = 0;
-    let py = 0;
-    const front = (k: number): number => {
-      const dx = px - (ca[0] + ex * k);
-      const dy = py - (ca[1] + ey * k);
-      const r = r0 + er * k;
-      const h = r * r - dx * dx - dy * dy;
-      return h < 0 ? -Infinity : cz + ez * k + Math.sqrt(h);
-    };
-
-    for (let y = minY; y <= maxY; y++) {
-      py = y + 0.5;
-      for (let x = minX; x <= maxX; x++) {
-        px = x + 0.5;
-        // Descarte rápido: lejos del eje en la imagen no hay nada.
-        const along =
-          axis2 > 0 ? Math.max(0, Math.min(1, ((px - ca[0]) * ex + (py - ca[1]) * ey) / axis2)) : 0;
-        const gx = px - (ca[0] + ex * along);
-        const gy = py - (ca[1] + ey * along);
-        if (gx * gx + gy * gy > reach * reach) continue;
-        // La altura es cóncava en k: búsqueda ternaria cerca de la proyección, y los extremos.
-        // Solo puede cubrir este pixel la parte del eje a menos de un radio de la
-        // proyección (si apunta casi hacia la cámara, se busca en todo el eje).
-        let lo = endOn ? 0 : Math.max(0, along - band);
-        let hi = endOn ? 1 : Math.min(1, along + band);
-        for (let i = 0; i < 9; i++) {
-          const m1 = lo + (hi - lo) / 3;
-          const m2 = hi - (hi - lo) / 3;
-          if (front(m1) < front(m2)) lo = m1;
-          else hi = m2;
-        }
-        let k = (lo + hi) / 2;
-        let z = front(k);
-        const z0 = front(0);
-        if (z0 > z) {
-          k = 0;
-          z = z0;
-        }
-        const z1 = front(1);
-        if (z1 > z) {
-          k = 1;
-          z = z1;
-        }
-        if (z === -Infinity || z <= (depth[y * width + x] ?? Infinity)) continue;
-        const normal = this.camera.modelNormal([
-          px - (ca[0] + ex * k),
-          py - (ca[1] + ey * k),
-          z - (cz + ez * k),
-        ]);
-        this.paint(x, y, z, normal, material);
-      }
+    const length = Math.hypot(...sub(b, a));
+    const steps = Math.max(1, Math.ceil(length / 0.6));
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      this.sphere(lerp(a, b, t), ra + (rb - ra) * t, material);
     }
   }
 
