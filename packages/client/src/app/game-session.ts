@@ -71,6 +71,8 @@ export class GameSession {
   private readonly gateway: GameGateway;
   private readonly login: LoginScreen;
   private inWorld = false;
+  /** Salida pedida por el jugador: no es una conexión perdida. */
+  private loggingOut = false;
   /** Botones de pantalla que agregan otros módulos (hechizos, habilidades…). */
   private readonly hudExtras: HudButton[] = [];
   private hud: HudButtons | null = null;
@@ -419,7 +421,9 @@ export class GameSession {
         onPress: b.onPress,
         ...(b.pressed ? { pressed: b.pressed } : {}),
       })),
+      { label: 'Salir', onPress: () => this.logout() },
     ]);
+    this.game.on('logoutRequested', () => this.logout());
     const buttons = (this.hud = new HudButtons([
       { label: 'Mochila', key: 'b', onPress: () => backpack.window.toggle() },
       { label: 'Personaje', key: 'c', onPress: () => equipment.window.toggle() },
@@ -459,8 +463,21 @@ export class GameSession {
     render();
   }
 
+  /**
+   * Salir del juego, como el botón de UO: se cierra la conexión (el
+   * servidor guarda el personaje al soltarlo) y se vuelve a la pantalla de ingreso.
+   */
+  private logout(): void {
+    if (this.loggingOut) return;
+    this.loggingOut = true;
+    this.game.notify('Saliendo… tu personaje queda guardado.');
+    this.gateway.close();
+    // Un momento para que el cierre llegue al servidor antes de recargar.
+    window.setTimeout(() => window.location.reload(), 300);
+  }
+
   private onDisconnected(): void {
-    if (!this.inWorld) return;
+    if (!this.inWorld || this.loggingOut) return;
     showOverlay(this.hosts.ui, 'Conexión perdida', 'Se cortó la conexión con el servidor.');
   }
 }

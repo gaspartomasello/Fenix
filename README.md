@@ -86,6 +86,8 @@ prueba puede escribir `/hora 22` en el chat para cambiar la hora del mundo (para
   la forja: fundirlo. Doble clic sobre la herramienta de un oficio (martillo de herrero,
   costurero, serrucho, juego de flechero, mortero, pluma de escriba, sartén): abrir su ventana con
   las recetas.
+- **Salir**: el botón de la ventana de personaje (o `/desconectar` en el chat) guarda el
+  personaje y vuelve a la pantalla de ingreso.
 - **O**: ventana social (reputación, grupo, gremio e invitaciones). **Tab**: modo guerra, para
   poder atacar a otras personas fuera del pueblo.
 - **Chat**: `/g mensaje` habla al grupo, `/gr mensaje` al gremio, `/invitar nombre`,

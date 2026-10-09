@@ -46,4 +46,8 @@ describe('comandos del chat', () => {
     expect(parseChatInput('/hora 30').kind).toBe('error');
     expect(parseChatInput('/hora').kind).toBe('error');
   });
+
+  it('/desconectar pide salir del juego', () => {
+    expect(parseChatInput('/desconectar')).toEqual({ kind: 'logout' });
+  });
 });
