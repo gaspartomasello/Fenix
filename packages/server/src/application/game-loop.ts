@@ -1,4 +1,5 @@
 import {
+  CREATURE_FAME,
   REGEN_INTERVAL_MS,
   SPELLS,
   describeItem,
@@ -17,6 +18,7 @@ import type { World } from '../domain/world';
 import type { ItemNotifications } from './item-notifications';
 import type { MobileNotifications } from './mobile-notifications';
 import type { IdGenerator, Notifier, RandomSource } from './ports';
+import type { SocialNotifications } from './social-notifications';
 
 /** Distancia al santuario para que un fantasma vuelva a la vida. */
 export const SHRINE_RANGE = 2;
@@ -37,6 +39,7 @@ export class GameLoop {
     private readonly notifier: Notifier,
     private readonly ids: IdGenerator,
     private readonly random: RandomSource,
+    private readonly social: SocialNotifications,
   ) {
     this.shrines = world.map.statics.filter((s) => s.kind === 'shrine');
   }
@@ -49,6 +52,7 @@ export class GameLoop {
   private readonly roll = (): number => this.random.next();
 
   private tickPlayer(player: Player, now: number): void {
+    if (player.reputation.refresh(now)) this.social.statusChanged(player);
     if (player.combat.isDead) {
       this.tryResurrect(player, now);
       return;
@@ -154,12 +158,15 @@ export class GameLoop {
   private handleKill(killer: Mobile, victim: Mobile, now: number): void {
     if (victim instanceof Player) {
       victim.pendingCast = null;
+      victim.combat.targetId = null;
       this.mobiles.broadcastHealth(victim);
       this.mobiles.sendVitals(victim);
+      this.mobiles.sendTarget(victim);
       this.notifier.send(victim.id, {
         type: 'system',
         text: 'Moriste. Caminá hasta el santuario de Puerto Ceniza para volver a la vida.',
       });
+      if (killer instanceof Player) this.handlePlayerKill(killer, victim, now);
       return;
     }
 
@@ -174,8 +181,36 @@ export class GameLoop {
         killer.combat.targetId = null;
         this.mobiles.sendTarget(killer);
       }
+      const fame = CREATURE_FAME[creature.body] ?? 0;
+      killer.reputation.award(fame, fame);
+      this.social.sendSocial(killer);
     }
     this.dropLoot(creature);
+  }
+
+  /** Matar a un inocente suma una muerte; matar a un criminal o asesino da fama y karma. */
+  private handlePlayerKill(killer: Player, victim: Player, now: number): void {
+    if (killer.combat.targetId === victim.id) {
+      killer.combat.targetId = null;
+      this.mobiles.sendTarget(killer);
+    }
+    this.notifier.send(victim.id, { type: 'system', text: `${killer.name} te mató.` });
+    if (victim.reputation.notoriety === 'innocent') {
+      const changed = killer.reputation.addMurder(now);
+      this.notifier.send(killer.id, {
+        type: 'system',
+        text: `Asesinaste a ${victim.name}. Llevás ${killer.reputation.murders} muertes de inocentes.`,
+      });
+      if (changed) this.social.statusChanged(killer);
+      else this.social.sendSocial(killer);
+      return;
+    }
+    killer.reputation.award(100, 100);
+    this.notifier.send(killer.id, {
+      type: 'system',
+      text: `Mataste a ${victim.name}, que era ${victim.reputation.notoriety === 'murderer' ? 'un asesino' : 'criminal'}.`,
+    });
+    this.social.sendSocial(killer);
   }
 
   private dropLoot(creature: Creature): void {

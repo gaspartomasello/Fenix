@@ -12,6 +12,8 @@ import { Items } from './items/items';
 import type { Mobile } from './mobile';
 import { Npc } from './npcs/npc';
 import { Player, type PlayerProps } from './player';
+import { Guilds } from './social/guilds';
+import { Parties } from './social/parties';
 
 export const MAX_PLAYERS = 100;
 
@@ -21,6 +23,8 @@ export class World {
   private readonly creatures = new Map<EntityId, Creature>();
   private readonly npcs = new Map<EntityId, Npc>();
   readonly items = new Items();
+  readonly parties = new Parties();
+  readonly guilds = new Guilds();
 
   constructor(
     readonly map: TileMap,
@@ -107,7 +111,11 @@ export class World {
   /** Lo que ven los demás de un jugador o criatura, incluido lo que tiene puesto. */
   snapshotOf(mobile: Mobile): MobileSnapshot {
     if (mobile instanceof Player) {
-      return { ...mobile.toSnapshot(), equipment: this.items.lookOf(mobile.id) };
+      return {
+        ...mobile.toSnapshot(),
+        equipment: this.items.lookOf(mobile.id),
+        guildTag: this.guilds.of(mobile.name)?.tag ?? null,
+      };
     }
     if (mobile instanceof Npc) {
       return {
@@ -121,6 +129,8 @@ export class World {
         health: 1,
         dead: false,
         npc: mobile.role,
+        notoriety: 'innocent',
+        guildTag: null,
       };
     }
     return {
@@ -134,11 +144,19 @@ export class World {
       health: mobile.combat.health,
       dead: mobile.combat.isDead,
       npc: null,
+      notoriety: 'murderer',
+      guildTag: null,
     };
   }
 
   get(id: EntityId): Player | undefined {
     return this.players.get(id);
+  }
+
+  /** Un jugador conectado por su nombre (sin distinguir mayúsculas). */
+  findByName(name: string): Player | undefined {
+    const lower = name.trim().toLocaleLowerCase();
+    return [...this.players.values()].find((p) => p.name.toLocaleLowerCase() === lower);
   }
 
   allPlayers(): readonly Player[] {

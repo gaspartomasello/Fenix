@@ -16,6 +16,7 @@ import {
 } from '@fenix/shared';
 import { Combatant } from './combat/combatant';
 import { SkillSet } from './skills/skill-set';
+import { Reputation } from './social/reputation';
 import type { Mobile } from './mobile';
 
 /**
@@ -43,6 +44,7 @@ export class Player implements Mobile {
   readonly appearance: Appearance;
   readonly combat = new Combatant(PLAYER_ATTRIBUTES);
   readonly skills = new SkillSet(STARTING_SKILLS);
+  readonly reputation = new Reputation();
   /** Hechizo que está lanzando, que se resuelve en `resolveAt`. */
   pendingCast: { spell: SpellKey; targetId: EntityId; resolveAt: number } | null = null;
   /** Cuándo puede volver a recolectar o fabricar. */
@@ -82,7 +84,6 @@ export class Player implements Mobile {
     return { ok: true };
   }
 
-  /** Datos públicos del jugador; lo que tiene puesto lo agrega `World`. */
   /** Cuenta un paso corriendo; cada RUN_STEPS_PER_STAMINA gasta un punto de energía. */
   registerRunStep(): boolean {
     this.runSteps += 1;
@@ -92,6 +93,7 @@ export class Player implements Mobile {
     return true;
   }
 
+  /** Datos públicos del jugador; lo que tiene puesto y su gremio los agrega `World`. */
   toSnapshot(): Omit<MobileSnapshot, 'equipment'> {
     return {
       id: this.id,
@@ -103,6 +105,8 @@ export class Player implements Mobile {
       health: this.combat.health,
       dead: this.combat.isDead,
       npc: null,
+      notoriety: this.reputation.notoriety,
+      guildTag: null,
     };
   }
 }

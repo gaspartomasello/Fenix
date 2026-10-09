@@ -170,11 +170,27 @@ recupera con `ResourceSpots`), fundir junto a la forja, fabricar junto al yunque
 El banco es otra ubicación de los objetos (`bank`), que solo se puede tocar cerca de la banquera.
 `EconomyActions` publica los cambios y las prácticas de habilidad.
 
+### Social
+
+`World` guarda los grupos (`Parties`, por id de jugador: se disuelven al desconectarse) y los
+gremios (`Guilds`, por nombre de personaje: la membresía sobrevive a salir del juego). Cada
+`Player` tiene su `Reputation` (fama, karma, muertes de inocentes y marca de criminal); la regla
+de reputación (`notorietyOf`) está en `@fenix/shared`. `SocialActions` atiende los comandos
+(`social`), `SendChat` reparte por canal y `SocialNotifications` envía el estado social propio
+(`social`) y los cambios de nombre visibles (`mobileStatus`). `pvpRefusal` decide si un jugador
+puede atacar a otro: nunca dentro de un pueblo ni a alguien del propio grupo o gremio. Atacar a
+un inocente marca como criminal por dos minutos; matarlo suma una muerte (con cinco se es
+asesino), y cada muerte se olvida a la media hora.
+
+En el cliente, `parseChatInput` (en `core`) traduce los comandos del chat, el modo guerra es
+estado local de `ClientGame` y `SocialWindow` muestra todo con botones.
+
 ### Rango de visión
 
 Cada jugador solo recibe lo que pasa a 18 tiles o menos (como en UO): al moverse, el servidor
 calcula quién entra y quién sale de su rango y envía `mobileAppeared` / `mobileDisappeared` en
-ambos sentidos. El chat también se oye solo dentro de ese rango.
+ambos sentidos. El chat en voz alta también se oye solo dentro de ese rango (el de grupo y el de
+gremio llega a sus miembros estén donde estén).
 
 ## Render
 

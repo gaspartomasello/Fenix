@@ -7,6 +7,9 @@ import {
   moveDuration,
   sanitizeChatText,
   type BackpackItemSnapshot,
+  type ChatChannel,
+  type SocialCommand,
+  type SocialMessage,
   type Direction,
   type EntityId,
   type EquippedItemSnapshot,
@@ -21,6 +24,7 @@ import {
   type Vitals,
   type WorldTime,
 } from '@fenix/shared';
+import { CHAT_HELP, parseChatInput } from './chat-commands';
 import { Entity } from './entity';
 import { EventEmitter } from './event-emitter';
 import { MovementPredictor } from './movement-predictor';
@@ -32,7 +36,12 @@ export interface LogEntry {
   readonly kind: LogKind;
   readonly author?: string;
   readonly text: string;
+  /** Canal de un mensaje de chat (en voz alta, grupo o gremio). */
+  readonly channel?: ChatChannel;
 }
+
+/** Grupo, gremio, invitaciones y reputación propios. */
+export type SocialState = Omit<SocialMessage, 'type'>;
 
 export interface ClientGameEvents extends Record<string, unknown> {
   /** Se recibió el mundo inicial: ya se puede dibujar. */
@@ -52,6 +61,9 @@ export interface ClientGameEvents extends Record<string, unknown> {
   skillsChanged: SkillValues;
   /** Un hechizo salió: para dibujar su efecto. */
   spellEffect: { casterId: EntityId; targetId: EntityId; spell: SpellKey };
+  socialChanged: SocialState;
+  /** Modo guerra: permite atacar a otras personas. */
+  warModeChanged: boolean;
 }
 
 export interface Inventory {
@@ -75,6 +87,8 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   private _vitals: { vitals: Vitals; dead: boolean } | null = null;
   private _targetId: EntityId | null = null;
   private _skills: SkillValues | null = null;
+  private _social: SocialState | null = null;
+  private _warMode = false;
 
   constructor(
     private readonly gateway: ServerGateway,
@@ -101,6 +115,14 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
 
   get skills(): SkillValues | null {
     return this._skills;
+  }
+
+  get social(): SocialState | null {
+    return this._social;
+  }
+
+  get warMode(): boolean {
+    return this._warMode;
   }
 
   get selfId(): EntityId | null {
@@ -164,9 +186,61 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     if (request) this.gateway.send(request);
   }
 
+  /** Una línea del chat: texto para decir o un comando (/g, /invitar, /ayuda…). */
   say(rawText: string): void {
-    const text = sanitizeChatText(rawText);
-    if (text && this.self) this.gateway.send({ type: 'chat', text });
+    if (!this.self) return;
+    const input = parseChatInput(rawText);
+    switch (input.kind) {
+      case 'chat': {
+        const text = sanitizeChatText(input.text);
+        if (!text) return;
+        this.gateway.send(
+          input.channel === 'say'
+            ? { type: 'chat', text }
+            : { type: 'chat', text, channel: input.channel },
+        );
+        return;
+      }
+      case 'social':
+        this.socialCommand(input.command, input.name, input.tag);
+        return;
+      case 'answer':
+        this.answerInvite(input.accept);
+        return;
+      case 'help':
+        CHAT_HELP.forEach((line) => this.notify(line));
+        return;
+      case 'error':
+        this.notify(input.text);
+    }
+  }
+
+  socialCommand(command: SocialCommand, name?: string, tag?: string): void {
+    if (!this.self) return;
+    this.gateway.send({
+      type: 'social',
+      command,
+      ...(name === undefined ? {} : { name }),
+      ...(tag === undefined ? {} : { tag }),
+    });
+  }
+
+  /** Acepta o rechaza la invitación pendiente (primero la de grupo). */
+  answerInvite(accept: boolean): void {
+    const invites = this._social?.invites;
+    if (invites?.party) this.socialCommand(accept ? 'party-accept' : 'party-decline');
+    else if (invites?.guild) this.socialCommand(accept ? 'guild-accept' : 'guild-decline');
+    else this.notify('No tenés invitaciones pendientes.');
+  }
+
+  /** Entrar o salir del modo guerra. Al salir se deja de atacar, como en UO. */
+  toggleWarMode(): void {
+    this._warMode = !this._warMode;
+    if (!this._warMode) this.stopAttack();
+    this.notify(
+      this._warMode ? 'Modo guerra: podés atacar a otras personas fuera del pueblo.' : 'Modo paz.',
+    );
+    this.emit('warModeChanged', this._warMode);
   }
 
   /** Arrastrar y soltar un objeto. El servidor decide si se puede. */
@@ -176,7 +250,12 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
 
   /** Atacar a una criatura: el servidor golpea mientras esté al alcance. */
   attack(targetId: EntityId): void {
-    if (this.self && targetId !== this.selfIdValue) this.gateway.send({ type: 'attack', targetId });
+    if (!this.self || targetId === this.selfIdValue) return;
+    if (this.entities.get(targetId)?.isPlayer && !this._warMode) {
+      this.notify('Activá el modo guerra (Tab) para atacar a otras personas.');
+      return;
+    }
+    this.gateway.send({ type: 'attack', targetId });
   }
 
   /** Lanzar un hechizo; los que van a una criatura necesitan `targetId`. */
@@ -285,8 +364,13 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this.self?.teleport(message.position, message.direction);
         break;
       case 'chat':
-        this.entities.get(message.id)?.say(message.text, now);
-        this.emit('log', { kind: 'chat', author: message.name, text: message.text });
+        if (message.channel === 'say') this.entities.get(message.id)?.say(message.text, now);
+        this.emit('log', {
+          kind: 'chat',
+          author: message.name,
+          text: message.text,
+          channel: message.channel,
+        });
         break;
       case 'system':
         this.emit('log', { kind: 'system', text: message.text });
@@ -311,7 +395,25 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         break;
       case 'mobileHealth':
         this.entities.get(message.id)?.setHealth(message.health, message.dead);
+        this.updatePartyHealth(message.id, message.health);
         break;
+      case 'mobileStatus':
+        this.entities.get(message.id)?.setStatus(message.notoriety, message.guildTag);
+        break;
+      case 'social': {
+        const state: SocialState = {
+          party: message.party,
+          guild: message.guild,
+          invites: message.invites,
+          fame: message.fame,
+          karma: message.karma,
+          murders: message.murders,
+          notoriety: message.notoriety,
+        };
+        this._social = state;
+        this.emit('socialChanged', state);
+        break;
+      }
       case 'combatTarget':
         this._targetId = message.targetId;
         this.emit('targetChanged', message.targetId);
@@ -351,6 +453,20 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this.entities.get(message.id)?.setEquipment(message.equipment);
         break;
     }
+  }
+
+  /** La vida de los compañeros de grupo llega aunque estén lejos. */
+  private updatePartyHealth(id: EntityId, health: number): void {
+    const social = this._social;
+    if (!social?.party?.members.some((m) => m.id === id)) return;
+    this._social = {
+      ...social,
+      party: {
+        ...social.party,
+        members: social.party.members.map((m) => (m.id === id ? { ...m, health } : m)),
+      },
+    };
+    this.emit('socialChanged', this._social);
   }
 
   private applySwing(message: Extract<ServerMessage, { type: 'swing' }>, now: number): void {

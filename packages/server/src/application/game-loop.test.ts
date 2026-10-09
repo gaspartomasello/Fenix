@@ -223,18 +223,6 @@ describe('ciclo del juego: combate', () => {
     expect(texts()).toEqual(['No tenés suficiente maná.']);
   });
 
-  it('no deja atacar a otros jugadores todavía', () => {
-    const arena = createArena();
-    const ana = arena.join('Ana');
-    const bruno = arena.join('Bruno');
-    arena.notifier.clear();
-    arena.app.handle(ana, { type: 'attack', targetId: bruno });
-    expect(arena.notifier.ofType('system')[0]?.message).toEqual({
-      type: 'system',
-      text: 'Todavía no se puede atacar a otros jugadores.',
-    });
-  });
-
   it('correr gasta energía', () => {
     const arena = createArena();
     const ana = arena.join('Ana');

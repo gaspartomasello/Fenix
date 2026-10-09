@@ -6,6 +6,8 @@ import type { ItemKind } from '../domain/items/item-catalog';
 import type { Vitals } from '../domain/combat/vitals';
 import type { Body } from '../domain/creatures/creature-catalog';
 import type { NpcRole } from '../domain/economy/vendors';
+import type { ChatChannel, SocialCommand } from '../domain/social/groups';
+import type { Notoriety } from '../domain/social/reputation';
 import type { SpellKey } from '../domain/magic/spell-catalog';
 import type { SkillValues } from '../domain/skills/skill-catalog';
 import type { WorldTime } from '../domain/rules/daylight';
@@ -33,6 +35,9 @@ export interface MobileSnapshot {
   readonly dead: boolean;
   /** Si es un personaje del pueblo (comerciante, banquera), su oficio. */
   readonly npc: NpcRole | null;
+  /** Reputación (color del nombre) y siglas del gremio, si tiene. */
+  readonly notoriety: Notoriety;
+  readonly guildTag: string | null;
 }
 
 export interface ItemSnapshot {
@@ -80,6 +85,18 @@ export interface MoveRequest {
 export interface ChatRequest {
   readonly type: 'chat';
   readonly text: string;
+  /** Por defecto, decir en voz alta. */
+  readonly channel?: ChatChannel;
+}
+
+/** Comandos de grupo y gremio (invitar, aceptar, crear, salir…). */
+export interface SocialRequest {
+  readonly type: 'social';
+  readonly command: SocialCommand;
+  /** Nombre del jugador a invitar o del gremio a crear. */
+  readonly name?: string;
+  /** Siglas del gremio a crear. */
+  readonly tag?: string;
 }
 
 export interface MoveItemRequest {
@@ -149,7 +166,8 @@ export type ClientMessage =
   | GatherRequest
   | BuyRequest
   | SellRequest
-  | CraftRequest;
+  | CraftRequest
+  | SocialRequest;
 
 // ── Servidor → Cliente ────────────────────────────────────────────────
 
@@ -207,6 +225,7 @@ export interface ChatMessage {
   readonly id: EntityId;
   readonly name: string;
   readonly text: string;
+  readonly channel: ChatChannel;
 }
 
 /** Cambios en los objetos del suelo dentro del rango de visión. */
@@ -287,6 +306,40 @@ export interface SpellEffectMessage {
   readonly amount: number;
 }
 
+/** Cambió la reputación o el gremio de alguien a la vista. */
+export interface MobileStatusMessage {
+  readonly type: 'mobileStatus';
+  readonly id: EntityId;
+  readonly notoriety: Notoriety;
+  readonly guildTag: string | null;
+}
+
+export interface PartyMemberSnapshot {
+  readonly id: EntityId;
+  readonly name: string;
+  readonly health: number;
+}
+
+/** Estado social propio: grupo, gremio, invitaciones y reputación. */
+export interface SocialMessage {
+  readonly type: 'social';
+  readonly party: {
+    readonly leaderId: EntityId;
+    readonly members: readonly PartyMemberSnapshot[];
+  } | null;
+  readonly guild: {
+    readonly name: string;
+    readonly tag: string;
+    readonly members: readonly string[];
+  } | null;
+  /** Invitaciones pendientes: nombre de quien invita. */
+  readonly invites: { readonly party: string | null; readonly guild: string | null };
+  readonly fame: number;
+  readonly karma: number;
+  readonly murders: number;
+  readonly notoriety: Notoriety;
+}
+
 export interface SystemMessage {
   readonly type: 'system';
   readonly text: string;
@@ -311,6 +364,8 @@ export type ServerMessage =
   | SkillsMessage
   | CastStartMessage
   | SpellEffectMessage
+  | MobileStatusMessage
+  | SocialMessage
   | SystemMessage;
 
 export type ServerMessageType = ServerMessage['type'];

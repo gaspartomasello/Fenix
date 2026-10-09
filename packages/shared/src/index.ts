@@ -20,5 +20,7 @@ export * from './domain/skills/skill-catalog';
 export * from './domain/magic/spell-catalog';
 export * from './domain/economy/vendors';
 export * from './domain/economy/crafting';
+export * from './domain/social/reputation';
+export * from './domain/social/groups';
 export * from './protocol/messages';
 export * from './protocol/codec';

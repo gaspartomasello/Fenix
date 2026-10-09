@@ -7,6 +7,7 @@ import {
   type EquipmentLook,
   type NpcRole,
   type MobileSnapshot,
+  type Notoriety,
   type Position,
 } from '@fenix/shared';
 
@@ -70,6 +71,8 @@ export class Entity {
   private _dead: boolean;
   private _combatTexts: CombatText[] = [];
   private lunge: Lunge | null = null;
+  private _notoriety: Notoriety;
+  private _guildTag: string | null;
 
   constructor(snapshot: MobileSnapshot) {
     this.id = snapshot.id;
@@ -82,6 +85,28 @@ export class Entity {
     this.npc = snapshot.npc;
     this._health = snapshot.health;
     this._dead = snapshot.dead;
+    this._notoriety = snapshot.notoriety;
+    this._guildTag = snapshot.guildTag;
+  }
+
+  /** Reputación: define el color del nombre. */
+  get notoriety(): Notoriety {
+    return this._notoriety;
+  }
+
+  /** Siglas del gremio, que se muestran junto al nombre. */
+  get guildTag(): string | null {
+    return this._guildTag;
+  }
+
+  /** Es otra persona (ni criatura ni personaje del pueblo). */
+  get isPlayer(): boolean {
+    return this.body === 'human' && this.npc === null;
+  }
+
+  setStatus(notoriety: Notoriety, guildTag: string | null): void {
+    this._notoriety = notoriety;
+    this._guildTag = guildTag;
   }
 
   get health(): number {

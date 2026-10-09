@@ -762,3 +762,121 @@ body {
   padding: 0.5rem;
   color: var(--color-text-muted);
 }
+
+/* ── Social ───────────────────────────────────────────────────────── */
+
+.social-section {
+  display: grid;
+  gap: 0.4rem;
+  width: min(320px, calc(100vw - 48px));
+}
+
+.social-section + .social-section {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-panel-border);
+}
+
+.social-heading {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-accent);
+}
+
+.social-notoriety {
+  margin: 0;
+  font-weight: bold;
+}
+
+.social-notoriety--innocent {
+  color: #8fbfff;
+}
+
+.social-notoriety--criminal {
+  color: #b4b4b4;
+}
+
+.social-notoriety--murderer {
+  color: #ff5a4a;
+}
+
+.social-invite {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.4rem;
+  background: rgba(255, 211, 107, 0.12);
+  border: 1px solid #ffd36b;
+  border-radius: var(--radius);
+}
+
+.social-members {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.social-member {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.2rem 0.4rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius);
+}
+
+.social-health {
+  width: 70px;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.social-health-fill {
+  display: block;
+  height: 100%;
+  background: #4cc24c;
+}
+
+.social-guild-name {
+  margin: 0;
+  font-weight: bold;
+}
+
+.social-form {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.social-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.3rem 0.4rem;
+}
+
+.social-tag-input {
+  flex: 0 0 4.5rem;
+  text-transform: uppercase;
+}
+
+.chat-channel {
+  font-weight: bold;
+}
+
+.chat-line--party .chat-channel,
+.chat-line--party .chat-author {
+  color: #7ee08a;
+}
+
+.chat-line--guild .chat-channel,
+.chat-line--guild .chat-author {
+  color: #c7a0ff;
+}
+
+.hud-button[aria-pressed='true'] {
+  color: #ffffff;
+  background: #7a1f2a;
+  border-color: #ff5a4a;
+}

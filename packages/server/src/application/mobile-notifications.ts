@@ -23,8 +23,10 @@ export class MobileNotifications {
     });
   }
 
+  /** La vida de un jugador también la ven sus compañeros de grupo, aunque estén lejos. */
   broadcastHealth(mobile: Mobile): void {
-    this.notifier.sendMany(this.watchers(mobile), {
+    const party = this.world.parties.of(mobile.id)?.members ?? [];
+    this.notifier.sendMany(new Set([...this.watchers(mobile), ...party]), {
       type: 'mobileHealth',
       id: mobile.id,
       health: mobile.combat.health,

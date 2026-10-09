@@ -87,6 +87,11 @@ export class GameRenderer {
     return this.mobileAt(point, (view) => view.isAliveCreature);
   }
 
+  /** Otra persona viva bajo un punto de la pantalla. */
+  playerAt(point: ScreenPoint): EntityId | null {
+    return this.mobileAt(point, (view) => view.isOtherLivingPlayer);
+  }
+
   /** Personaje del pueblo bajo un punto de la pantalla. */
   npcAt(point: ScreenPoint): EntityId | null {
     return this.mobileAt(point, (view) => view.isNpc);

@@ -8,7 +8,8 @@ import { BackpackWindow } from '../ui/backpack-window';
 import { ChatPanel } from '../ui/chat-panel';
 import { DragController } from '../ui/drag-controller';
 import { EquipmentWindow } from '../ui/equipment-window';
-import { HudButtons } from '../ui/hud-buttons';
+import { HudButtons, type HudButton } from '../ui/hud-buttons';
+import { SocialWindow } from '../ui/social-window';
 import { WorldTooltip } from '../ui/world-tooltip';
 import { GhostBanner } from '../ui/ghost-banner';
 import { SkillsWindow } from '../ui/skills-window';
@@ -55,7 +56,8 @@ export class GameSession {
   private readonly login: LoginScreen;
   private inWorld = false;
   /** Botones de pantalla que agregan otros módulos (hechizos, habilidades…). */
-  private readonly hudExtras: { label: string; key: string; onPress: () => void }[] = [];
+  private readonly hudExtras: HudButton[] = [];
+  private hud: HudButtons | null = null;
 
   constructor(private readonly hosts: GameSessionHosts) {
     this.gateway = createGateway({
@@ -120,10 +122,11 @@ export class GameSession {
       canSteerFrom: (point) =>
         !tilePicker.isPicking &&
         !worldItems.hasItemAt(point) &&
-        !worldCombat.hasCreatureAt(point) &&
+        !worldCombat.hasTargetAt(point) &&
         !worldNpcs.hasNpcAt(point),
     });
     const spellbook = this.setUpMagic(worldCombat);
+    this.setUpSocial();
     this.setUpInventory(drag, worldItems, tooltip, spellbook, economy, tilePicker);
     this.setUpVitals();
     const chat = new ChatPanel((text) => this.game.say(text));
@@ -208,6 +211,37 @@ export class GameSession {
     };
     this.game.on('vitalsChanged', render);
     render();
+  }
+
+  /** Ventana social y modo guerra. */
+  private setUpSocial(): void {
+    const social = new SocialWindow((command, name, tag) =>
+      this.game.socialCommand(command, name, tag),
+    );
+    this.hosts.ui.append(social.window.element);
+    const render = (): void => {
+      const state = this.game.social;
+      if (state) social.render(state, this.game.selfId);
+    };
+    let shownInvites = '';
+    this.game.on('socialChanged', (state) => {
+      render();
+      // Una invitación nueva abre la ventana para poder responderla.
+      const invites = `${state.invites.party ?? ''}|${state.invites.guild ?? ''}`;
+      if (invites !== shownInvites && invites !== '|') social.window.show();
+      shownInvites = invites;
+    });
+    this.game.on('warModeChanged', () => this.hud?.refresh());
+    render();
+    this.hudExtras.push(
+      { label: 'Social', key: 'o', onPress: () => social.window.toggle() },
+      {
+        label: 'Guerra',
+        key: 'Tab',
+        onPress: () => this.game.toggleWarMode(),
+        pressed: () => this.game.warMode,
+      },
+    );
   }
 
   /** Libro de hechizos, habilidades, elegir objetivo y atajos 1–5. Devuelve el libro. */
@@ -299,11 +333,12 @@ export class GameSession {
     economy.setItemActions(actions);
     const backpack = new BackpackWindow(drag, actions);
     const equipment = new EquipmentWindow(drag, actions, self.appearance);
-    const buttons = new HudButtons([
+    const buttons = (this.hud = new HudButtons([
       { label: 'Mochila', key: 'b', onPress: () => backpack.window.toggle() },
       { label: 'Equipo', key: 'c', onPress: () => equipment.window.toggle() },
       ...this.hudExtras,
-    ]);
+    ]));
+    buttons.refresh();
     this.hosts.ui.append(
       backpack.window.element,
       equipment.window.element,
