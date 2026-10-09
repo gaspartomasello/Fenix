@@ -401,4 +401,21 @@ describe('ClientGame', () => {
     ]);
     expect(game.corpse).toBeNull();
   });
+
+  it('montado se predice al doble de rápido, sin gastar energía, y /desmontar pide bajarse', () => {
+    game.apply({ type: 'mountChanged', id: 'ana', mount: 'horse-gray' });
+    expect(game.self?.mount).toBe('horse-gray');
+    sent = [];
+    game.requestStep(Direction.East, 'walk');
+    now += MOVE_DURATION_MS.walk / 2;
+    game.requestStep(Direction.West, 'walk');
+    expect(sent.filter((m) => m.type === 'move')).toHaveLength(2);
+
+    game.say('/desmontar');
+    expect(sent.at(-1)).toEqual({ type: 'dismount' });
+    // A pie, /desmontar no manda nada.
+    game.apply({ type: 'mountChanged', id: 'ana', mount: null });
+    game.say('/desmontar');
+    expect(sent.filter((m) => m.type === 'dismount')).toHaveLength(1);
+  });
 });

@@ -706,6 +706,18 @@ body {
   min-width: 0;
 }
 
+/* Caballeriza: retrato de la montura, recortado del lienzo grande. */
+.stable-row {
+  grid-template-columns: 72px 1fr auto;
+}
+
+.stable-portrait {
+  width: 72px;
+  height: 56px;
+  object-fit: none;
+  object-position: 50% 82%;
+}
+
 .shop-price {
   font-size: 0.75rem;
   color: var(--color-text-muted);

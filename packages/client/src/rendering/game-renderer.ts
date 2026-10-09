@@ -84,6 +84,17 @@ export class GameRenderer {
     return this.mobileAt(point, (view) => view.isAliveCreature);
   }
 
+  /** La montura suelta propia bajo un punto de la pantalla. */
+  ownPetAt(point: ScreenPoint): EntityId | null {
+    return this.mobileAt(point, (view) => view.isOwnPet && !view.isCreatureCorpse);
+  }
+
+  /** Uno mismo bajo un punto de la pantalla. */
+  selfAt(point: ScreenPoint): EntityId | null {
+    const self = this.game.self;
+    return self ? this.mobileAt(point, (view) => view.entityId === self.id) : null;
+  }
+
   corpseAt(point: ScreenPoint): EntityId | null {
     return this.mobileAt(point, (view) => view.isCreatureCorpse);
   }
@@ -240,7 +251,12 @@ export class GameRenderer {
 
   private addView(entity: Entity): void {
     if (this.views.has(entity.id)) return;
-    const view = new CharacterView(entity, this.textures, entity.id === this.game.self?.id);
+    const view = new CharacterView(
+      entity,
+      this.textures,
+      entity.id === this.game.self?.id,
+      this.game.isOwnPet(entity.id),
+    );
     this.views.set(entity.id, view);
     this.entityLayer.addChild(view.container);
   }
