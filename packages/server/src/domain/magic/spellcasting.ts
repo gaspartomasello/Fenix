@@ -189,9 +189,10 @@ export interface AreaHit {
 export const RESURRECTION_HEALTH = 0.5;
 
 /** Resistencia mágica del objetivo: la habilidad del jugador, o la de pelea de la criatura. */
-function magicResistOf(target: Mobile): number {
+export function magicResistOf(target: Mobile): number {
   if (target instanceof Player) return target.skills.get('magic-resist');
-  if (target instanceof Creature) return target.definition.skill / 2;
+  if (target instanceof Creature)
+    return target.definition.abilities?.magicResist ?? target.definition.skill / 2;
   return 0;
 }
 

@@ -181,6 +181,28 @@ const STYLES: Readonly<Record<Terrain, TerrainStyle>> = {
       return color;
     },
   },
+  [Terrain.Cave]: {
+    varies: true,
+    base: [100, 90, 78],
+    paint(u, v, seed) {
+      // Suelo de roca y tierra apisonada, con grietas y piedritas.
+      const tone = fbm(u, v, seed, 3, 3);
+      let color = mix([78, 70, 60], [124, 112, 96], tone);
+      const crack = periodicNoise(u, v, 7, seed + 13);
+      if (Math.abs(crack - 0.5) < 0.018) color = shade(color, 0.62);
+      const pebble = periodicNoise(u, v, 12, seed + 5);
+      if (pebble > 0.88) color = mix(color, [132, 124, 112], 0.6);
+      return color;
+    },
+  },
+  [Terrain.Rock]: {
+    varies: true,
+    base: [40, 36, 34],
+    paint(u, v, seed) {
+      // Roca maciza: casi negra, solo se ve por los bordes de las paredes.
+      return mix([26, 24, 22], [52, 48, 44], fbm(u, v, seed, 3, 2));
+    },
+  },
 };
 
 /** Color promedio del terreno (para minimapas y fondos). */

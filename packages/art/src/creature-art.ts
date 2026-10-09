@@ -9,19 +9,9 @@ import {
 } from './character-art';
 import type { PixelImage, Rgb } from './pixel-art';
 import { drawSummonFrame, isSummonKind } from './summon-art';
-import {
-  VolumeCanvas,
-  add,
-  axesAlong,
-  noise,
-  normalize,
-  ramp,
-  solid,
-  tone,
-  type Material,
-  type Ramp,
-  type Vec3,
-} from './volume';
+import { drawMonsterFrame, isMonsterKind } from './monster-art';
+import { VolumeCanvas, add, axesAlong, normalize, ramp, solid, tone, type Vec3 } from './volume';
+import { biteOffset, fur, gait } from './creature-motion';
 
 /** Dibuja un frame de una criatura, en el mismo lienzo que los personajes. */
 export function drawCreatureFrame(
@@ -31,6 +21,7 @@ export function drawCreatureFrame(
 ): PixelImage {
   if (kind === 'skeleton') return drawSkeletonFrame(direction, frame);
   if (isSummonKind(kind)) return drawSummonFrame(kind, direction, frame);
+  if (isMonsterKind(kind)) return drawMonsterFrame(kind, direction, frame);
   const zoom = kind === 'rat' ? 1.6 : 1.25;
   const canvas = new VolumeCanvas(
     CHARACTER_ART_WIDTH,
@@ -40,50 +31,6 @@ export function drawCreatureFrame(
   if (kind === 'wolf') drawWolf(canvas, frame);
   else drawRat(canvas, frame);
   return canvas.toImage(OUTLINE);
-}
-
-/**
- * Patas en diagonal: delantera derecha con trasera izquierda y al revés.
- * Devuelve cuánto avanza cada pata (en px) según el frame.
- */
-function gait(
-  frame: CharacterFrame,
-  stride: number,
-): { pairA: number; pairB: number; lift: number } {
-  switch (frame) {
-    case 0:
-    case 'run-0':
-      return { pairA: stride, pairB: -stride, lift: 0 };
-    case 2:
-    case 'run-2':
-      return { pairA: -stride, pairB: stride, lift: 0 };
-    case 1:
-    case 3:
-    case 'run-1':
-    case 'run-3':
-      return { pairA: 0, pairB: 0, lift: 1 };
-    default:
-      return { pairA: 0, pairB: 0, lift: 0 };
-  }
-}
-
-/** Mordida: en el golpe la cabeza se estira hacia adelante y abajo. */
-function biteOffset(frame: CharacterFrame, reach: number): Vec3 {
-  if (typeof frame !== 'string') return [0, 0, 0];
-  if (/^(slash|thrust|punch)-1$/.test(frame)) return [0, -reach * 0.5, reach];
-  if (/^(slash|thrust|punch)-0$/.test(frame)) return [0, reach * 0.2, -reach * 0.3];
-  return [0, 0, 0];
-}
-
-/** Pelaje: vientre más claro, lomo más oscuro y algo de textura. */
-function fur(colors: Ramp, belly: Ramp, saddleFrom: number): Material {
-  return (s) => {
-    if (s.n[1] < -0.35) return tone(belly, s.light);
-    const speckle =
-      noise(Math.floor(s.p[0] * 1.5), Math.floor(s.p[1] * 1.5), Math.floor(s.p[2])) > 0.78;
-    const saddle = s.p[1] > saddleFrom && s.n[1] > 0.5;
-    return tone(colors, s.light, (speckle ? -1 : 0) + (saddle ? -1 : 0));
-  };
 }
 
 const WOLF_FUR = ramp([134, 134, 140]);

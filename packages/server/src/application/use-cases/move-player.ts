@@ -62,6 +62,9 @@ export class MovePlayer {
       groundBefore,
       this.notifications.groundSnapshotsNear(playerId),
     );
+    // Entrada o salida de una mazmorra: al pisar el tile, aparece del otro lado.
+    const destination = this.world.map.teleportAt(player.position);
+    if (destination) this.teleport(player, destination);
   }
 
   /** Mueve al jugador al instante (teletransporte) y avisa a todos, incluido él. */
