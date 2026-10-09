@@ -1,4 +1,4 @@
-import { formatGameTime, type ClientMessage, type EntityId } from '@fenix/shared';
+import { formatGameTime, type ClientMessage, type EntityId, type Position } from '@fenix/shared';
 import { isTestCharacter } from '../domain/testing/test-character';
 import type { WorldClock } from '../domain/world-clock';
 import type { World } from '../domain/world';
@@ -228,6 +228,9 @@ export class GameApplication {
       case 'setHour':
         this.setHour(playerId, message.hour);
         break;
+      case 'testTravel':
+        this.testTravel(playerId, message.to);
+        break;
       case 'join':
         // Ya está en el mundo: se ignora un segundo ingreso.
         break;
@@ -252,6 +255,41 @@ export class GameApplication {
       type: 'system',
       text: `Ahora son las ${formatGameTime(hour / 24)}.`,
     });
+  }
+
+  /**
+   * `/cueva`: un personaje de prueba va a la boca de la mazmorra (afuera);
+   * `/cueva fondo`, al lado del jefe de la última sala.
+   */
+  private testTravel(playerId: EntityId, to: 'cave' | 'lair'): void {
+    const player = this.world.get(playerId);
+    if (!player) return;
+    if (!isTestCharacter(player.name, this.testCharacters)) {
+      this.notifier.send(playerId, {
+        type: 'system',
+        text: 'Solo los personajes de prueba pueden viajar así.',
+      });
+      return;
+    }
+    const map = this.world.map;
+    const destination =
+      to === 'cave' ? map.teleporters.find((t) => map.regionAt(t)?.dungeon)?.to : this.nearLair();
+    if (!destination) {
+      this.notifier.send(playerId, { type: 'system', text: 'Este mundo no tiene mazmorra.' });
+      return;
+    }
+    this.movePlayer.teleport(player, destination);
+  }
+
+  /** Un tile libre cerca del jefe de la mazmorra (el dragón). */
+  private nearLair(): Position | undefined {
+    const boss = this.world.allCreatures().find((c) => c.body === 'dragon');
+    if (!boss) return undefined;
+    for (let r = 7; r >= 3; r--) {
+      const spot = { x: boss.home.x - r, y: boss.home.y };
+      if (this.world.map.isWalkable(spot)) return spot;
+    }
+    return boss.home;
   }
 
   leave(playerId: EntityId): void {

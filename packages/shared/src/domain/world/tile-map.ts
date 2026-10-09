@@ -9,6 +9,18 @@ export interface RegionData {
   readonly y: number;
   readonly width: number;
   readonly height: number;
+  /**
+   * Mazmorra: sin luz natural (de día también está oscuro) y sin la
+   * protección de los pueblos: las criaturas entran y se puede pelear.
+   */
+  readonly dungeon?: boolean;
+}
+
+/** Tile que lleva a otro lugar al pisarlo (entrada y salida de una mazmorra). */
+export interface Teleporter {
+  readonly x: number;
+  readonly y: number;
+  readonly to: Position;
 }
 
 /** Forma serializable del mapa, tal como viaja por la red. */
@@ -19,11 +31,12 @@ export interface TileMapData {
   readonly terrain: readonly Terrain[];
   readonly statics: readonly StaticPlacement[];
   readonly regions: readonly RegionData[];
+  readonly teleporters: readonly Teleporter[];
 }
 
 /** Datos para construir un mapa; objetos y zonas son opcionales. */
-export type TileMapInit = Omit<TileMapData, 'statics' | 'regions'> &
-  Partial<Pick<TileMapData, 'statics' | 'regions'>>;
+export type TileMapInit = Omit<TileMapData, 'statics' | 'regions' | 'teleporters'> &
+  Partial<Pick<TileMapData, 'statics' | 'regions' | 'teleporters'>>;
 
 /** Mapa inmutable: terreno, objetos fijos y zonas, con consultas de solo lectura. */
 export class TileMap {
@@ -31,6 +44,7 @@ export class TileMap {
   readonly height: number;
   readonly statics: readonly StaticPlacement[];
   readonly regions: readonly RegionData[];
+  readonly teleporters: readonly Teleporter[];
   private readonly terrain: readonly Terrain[];
   private readonly blocked: Uint8Array;
 
@@ -45,6 +59,7 @@ export class TileMap {
     this.terrain = data.terrain;
     this.statics = data.statics ?? [];
     this.regions = data.regions ?? [];
+    this.teleporters = data.teleporters ?? [];
     this.blocked = new Uint8Array(data.width * data.height);
     for (const placed of this.statics) {
       if (STATICS[placed.kind].blocking && this.contains(placed)) {
@@ -89,6 +104,17 @@ export class TileMap {
     );
   }
 
+  /** Zona protegida (un pueblo): las criaturas no entran y no se pelea entre jugadores. */
+  safeZoneAt(position: Position): RegionData | undefined {
+    const region = this.regionAt(position);
+    return region && !region.dungeon ? region : undefined;
+  }
+
+  /** Adónde lleva el tile, si es un teletransporte. */
+  teleportAt(position: Position): Position | undefined {
+    return this.teleporters.find((t) => t.x === position.x && t.y === position.y)?.to;
+  }
+
   toData(): TileMapData {
     return {
       width: this.width,
@@ -96,6 +122,7 @@ export class TileMap {
       terrain: this.terrain,
       statics: this.statics,
       regions: this.regions,
+      teleporters: this.teleporters,
     };
   }
 }

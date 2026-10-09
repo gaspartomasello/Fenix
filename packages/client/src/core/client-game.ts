@@ -253,6 +253,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       case 'hour':
         this.gateway.send({ type: 'setHour', hour: input.hour });
         return;
+      case 'travel':
+        this.gateway.send({ type: 'testTravel', to: input.to });
+        return;
       case 'help':
         CHAT_HELP.forEach((line) => this.notify(line));
         return;

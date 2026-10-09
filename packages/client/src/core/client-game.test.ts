@@ -49,6 +49,7 @@ describe('ClientGame', () => {
         terrain: [G, G, G, W],
         statics: [],
         regions: [{ name: 'Muelle', x: 0, y: 0, width: 2, height: 1 }],
+        teleporters: [],
       },
       time: { dayProgress: 0.5, dayLengthMs: 10_000 },
       mobiles: [snapshot('ana', 0, 0), snapshot('bruno', 2, 0)],

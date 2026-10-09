@@ -7,10 +7,14 @@ import type { TextureCache } from './texture-cache';
 
 /** Luz de ambiente en plena noche: el mundo se ve azulado y oscuro, pero se distingue. */
 const NIGHT_AMBIENT = [58, 68, 116] as const;
+/** En una mazmorra no entra la luz del cielo: más oscuro que la noche, y sin azul de luna. */
+const CAVE_AMBIENT = [46, 42, 54] as const;
 /** Color que suma cada luz (cálido, como fuego). */
 const LIGHT_COLOR = 0xb08a62;
 /** Luz chica que acompaña al jugador de noche, en tiles (para no quedar a ciegas). */
 const SELF_LIGHT_RADIUS = 2.5;
+/** Bajo tierra los ojos se acostumbran: se ve un poco más alrededor. */
+const CAVE_SELF_LIGHT_RADIUS = 3.5;
 const LIGHT_TEXTURE_SIZE = 128;
 /** El mapa de luz se arma a media resolución: es suave y así cuesta menos. */
 const LIGHT_MAP_RESOLUTION = 0.5;
@@ -27,6 +31,8 @@ export interface LightingFrame {
   readonly lights: Iterable<{ placement: StaticPlacement; radius: number }>;
   /** Visión nocturna: se ve como de día, sin oscuridad. */
   readonly nightVision: boolean;
+  /** Dentro de una mazmorra: oscuro a cualquier hora. */
+  readonly underground: boolean;
 }
 
 /**
@@ -58,20 +64,26 @@ export class Lighting {
   }
 
   update(frame: LightingFrame): void {
-    const darkness = frame.nightVision ? 0 : Lighting.darkness(frame.dayProgress);
+    const darkness = frame.nightVision
+      ? 0
+      : frame.underground
+        ? 1
+        : Lighting.darkness(frame.dayProgress);
     if (darkness < 0.02) {
       this.overlay.visible = false;
       return;
     }
     this.resize(frame.width, frame.height);
-    const channel = (i: 0 | 1 | 2): number => Math.round(255 + (NIGHT_AMBIENT[i] - 255) * darkness);
+    const ambient = frame.underground ? CAVE_AMBIENT : NIGHT_AMBIENT;
+    const channel = (i: 0 | 1 | 2): number => Math.round(255 + (ambient[i] - 255) * darkness);
     this.ambient
       .clear()
       .rect(0, 0, frame.width, frame.height)
       .fill((channel(0) << 16) | (channel(1) << 8) | channel(2));
 
     let used = 0;
-    this.place(used++, frame, frame.focus, SELF_LIGHT_RADIUS, darkness * 0.7);
+    const selfRadius = frame.underground ? CAVE_SELF_LIGHT_RADIUS : SELF_LIGHT_RADIUS;
+    this.place(used++, frame, frame.focus, selfRadius, darkness * 0.7);
     for (const { placement, radius } of frame.lights) {
       this.place(used++, frame, placement, radius, darkness);
     }

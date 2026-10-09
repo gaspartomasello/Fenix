@@ -3,10 +3,10 @@
   "name": "terreno",
   "tilewidth": 44,
   "tileheight": 44,
-  "tilecount": 6,
-  "columns": 6,
+  "tilecount": 8,
+  "columns": 8,
   "image": "terreno.png",
-  "imagewidth": 264,
+  "imagewidth": 352,
   "imageheight": 44,
   "tiles": [
     {
@@ -66,6 +66,26 @@
           "name": "terrain",
           "type": "string",
           "value": "wood"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "properties": [
+        {
+          "name": "terrain",
+          "type": "string",
+          "value": "cave"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "properties": [
+        {
+          "name": "terrain",
+          "type": "string",
+          "value": "rock"
         }
       ]
     }

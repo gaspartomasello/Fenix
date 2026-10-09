@@ -172,6 +172,12 @@ export interface SetHourRequest {
   readonly hour: number;
 }
 
+/** Viajar al instante a la boca de la cueva o a la guarida del jefe (solo personajes de prueba). */
+export interface TestTravelRequest {
+  readonly type: 'testTravel';
+  readonly to: 'cave' | 'lair';
+}
+
 export interface CraftRequest {
   readonly type: 'craft';
   readonly recipe: string;
@@ -192,6 +198,7 @@ export type ClientMessage =
   | SellRequest
   | CraftRequest
   | SetHourRequest
+  | TestTravelRequest
   | SocialRequest;
 
 // ── Servidor → Cliente ────────────────────────────────────────────────

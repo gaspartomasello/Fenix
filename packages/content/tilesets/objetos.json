@@ -3,10 +3,10 @@
   "name": "objetos",
   "tilewidth": 88,
   "tileheight": 132,
-  "tilecount": 19,
-  "columns": 19,
+  "tilecount": 25,
+  "columns": 25,
   "image": "objetos.png",
-  "imagewidth": 1672,
+  "imagewidth": 2200,
   "imageheight": 132,
   "tileoffset": {
     "x": -22,
@@ -200,6 +200,66 @@
           "name": "static",
           "type": "string",
           "value": "anvil"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "cave-wall"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "cave-entrance"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "ladder"
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "brazier"
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "bones"
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "stalagmite"
         }
       ]
     }

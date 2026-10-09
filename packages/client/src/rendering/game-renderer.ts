@@ -152,6 +152,7 @@ export class GameRenderer {
         focus,
         lights: this.statics?.visibleLights() ?? [],
         nightVision: this.game.hasEffect('night-sight'),
+        underground: this.game.currentRegion()?.dungeon === true,
       });
     }
     this.app.render();

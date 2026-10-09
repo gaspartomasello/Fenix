@@ -138,14 +138,14 @@ function stepTowards(creature: Creature, goal: Position, world: World): Directio
 }
 
 /**
- * Las criaturas no pisan a nadie ni entran a zonas con nombre: los pueblos
+ * Las criaturas no pisan a nadie ni entran a las zonas protegidas: los pueblos
  * son seguros, como en UO. Las invocaciones sí entran, siguiendo a su dueño.
  */
 export function canMoveTo(creature: Creature, direction: Direction, world: World): boolean {
   const next = step(creature.position, direction);
   return (
     canStep(world.map, creature.position, direction) &&
-    (creature.ownerId !== null || !world.map.regionAt(next)) &&
+    (creature.ownerId !== null || !world.map.safeZoneAt(next)) &&
     !world.isOccupied(next, creature.id)
   );
 }

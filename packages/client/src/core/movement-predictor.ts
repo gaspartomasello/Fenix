@@ -33,6 +33,9 @@ export class MovementPredictor {
   /** Devuelve el mensaje a enviar, o null si todavía no puede dar el paso. */
   tryStep(self: Entity, direction: Direction, mode: MoveMode, now: number): MoveRequest | null {
     if (now < this.nextStepAt || this.pending.size >= MAX_PENDING_STEPS) return null;
+    // Sobre la boca de una cueva (u otro teletransporte) se espera a que el
+    // servidor nos lleve: no se predicen pasos desde un lugar que vamos a dejar.
+    if (this.pending.size > 0 && this.map.teleportAt(self.position)) return null;
 
     const duration = moveDuration(mode);
     this.nextStepAt = now + duration;
