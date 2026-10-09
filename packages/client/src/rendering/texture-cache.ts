@@ -54,10 +54,6 @@ export class TextureCache {
     return this.getOrCreate(`s:${kind}:${v}`, () => drawStatic(kind, v));
   }
 
-  /**
-   * Personas, criaturas y monturas se dibujan al doble de detalle (ver
-   * `ART_DETAIL`) y se achican al mostrarlas: filtro suave, no pixelado.
-   */
   character(
     appearance: Appearance,
     direction: Direction,
@@ -117,7 +113,7 @@ export class TextureCache {
 
   private fromEntry(entry: Entry): Texture {
     this.upcoming.delete(entry.key);
-    return this.getOrCreate(entry.key, entry.draw, 'linear');
+    return this.getOrCreate(entry.key, entry.draw);
   }
 
   private characterEntry(

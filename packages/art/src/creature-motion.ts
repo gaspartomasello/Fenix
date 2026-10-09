@@ -13,8 +13,23 @@ export function gait(
   const cycle = cyclePhase(frame);
   if (!cycle) return { pairA: 0, pairB: 0, lift: 0 };
   const angle = cycle.phase * Math.PI * 2;
-  const pairA = stride * Math.cos(angle);
-  return { pairA, pairB: -pairA, lift: Math.abs(Math.sin(angle)) };
+  // Redondeado: en los cuadros clave da exacto 0 (sin restos de coma flotante).
+  const pairA = stride * round(Math.cos(angle));
+  return { pairA, pairB: -pairA, lift: Math.abs(round(Math.sin(angle))) };
+}
+
+function round(value: number): number {
+  return Math.round(value * 1e6) / 1e6;
+}
+
+/**
+ * Cola que va y viene dos veces por ciclo de paso (de -1 a 1). Quieta en
+ * reposo; en los demás gestos queda hacia un lado.
+ */
+export function tailWag(frame: CharacterFrame): number {
+  if (frame === 'idle') return 0;
+  const cycle = cyclePhase(frame);
+  return cycle ? round(Math.cos(cycle.phase * Math.PI * 4)) : -1;
 }
 
 /** Mordida: en el golpe la cabeza se estira hacia adelante y abajo. */

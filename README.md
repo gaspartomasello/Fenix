@@ -180,5 +180,6 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
     en los estribos y las riendas en las manos. Caballerizo en el pueblo, montura que sigue a su
     dueño y viaja con él, montar y desmontar, el doble de velocidad y se guarda con el personaje.
     Después: animación de ocho cuadros por ciclo al caminar, correr y galopar (con las patas
-    delanteras cruzadas), sprites al doble de detalle con sombreado suave, caballo más grande al
-    lado del jinete, y el cuerpo de una criatura se revisa en un ataúd con calavera, como en UO.
+    delanteras cruzadas) y el cuerpo de una criatura se revisa en un ataúd con calavera, como en
+    UO. Se probó dibujar los sprites al doble de detalle con sombreado suave, pero se veía peor:
+    volvió el gráfico anterior, con la animación nueva.

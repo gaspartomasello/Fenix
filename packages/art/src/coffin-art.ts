@@ -1,4 +1,3 @@
-import { ART_DETAIL } from './humanoid-rig';
 import { PixelImage, mixColors, shade, type Rgb } from './pixel-art';
 import {
   Camera,
@@ -18,6 +17,8 @@ import {
  */
 export const COFFIN_WIDTH = 180;
 export const COFFIN_HEIGHT = 262;
+/** El ataúd se dibuja al doble y la ventana lo muestra a su medida (queda nítido). */
+const COFFIN_DETAIL = 2;
 /** Dónde van los objetos, dentro del ataúd. */
 export const COFFIN_INTERIOR = { x: 24, y: 70, width: 132, height: 176 } as const;
 
@@ -69,7 +70,7 @@ function edgeDistance(x: number, y: number): { d: number; nx: number; ny: number
 }
 
 export function drawCoffin(): PixelImage {
-  const k = ART_DETAIL;
+  const k = COFFIN_DETAIL;
   const image = new PixelImage(COFFIN_WIDTH * k, COFFIN_HEIGHT * k);
   for (let py = 0; py < image.height; py++) {
     for (let px = 0; px < image.width; px++) {
@@ -118,7 +119,7 @@ export function drawCoffin(): PixelImage {
 
 /** Calavera con dos huesos cruzados detrás, de frente. */
 function drawSkullAndBones(): PixelImage {
-  const k = ART_DETAIL;
+  const k = COFFIN_DETAIL;
   const canvas = new VolumeCanvas(110 * k, 84 * k, new Camera(0, 55 * k, 78 * k, 0.12, 3.4 * k));
   const bone = ramp([226, 214, 182]);
   const boneMaterial = solid(bone);
@@ -149,7 +150,7 @@ function drawSkull(canvas: VolumeCanvas, bone: Ramp): void {
   canvas.ellipsoid([0, 16.5, 1.5], front, [5.4, 5.6, 5.2], solidBone);
   canvas.ellipsoid([0, 12.6, 2.6], front, [4.4, 3.4, 4], solidBone);
   for (const side of [1, -1]) {
-    canvas.ellipsoid([side * 3.4, 12.8, 3.6], front, [1.6, 1.4, 1.6], solid(bone, 0.3));
+    canvas.ellipsoid([side * 3.4, 12.8, 3.6], front, [1.6, 1.4, 1.6], solid(bone));
   }
   canvas.ellipsoid([0, 9.4, 3], front, [3, 1.7, 2.6], solidBone);
   const hollow = solid(ramp([46, 30, 26]), -1);
@@ -160,7 +161,7 @@ function drawSkull(canvas: VolumeCanvas, bone: Ramp): void {
   canvas.ellipsoid([0, 12.2, 6.1], front, [0.95, 1.2, 0.7], hollow);
   // Dientes: una fila con separaciones.
   for (let i = -3; i <= 3; i++) {
-    canvas.ellipsoid([i * 0.78, 10, 5.25], front, [0.34, 0.75, 0.4], solid(bone, 0.5));
+    canvas.ellipsoid([i * 0.78, 10, 5.25], front, [0.34, 0.75, 0.4], solid(bone, 1));
   }
   canvas.ellipsoid([0, 10, 4.95], front, [2.9, 0.85, 0.5], hollow);
 }

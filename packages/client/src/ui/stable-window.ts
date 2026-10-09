@@ -1,4 +1,4 @@
-import { ART_DETAIL, drawMountFrame } from '@fenix/art';
+import { drawMountFrame } from '@fenix/art';
 import {
   Direction,
   MOUNTS,
@@ -13,31 +13,11 @@ import { GameWindow } from './game-window';
 
 const portraits = new Map<MountKind, string>();
 
-/** Recorte del lienzo de la montura (en pixeles de pantalla) donde entra el animal. */
-const PORTRAIT = { x: 16, y: 54, width: 88, height: 68 } as const;
-
 /** Retrato de la montura, de costado, para la lista de la caballeriza. */
 function portraitUrl(kind: MountKind): string {
   let url = portraits.get(kind);
   if (!url) {
-    const full = toCanvas(drawMountFrame(kind, Direction.NorthEast, 'idle'));
-    const crop = document.createElement('canvas');
-    crop.width = PORTRAIT.width * ART_DETAIL;
-    crop.height = PORTRAIT.height * ART_DETAIL;
-    crop
-      .getContext('2d')
-      ?.drawImage(
-        full,
-        PORTRAIT.x * ART_DETAIL,
-        PORTRAIT.y * ART_DETAIL,
-        crop.width,
-        crop.height,
-        0,
-        0,
-        crop.width,
-        crop.height,
-      );
-    url = crop.toDataURL();
+    url = toCanvas(drawMountFrame(kind, Direction.NorthEast, 'idle')).toDataURL();
     portraits.set(kind, url);
   }
   return url;
