@@ -18,6 +18,7 @@ import {
   type EntityId,
   type MoveMode,
   type MobileSnapshot,
+  type MountKind,
   type Position,
   type SkillValues,
   type TileMap,
@@ -75,6 +76,8 @@ export class Player implements Mobile {
   private usesSinceStatGain = 0;
   /** Cuándo puede volver a recolectar o fabricar. */
   nextActionAt = 0;
+  /** En qué va montado (null: a pie). */
+  mount: MountKind | null = null;
   private runSteps = 0;
   private _position: Position;
   private _direction: Direction;
@@ -111,7 +114,9 @@ export class Player implements Mobile {
       return { ok: false, reason: 'blocked' };
     }
     this._position = step(this._position, direction);
-    this.nextMoveAt = Math.max(this.nextMoveAt, now - MOVE_IDLE_CREDIT_MS) + moveDuration(mode);
+    this.nextMoveAt =
+      Math.max(this.nextMoveAt, now - MOVE_IDLE_CREDIT_MS) +
+      moveDuration(mode, this.mount !== null);
     return { ok: true };
   }
 
@@ -161,6 +166,7 @@ export class Player implements Mobile {
       npc: null,
       notoriety: this.reputation.notoriety,
       guildTag: null,
+      mount: this.mount,
     };
   }
 }

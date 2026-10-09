@@ -102,6 +102,7 @@ const OUTFITS: Readonly<Record<NpcRole, Outfit>> = {
   mage: 'robe',
   innkeeper: 'innkeeper',
   banker: 'vest',
+  stablemaster: 'apron',
 };
 
 /** Todo lo que define cómo se ve el cuerpo en un frame. */

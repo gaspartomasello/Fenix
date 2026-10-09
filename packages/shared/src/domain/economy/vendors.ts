@@ -2,7 +2,7 @@ import type { ItemKind } from '../items/item-catalog';
 import { SPELLS, SPELL_KEYS } from '../magic/spell-catalog';
 
 /** Personajes del pueblo que comercian o guardan cosas. */
-export const NPC_ROLES = ['blacksmith', 'mage', 'innkeeper', 'banker'] as const;
+export const NPC_ROLES = ['blacksmith', 'mage', 'innkeeper', 'banker', 'stablemaster'] as const;
 export type NpcRole = (typeof NPC_ROLES)[number];
 
 export interface VendorOffer {
@@ -168,6 +168,14 @@ export const VENDORS: Readonly<Record<NpcRole, VendorDefinition>> = {
     role: 'banker',
     name: 'Ramona la banquera',
     greeting: 'Tu caja del banco está a salvo conmigo.',
+    sells: [],
+    buys: [],
+  },
+  // Vende monturas (ver `MOUNTS`), no objetos.
+  stablemaster: {
+    role: 'stablemaster',
+    name: 'Bautista el caballerizo',
+    greeting: 'Caballos mansos y bien herrados, y algún bicho raro.',
     sells: [],
     buys: [],
   },

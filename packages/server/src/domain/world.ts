@@ -84,9 +84,16 @@ export class World {
     this.creatures.delete(id);
   }
 
-  /** Criaturas invocadas por un jugador que siguen en el mundo. */
+  /** Invocaciones de un jugador (sin contar su montura suelta). */
   summonsOf(ownerId: EntityId): Creature[] {
-    return [...this.creatures.values()].filter((c) => c.ownerId === ownerId && !c.gone);
+    return [...this.creatures.values()].filter((c) => c.ownerId === ownerId && !c.gone && !c.isPet);
+  }
+
+  /** La montura suelta de un jugador, si la tiene en el mundo. */
+  petOf(ownerId: EntityId): Creature | undefined {
+    return [...this.creatures.values()].find(
+      (c) => c.ownerId === ownerId && !c.gone && c.isPet && !c.combat.isDead,
+    );
   }
 
   addNpc(npc: Npc): void {
@@ -169,6 +176,7 @@ export class World {
           ? (this.players.get(mobile.ownerId)?.reputation.notoriety ?? 'innocent')
           : 'murderer',
       guildTag: null,
+      ownerId: mobile instanceof Creature ? mobile.ownerId : null,
     };
   }
 

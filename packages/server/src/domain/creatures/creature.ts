@@ -1,5 +1,6 @@
 import {
   CREATURES,
+  isMountKind,
   Direction,
   type CreatureDefinition,
   type CreatureKind,
@@ -47,7 +48,8 @@ export class Creature implements Mobile {
     readonly id: EntityId,
     kind: CreatureKind,
     readonly home: Position,
-    summon: { ownerId: EntityId; expiresAt: number } | null = null,
+    /** Invocación (vence en `expiresAt`) o montura mansa (`expiresAt` null). */
+    summon: { ownerId: EntityId; expiresAt: number | null } | null = null,
   ) {
     this.ownerId = summon?.ownerId ?? null;
     this.expiresAt = summon?.expiresAt ?? null;
@@ -66,6 +68,11 @@ export class Creature implements Mobile {
     this.despawnAt = null;
     this.respawnAt = null;
     this.gone = false;
+  }
+
+  /** Montura mansa suelta: sigue a su dueño, no pelea y se puede montar. */
+  get isPet(): boolean {
+    return this.ownerId !== null && isMountKind(this.body);
   }
 
   /** ¿Está huyendo? (las que escapan cuando les queda poca vida). */

@@ -9,14 +9,17 @@ import {
   isDirection,
   isEquipmentSlot,
   isItemKind,
+  isMountKind,
   type Appearance,
   type Attributes,
   type Direction,
   type EquipmentSlot,
   type ItemKind,
+  type MountKind,
   type Position,
   type SkillValues,
 } from '@fenix/shared';
+import { Creature } from '../creatures/creature';
 import type { Player } from '../player';
 import type { World } from '../world';
 
@@ -50,6 +53,8 @@ export interface SavedCharacter {
   readonly reputation: { readonly fame: number; readonly karma: number; readonly murders: number };
   readonly guild: { readonly name: string; readonly tag: string } | null;
   readonly items: readonly SavedItem[];
+  /** Su montura: montada o suelta a su lado (los personajes viejos no tienen). */
+  readonly mount: { readonly kind: MountKind; readonly riding: boolean } | null;
 }
 
 /** Toma una foto del personaje conectado (con su mochila, equipo y banco). */
@@ -65,6 +70,8 @@ export function captureCharacter(
   ];
   const guild = world.guilds.of(player.name);
   const { hits, mana, stamina } = player.combat.current;
+  const pet = world.petOf(player.id);
+  const petKind = pet && isMountKind(pet.body) ? pet.body : null;
   return {
     version: SAVE_VERSION,
     name: player.name,
@@ -102,6 +109,11 @@ export function captureCharacter(
         ];
       return [];
     }),
+    mount: player.mount
+      ? { kind: player.mount, riding: true }
+      : petKind
+        ? { kind: petKind, riding: false }
+        : null,
   };
 }
 
@@ -194,6 +206,10 @@ export function parseSavedCharacter(value: unknown): SavedCharacter | null {
         ? { name: guild.name, tag: guild.tag }
         : null,
     items: items.flatMap((item) => parseItem(item) ?? []),
+    mount:
+      isObject(value.mount) && isMountKind(value.mount.kind)
+        ? { kind: value.mount.kind, riding: value.mount.riding === true }
+        : null,
   };
 }
 
@@ -238,5 +254,31 @@ export function restoreCharacter(
       });
     }
   }
+  if (saved.mount?.riding) player.mount = saved.mount.kind;
+  else if (saved.mount)
+    world.addCreature(
+      new Creature(nextId(), saved.mount.kind, freeSpotNear(world, player.position), {
+        ownerId: player.id,
+        expiresAt: null,
+      }),
+    );
   return player;
+}
+
+/** Un tile libre al lado (para que aparezca la montura); si no hay, el mismo. */
+export function freeSpotNear(world: World, at: Position): Position {
+  for (const [dx, dy] of [
+    [1, 0],
+    [0, 1],
+    [-1, 0],
+    [0, -1],
+    [1, 1],
+    [-1, 1],
+    [1, -1],
+    [-1, -1],
+  ] as const) {
+    const spot = { x: at.x + dx, y: at.y + dy };
+    if (world.map.isWalkable(spot) && !world.isOccupied(spot)) return spot;
+  }
+  return at;
 }

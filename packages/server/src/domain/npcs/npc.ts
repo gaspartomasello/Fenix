@@ -47,6 +47,16 @@ const LOOKS: Readonly<Record<NpcRole, { appearance: Appearance; equipment: Equip
     },
     equipment: { feet: 'boots', legs: 'trousers' },
   },
+  stablemaster: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      clothHue: CLOTH_HUES[2],
+      skinTone: 0xc68642,
+      hairStyle: 'short',
+      facialHair: 'mustache',
+    },
+    equipment: { torso: 'leather-armor', legs: 'leather-leggings', feet: 'boots' },
+  },
 };
 
 /** Personaje del pueblo: no pelea, no se mueve y atiende a quien se acerca. */
