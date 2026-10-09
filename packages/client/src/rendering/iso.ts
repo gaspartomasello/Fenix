@@ -4,8 +4,8 @@ import type { FractionalPosition } from '../core/entity';
 /** Medio ancho/alto del rombo de un tile en pantalla (tiles de 44×44 como UO). */
 export const TILE_HALF = 22;
 
-/** Escala de pixel del arte generado (todo se dibuja a 1/2 y se agranda). */
-export const ART_SCALE = 2;
+/** Escala del arte del mundo (terreno y objetos fijos): se dibuja a resolución completa. */
+export const ART_SCALE = 1;
 /** Los personajes se dibujan con el doble de detalle y se muestran sin escalar. */
 export const CHARACTER_SCALE = 1;
 

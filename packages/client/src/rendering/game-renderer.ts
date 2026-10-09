@@ -15,8 +15,6 @@ import { TextureCache } from './texture-cache';
 
 const ZOOM_LEVELS = [1, 1.5, 2] as const;
 const GHOST_TINT = 0x8c8c9c;
-/** El hechizo de Luz agranda el halo propio durante 5 minutos reales. */
-const LIGHT_SPELL_RADIUS = 7;
 /** Caja de un personaje en pantalla respecto de sus pies, para saber si se lo tocó. */
 const MOBILE_HIT_BOX = { halfWidth: 16, height: 64 };
 /** El personaje se dibuja un poco por debajo del centro, como en UO. */
@@ -32,6 +30,8 @@ export class GameRenderer {
   private readonly app = new Application();
   private readonly textures = new TextureCache();
   private readonly world = new Container();
+  /** Hechizos y flechas: van sobre la luz (brillan de noche) con la misma cámara que el mundo. */
+  private readonly glowing = new Container();
   /** Terreno y entidades: lo que se oscurece de noche. */
   private readonly scene = new Container();
   private readonly entityLayer = new Container({ sortableChildren: true });
@@ -45,7 +45,6 @@ export class GameRenderer {
       if (entity.id === id) return entity.renderPosition(now);
     return null;
   });
-  /** Hasta cuándo dura el hechizo de Luz propio. */
   private zoomIndex = 0;
   private readonly unsubscribe: (() => void)[] = [];
 
@@ -119,6 +118,7 @@ export class GameRenderer {
   stepZoom(delta: 1 | -1): void {
     this.zoomIndex = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, this.zoomIndex + delta));
     this.world.scale.set(this.zoom);
+    this.glowing.scale.set(this.zoom);
   }
 
   /** Actualiza y pinta un frame. Se llama desde el loop principal. */
@@ -135,17 +135,24 @@ export class GameRenderer {
     this.statics?.update(view, focus);
 
     this.effects.update(now);
+    // De fantasma el mundo se ve gris, como en UO.
+    this.scene.tint = self.dead ? GHOST_TINT : 0xffffff;
     const time = this.game.worldTime();
     if (time) {
-      // De fantasma el mundo se ve gris, como en UO.
-      this.scene.tint = self.dead ? GHOST_TINT : Lighting.tintFor(time.dayProgress);
-      const selfRadius = this.game.hasEffect('night-sight') ? LIGHT_SPELL_RADIUS : undefined;
-      this.lighting.update(
-        time.dayProgress,
+      const { width, height } = this.app.screen;
+      const offset = this.world.position;
+      const zoom = this.zoom;
+      this.lighting.update({
+        renderer: this.app.renderer,
+        width,
+        height,
+        toScreen: (p) => ({ x: offset.x + p.x * zoom, y: offset.y + p.y * zoom }),
+        zoom,
+        dayProgress: time.dayProgress,
         focus,
-        this.statics?.visibleLights() ?? [],
-        selfRadius,
-      );
+        lights: this.statics?.visibleLights() ?? [],
+        nightVision: this.game.hasEffect('night-sight'),
+      });
     }
     this.app.render();
   }
@@ -183,8 +190,9 @@ export class GameRenderer {
     // El loop lo maneja la aplicación: Pixi solo renderiza cuando se le pide.
     this.app.ticker.stop();
     host.appendChild(this.app.canvas);
-    this.world.addChild(this.scene, this.effects.container, this.lighting.container);
-    this.app.stage.addChild(this.world);
+    this.world.addChild(this.scene);
+    this.glowing.addChild(this.effects.container);
+    this.app.stage.addChild(this.world, this.lighting.overlay, this.glowing);
 
     const map = this.game.map;
     if (map) this.setMap(map);
@@ -240,6 +248,7 @@ export class GameRenderer {
     const offsetX = Math.round(width / 2 - center.x * zoom);
     const offsetY = Math.round(height / 2 + CAMERA_VERTICAL_OFFSET - center.y * zoom);
     this.world.position.set(offsetX, offsetY);
+    this.glowing.position.set(offsetX, offsetY);
     return new Rectangle(
       (-offsetX - VIEW_MARGIN) / zoom,
       (-offsetY - VIEW_MARGIN) / zoom,

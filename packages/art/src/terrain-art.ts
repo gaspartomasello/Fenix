@@ -1,12 +1,11 @@
 import { Terrain, TERRAINS } from '@fenix/shared';
-import { PixelImage, seededRandom, shade, type Rgb } from './pixel-art';
+import { PixelImage, shade, type Rgb } from './pixel-art';
 
 /**
- * Tamaño lógico del rombo de terreno. Todo el arte se dibuja a "medio
- * pixel" y se escala x2 al renderizar, así terreno y personajes comparten
- * el mismo tamaño de pixel (44 px en pantalla, como los tiles de UO).
+ * Tamaño del rombo de terreno, en pixeles de pantalla (44×44 como los tiles
+ * de UO). Se dibuja a resolución completa y se muestra sin escalar.
  */
-export const TERRAIN_ART_SIZE = 22;
+export const TERRAIN_ART_SIZE = 44;
 export const TERRAIN_VARIANTS = 4;
 
 /** Terreno de los cuatro vecinos que comparten un borde con el tile. */
@@ -19,127 +18,167 @@ export interface TerrainNeighbors {
 
 const HALF = TERRAIN_ART_SIZE / 2;
 
-/** Coordenadas dentro del tile (u = eje x, v = eje y), cada una en [-0.5, 0.5]. */
+/** Coordenadas dentro del tile (u = eje x del mapa, v = eje y), cada una en [0, 1). */
 function tileCoords(x: number, y: number): { u: number; v: number } {
   const dx = x + 0.5 - HALF;
   const dy = y + 0.5 - HALF;
-  return { u: (dx + dy) / TERRAIN_ART_SIZE, v: (dy - dx) / TERRAIN_ART_SIZE };
+  return { u: (dx + dy) / TERRAIN_ART_SIZE + 0.5, v: (dy - dx) / TERRAIN_ART_SIZE + 0.5 };
 }
 
 function insideDiamond(x: number, y: number): boolean {
   return Math.abs(x + 0.5 - HALF) + Math.abs(y + 0.5 - HALF) <= HALF;
 }
 
-/** Pinta pixeles dentro del rombo. */
-class Painter {
-  readonly size = TERRAIN_ART_SIZE;
+// ── Ruido periódico: se repite exacto en cada tile, así no hay costuras ──
 
-  constructor(
-    readonly image: PixelImage,
-    readonly random: () => number,
-  ) {}
-
-  set(x: number, y: number, color: Rgb): void {
-    if (insideDiamond(x, y)) this.image.set(x, y, color);
-  }
-
-  each(fn: (x: number, y: number) => void): void {
-    for (let y = 0; y < this.size; y++) {
-      for (let x = 0; x < this.size; x++) if (insideDiamond(x, y)) fn(x, y);
-    }
-  }
-
-  jitter(color: Rgb, amount: number): Rgb {
-    return shade(color, 1 + (this.random() - 0.5) * amount);
-  }
-
-  randomPoint(): [number, number] {
-    return [Math.floor(this.random() * this.size), Math.floor(this.random() * this.size)];
-  }
+function hash(x: number, y: number, seed: number): number {
+  const h = Math.imul(x * 374761393 + y * 668265263 + seed * 2246822519, 3266489917);
+  return ((h ^ (h >>> 15)) >>> 0) / 4294967296;
 }
+
+/** Ruido suave con período `cells` en u y v (las celdas del borde se repiten). */
+function periodicNoise(u: number, v: number, cells: number, seed: number): number {
+  const x = u * cells;
+  const y = v * cells;
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const fx = x - x0;
+  const fy = y - y0;
+  const sx = fx * fx * (3 - 2 * fx);
+  const sy = fy * fy * (3 - 2 * fy);
+  const at = (i: number, j: number): number =>
+    hash((((i % cells) + cells) % cells) | 0, (((j % cells) + cells) % cells) | 0, seed);
+  const top = at(x0, y0) + (at(x0 + 1, y0) - at(x0, y0)) * sx;
+  const bottom = at(x0, y0 + 1) + (at(x0 + 1, y0 + 1) - at(x0, y0 + 1)) * sx;
+  return top + (bottom - top) * sy;
+}
+
+/** Varias octavas de ruido periódico (0–1). */
+function fbm(u: number, v: number, seed: number, base = 3, octaves = 3): number {
+  let total = 0;
+  let weight = 0;
+  for (let i = 0; i < octaves; i++) {
+    const w = 1 / 2 ** i;
+    total += periodicNoise(u, v, base * 2 ** i, seed + i * 101) * w;
+    weight += w;
+  }
+  return total / weight;
+}
+
+function mix(a: Rgb, b: Rgb, t: number): Rgb {
+  const k = Math.max(0, Math.min(1, t));
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * k),
+    Math.round(a[1] + (b[1] - a[1]) * k),
+    Math.round(a[2] + (b[2] - a[2]) * k),
+  ];
+}
+
+/** Cómo se pinta cada pixel de un terreno (u, v en el tile; `seed` cambia por variante). */
+type TerrainPaint = (u: number, v: number, seed: number) => Rgb;
 
 interface TerrainStyle {
   readonly base: Rgb;
-  paint(p: Painter, base: Rgb): void;
+  readonly paint: TerrainPaint;
+  /**
+   * Las variantes cambian el centro del tile (manchones, piedritas) pero
+   * comparten los bordes, así los tiles vecinos empalman sin costura. Los
+   * dibujos regulares (adoquines, tablones) son iguales en todas.
+   */
+  readonly varies: boolean;
 }
 
 const STYLES: Readonly<Record<Terrain, TerrainStyle>> = {
   [Terrain.Grass]: {
-    base: [62, 112, 48],
-    paint(p, base) {
-      p.each((x, y) => p.set(x, y, p.jitter(base, 0.18)));
-      for (let i = 0; i < 26; i++) {
-        const [x, y] = p.randomPoint();
-        const blade = p.random() > 0.5 ? shade(base, 1.3) : shade(base, 0.75);
-        p.set(x, y, blade);
-        p.set(x, y - 1, shade(blade, 1.1));
-      }
-      if (p.random() > 0.6) {
-        const x = 4 + Math.floor(p.random() * 14);
-        const y = 6 + Math.floor(p.random() * 10);
-        p.set(x, y, p.random() > 0.5 ? [228, 214, 92] : [214, 120, 160]);
-      }
+    varies: true,
+    base: [70, 120, 52],
+    paint(u, v, seed) {
+      // Manchones claros y oscuros, briznas finas y algún trébol.
+      const patch = fbm(u, v, seed, 2, 3);
+      let color = mix([52, 98, 40], [96, 146, 62], patch);
+      const blades = periodicNoise(u, v * 0.35, 22, seed + 7);
+      if (blades > 0.78) color = shade(color, 1.16);
+      else if (blades < 0.18) color = shade(color, 0.84);
+      if (periodicNoise(u, v, 9, seed + 31) > 0.86) color = mix(color, [124, 168, 70], 0.5);
+      return color;
     },
   },
   [Terrain.Dirt]: {
-    base: [120, 88, 56],
-    paint(p, base) {
-      p.each((x, y) => p.set(x, y, p.jitter(base, 0.16)));
-      for (let i = 0; i < 9; i++) {
-        const [x, y] = p.randomPoint();
-        p.set(x, y, shade(base, 0.68));
-        p.set(x + 1, y, shade(base, 1.22));
-      }
+    varies: true,
+    base: [124, 92, 60],
+    paint(u, v, seed) {
+      const tone = fbm(u, v, seed, 3, 3);
+      let color = mix([98, 70, 44], [146, 112, 76], tone);
+      // Piedritas: un punto claro con sombra abajo.
+      const pebble = periodicNoise(u, v, 11, seed + 5);
+      if (pebble > 0.87) color = mix(color, [176, 160, 136], 0.7);
+      else if (pebble > 0.83) color = shade(color, 0.78);
+      return color;
     },
   },
   [Terrain.Sand]: {
-    base: [214, 190, 132],
-    paint(p, base) {
-      p.each((x, y) => p.set(x, y, p.jitter(base, 0.08)));
-      for (let i = 0; i < 14; i++) {
-        const [x, y] = p.randomPoint();
-        p.set(x, y, shade(base, p.random() > 0.5 ? 0.86 : 1.08));
-      }
+    varies: true,
+    base: [214, 192, 138],
+    paint(u, v, seed) {
+      const tone = fbm(u, v, seed, 3, 2);
+      let color = mix([196, 172, 118], [230, 210, 158], tone);
+      // Ondas de viento suaves en diagonal.
+      const ripple = Math.sin((u + v * 0.6 + fbm(u, v, seed + 3, 2, 2) * 0.3) * Math.PI * 8);
+      if (ripple > 0.85) color = shade(color, 1.06);
+      else if (ripple < -0.9) color = shade(color, 0.94);
+      return color;
     },
   },
   [Terrain.Stone]: {
-    base: [128, 124, 116],
-    paint(p, base) {
-      // Adoquines: grilla en coordenadas del tile (no de pantalla).
-      p.each((x, y) => {
-        const { u, v } = tileCoords(x, y);
-        const cu = (u + 0.5) * 3;
-        const cv = (v + 0.5) * 3 + (Math.floor(cu) % 2) * 0.5;
-        const edge = Math.min(cu % 1, 1 - (cu % 1), cv % 1, 1 - (cv % 1));
-        const tone = 0.92 + ((Math.floor(cu) * 7 + Math.floor(cv) * 13) % 5) * 0.04;
-        p.set(x, y, edge < 0.09 ? shade(base, 0.6) : p.jitter(shade(base, tone), 0.08));
-      });
+    varies: false,
+    base: [130, 126, 118],
+    paint(u, v, seed) {
+      // Adoquines redondeados: luz arriba a la izquierda, sombra abajo a la derecha, junta oscura.
+      const cells = 3;
+      const cu = u * cells;
+      const row = Math.floor(cu);
+      const cv = v * cells + (row % 2) * 0.5;
+      const fu = cu - row;
+      const fv = cv - Math.floor(cv);
+      const edge = Math.min(fu, 1 - fu, fv, 1 - fv);
+      const id = hash(row, Math.floor(cv) % cells, seed);
+      const base = mix([108, 104, 98], [156, 150, 140], id);
+      if (edge < 0.07) return [72, 68, 64];
+      const bevel = edge < 0.18 ? (fu < 0.5 || fv < 0.5 ? 1.14 : 0.82) : 1;
+      return shade(mix(base, shade(base, 1.1), fbm(u, v, seed, 6, 2)), bevel);
     },
   },
   [Terrain.Water]: {
-    base: [38, 84, 140],
-    paint(p, base) {
-      p.each((x, y) => p.set(x, y, p.jitter(base, 0.08)));
-      for (let i = 0; i < 5; i++) {
-        const x = Math.floor(p.random() * (p.size - 4));
-        const y = Math.floor(p.random() * p.size);
-        for (let k = 0; k < 3; k++) p.set(x + k, y, shade(base, 1.45));
-      }
+    varies: true,
+    base: [40, 88, 140],
+    paint(u, v, seed) {
+      const depth = fbm(u, v, seed, 2, 3);
+      let color = mix([28, 66, 116], [52, 112, 164], depth);
+      // Reflejos: crestas finas del ruido.
+      const wave = periodicNoise(u * 1.3 + v * 0.4, v, 6, seed + 9);
+      if (Math.abs(wave - 0.5) < 0.025) color = mix(color, [170, 210, 236], 0.6);
+      else if (Math.abs(wave - 0.5) < 0.05) color = shade(color, 1.12);
+      return color;
     },
   },
   [Terrain.Wood]: {
-    base: [132, 92, 56],
-    paint(p, base) {
-      // Tablones a lo largo del eje x, con juntas oscuras entre ellos.
-      const tones = [1, 0.9, 1.06, 0.95].map(() => 0.88 + p.random() * 0.2);
-      p.each((x, y) => {
-        const { u, v } = tileCoords(x, y);
-        const plank = Math.min(3, Math.floor((v + 0.5) * 4));
-        const inPlank = ((v + 0.5) * 4) % 1;
-        const tone = tones[plank] ?? 1;
-        const seam = inPlank < 0.14 || Math.abs(((u + 0.5 + plank * 0.37) % 1) - 0.5) < 0.03;
-        p.set(x, y, seam ? shade(base, 0.62) : p.jitter(shade(base, tone), 0.07));
-      });
+    varies: false,
+    base: [136, 96, 60],
+    paint(u, v, seed) {
+      // Tablones a lo largo del eje x, con veta, juntas y clavos.
+      const planks = 4;
+      const index = Math.min(planks - 1, Math.floor(v * planks));
+      const inPlank = v * planks - index;
+      const tone = 0.88 + hash(index, 0, seed) * 0.22;
+      const offset = hash(index, 1, seed);
+      const along = (u + offset) % 1;
+      if (inPlank < 0.08) return [70, 46, 28];
+      if (Math.abs(along - 0.5) < 0.012) return [84, 56, 34];
+      const grain = Math.sin((inPlank * 9 + periodicNoise(u, v, 4, seed) * 3) * Math.PI);
+      let color = shade([138, 96, 58], tone * (1 + grain * 0.05));
+      if (inPlank < 0.16) color = shade(color, 1.1);
+      if (Math.abs(along - 0.45) < 0.02 && Math.abs(inPlank - 0.5) < 0.08) color = [60, 52, 48];
+      return color;
     },
   },
 };
@@ -149,17 +188,18 @@ export function terrainBaseColor(terrain: Terrain): Rgb {
   return STYLES[terrain].base;
 }
 
-function paintBase(terrain: Terrain, variant: number): PixelImage {
-  const image = new PixelImage(TERRAIN_ART_SIZE, TERRAIN_ART_SIZE);
-  const painter = new Painter(image, seededRandom(terrain * 1000 + variant * 31 + 7));
-  STYLES[terrain].paint(painter, STYLES[terrain].base);
-  return image;
+function seedFor(terrain: Terrain, variant: number): number {
+  return terrain * 1000 + (variant % TERRAIN_VARIANTS) * 37 + 11;
 }
 
-/** Hash estable por pixel para que el borde mezclado tenga un contorno irregular. */
-function edgeNoise(a: number, b: number): number {
-  const h = Math.imul(a + 17, 374761393) ^ Math.imul(b + 31, 668265263);
-  return ((h ^ (h >>> 13)) >>> 0) / 4294967296;
+/** Color de un terreno en (u, v): la variante en el centro, lo compartido en los bordes. */
+function terrainColor(terrain: Terrain, variant: number, u: number, v: number): Rgb {
+  const style = STYLES[terrain];
+  const shared = style.paint(u, v, seedFor(terrain, 0));
+  if (!style.varies || variant % TERRAIN_VARIANTS === 0) return shared;
+  const edge = Math.min(u, 1 - u, v, 1 - v);
+  const t = Math.min(1, edge / 0.3);
+  return mix(shared, style.paint(u, v, seedFor(terrain, variant)), t * t * (3 - 2 * t));
 }
 
 function blends(over: Terrain | undefined, under: Terrain): over is Terrain {
@@ -172,41 +212,40 @@ function blends(over: Terrain | undefined, under: Terrain): over is Terrain {
 /**
  * Dibuja una variante de un tile de terreno. Si un vecino tiene mayor
  * prioridad de mezcla, su textura se derrama sobre el borde compartido con
- * un contorno irregular, como las transiciones de UO.
+ * un contorno irregular y una sombra suave, como las transiciones de UO.
  */
 export function drawTerrainTile(
   terrain: Terrain,
   variant: number,
   neighbors: TerrainNeighbors = {},
 ): PixelImage {
-  const image = paintBase(terrain, variant);
+  const image = new PixelImage(TERRAIN_ART_SIZE, TERRAIN_ART_SIZE);
+  const seed = seedFor(terrain, 0);
   const edges: { over: Terrain; distance: (u: number, v: number) => number }[] = [];
   if (blends(neighbors.north, terrain))
-    edges.push({ over: neighbors.north, distance: (_u, v) => v + 0.5 });
-  if (blends(neighbors.east, terrain))
-    edges.push({ over: neighbors.east, distance: (u) => 0.5 - u });
+    edges.push({ over: neighbors.north, distance: (_u, v) => v });
+  if (blends(neighbors.east, terrain)) edges.push({ over: neighbors.east, distance: (u) => 1 - u });
   if (blends(neighbors.south, terrain))
-    edges.push({ over: neighbors.south, distance: (_u, v) => 0.5 - v });
-  if (blends(neighbors.west, terrain))
-    edges.push({ over: neighbors.west, distance: (u) => u + 0.5 });
-  if (edges.length === 0) return image;
+    edges.push({ over: neighbors.south, distance: (_u, v) => 1 - v });
+  if (blends(neighbors.west, terrain)) edges.push({ over: neighbors.west, distance: (u) => u });
 
-  const overlays = new Map<Terrain, PixelImage>();
   for (let y = 0; y < TERRAIN_ART_SIZE; y++) {
     for (let x = 0; x < TERRAIN_ART_SIZE; x++) {
       if (!insideDiamond(x, y)) continue;
       const { u, v } = tileCoords(x, y);
+      let color = terrainColor(terrain, variant, u, v);
       for (const edge of edges) {
-        const reach = 0.14 + edgeNoise(x, y) * 0.16;
-        if (edge.distance(u, v) > reach) continue;
-        let overlay = overlays.get(edge.over);
-        if (!overlay) {
-          overlay = paintBase(edge.over, variant);
-          overlays.set(edge.over, overlay);
+        // Borde irregular con ruido periódico (empalma con el tile vecino).
+        const reach = 0.16 + fbm(u, v, seed + 77, 4, 2) * 0.2;
+        const d = edge.distance(u, v);
+        if (d < reach) {
+          color = terrainColor(edge.over, 0, u, v);
+          break;
         }
-        image.set(x, y, overlay.colorAt(x, y));
-        break;
+        // Sombra fina del terreno de arriba sobre el de abajo.
+        if (d < reach + 0.04) color = shade(color, 0.86);
       }
+      image.set(x, y, color);
     }
   }
   return image;

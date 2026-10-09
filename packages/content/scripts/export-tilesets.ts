@@ -18,10 +18,10 @@ import { ALL_TERRAINS, STATIC_KINDS, TERRAINS } from '@fenix/shared';
 import { TILED, type TiledTileset } from '../src/tiled-format';
 import { encodePng } from './png';
 
-const SCALE = 2;
+const SCALE = 1;
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'tilesets');
 
-/** Une imágenes en una fila, escaladas x2 sin suavizado. */
+/** Une imágenes en una fila (a escala `SCALE`, sin suavizado). */
 function sheet(images: readonly PixelImage[], width: number, height: number): PixelImage {
   const out = new PixelImage(width * SCALE * images.length, height * SCALE);
   images.forEach((image, index) => {

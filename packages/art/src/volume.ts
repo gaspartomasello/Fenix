@@ -40,6 +40,28 @@ export function yaw(v: Vec3, angle: number): Vec3 {
 }
 
 /**
+ * Cómo se proyecta el modelo en la imagen. Las coordenadas de imagen son
+ * x hacia la derecha, y hacia abajo y una profundidad que crece hacia quien
+ * mira. Toda proyección es lineal (más un origen).
+ */
+export interface Projection {
+  readonly zoom: number;
+  /** Punto del modelo → imagen (x, y hacia abajo, profundidad). */
+  point(p: Vec3): Vec3;
+  /** Parte lineal de `point` aplicada a un vector (para medir extensiones). */
+  forward(v: Vec3): Vec3;
+  /** Vector dual (inversa transpuesta): para saber si un pixel cae dentro de un volumen. */
+  dual(v: Vec3): Vec3;
+  /** Gradiente en la imagen → normal en el modelo. */
+  modelNormal(gradient: Vec3): Vec3;
+  /** Pixel y profundidad → punto del modelo. */
+  unproject(x: number, y: number, z: number): Vec3;
+  /** Dirección hacia quien mira y hacia la luz, en el modelo. */
+  readonly viewDir: Vec3;
+  readonly lightDir: Vec3;
+}
+
+/**
  * Espacio del modelo: x hacia la derecha del personaje, y hacia arriba, z
  * hacia adelante (hacia donde mira), en pixeles del sprite. El origen está
  * en el suelo, entre los pies.
@@ -47,7 +69,7 @@ export function yaw(v: Vec3, angle: number): Vec3 {
  * `facing` es hacia dónde mira en pantalla: 0 = hacia la cámara, π/2 = a la
  * derecha, π = de espaldas. `tilt` es cuánto mira la cámara desde arriba.
  */
-export class Camera {
+export class Camera implements Projection {
   private readonly c: number;
   private readonly s: number;
   private readonly ct: number;
@@ -91,6 +113,114 @@ export class Camera {
   unproject(x: number, y: number, z: number): Vec3 {
     return scale(this.toModel([x - this.originX, this.originY - y, z]), 1 / this.zoom);
   }
+
+  forward(v: Vec3): Vec3 {
+    const d = this.direction(v);
+    return [d[0], -d[1], d[2]];
+  }
+
+  /** Rotación pura: el dual es el mismo vector. */
+  dual(v: Vec3): Vec3 {
+    return this.forward(v);
+  }
+
+  modelNormal(gradient: Vec3): Vec3 {
+    return this.toModel(normalize([gradient[0], -gradient[1], gradient[2]]));
+  }
+
+  get viewDir(): Vec3 {
+    return this.toModel([0, 0, 1]);
+  }
+
+  get lightDir(): Vec3 {
+    return this.toModel(LIGHT);
+  }
+}
+
+/**
+ * Proyección de UO para el mundo (terreno y objetos fijos): el suelo se ve
+ * como el rombo del tile, sin achatarse, y la altura sube derecho en la
+ * pantalla. Modelo: x a lo largo del eje x del mapa (abajo a la derecha en
+ * pantalla), z a lo largo del eje y del mapa (abajo a la izquierda), y hacia
+ * arriba; todo en pixeles (un paso de 1 en x se ve de largo 1 en diagonal).
+ */
+export class WorldProjection implements Projection {
+  readonly zoom = 1;
+  private static readonly A = Math.SQRT1_2;
+  /** Hacia quien mira: de frente-abajo y desde arriba. */
+  readonly viewDir: Vec3 = normalize([1, 2 * WorldProjection.A, 1]);
+  /** Luz desde arriba y de la izquierda de la pantalla, como en UO. */
+  readonly lightDir: Vec3 = normalize([0.1, 1, 0.75]);
+  private readonly inverse: readonly Vec3[];
+
+  constructor(
+    readonly originX: number,
+    readonly originY: number,
+  ) {
+    this.inverse = invert3(this.row(0), this.row(1), this.row(2));
+  }
+
+  private row(i: 0 | 1 | 2): Vec3 {
+    const a = WorldProjection.A;
+    if (i === 0) return [a, 0, -a];
+    if (i === 1) return [a, -1, a];
+    return this.viewDir;
+  }
+
+  forward(v: Vec3): Vec3 {
+    return [dot(this.row(0), v), dot(this.row(1), v), dot(this.row(2), v)];
+  }
+
+  point(p: Vec3): Vec3 {
+    const f = this.forward(p);
+    return [f[0] + this.originX, f[1] + this.originY, f[2]];
+  }
+
+  dual(v: Vec3): Vec3 {
+    // Inversa transpuesta: columnas de la inversa.
+    const m = this.inverse;
+    return [dot(col(m, 0), v), dot(col(m, 1), v), dot(col(m, 2), v)];
+  }
+
+  modelNormal(gradient: Vec3): Vec3 {
+    // La normal en el modelo es la transpuesta de la proyección aplicada al gradiente.
+    const r = [this.row(0), this.row(1), this.row(2)];
+    return normalize([
+      (r[0]?.[0] ?? 0) * gradient[0] +
+        (r[1]?.[0] ?? 0) * gradient[1] +
+        (r[2]?.[0] ?? 0) * gradient[2],
+      (r[0]?.[1] ?? 0) * gradient[0] +
+        (r[1]?.[1] ?? 0) * gradient[1] +
+        (r[2]?.[1] ?? 0) * gradient[2],
+      (r[0]?.[2] ?? 0) * gradient[0] +
+        (r[1]?.[2] ?? 0) * gradient[1] +
+        (r[2]?.[2] ?? 0) * gradient[2],
+    ]);
+  }
+
+  unproject(x: number, y: number, z: number): Vec3 {
+    const q: Vec3 = [x - this.originX, y - this.originY, z];
+    const m = this.inverse;
+    return [dot(m[0] ?? q, q), dot(m[1] ?? q, q), dot(m[2] ?? q, q)];
+  }
+}
+
+function col(m: readonly Vec3[], i: 0 | 1 | 2): Vec3 {
+  return [m[0]?.[i] ?? 0, m[1]?.[i] ?? 0, m[2]?.[i] ?? 0];
+}
+
+/** Inversa de una matriz de 3×3 dada por filas. */
+function invert3(a: Vec3, b: Vec3, c: Vec3): Vec3[] {
+  const det = dot(a, cross(b, c));
+  const r0 = scale(cross(b, c), 1 / det);
+  const r1 = scale(cross(c, a), 1 / det);
+  const r2 = scale(cross(a, b), 1 / det);
+  // Columnas de la inversa = r0, r1, r2; se devuelve por filas.
+  return [
+    [r0[0], r1[0], r2[0]],
+    [r0[1], r1[1], r2[1]],
+    [r0[2], r1[2], r2[2]],
+  ];
 }
 
 /** Lo que sabe un material sobre el pixel que pinta. */
@@ -165,7 +295,7 @@ export class VolumeCanvas {
   constructor(
     readonly width: number,
     readonly height: number,
-    readonly camera: Camera,
+    readonly camera: Projection,
   ) {
     this.depth = new Float32Array(width * height).fill(-Infinity);
     this.colors = new Array<Rgb | null>(width * height).fill(null);
@@ -180,13 +310,15 @@ export class VolumeCanvas {
   ): void {
     const c = this.camera.point(center);
     const radii = scale(modelRadii, this.camera.zoom);
-    // Cada eje en la imagen (y crece hacia abajo) junto con su radio.
-    const parts = axes.map((axis, i) => {
-      const a = this.camera.direction(axis);
-      return { axis: [a[0], -a[1], a[2]] as Vec3, r: radii[i] ?? 1 };
-    });
-    const extentX = Math.sqrt(parts.reduce((sum, { axis, r }) => sum + (axis[0] * r) ** 2, 0));
-    const extentY = Math.sqrt(parts.reduce((sum, { axis, r }) => sum + (axis[1] * r) ** 2, 0));
+    // Cada eje en la imagen (y crece hacia abajo) junto con su radio; `axis` es el dual,
+    // que sirve para saber si un punto de la imagen cae adentro.
+    const parts = axes.map((axis, i) => ({
+      axis: this.camera.dual(axis),
+      image: this.camera.forward(axis),
+      r: radii[i] ?? 1,
+    }));
+    const extentX = Math.sqrt(parts.reduce((sum, { image, r }) => sum + (image[0] * r) ** 2, 0));
+    const extentY = Math.sqrt(parts.reduce((sum, { image, r }) => sum + (image[1] * r) ** 2, 0));
     const minX = Math.max(0, Math.floor(c[0] - extentX));
     const maxX = Math.min(this.width - 1, Math.ceil(c[0] + extentX));
     const minY = Math.max(0, Math.floor(c[1] - extentY));
@@ -215,7 +347,7 @@ export class VolumeCanvas {
         for (const { axis, r } of parts) {
           normal = add(normal, scale(axis, dot(local, axis) / r ** 2));
         }
-        this.paint(x, y, t, [normal[0], -normal[1], normal[2]], material);
+        this.paint(x, y, t, this.camera.modelNormal(normal), material);
       }
     }
   }
@@ -289,23 +421,23 @@ export class VolumeCanvas {
 
   /** Polígono plano (capa, delantal, hoja de un arma…), visible de los dos lados. */
   polygon(points: readonly Vec3[], material: Material): void {
+    const [p0, p1, p2] = points;
+    if (!p0 || !p1 || !p2) return;
+    // Normal en el modelo, siempre hacia quien mira.
+    let normal = normalize(cross(sub(p1, p0), sub(p2, p0)));
+    if (dot(normal, this.camera.viewDir) < 0) normal = scale(normal, -1);
     const [first, ...rest] = points.map((p) => this.camera.point(p));
     if (!first) return;
     for (let i = 0; i + 1 < rest.length; i++) {
       const b = rest[i];
       const c = rest[i + 1];
-      if (b && c) this.triangle(first, b, c, material);
+      if (b && c) this.triangle(first, b, c, normal, material);
     }
   }
 
-  private triangle(a: Vec3, b: Vec3, c: Vec3, material: Material): void {
+  private triangle(a: Vec3, b: Vec3, c: Vec3, normal: Vec3, material: Material): void {
     const area = (b[0] - a[0]) * (c[1] - a[1]) - (c[0] - a[0]) * (b[1] - a[1]);
     if (Math.abs(area) < 1e-6) return;
-    // Normal en cámara (y hacia arriba), siempre hacia quien mira.
-    const e1: Vec3 = [b[0] - a[0], -(b[1] - a[1]), b[2] - a[2]];
-    const e2: Vec3 = [c[0] - a[0], -(c[1] - a[1]), c[2] - a[2]];
-    let normal = normalize(cross(e1, e2));
-    if (normal[2] < 0) normal = scale(normal, -1);
 
     const minX = Math.max(0, Math.floor(Math.min(a[0], b[0], c[0])));
     const maxX = Math.min(this.width - 1, Math.ceil(Math.max(a[0], b[0], c[0])));
@@ -331,7 +463,7 @@ export class VolumeCanvas {
    * solo si esa cara mira a la cámara y nada lo tapa.
    */
   decal(point: Vec3, normal: Vec3, color: Rgb, width = 1, height = 1): void {
-    if (this.camera.direction(normal)[2] < 0.2) return;
+    if (dot(normalize(normal), this.camera.viewDir) < 0.2) return;
     const [cx, cy, cz] = this.camera.point(point);
     const left = Math.round(cx - width / 2);
     const top = Math.round(cy - height / 2);
@@ -348,14 +480,14 @@ export class VolumeCanvas {
     return this.depth[y * this.width + x] ?? Infinity;
   }
 
-  private paint(x: number, y: number, z: number, cameraNormal: Vec3, material: Material): void {
-    const n = normalize(cameraNormal);
-    const light = AMBIENT + (1 - AMBIENT) * Math.max(0, dot(n, LIGHT));
+  private paint(x: number, y: number, z: number, modelNormal: Vec3, material: Material): void {
+    const n = normalize(modelNormal);
+    const light = AMBIENT + (1 - AMBIENT) * Math.max(0, dot(n, this.camera.lightDir));
     const color = material({
       x,
       y,
       p: this.camera.unproject(x + 0.5, y + 0.5, z),
-      n: this.camera.toModel(n),
+      n,
       light,
     });
     if (!color) return;

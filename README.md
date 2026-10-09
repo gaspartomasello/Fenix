@@ -54,7 +54,8 @@ Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña 
 
 Un **personaje de prueba** entra cada vez con todas las habilidades y atributos al máximo, la
 vida y el maná llenos, 999.999 monedas de oro y 1000 de cada reactivo. En el modo solo lo es
-**Gaspar**; en el servidor en línea, solo los nombres que diga `TEST_CHARACTERS`.
+**Gaspar**; en el servidor en línea, solo los nombres que diga `TEST_CHARACTERS`. En el modo
+solo, `?hora=22` en la dirección arranca el mundo a esa hora (para probar la noche).
 
 ## Controles
 
@@ -150,3 +151,9 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
     tachonado, armadura de placas, túnica y sombrero de mago. Siete oficios con herramienta,
     materiales y lugar: herrería, sastrería, carpintería, flechería, alquimia, inscripción y
     cocina; y pesca.
+11. ✅ **Mundo sin pixelado e iluminación**: terreno (pasto, tierra, arena, adoquines, agua y
+    tablones) y objetos del mundo (árboles, rocas, paredes, cercas, barriles, cajas, pozo,
+    faroles, santuario, forja y yunque) redibujados a resolución completa con volumen y luz,
+    en la proyección de UO. De noche, la luz de faroles y fuegos ilumina el suelo, las paredes y
+    los personajes que toca, sin velar la pantalla; Visión nocturna hace ver como de día. El
+    oro se ve como una moneda, un puñado, una pila o una montaña según la cantidad.
