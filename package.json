@@ -1,0 +1,41 @@
+{
+  "name": "fenix",
+  "private": true,
+  "version": "0.1.0",
+  "description": "MMORPG web inspirado en Ultima Online y el motor Sphere",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "workspaces": [
+    "packages/shared",
+    "packages/server",
+    "packages/client"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n server,client -c blue,green \"npm run dev -w @fenix/server\" \"npm run dev -w @fenix/client\"",
+    "dev:solo": "npm run dev:solo -w @fenix/client",
+    "build": "npm run build -w @fenix/client && npm run build -w @fenix/server",
+    "build:solo": "npm run build:solo -w @fenix/client",
+    "start": "npm run start -w @fenix/server",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "npm run typecheck --workspaces",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.5",
+    "concurrently": "^10.0.5",
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.3"
+  }
+}

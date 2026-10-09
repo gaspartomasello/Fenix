@@ -1,0 +1,66 @@
+import type { ClientMessage, EntityId } from '@fenix/shared';
+import type { World } from '../domain/world';
+import type { Clock, IdGenerator, Notifier, RandomSource } from './ports';
+import { JoinWorld, type JoinWorldResult } from './use-cases/join-world';
+import { LeaveWorld } from './use-cases/leave-world';
+import { MovePlayer } from './use-cases/move-player';
+import { SendChat } from './use-cases/send-chat';
+
+export interface GameApplicationDeps {
+  readonly world: World;
+  readonly clock: Clock;
+  readonly ids: IdGenerator;
+  readonly random: RandomSource;
+  readonly notifier: Notifier;
+}
+
+/**
+ * Fachada de la capa de aplicación: el único punto de entrada que usa la
+ * infraestructura. Traduce mensajes del protocolo a casos de uso.
+ */
+export class GameApplication {
+  private readonly joinWorld: JoinWorld;
+  private readonly leaveWorld: LeaveWorld;
+  private readonly movePlayer: MovePlayer;
+  private readonly sendChat: SendChat;
+
+  constructor({ world, clock, ids, random, notifier }: GameApplicationDeps) {
+    this.joinWorld = new JoinWorld(world, ids, random, notifier);
+    this.leaveWorld = new LeaveWorld(world, notifier);
+    this.movePlayer = new MovePlayer(world, clock, notifier);
+    this.sendChat = new SendChat(world, notifier);
+  }
+
+  join(message: Extract<ClientMessage, { type: 'join' }>): JoinWorldResult {
+    return this.joinWorld.execute({ name: message.name, appearance: message.appearance });
+  }
+
+  /** Llamar después de asociar la conexión al jugador recién creado. */
+  announceJoin(playerId: EntityId): void {
+    this.joinWorld.announce(playerId);
+  }
+
+  /** Maneja un mensaje de un jugador que ya está dentro del mundo. */
+  handle(playerId: EntityId, message: ClientMessage): void {
+    switch (message.type) {
+      case 'move':
+        this.movePlayer.execute({
+          playerId,
+          direction: message.direction,
+          mode: message.mode,
+          seq: message.seq,
+        });
+        break;
+      case 'chat':
+        this.sendChat.execute(playerId, message.text);
+        break;
+      case 'join':
+        // Ya está en el mundo: se ignora un segundo ingreso.
+        break;
+    }
+  }
+
+  leave(playerId: EntityId): void {
+    this.leaveWorld.execute(playerId);
+  }
+}
