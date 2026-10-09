@@ -1,4 +1,6 @@
 import {
+  PLAYER_ATTRIBUTES,
+  RUN_STEPS_PER_STAMINA,
   canStep,
   moveDuration,
   step,
@@ -6,10 +8,12 @@ import {
   type Direction,
   type EntityId,
   type MoveMode,
-  type PlayerSnapshot,
+  type MobileSnapshot,
   type Position,
   type TileMap,
 } from '@fenix/shared';
+import { Combatant } from './combat/combatant';
+import type { Mobile } from './mobile';
 
 /**
  * Cuánto antes de su turno puede llegar un paso (jitter de red) y cuánto
@@ -29,10 +33,13 @@ export interface PlayerProps {
   readonly direction: Direction;
 }
 
-export class Player {
+export class Player implements Mobile {
   readonly id: EntityId;
   readonly name: string;
+  readonly body = 'human' as const;
   readonly appearance: Appearance;
+  readonly combat = new Combatant(PLAYER_ATTRIBUTES);
+  private runSteps = 0;
   private _position: Position;
   private _direction: Direction;
   private nextMoveAt = 0;
@@ -68,13 +75,25 @@ export class Player {
   }
 
   /** Datos públicos del jugador; lo que tiene puesto lo agrega `World`. */
-  toSnapshot(): Omit<PlayerSnapshot, 'equipment'> {
+  /** Cuenta un paso corriendo; cada RUN_STEPS_PER_STAMINA gasta un punto de energía. */
+  registerRunStep(): boolean {
+    this.runSteps += 1;
+    if (this.runSteps < RUN_STEPS_PER_STAMINA) return false;
+    this.runSteps = 0;
+    this.combat.spendStamina(1);
+    return true;
+  }
+
+  toSnapshot(): Omit<MobileSnapshot, 'equipment'> {
     return {
       id: this.id,
       name: this.name,
       position: this._position,
       direction: this._direction,
       appearance: this.appearance,
+      body: this.body,
+      health: this.combat.health,
+      dead: this.combat.isDead,
     };
   }
 }

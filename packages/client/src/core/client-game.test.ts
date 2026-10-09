@@ -4,7 +4,7 @@ import {
   MOVE_DURATION_MS,
   Terrain,
   type ClientMessage,
-  type PlayerSnapshot,
+  type MobileSnapshot,
 } from '@fenix/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ClientGame, type LogEntry } from './client-game';
@@ -13,7 +13,7 @@ import { MAX_PENDING_STEPS } from './movement-predictor';
 const G = Terrain.Grass;
 const W = Terrain.Water;
 
-function snapshot(id: string, x: number, y: number): PlayerSnapshot {
+function snapshot(id: string, x: number, y: number): MobileSnapshot {
   return {
     id,
     name: id.toUpperCase(),
@@ -21,6 +21,9 @@ function snapshot(id: string, x: number, y: number): PlayerSnapshot {
     direction: Direction.South,
     appearance: DEFAULT_APPEARANCE,
     equipment: {},
+    body: id === 'rata' ? 'rat' : 'human',
+    health: 1,
+    dead: false,
   };
 }
 
@@ -45,7 +48,7 @@ describe('ClientGame', () => {
         regions: [{ name: 'Muelle', x: 0, y: 0, width: 2, height: 1 }],
       },
       time: { dayProgress: 0.5, dayLengthMs: 10_000 },
-      players: [snapshot('ana', 0, 0), snapshot('bruno', 2, 0)],
+      mobiles: [snapshot('ana', 0, 0), snapshot('bruno', 2, 0)],
     });
   });
 
@@ -118,7 +121,7 @@ describe('ClientGame', () => {
   describe('otros jugadores', () => {
     it('anima los movimientos de otros jugadores', () => {
       game.apply({
-        type: 'playerMoved',
+        type: 'mobileMoved',
         id: 'bruno',
         position: { x: 1, y: 0 },
         direction: Direction.West,
@@ -132,7 +135,7 @@ describe('ClientGame', () => {
 
     it('ignora ecos de su propio movimiento', () => {
       game.apply({
-        type: 'playerMoved',
+        type: 'mobileMoved',
         id: 'ana',
         position: { x: 3, y: 0 },
         direction: Direction.East,
@@ -146,10 +149,10 @@ describe('ClientGame', () => {
       const removed: string[] = [];
       game.on('entityAdded', (e) => added.push(e.id));
       game.on('entityRemoved', (id) => removed.push(id));
-      game.apply({ type: 'playerAppeared', player: snapshot('carla', 1, 0) });
-      game.apply({ type: 'playerAppeared', player: snapshot('carla', 1, 0) });
-      game.apply({ type: 'playerDisappeared', id: 'bruno' });
-      game.apply({ type: 'playerDisappeared', id: 'ana' });
+      game.apply({ type: 'mobileAppeared', mobile: snapshot('carla', 1, 0) });
+      game.apply({ type: 'mobileAppeared', mobile: snapshot('carla', 1, 0) });
+      game.apply({ type: 'mobileDisappeared', id: 'bruno' });
+      game.apply({ type: 'mobileDisappeared', id: 'ana' });
       expect(added).toEqual(['carla']);
       expect(removed).toEqual(['bruno']);
       expect(game.visibleCount).toBe(2);
@@ -193,6 +196,54 @@ describe('ClientGame', () => {
         { type: 'moveItem', itemId: 'i1', to: { type: 'equipment', slot: 'head' } },
         { type: 'useItem', itemId: 'i1' },
       ]);
+    });
+  });
+
+  describe('combate', () => {
+    it('guarda los vitales y sin energía camina aunque pida correr', () => {
+      const vitals = { hits: 40, maxHits: 75, mana: 30, maxMana: 30, stamina: 0, maxStamina: 40 };
+      game.apply({ type: 'vitals', vitals, dead: false });
+      expect(game.vitals?.vitals.hits).toBe(40);
+      expect(game.self?.health).toBeCloseTo(40 / 75);
+      game.requestStep(Direction.East, 'run');
+      expect(sent.at(-1)).toMatchObject({ type: 'move', mode: 'walk' });
+    });
+
+    it('muestra los golpes: embestida del atacante y número sobre el objetivo', () => {
+      game.apply({ type: 'mobileAppeared', mobile: snapshot('rata', 1, 0) });
+      game.apply({ type: 'swing', attackerId: 'rata', targetId: 'ana', hit: true, damage: 3 });
+      game.apply({ type: 'swing', attackerId: 'ana', targetId: 'rata', hit: false, damage: 0 });
+      const rat = [...game.allEntities()].find((e) => e.id === 'rata');
+      expect(game.self?.combatTexts.map((t) => [t.text, t.kind])).toEqual([['3', 'damage-taken']]);
+      expect(rat?.combatTexts.map((t) => t.text)).toEqual(['¡Falla!']);
+      now += 100;
+      expect(rat?.lungeOffset(now).x).not.toBe(0);
+    });
+
+    it('sigue el objetivo y la salud de los demás', () => {
+      game.apply({ type: 'mobileAppeared', mobile: snapshot('rata', 1, 0) });
+      game.attack('rata');
+      expect(sent.at(-1)).toEqual({ type: 'attack', targetId: 'rata' });
+      game.apply({ type: 'combatTarget', targetId: 'rata' });
+      expect(game.targetId).toBe('rata');
+      game.apply({ type: 'mobileHealth', id: 'rata', health: 0, dead: true });
+      expect([...game.allEntities()].find((e) => e.id === 'rata')?.dead).toBe(true);
+      game.stopAttack();
+      expect(sent.at(-1)).toEqual({ type: 'stopAttack' });
+    });
+
+    it('anima a las criaturas con su propia velocidad', () => {
+      game.apply({ type: 'mobileAppeared', mobile: snapshot('rata', 1, 0) });
+      game.apply({
+        type: 'mobileMoved',
+        id: 'rata',
+        position: { x: 2, y: 0 },
+        direction: Direction.East,
+        mode: 'walk',
+      });
+      const rat = [...game.allEntities()].find((e) => e.id === 'rata');
+      now += 225; // la mitad de los 450 ms de la rata
+      expect(rat?.renderPosition(now).x).toBeCloseTo(1.5);
     });
   });
 

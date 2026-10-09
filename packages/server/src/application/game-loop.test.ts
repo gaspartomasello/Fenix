@@ -1,0 +1,190 @@
+import { DEFAULT_APPEARANCE, Direction, Terrain, TileMap, type EntityId } from '@fenix/shared';
+import { describe, expect, it } from 'vitest';
+import { CORPSE_MS, Creature, RESPAWN_MS } from '../domain/creatures/creature';
+import { World } from '../domain/world';
+import { WorldClock } from '../domain/world-clock';
+import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
+import { GameApplication } from './game-application';
+
+/** Pasillo de 12×3 de pasto con un santuario en el extremo este. */
+function createArena() {
+  const map = new TileMap({
+    width: 12,
+    height: 3,
+    terrain: new Array<Terrain>(36).fill(Terrain.Grass),
+    statics: [{ kind: 'shrine', x: 11, y: 0 }],
+  });
+  const clock = new FakeClock(0);
+  const notifier = new RecordingNotifier();
+  const world = new World(map, { x: 1, y: 1 });
+  const app = new GameApplication({
+    world,
+    worldClock: new WorldClock(0),
+    clock,
+    ids: new SequentialIds(),
+    random: new FixedRandom(),
+    notifier,
+  });
+  const run = (ms: number): void => {
+    for (let elapsed = 0; elapsed < ms; elapsed += 100) {
+      clock.advance(100);
+      app.tick(clock.now());
+    }
+  };
+  const join = (name: string): EntityId => {
+    const result = app.join({ type: 'join', name, appearance: DEFAULT_APPEARANCE });
+    if (!result.ok) throw new Error(result.reason);
+    app.announceJoin(result.playerId);
+    return result.playerId;
+  };
+  return { map, clock, notifier, world, app, run, join };
+}
+
+describe('ciclo del juego: combate', () => {
+  it('una criatura agresiva se acerca y ataca al jugador', () => {
+    const arena = createArena();
+    const ana = arena.join('Ana');
+    const rat = new Creature('rata', 'rat', { x: 5, y: 1 });
+    arena.world.addCreature(rat);
+    arena.notifier.clear();
+
+    arena.run(4000);
+    const player = arena.world.get(ana);
+    expect(Math.abs(rat.position.x - (player?.position.x ?? 0))).toBeLessThanOrEqual(1);
+    expect(arena.notifier.ofType('swing').some((d) => d.to === ana)).toBe(true);
+    expect(player?.combat.current.hits).toBeLessThan(75);
+    expect(arena.notifier.ofType('vitals').some((d) => d.to === ana)).toBe(true);
+  });
+
+  it('el jugador mata a su objetivo, deja botín y la criatura reaparece', () => {
+    const arena = createArena();
+    const ana = arena.join('Ana');
+    const rat = new Creature('rata', 'rat', { x: 2, y: 1 });
+    arena.world.addCreature(rat);
+
+    arena.app.handle(ana, { type: 'attack', targetId: 'rata' });
+    expect(arena.notifier.ofType('combatTarget').at(-1)?.message).toEqual({
+      type: 'combatTarget',
+      targetId: 'rata',
+    });
+
+    arena.run(8000);
+    expect(rat.combat.isDead || rat.gone).toBe(true);
+    const texts = arena.notifier
+      .ofType('system')
+      .map((d) => (d.message.type === 'system' ? d.message.text : ''));
+    expect(texts).toContain('Mataste una rata gigante.');
+    expect(texts.some((t) => t.startsWith('Una rata gigante dejó:'))).toBe(true);
+    expect(arena.world.items.groundNear({ x: 2, y: 1 }).map((i) => i.kind)).toContain('gold');
+
+    arena.run(CORPSE_MS);
+    expect(rat.gone).toBe(true);
+    expect(
+      arena.notifier
+        .ofType('mobileDisappeared')
+        .some((d) => d.message.type === 'mobileDisappeared' && d.message.id === 'rata'),
+    ).toBe(true);
+
+    arena.notifier.clear();
+    arena.run(RESPAWN_MS + 200);
+    expect(rat.gone).toBe(false);
+    expect(rat.combat.isDead).toBe(false);
+    expect(arena.notifier.ofType('mobileAppeared').length).toBeGreaterThan(0);
+  });
+
+  it('al morir queda como fantasma y resucita al llegar al santuario', () => {
+    const arena = createArena();
+    const ana = arena.join('Ana');
+    const player = arena.world.get(ana);
+    if (!player) throw new Error('sin jugador');
+    const rat = new Creature('rata', 'rat', { x: 2, y: 1 });
+    arena.world.addCreature(rat);
+    player.combat.takeDamage(player.combat.current.hits - 1);
+
+    arena.run(3000);
+    expect(player.combat.isDead).toBe(true);
+    expect(
+      arena.notifier
+        .ofType('system')
+        .some((d) => d.message.type === 'system' && d.message.text.startsWith('Moriste')),
+    ).toBe(true);
+
+    // Los fantasmas no pelean ni tocan objetos.
+    arena.notifier.clear();
+    arena.app.handle(ana, { type: 'attack', targetId: 'rata' });
+    expect(arena.notifier.ofType('system')[0]?.message).toEqual({
+      type: 'system',
+      text: 'Los fantasmas no pueden pelear.',
+    });
+
+    // Caminar hasta el santuario (x = 11).
+    for (let i = 0; i < 8; i++) {
+      arena.clock.advance(400);
+      arena.app.handle(ana, { type: 'move', direction: Direction.East, mode: 'walk', seq: i + 1 });
+      arena.app.tick(arena.clock.now());
+    }
+    expect(player.combat.isDead).toBe(false);
+    expect(player.combat.current.hits).toBeGreaterThan(0);
+    expect(
+      arena.notifier
+        .ofType('system')
+        .some((d) => d.message.type === 'system' && d.message.text === '¡Volviste a la vida!'),
+    ).toBe(true);
+  });
+
+  it('las criaturas no entran a los pueblos', () => {
+    const arena = createArena();
+    const safe = new TileMap({
+      width: 12,
+      height: 3,
+      terrain: new Array<Terrain>(36).fill(Terrain.Grass),
+      regions: [{ name: 'Pueblo', x: 0, y: 0, width: 4, height: 3 }],
+    });
+    const world = new World(safe, { x: 1, y: 1 });
+    const app = new GameApplication({
+      world,
+      worldClock: new WorldClock(0),
+      clock: arena.clock,
+      ids: new SequentialIds(),
+      random: new FixedRandom(),
+      notifier: arena.notifier,
+    });
+    const joined = app.join({ type: 'join', name: 'Ana', appearance: DEFAULT_APPEARANCE });
+    if (joined.ok) app.announceJoin(joined.playerId);
+    const rat = new Creature('rata', 'rat', { x: 6, y: 1 });
+    world.addCreature(rat);
+    for (let t = 0; t < 6000; t += 100) {
+      arena.clock.advance(100);
+      app.tick(arena.clock.now());
+    }
+    expect(rat.position.x).toBeGreaterThanOrEqual(4);
+  });
+
+  it('no deja atacar a otros jugadores todavía', () => {
+    const arena = createArena();
+    const ana = arena.join('Ana');
+    const bruno = arena.join('Bruno');
+    arena.notifier.clear();
+    arena.app.handle(ana, { type: 'attack', targetId: bruno });
+    expect(arena.notifier.ofType('system')[0]?.message).toEqual({
+      type: 'system',
+      text: 'Todavía no se puede atacar a otros jugadores.',
+    });
+  });
+
+  it('correr gasta energía', () => {
+    const arena = createArena();
+    const ana = arena.join('Ana');
+    const player = arena.world.get(ana);
+    for (let i = 0; i < 8; i++) {
+      arena.clock.advance(200);
+      arena.app.handle(ana, {
+        type: 'move',
+        direction: i < 4 ? Direction.East : Direction.West,
+        mode: 'run',
+        seq: i + 1,
+      });
+    }
+    expect(player?.combat.current.stamina).toBe(38);
+  });
+});

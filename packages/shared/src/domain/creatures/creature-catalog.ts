@@ -1,0 +1,96 @@
+import type { ItemKind } from '../items/item-catalog';
+import type { Weapon } from '../combat/weapons';
+
+export const CREATURE_KINDS = ['rat', 'wolf', 'skeleton'] as const;
+export type CreatureKind = (typeof CREATURE_KINDS)[number];
+
+export interface LootEntry {
+  readonly kind: ItemKind;
+  /** Probabilidad de que aparezca (0–1). */
+  readonly chance: number;
+  readonly amount?: readonly [number, number];
+}
+
+export interface CreatureDefinition {
+  readonly kind: CreatureKind;
+  readonly name: string;
+  readonly article: 'un' | 'una';
+  readonly maxHits: number;
+  readonly strength: number;
+  readonly dexterity: number;
+  readonly armor: number;
+  readonly weapon: Weapon;
+  /** Tiempo para avanzar un tile. */
+  readonly moveMs: number;
+  /** A qué distancia ve a un jugador y lo ataca. */
+  readonly aggroRange: number;
+  readonly loot: readonly LootEntry[];
+}
+
+export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
+  rat: {
+    kind: 'rat',
+    name: 'rata gigante',
+    article: 'una',
+    maxHits: 14,
+    strength: 10,
+    dexterity: 30,
+    armor: 0,
+    weapon: { name: 'mordida', minDamage: 1, maxDamage: 3, swingMs: 1800 },
+    moveMs: 450,
+    aggroRange: 4,
+    loot: [
+      { kind: 'gold', chance: 0.9, amount: [2, 8] },
+      { kind: 'apple', chance: 0.2, amount: [1, 2] },
+    ],
+  },
+  wolf: {
+    kind: 'wolf',
+    name: 'lobo gris',
+    article: 'un',
+    maxHits: 32,
+    strength: 30,
+    dexterity: 45,
+    armor: 4,
+    weapon: { name: 'mordida', minDamage: 3, maxDamage: 8, swingMs: 2000 },
+    moveMs: 340,
+    aggroRange: 7,
+    loot: [
+      { kind: 'gold', chance: 1, amount: [6, 18] },
+      { kind: 'leather-cap', chance: 0.1 },
+      { kind: 'leather-armor', chance: 0.08 },
+    ],
+  },
+  skeleton: {
+    kind: 'skeleton',
+    name: 'esqueleto',
+    article: 'un',
+    maxHits: 45,
+    strength: 40,
+    dexterity: 35,
+    armor: 10,
+    weapon: { name: 'espada oxidada', minDamage: 4, maxDamage: 10, swingMs: 2400 },
+    moveMs: 480,
+    aggroRange: 8,
+    loot: [
+      { kind: 'gold', chance: 1, amount: [15, 40] },
+      { kind: 'healing-potion', chance: 0.3 },
+      { kind: 'short-sword', chance: 0.1 },
+      { kind: 'iron-helmet', chance: 0.08 },
+      { kind: 'chainmail', chance: 0.05 },
+      { kind: 'wooden-shield', chance: 0.1 },
+    ],
+  },
+};
+
+export function isCreatureKind(value: unknown): value is CreatureKind {
+  return typeof value === 'string' && (CREATURE_KINDS as readonly string[]).includes(value);
+}
+
+/** Forma del cuerpo de un mobile: humano o una criatura. */
+export type Body = 'human' | CreatureKind;
+
+/** Tiempo para avanzar un tile según el cuerpo y el modo de movimiento. */
+export function bodyMoveMs(body: Body, humanMs: number): number {
+  return body === 'human' ? humanMs : CREATURES[body].moveMs;
+}

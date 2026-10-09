@@ -304,6 +304,30 @@ const paintSign: Painter = (img) => {
   }
 };
 
+const paintShrine: Painter = (img) => {
+  const stone: Rgb = [150, 146, 160];
+  // Pedestal escalonado.
+  img.fillRect(13, 50, 18, 6, shade(stone, 0.85));
+  img.fillRect(13, 50, 18, 1, shade(stone, 1.15));
+  img.fillRect(16, 38, 12, 12, stone);
+  img.fillRect(16, 38, 2, 12, shade(stone, 1.2));
+  img.fillRect(26, 38, 2, 12, shade(stone, 0.75));
+  img.fillRect(15, 36, 14, 2, shade(stone, 1.1));
+  // Cristal que brilla.
+  img.fillPolygon(
+    [
+      { x: 22, y: 18 },
+      { x: 27, y: 27 },
+      { x: 22, y: 36 },
+      { x: 17, y: 27 },
+    ],
+    (x) => (x < 22 ? [150, 210, 255] : [90, 150, 230]),
+  );
+  img.fillRect(20, 23, 1, 6, [235, 250, 255]);
+  // Runas en el pedestal.
+  for (const y of [41, 45]) img.fillRect(19, y, 6, 1, [110, 170, 240]);
+};
+
 const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   oak: { paint: paintOak, outline: true, shadow: [14, 5] },
   pine: { paint: paintPine, outline: true, shadow: [11, 4] },
@@ -321,6 +345,7 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   well: { paint: paintWell, outline: true, shadow: [12, 4] },
   lamp: { paint: paintLamp, outline: true, shadow: [4, 2] },
   sign: { paint: paintSign, outline: true, shadow: [6, 2] },
+  shrine: { paint: paintShrine, outline: true, shadow: [11, 4] },
 };
 
 function hashKind(kind: string): number {

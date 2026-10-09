@@ -60,6 +60,8 @@ Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña 
 - **Arrastrar** un objeto: moverlo entre el suelo, la mochila y los casilleros del equipo.
 - **Doble clic** (o doble toque): comer, beber, ponerse o sacarse algo; sobre un objeto del suelo,
   levantarlo.
+- **Clic** (o toque) sobre una criatura: atacarla. El personaje golpea solo mientras la tenga al
+  lado. **Escape**: dejar de atacar.
 - **Rueda del mouse**: acercar o alejar la cámara.
 
 ## Estructura
@@ -85,7 +87,9 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
    colisión, transiciones de terreno, rango de visión y día/noche con faroles.
 3. ✅ **Objetos**: tirarlos y levantarlos del suelo, mochila, ventana de equipo, armas,
    armaduras y ropa que se ven puestas, comida y pociones, arrastrar y soltar.
-4. Combate: monstruos con IA, HP/mana/stamina, muerte, fantasma y resurrección.
+4. ✅ **Combate**: ratas, lobos y esqueletos que deambulan y atacan, vida, maná y energía, armas y
+   armaduras que cuentan, botín, muerte, fantasma y resurrección en el santuario. Los pueblos son
+   zonas seguras.
 5. Habilidades: mejoran con el uso, con un tope total; magia con reactivos y libro de hechizos.
 6. Economía: crafting, recolección, NPCs vendedores, banco, oro.
 7. Social: grupos, gremios, combate entre jugadores, karma y fama.

@@ -8,6 +8,7 @@ import { GameSocketServer } from './infrastructure/network/game-socket-server';
 import { SessionRegistry } from './infrastructure/network/session-registry';
 import { SeededRandom } from './infrastructure/system/seeded-random';
 import { SystemClock } from './infrastructure/system/system-clock';
+import { startTicker } from './infrastructure/system/ticker';
 import { UuidGenerator } from './infrastructure/system/uuid-generator';
 
 /** Raíz de composición: el único lugar que conoce todas las piezas concretas. */
@@ -27,6 +28,10 @@ function main(): void {
     notifier: sessions,
   });
 
+  const stopTicker = startTicker(
+    (now) => app.tick(now),
+    () => clock.now(),
+  );
   const httpServer = createHttpServer(config.clientDist);
   const sockets = new GameSocketServer(httpServer, app, sessions);
 
@@ -36,6 +41,7 @@ function main(): void {
 
   const shutdown = (): void => {
     console.info('[fenix] apagando…');
+    stopTicker();
     void sockets.close().then(() => httpServer.close(() => process.exit(0)));
   };
   process.on('SIGINT', shutdown);

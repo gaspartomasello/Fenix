@@ -1,4 +1,5 @@
 import {
+  HEALING,
   BACKPACK_AREA,
   ITEM_ICON_SIZE,
   ITEMS,
@@ -36,6 +37,8 @@ export interface ItemChanges {
   readonly looks: Set<EntityId>;
   /** Mensaje para quien actuó. */
   message?: string;
+  /** Efecto sobre quien lo usó (comida, pociones). */
+  effect?: { readonly heal: number; readonly stamina: number };
 }
 
 export type ItemResult = { ok: true; changes: ItemChanges } | { ok: false; reason: string };
@@ -134,10 +137,12 @@ export class Items {
       case 'eat':
         this.consumeOne(item, changes);
         changes.message = `Comiste ${describeItem(item.kind)}.`;
+        changes.effect = { heal: HEALING.apple, stamina: 10 };
         return { ok: true, changes };
       case 'drink':
         this.consumeOne(item, changes);
         changes.message = `Tomaste ${describeItem(item.kind)}. Te sentís mejor.`;
+        changes.effect = { heal: HEALING.potion, stamina: 0 };
         return { ok: true, changes };
       case 'equip':
         if (item.location.type === 'equipment')

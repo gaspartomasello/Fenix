@@ -19,6 +19,7 @@ export const STATIC_KINDS = [
   'well',
   'lamp',
   'sign',
+  'shrine',
 ] as const;
 
 export type StaticKind = (typeof STATIC_KINDS)[number];
@@ -55,6 +56,7 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   well: define('well', 'aljibe', true),
   lamp: define('lamp', 'farol', true, 5),
   sign: define('sign', 'cartel', false),
+  shrine: define('shrine', 'santuario', true, 4),
 };
 
 export function isStaticKind(value: unknown): value is StaticKind {

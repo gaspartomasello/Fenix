@@ -53,6 +53,12 @@ describe('mensajes de objetos', () => {
     }
   });
 
+  it('acepta pedidos de ataque', () => {
+    expect(decodeClientMessage(JSON.stringify({ type: 'attack', targetId: 'c1' })).ok).toBe(true);
+    expect(decodeClientMessage(JSON.stringify({ type: 'attack' })).ok).toBe(false);
+    expect(decodeClientMessage(JSON.stringify({ type: 'stopAttack' })).ok).toBe(true);
+  });
+
   it('rechaza destinos inválidos', () => {
     for (const to of [
       { type: 'ground' },

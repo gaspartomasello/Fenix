@@ -496,3 +496,92 @@ body {
     display: none;
   }
 }
+
+/* ── Combate ──────────────────────────────────────────────────────── */
+
+.vitals-panel {
+  position: absolute;
+  top: calc(56px + env(safe-area-inset-top, 0px));
+  left: 12px;
+  display: grid;
+  gap: 4px;
+  width: min(230px, calc(100% - 24px));
+  padding: 0.45rem 0.6rem;
+}
+
+.vital-row {
+  display: grid;
+  grid-template-columns: 4.2rem 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.vital-label {
+  color: var(--color-text-muted);
+}
+
+.vital-track {
+  position: relative;
+  height: 14px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid #1c140e;
+  border-radius: 3px;
+}
+
+.vital-fill {
+  height: 100%;
+  transition: width 0.25s ease-out;
+}
+
+.vital-fill--hits {
+  background: linear-gradient(#d0463c, #8e2620);
+}
+
+.vital-fill--mana {
+  background: linear-gradient(#4f7ee0, #2a4c9a);
+}
+
+.vital-fill--stamina {
+  background: linear-gradient(#d9b23c, #9a7a1e);
+}
+
+.vital-value {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  text-shadow: 0 1px 0 #000;
+}
+
+.ghost-banner {
+  position: absolute;
+  top: calc(56px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(460px, calc(100% - 24px));
+  padding: 0.6rem 0.8rem;
+  font-size: 0.9rem;
+  text-align: center;
+  border-color: #9fb4ff;
+}
+
+.ghost-banner strong {
+  color: #c8d4ff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vital-fill {
+    transition: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .ghost-banner {
+    top: calc(150px + env(safe-area-inset-top, 0px));
+  }
+}
