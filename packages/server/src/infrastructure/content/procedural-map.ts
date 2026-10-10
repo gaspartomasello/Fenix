@@ -77,6 +77,10 @@ export interface Continent extends GeneratedWorld {
 
 /** Nivel del mar en el campo de elevación (0 a 1). */
 const SEA = 0.4;
+/** Lo que cuesta doblar al trazar un camino: tramos largos y rectos. */
+const ROAD_TURN = 6;
+/** Los caminos van empedrados hasta esta distancia de un pueblo. */
+const PAVED_NEAR_TOWN = 24;
 /** Radio de tierra firme y clima propio alrededor de cada pueblo. */
 const TOWN_INFLUENCE = 34;
 
@@ -132,6 +136,8 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
   ];
   const ridges = new ValueNoise(seed + 3, Math.max(6, size / 8));
   const ridgeDetail = new ValueNoise(seed + 4, Math.max(3, size / 22));
+  // Solo algunas regiones tienen cordilleras: el resto del continente queda abierto.
+  const ranges = new ValueNoise(seed + 11, Math.max(10, size / 4));
   const chill = new ValueNoise(seed + 5, Math.max(6, size / 7));
   const wetness = new ValueNoise(seed + 6, Math.max(6, size / 6));
   const forests = new ValueNoise(seed + 7, 14);
@@ -173,16 +179,39 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
       const marsh = townInfluence(x, y, 'swamp');
       let biome: Biome;
       if (e < SEA + 0.02) biome = 'beach';
-      else if (!nearTown && ridge > 0.88 && e > SEA + 0.06) biome = 'mountain';
+      else if (
+        !nearTown &&
+        ridge > 0.94 &&
+        e > SEA + 0.1 &&
+        (ranges.at(x, y) > 0.7 || mountainRing(x, y) > 0)
+      )
+        biome = 'mountain';
       else if (marsh > 0 && marsh + (wet - 0.5) * 0.4 > 0.06) biome = 'swamp';
       else if (cold > 0.8) biome = 'snow';
       else if (cold < 0.27 && wet < 0.62) biome = 'desert';
       else if (wet > 0.66 && e < SEA + 0.2 + townInfluence(x, y, 'swamp') * 0.35) biome = 'swamp';
-      else biome = forests.at(x, y) > 0.6 ? 'forest' : 'grassland';
+      else biome = forests.at(x, y) > 0.68 ? 'forest' : 'grassland';
       biomes[i] = biome;
     }
   }
-  // Al pie de las montañas, una franja de tierra pedregosa.
+  // Sin cordones finos de montaña (parecen cercos): solo quedan los macizos.
+  const massif = (x: number, y: number): boolean =>
+    neighbors8(x, y).filter(([nx, ny]) => biomes[index(nx, ny)] === 'mountain').length >= 5;
+  const core = new Uint8Array(total);
+  for (let y = 1; y < height - 1; y++)
+    for (let x = 1; x < width - 1; x++)
+      if (biomes[index(x, y)] === 'mountain' && massif(x, y)) core[index(x, y)] = 1;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = index(x, y);
+      if (biomes[i] !== 'mountain') continue;
+      const kept = core[i] || neighbors8(x, y).some(([nx, ny]) => core[index(nx, ny)]);
+      if (!kept) biomes[i] = (forests.at(x, y) > 0.68 ? 'forest' : 'grassland') as Biome;
+    }
+  }
+  // El suelo de cada bioma, antes de marcar el pie de las montañas (que conserva el suyo).
+  const ground: Terrain[] = biomes.map((b) => terrainOf(b));
+  // Al pie de las montañas: algo de piedra y pinos, sobre el suelo de la zona.
   for (let y = 1; y < height - 1; y++) {
     for (let x = 1; x < width - 1; x++) {
       const i = index(x, y);
@@ -212,13 +241,13 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
 
   // ── Terreno según el bioma ──
   const terrain: Terrain[] = new Array<Terrain>(total).fill(Terrain.Water);
-  for (let i = 0; i < total; i++) terrain[i] = terrainOf(biomes[i] ?? 'ocean');
+  for (let i = 0; i < total; i++) terrain[i] = ground[i] ?? Terrain.Water;
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const i = index(x, y);
       if (biomes[i] === 'swamp' && puddles.at(x, y) > 0.7) terrain[i] = Terrain.Water;
-      else if (biomes[i] === 'grassland' && patches.at(x, y) > 0.86) terrain[i] = Terrain.Dirt;
-      else if (biomes[i] === 'desert' && patches.at(x, y) > 0.82) terrain[i] = Terrain.Dirt;
+      else if (biomes[i] === 'grassland' && patches.at(x, y) > 0.9) terrain[i] = Terrain.Dirt;
+      else if (biomes[i] === 'desert' && patches.at(x, y) > 0.88) terrain[i] = Terrain.Dirt;
     }
   }
 
@@ -380,7 +409,7 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     if (!from || !to) continue;
     const start = gate(from, to);
     const end = gate(to, from);
-    const path = cheapestPath(width, height, start, end, roadCost);
+    const path = cheapestPath(width, height, start, end, roadCost, ROAD_TURN);
     if (!path) continue;
     for (const p of path) carveRoad(p.x, p.y);
     posts.push([start, path, to.name], [end, [...path].reverse(), from.name]);
@@ -402,46 +431,71 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
   function roadCost(x: number, y: number): number {
     const i = index(x, y);
     if (inTown(x, y)) return Infinity;
-    if (roads.has(i)) return 0.6;
+    if (roads.has(i)) return 0.3;
     const biome = biomes[i];
     if (biome === 'ocean') return Infinity;
     if (terrain[i] === Terrain.Water) return river[i] ? 14 : 30;
     if (biome === 'mountain') return 70;
     if (biome === 'swamp') return 3;
-    if (biome === 'forest' || biome === 'foothill' || biome === 'snow') return 1.6;
-    if (biome === 'desert' || biome === 'beach') return 1.4;
+    if (biome === 'forest' || biome === 'foothill' || biome === 'snow') return 1.25;
+    if (biome === 'desert' || biome === 'beach') return 1.15;
     return 1;
   }
 
+  /** Un camino de tres tiles de ancho, despejado a los costados. */
   function carveRoad(x: number, y: number): void {
-    for (const [px, py] of [
-      [x, y],
-      [x + 1, y],
-    ] as const) {
-      if (inTown(px, py)) continue;
-      const i = index(px, py);
-      if (biomes[i] === 'mountain') biomes[i] = 'foothill';
-      // Un camino entre montañas: candidato a paso.
-      if (neighbors8(px, py).some(([nx, ny]) => biomes[index(nx, ny)] === 'mountain'))
-        passes.push({ x: px, y: py });
-      // Sobre el agua, un puente de tablones.
-      terrain[i] =
-        terrain[i] === Terrain.Water || terrain[i] === Terrain.Wood
-          ? Terrain.Wood
-          : roadGround(biomes[i]);
-      statics.delete(i);
-      roads.add(i);
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const px = x + dx;
+        const py = y + dy;
+        if (inTown(px, py) || px < 1 || py < 1 || px >= width - 1 || py >= height - 1) continue;
+        const i = index(px, py);
+        if (biomes[i] === 'ocean') continue;
+        if (biomes[i] === 'mountain') biomes[i] = 'foothill';
+        // Un camino entre montañas: candidato a paso.
+        if (neighbors8(px, py).some(([nx, ny]) => biomes[index(nx, ny)] === 'mountain'))
+          passes.push({ x: px, y: py });
+        // Sobre el agua, un puente de tablones; cerca de los pueblos, empedrado.
+        terrain[i] =
+          terrain[i] === Terrain.Water || terrain[i] === Terrain.Wood
+            ? Terrain.Wood
+            : nearTownEdge(px, py) <= PAVED_NEAR_TOWN
+              ? Terrain.Stone
+              : roadGround(biomes[i]);
+        statics.delete(i);
+        roads.add(i);
+      }
     }
+    // Banquinas: dos tiles a cada lado sin árboles ni piedras.
+    for (let dy = -3; dy <= 3; dy++)
+      for (let dx = -3; dx <= 3; dx++) {
+        const kind = statics.get(index(x + dx, y + dy))?.kind;
+        if (kind && kind !== 'mountain' && !inTown(x + dx, y + dy))
+          statics.delete(index(x + dx, y + dy));
+      }
+  }
+
+  /** Distancia (en tiles) al borde del pueblo más cercano. */
+  function nearTownEdge(x: number, y: number): number {
+    let best = Infinity;
+    for (const t of towns) {
+      const dx = Math.max(t.x - x, 0, x - (t.x + t.plan.map.width - 1));
+      const dy = Math.max(t.y - y, 0, y - (t.y + t.plan.map.height - 1));
+      best = Math.min(best, Math.max(dx, dy));
+    }
+    return best;
   }
 
   /** Un cartel al costado del camino, unos pasos afuera del pueblo. */
   function signpost(start: Position, path: readonly Position[], destination: string): void {
     const at = path[Math.min(3, path.length - 1)] ?? start;
     for (const [dx, dy] of [
-      [-1, 0],
-      [0, -1],
+      [-2, 0],
+      [0, -2],
       [2, 0],
-      [0, 1],
+      [0, 2],
+      [-3, 0],
+      [3, 0],
     ] as const) {
       const x = at.x + dx;
       const y = at.y + dy;
@@ -535,40 +589,42 @@ function vegetation(
 ): StaticKind | null {
   switch (biome) {
     case 'beach':
-      return roll < 0.02 ? 'rock' : null;
+      return roll < 0.004 ? 'rock' : null;
     case 'foothill':
-      if (roll < 0.12) return 'rock';
-      if (roll < 0.17) return 'pine';
+      if (roll < 0.025) return 'rock';
+      if (roll < 0.06) return 'pine';
       return null;
     case 'snow':
-      if (forest > 0.55 && roll < 0.32) return 'snow-pine';
-      if (roll < 0.025) return 'snow-pine';
-      if (roll < 0.035) return 'rock';
+      // Bosquecillos con claros, no una pared de pinos.
+      if (forest > 0.62 && roll < 0.2) return 'snow-pine';
+      if (roll < 0.015) return 'snow-pine';
+      if (roll < 0.018) return 'rock';
       return null;
     case 'desert':
-      if (ground === Terrain.Dirt) return roll < 0.03 ? 'rock' : null;
-      if (roll < 0.016) return 'cactus';
-      if (roll < 0.024) return 'rock';
-      if (roll < 0.027) return 'dead-tree';
+      if (ground === Terrain.Dirt) return roll < 0.006 ? 'rock' : null;
+      if (roll < 0.012) return 'cactus';
+      if (roll < 0.015) return 'rock';
+      if (roll < 0.017) return 'dead-tree';
       return null;
     case 'swamp':
-      if (roll < 0.1) return 'reeds';
-      if (roll < 0.13) return 'willow';
-      if (roll < 0.155) return 'dead-tree';
+      if (roll < 0.07) return 'reeds';
+      if (roll < 0.09) return 'willow';
+      if (roll < 0.105) return 'dead-tree';
       return null;
     case 'grassland':
     case 'forest': {
-      if (ground === Terrain.Dirt) return roll < 0.02 ? 'rock' : null;
-      if (wet) return roll < 0.08 ? (pick < 0.55 ? 'willow' : 'ceibo') : null;
+      if (ground === Terrain.Dirt) return roll < 0.004 ? 'rock' : null;
+      if (wet) return roll < 0.05 ? (pick < 0.55 ? 'willow' : 'ceibo') : null;
       if (biome === 'forest') {
-        if (roll < 0.34) return conifer > 0.55 ? 'pine' : pick < 0.06 ? 'dead-tree' : 'oak';
-        if (roll < 0.42) return 'bush';
+        // Bosque abierto: árboles con espacio entre ellos para pasar.
+        if (roll < 0.2) return conifer > 0.55 ? 'pine' : pick < 0.05 ? 'dead-tree' : 'oak';
+        if (roll < 0.23) return 'bush';
         return null;
       }
-      if (roll < 0.025) return conifer > 0.55 ? 'pine' : loneTree(pick);
-      if (roll < 0.04) return 'bush';
-      if (roll < 0.055) return 'flowers';
-      if (roll < 0.06) return 'rock';
+      if (roll < 0.014) return conifer > 0.55 ? 'pine' : loneTree(pick);
+      if (roll < 0.024) return 'bush';
+      if (roll < 0.04) return 'flowers';
+      if (roll < 0.042) return 'rock';
       return null;
     }
     default:

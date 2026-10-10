@@ -9,6 +9,7 @@ import {
 } from '@fenix/shared';
 import { SeededRandom } from '../system/seeded-random';
 import type { Biome, Continent } from './procedural-map';
+import { cheapestPath } from './roads';
 
 /** Un lugar con nombre en las tierras salvajes, con quienes viven ahí. */
 export interface Place {
@@ -382,6 +383,67 @@ export function populateContinent(continent: Continent, seed: number): Populated
       statics.delete(index(caveEntrance.x + dx, caveEntrance.y + dy));
   statics.set(index(caveEntrance.x, caveEntrance.y), { kind: 'cave-entrance', ...caveEntrance });
 
+  // Senderos: de cada lugar (y de la cueva) hasta el camino más cercano.
+  const roads = new Set(continent.roads);
+  for (const place of places) trail(place.center, place.region);
+  trail({ x: caveEntrance.x, y: caveEntrance.y + 2 });
+
+  /**
+   * Un sendero de tierra de dos tiles de ancho desde `from` hasta que toca un
+   * camino o un pueblo; dentro del lugar no se toca nada.
+   */
+  function trail(from: Position, inside?: RegionData): void {
+    const target = continent.towns
+      .map((t) => ({ x: t.x + Math.floor(t.width / 2), y: t.y + Math.floor(t.height / 2) }))
+      .sort(
+        (a, b) => Math.hypot(a.x - from.x, a.y - from.y) - Math.hypot(b.x - from.x, b.y - from.y),
+      )[0];
+    if (!target) return;
+    const within = (x: number, y: number, r: RegionData | undefined): boolean =>
+      !!r && x >= r.x && y >= r.y && x < r.x + r.width && y < r.y + r.height;
+    const path = cheapestPath(
+      width,
+      height,
+      from,
+      target,
+      (x, y) => {
+        const i = index(x, y);
+        if (roads.has(i)) return 0.3;
+        const biome = continent.biomes[i];
+        if (biome === 'ocean') return Infinity;
+        if (statics.get(i)?.kind === 'mountain') return 40;
+        if (terrain[i] === Terrain.Water) return 12;
+        if (biome === 'swamp') return 2;
+        return 1;
+      },
+      4,
+    );
+    if (!path) return;
+    for (const p of path) {
+      const i = index(p.x, p.y);
+      if (roads.has(i) || continent.towns.some((t) => within(p.x, p.y, { ...t, name: t.name })))
+        return;
+      for (const [dx, dy] of [
+        [0, 0],
+        [1, 0],
+        [0, 1],
+        [1, 1],
+      ] as const) {
+        const x = p.x + dx;
+        const y = p.y + dy;
+        if (!free(x, y) || within(x, y, inside)) continue;
+        const j = index(x, y);
+        if (continent.biomes[j] === 'ocean') continue;
+        terrain[j] =
+          terrain[j] === Terrain.Water || terrain[j] === Terrain.Wood
+            ? Terrain.Wood
+            : trailGround(terrain[j]);
+        const kind = statics.get(j)?.kind;
+        if (kind !== 'cave-entrance' && kind !== 'sign') statics.delete(j);
+      }
+    }
+  }
+
   const populated = new TileMap({
     width,
     height,
@@ -511,4 +573,10 @@ export function populateContinent(continent: Continent, seed: number): Populated
     }
     return out;
   }
+}
+
+/** El suelo de un sendero: tierra pisada (en la nieve y la arena, el mismo suelo). */
+function trailGround(ground: Terrain | undefined): Terrain {
+  if (ground === Terrain.Snow || ground === Terrain.Sand) return ground;
+  return Terrain.Dirt;
 }

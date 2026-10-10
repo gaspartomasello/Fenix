@@ -314,10 +314,16 @@ sienta al jinete con la pose de montar.
 - **Ríos**: bajan desde el pie de la montaña siempre hacia lo más bajo hasta el mar (o terminan
   en una laguna).
 
+Las cordilleras solo aparecen en algunas regiones y se les quitan los cordones de un tile (parecen
+cercos): quedan macizos, y el resto del continente es abierto, con bosques ralos.
+
 Encima se estampan los tres pueblos de Tiled (`TownPlan`: mapa, lugar y clima) y se trazan
 **caminos** entre ellos con A* (`roads.ts`): cada terreno tiene su costo (el agua y la montaña,
-mucho), así rodean y cruzan los ríos por lo más angosto con **puentes** de tablones. A la salida
-de cada pueblo, un **cartel** (`TileMap.signs`) dice adónde lleva el camino.
+mucho) y doblar también cuesta, así salen tramos largos y rectos que cruzan los ríos por lo más
+angosto con **puentes** de tablones. Son de tres tiles de ancho, con banquinas sin árboles, y van
+**empedrados** cerca de los pueblos (las calles de los pueblos también). A la salida de cada
+pueblo, un **cartel** (`TileMap.signs`) dice adónde lleva el camino. Cada lugar con nombre y la
+boca de la cueva tienen un **sendero** de tierra hasta el camino más cercano.
 
 `places.ts` ubica los **lugares con nombre** según su bioma y su distancia a la capital
 (campamento orco, torre en ruinas, cementerio, faro, refugio en la nieve, ruinas del desierto,
@@ -325,6 +331,10 @@ paso de montaña) y la boca de la cueva al pie de una cordillera. Son zonas con 
 ve el nombre pero no protegen. Las criaturas sueltas salen de una densidad por bioma
 (`BIOME_CREATURES`) y cada lugar tiene sus habitantes; los alrededores de los pueblos quedan
 tranquilos. Con un mapa chico (menos de 200) queda solo la capital.
+
+El **minimapa** (`ui/minimap.ts`) dibuja el mapa una vez a un pixel por tile y lo muestra girado
+como la vista isométrica, centrado en el jugador, con la gente cerca y los nombres de los
+lugares; se abre y se cierra con el botón Mapa o la tecla M y recuerda si quedó abierto.
 
 El cliente arma el terreno por bloques de 16×16 recién cuando entran en pantalla, y el servidor
 comprime los mensajes de la conexión (el mapa viaja al entrar).

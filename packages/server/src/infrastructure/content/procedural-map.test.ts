@@ -76,6 +76,28 @@ describe('buildWorld: el continente', () => {
     expect(Math.max(...snowRows)).toBeLessThan(Math.min(...cactusRows));
   });
 
+  it('a la salida de los pueblos los caminos van empedrados', () => {
+    for (const sign of map.signs) {
+      let paved = false;
+      for (let dy = -3; dy <= 3; dy++)
+        for (let dx = -3; dx <= 3; dx++)
+          if (map.terrainAt({ x: sign.x + dx, y: sign.y + dy }) === Terrain.Stone) paved = true;
+      expect(paved, sign.text).toBe(true);
+    }
+  });
+
+  it('las montañas forman macizos, sin cordones finos', () => {
+    const mountains = map.statics.filter((s) => s.kind === 'mountain');
+    const at = new Set(mountains.map((s) => `${s.x},${s.y}`));
+    for (const m of mountains) {
+      let around = 0;
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++)
+          if ((dx || dy) && at.has(`${m.x + dx},${m.y + dy}`)) around++;
+      expect(around).toBeGreaterThanOrEqual(2);
+    }
+  });
+
   it('los caminos tienen carteles con su destino', () => {
     expect(map.signs.length).toBeGreaterThanOrEqual(4);
     for (const sign of map.signs) {

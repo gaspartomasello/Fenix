@@ -3,7 +3,9 @@ import type { Position } from '@fenix/shared';
 /**
  * Camino más barato entre dos tiles (A* en 4 direcciones). `cost` da lo que
  * cuesta pisar cada tile (Infinity = no se puede); así los caminos rodean
- * montañas y pantanos y cruzan los ríos por lo más angosto.
+ * montañas y pantanos y cruzan los ríos por lo más angosto. `turn` es lo que
+ * cuesta doblar: con un valor alto salen tramos largos y rectos, como los de
+ * un camino trazado, en vez de una escalera.
  */
 export function cheapestPath(
   width: number,
@@ -11,42 +13,52 @@ export function cheapestPath(
   from: Position,
   to: Position,
   cost: (x: number, y: number) => number,
+  turn = 0,
 ): Position[] | null {
-  const total = width * height;
+  // Cada estado es un tile más la dirección con la que se llegó (4 = ninguna, al salir).
+  const total = width * height * 5;
   const best = new Float64Array(total).fill(Infinity);
   const came = new Int32Array(total).fill(-1);
   const closed = new Uint8Array(total);
-  const start = from.y * width + from.x;
-  const goal = to.y * width + to.x;
+  const start = (from.y * width + from.x) * 5 + 4;
+  const goalTile = to.y * width + to.x;
   const heap = new MinHeap();
   best[start] = 0;
   heap.push(start, heuristic(from, to));
+  let reached = -1;
   while (heap.size > 0) {
     const current = heap.pop();
-    if (current === goal) break;
+    const tile = Math.floor(current / 5);
+    if (tile === goalTile) {
+      reached = current;
+      break;
+    }
     if (closed[current]) continue;
     closed[current] = 1;
-    const cx = current % width;
-    const cy = (current - cx) / width;
-    for (const [dx, dy] of STEPS) {
+    const dir = current % 5;
+    const cx = tile % width;
+    const cy = (tile - cx) / width;
+    for (let d = 0; d < 4; d++) {
+      const [dx, dy] = STEPS[d] ?? [0, 0];
       const nx = cx + dx;
       const ny = cy + dy;
       if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-      const next = ny * width + nx;
+      const next = (ny * width + nx) * 5 + d;
       if (closed[next]) continue;
       const step = cost(nx, ny);
       if (!Number.isFinite(step)) continue;
-      const g = (best[current] ?? Infinity) + step;
+      const g = (best[current] ?? Infinity) + step + (dir !== 4 && dir !== d ? turn : 0);
       if (g >= (best[next] ?? Infinity)) continue;
       best[next] = g;
       came[next] = current;
       heap.push(next, g + heuristic({ x: nx, y: ny }, to));
     }
   }
-  if (start !== goal && came[goal] === -1) return null;
+  if (reached === -1) return from.x === to.x && from.y === to.y ? [from] : null;
   const path: Position[] = [];
-  for (let at = goal; at !== -1; at = at === start ? -1 : (came[at] ?? -1)) {
-    path.push({ x: at % width, y: Math.floor(at / width) });
+  for (let at = reached; at !== -1; at = came[at] ?? -1) {
+    const tile = Math.floor(at / 5);
+    path.push({ x: tile % width, y: Math.floor(tile / width) });
   }
   return path.reverse();
 }

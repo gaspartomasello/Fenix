@@ -194,5 +194,7 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
     carteles: Puerto Ceniza (la capital), Roca Alta (minero, entre montañas) y Junco Verde (en el
     pantano), cada uno con su gente. Lugares con nombre y sus habitantes: Campamento de los
     Colmillos (orcos), Torre Hueca (liche), Cementerio Viejo, Faro del Cabo, Refugio Helado,
-    Ruinas del Sol y Paso del Cuervo. Las criaturas viven según el terreno. Para probar, `/ir`
-    lleva a un personaje de prueba a cualquier lugar.
+    Ruinas del Sol y Paso del Cuervo. Las criaturas viven según el terreno. Mundo abierto, con
+    caminos anchos y rectos (empedrados cerca de los pueblos), senderos a cada lugar y un
+    **minimapa** que se abre y se cierra con la tecla M. Para probar, `/ir` lleva a un personaje
+    de prueba a cualquier lugar.
