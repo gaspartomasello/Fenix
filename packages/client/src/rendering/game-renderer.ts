@@ -21,6 +21,8 @@ const NEARBY_REVEAL = 4;
 const GHOST_TINT = 0x8c8c9c;
 /** Caja de un personaje en pantalla respecto de sus pies, para saber si se lo tocó. */
 const MOBILE_HIT_BOX = { halfWidth: 16, height: 64 };
+/** El jinete sobre la montura: angosto y de la montura para arriba. */
+const RIDER_HIT_BOX = { halfWidth: 12, bottom: 44 };
 /** El personaje se dibuja un poco por debajo del centro, como en UO. */
 const CAMERA_VERTICAL_OFFSET = 30;
 /** Margen alrededor de la pantalla para crear objetos antes de que entren. */
@@ -109,10 +111,22 @@ export class GameRenderer {
     return this.mobileAt(point, (view) => view.isOwnPet && !view.isCreatureCorpse);
   }
 
-  /** Uno mismo bajo un punto de la pantalla. */
+  /**
+   * Uno mismo bajo un punto de la pantalla. Montado cuenta solo el jinete
+   * (no todo el caballo), para no bajarse por tocar algo que está al lado.
+   */
   selfAt(point: ScreenPoint): EntityId | null {
     const self = this.game.self;
-    return self ? this.mobileAt(point, (view) => view.entityId === self.id) : null;
+    const view = self ? this.views.get(self.id) : undefined;
+    if (!self || !view) return null;
+    if (!self.mount) return this.mobileAt(point, (v) => v === view);
+    const world = this.toWorld(point);
+    const { x, y } = view.feet;
+    const inside =
+      Math.abs(world.x - x) <= RIDER_HIT_BOX.halfWidth &&
+      world.y <= y - RIDER_HIT_BOX.bottom &&
+      world.y >= y - view.spriteHeight;
+    return inside ? self.id : null;
   }
 
   corpseAt(point: ScreenPoint): EntityId | null {
@@ -124,9 +138,9 @@ export class GameRenderer {
     return this.mobileAt(point, (view) => view.isOtherLivingPlayer);
   }
 
-  /** Cualquier persona (incluido uno mismo) bajo un punto de la pantalla. */
-  humanAt(point: ScreenPoint): EntityId | null {
-    return this.mobileAt(point, (view) => view.isHuman);
+  /** Cualquier persona (incluido uno mismo, salvo con `self` en false) bajo un punto de la pantalla. */
+  humanAt(point: ScreenPoint, self = true): EntityId | null {
+    return this.mobileAt(point, (view) => view.isHuman && (self || !view.isSelf));
   }
 
   /** Personaje del pueblo bajo un punto de la pantalla. */
