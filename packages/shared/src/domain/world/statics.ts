@@ -28,6 +28,11 @@ export const STATIC_KINDS = [
   'brazier',
   'bones',
   'stalagmite',
+  'ceibo',
+  'gomero',
+  'willow',
+  'poplar',
+  'dead-tree',
 ] as const;
 
 export type StaticKind = (typeof STATIC_KINDS)[number];
@@ -73,6 +78,11 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   brazier: define('brazier', 'brasero', true, 6),
   bones: define('bones', 'huesos', false),
   stalagmite: define('stalagmite', 'estalagmita', true),
+  ceibo: define('ceibo', 'ceibo', true),
+  gomero: define('gomero', 'gomero', true),
+  willow: define('willow', 'sauce llorón', true),
+  poplar: define('poplar', 'álamo', true),
+  'dead-tree': define('dead-tree', 'árbol seco', true),
 };
 
 export function isStaticKind(value: unknown): value is StaticKind {

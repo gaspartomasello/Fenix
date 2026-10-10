@@ -183,3 +183,8 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
     delanteras cruzadas) y el cuerpo de una criatura se revisa en un ataúd con calavera, como en
     UO. Se probó dibujar los sprites al doble de detalle con sombreado suave, pero se veía peor:
     volvió el gráfico anterior, con la animación nueva.
+14. ✅ **Árboles**: siete especies que crecen por ramificación (tronco, ramas madre, ramas y
+    ramitas, con las hojas en las puntas): roble de copa ancha, pino con pisos de ramas, ceibo
+    retorcido con flores rojas, gomero de tronco enorme con aletones y raíces aéreas, sauce
+    llorón, álamo columnar y árbol seco. Sauces y ceibos crecen en las orillas, los gomeros
+    sueltos en el campo y los álamos en cortinas al costado de los caminos.

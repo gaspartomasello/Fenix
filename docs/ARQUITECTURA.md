@@ -80,6 +80,16 @@ forja, yunque) calzan con las baldosas y se iluminan igual que los personajes. E
 (`terrain-art.ts`) se pinta pixel a pixel con ruido periódico: se repite exacto en cada tile, así
 los vecinos empalman sin costura; las variantes cambian el centro del tile y comparten los bordes.
 
+Los árboles (`tree-art.ts`) crecen por ramificación, como en la naturaleza: un tronco (con raíces
+que asoman) se abre en ramas madre y cada una se divide en hijas más finas, repartidas alrededor
+de la madre con el ángulo áureo y con el grosor que manda la regla de Leonardo (la sección de la
+madre es la suma de las de sus hijas). Las ramas se tuercen al azar y tiran hacia la luz o se
+caen por su peso. Las hojas brotan en las ramitas de la punta, en matas chicas de borde recortado,
+y se iluminan como una sola copa (más oscura adentro). Cada especie tiene su plan: roble (copa
+ancha), pino (tronco único con pisos de ramas), ceibo (bajo, retorcido, con flores rojas), gomero
+(troncos fundidos, aletones, ramas horizontales y raíces aéreas), sauce llorón (cortinas que
+cuelgan), álamo (columna) y árbol seco (ramas quebradas). Todo con semilla: mismo árbol cada vez.
+
 ## @fenix/content
 
 Datos del mundo editables con Tiled: el pueblo (`maps/`) y los tilesets generados (`tilesets/`).

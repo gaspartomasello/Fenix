@@ -1,15 +1,15 @@
 {
   "type": "tileset",
   "name": "objetos",
-  "tilewidth": 88,
-  "tileheight": 132,
-  "tilecount": 25,
-  "columns": 25,
+  "tilewidth": 136,
+  "tileheight": 168,
+  "tilecount": 30,
+  "columns": 30,
   "image": "objetos.png",
-  "imagewidth": 2200,
-  "imageheight": 132,
+  "imagewidth": 4080,
+  "imageheight": 168,
   "tileoffset": {
-    "x": -22,
+    "x": -46,
     "y": 0
   },
   "tiles": [
@@ -260,6 +260,56 @@
           "name": "static",
           "type": "string",
           "value": "stalagmite"
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "ceibo"
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "gomero"
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "willow"
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "poplar"
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "dead-tree"
         }
       ]
     }
