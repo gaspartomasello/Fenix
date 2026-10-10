@@ -3,7 +3,7 @@ import { Application, Container, Rectangle } from 'pixi.js';
 // Evita `eval` en Pixi: necesario en páginas con Content Security Policy estricta.
 import 'pixi.js/unsafe-eval';
 import type { ClientGame } from '../core/client-game';
-import type { Entity } from '../core/entity';
+import type { Entity, FractionalPosition } from '../core/entity';
 import { CharacterView } from './character-view';
 import { EffectsLayer } from './effects-layer';
 import { ItemLayer } from './item-layer';
@@ -16,6 +16,8 @@ import { TextureCache } from './texture-cache';
 const ZOOM_LEVELS = [1, 1.5, 2] as const;
 /** Tiempo por cuadro para dibujar de antemano personajes y criaturas. */
 const PREPARE_BUDGET_MS = 4;
+/** Distancia (en tiles) a la que se destapa a los demás detrás de árboles y paredes. */
+const NEARBY_REVEAL = 4;
 const GHOST_TINT = 0x8c8c9c;
 /** Caja de un personaje en pantalla respecto de sus pies, para saber si se lo tocó. */
 const MOBILE_HIT_BOX = { halfWidth: 16, height: 64 };
@@ -160,7 +162,16 @@ export class GameRenderer {
     const focus = self.renderPosition(now);
     const view = this.updateCamera(focus);
     this.terrain?.cull(view);
-    this.statics?.update(view, focus);
+    // Lo que tapa a uno mismo o a quien esté cerca (por ejemplo, un orco que
+    // ataca escondido detrás de un árbol) se vuelve translúcido.
+    const nearby: FractionalPosition[] = [focus];
+    for (const entity of this.game.allEntities()) {
+      if (entity.id === self.id || entity.dead) continue;
+      const p = entity.renderPosition(now);
+      if (Math.max(Math.abs(p.x - focus.x), Math.abs(p.y - focus.y)) <= NEARBY_REVEAL)
+        nearby.push(p);
+    }
+    this.statics?.update(view, nearby);
 
     this.effects.update(now);
     // De fantasma el mundo se ve gris, como en UO.
