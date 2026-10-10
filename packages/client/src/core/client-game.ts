@@ -277,6 +277,15 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       case 'travel':
         this.gateway.send({ type: 'testTravel', to: input.to });
         return;
+      case 'goto': {
+        if (input.place) {
+          this.gateway.send({ type: 'testTravel', to: 'place', place: input.place });
+          return;
+        }
+        const places = (this._map?.regions ?? []).filter((r) => !r.dungeon).map((r) => r.name);
+        this.notify(`Lugares: ${places.join(', ')}.`);
+        return;
+      }
       case 'help':
         CHAT_HELP.forEach((line) => this.notify(line));
         return;

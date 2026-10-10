@@ -13,6 +13,7 @@ import { WorldPaperdolls } from './world-paperdolls';
 import { HudButtons, type HudButton } from '../ui/hud-buttons';
 import { SocialWindow } from '../ui/social-window';
 import { WorldTooltip } from '../ui/world-tooltip';
+import { WorldSigns } from './world-signs';
 import { GhostBanner } from '../ui/ghost-banner';
 import { SkillsWindow } from '../ui/skills-window';
 import { SpellbookWindow } from '../ui/spellbook-window';
@@ -144,6 +145,7 @@ export class GameSession {
     const worldCombat = new WorldCombat(this.game, renderer, tooltip);
     const worldCorpses = new WorldCorpses(this.game, renderer, tooltip);
     const worldMounts = new WorldMounts(this.game, renderer, tooltip);
+    new WorldSigns(renderer, tooltip);
     const worldItems = new WorldItems(this.game, renderer, drag, tooltip);
     const input = new InputController({
       surface: renderer.canvas,

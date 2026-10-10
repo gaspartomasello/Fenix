@@ -76,6 +76,17 @@ export class GameRenderer {
     return { x: Math.round(tile.x), y: Math.round(tile.y) };
   }
 
+  /** Texto del cartel bajo un punto de la pantalla (el poste sube un poco sobre su tile). */
+  signAt(point: ScreenPoint): string | null {
+    const map = this.game.map;
+    if (!map) return null;
+    for (const lift of [0, 14, 28]) {
+      const text = map.signAt(this.screenToTile({ x: point.x, y: point.y + lift * this.zoom }));
+      if (text) return text;
+    }
+    return null;
+  }
+
   /** Objeto del suelo bajo un punto de la pantalla, si hay. */
   groundItemAt(point: ScreenPoint): GroundItemSnapshot | null {
     return this.groundItems.itemAt(this.toWorld(point));

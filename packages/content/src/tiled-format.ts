@@ -76,6 +76,8 @@ export const TILED = {
   regionClass: 'region',
   npcClass: 'npc',
   roleProperty: 'rol',
+  /** Nombre propio de un personaje del pueblo (si no, el de su oficio). */
+  nameProperty: 'nombre',
   terrainProperty: 'terrain',
   staticProperty: 'static',
 } as const;
