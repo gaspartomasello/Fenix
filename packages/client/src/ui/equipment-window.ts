@@ -37,6 +37,11 @@ export class EquipmentWindow {
 
   render(equipment: readonly EquippedItemSnapshot[]): void {
     this.equipment = equipment;
+    this.paint(equipment);
+  }
+
+  /** Dibuja el personaje con lo que tiene puesto (sin lo que se esté arrastrando). */
+  private paint(equipment: readonly EquippedItemSnapshot[]): void {
     this.view.render({
       appearance: this.appearance,
       role: null,
@@ -59,6 +64,11 @@ export class EquipmentWindow {
       {
         id: item.id,
         iconUrl: itemIconUrl(item.kind),
+        // Al arrastrarlo se lo saca de encima del personaje (vuelve si no se suelta en otro lado).
+        lift: () => {
+          this.paint(this.equipment.filter((other) => other.id !== item.id));
+          return () => this.paint(this.equipment);
+        },
         onDrop: (target) => {
           const to = destinationFor(target, this.actions, item.kind);
           if (to) this.actions.moveItem(item.id, to);

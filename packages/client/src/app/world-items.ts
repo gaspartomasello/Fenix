@@ -53,6 +53,7 @@ export class WorldItems {
       {
         id: item.id,
         iconUrl: itemIconUrl(item.kind, item.amount),
+        lift: () => this.renderer.liftGroundItem(item.id),
         onDrop: (target) => {
           const to = destinationFor(target, this.actions, item.kind);
           if (to) this.game.moveItem(item.id, to);

@@ -78,6 +78,11 @@ export class GameRenderer {
     return { x: Math.round(tile.x), y: Math.round(tile.y) };
   }
 
+  /** Levanta un objeto del suelo (se deja de ver) mientras se lo arrastra. */
+  liftGroundItem(id: EntityId): () => void {
+    return this.groundItems.lift(id);
+  }
+
   /** Texto del cartel bajo un punto de la pantalla (el poste sube un poco sobre su tile). */
   signAt(point: ScreenPoint): string | null {
     const map = this.game.map;

@@ -43,6 +43,16 @@ export class ItemLayer {
     return best?.item ?? null;
   }
 
+  /** Esconde un objeto del suelo mientras se lo arrastra; devuelve cómo mostrarlo de nuevo. */
+  lift(id: EntityId): () => void {
+    const entry = this.sprites.get(id);
+    if (entry) entry.sprite.visible = false;
+    return () => {
+      const current = this.sprites.get(id);
+      if (current) current.sprite.visible = true;
+    };
+  }
+
   clear(): void {
     for (const id of [...this.sprites.keys()]) this.remove(id);
   }

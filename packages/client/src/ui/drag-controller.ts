@@ -15,6 +15,24 @@ export interface DragSource {
   readonly iconUrl: string;
   readonly onDrop: (target: DropTarget) => void;
   readonly onDoubleTap: () => void;
+  /**
+   * Levanta el objeto de donde está (lo esconde) al empezar a arrastrarlo y
+   * devuelve cómo volver a mostrarlo si se suelta donde no va.
+   */
+  readonly lift?: () => () => void;
+}
+
+/** Cuánto se espera la respuesta del servidor antes de volver a mostrar lo soltado. */
+const SETTLE_MS = 1500;
+
+/** Levantar un ícono del DOM: queda su lugar vacío mientras se arrastra. */
+export function liftElement(element: HTMLElement): () => () => void {
+  return () => {
+    element.style.visibility = 'hidden';
+    return () => {
+      element.style.visibility = '';
+    };
+  };
 }
 
 const DRAG_THRESHOLD_PX = 5;
@@ -40,6 +58,7 @@ export class DragController {
   begin(source: DragSource, down: PointerEvent): void {
     const start = { x: down.clientX, y: down.clientY };
     let dragging = false;
+    let restore: (() => void) | null = null;
 
     const move = (e: PointerEvent): void => {
       if (e.pointerId !== down.pointerId) return;
@@ -47,6 +66,8 @@ export class DragController {
         dragging = true;
         this.ghost.src = source.iconUrl;
         this.ghost.hidden = false;
+        // Se levanta en el momento: no queda un duplicado donde estaba.
+        restore = source.lift?.() ?? null;
       }
       if (dragging) this.placeGhost(e);
     };
@@ -58,7 +79,11 @@ export class DragController {
       this.ghost.hidden = true;
       if (dragging) {
         const target = resolveTarget(e.clientX, e.clientY);
-        if (target) source.onDrop(target);
+        if (target) {
+          source.onDrop(target);
+          // Si el servidor no lo acepta, el objeto vuelve a verse donde estaba.
+          if (restore) window.setTimeout(restore, SETTLE_MS);
+        } else restore?.();
       } else {
         this.registerTap(source);
       }
@@ -69,6 +94,7 @@ export class DragController {
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', cancel);
       this.ghost.hidden = true;
+      restore?.();
     };
 
     window.addEventListener('pointermove', move);

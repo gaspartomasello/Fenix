@@ -147,8 +147,11 @@ app (orquestación)
 - **rendering/** solo **lee** el estado del core y lo dibuja. `TextureCache` es el único punto
   donde el arte generado (`assets/`) se convierte en texturas de Pixi.
 - **ui/** usa DOM nativo, separado del canvas. Los componentes reciben callbacks; no conocen la red.
-  Las ventanas (mochila, equipo) se arrastran; `DragController` implementa arrastrar y soltar con
-  eventos de puntero, así funciona igual con mouse y con el dedo.
+  Las ventanas (mochila, equipo) se arrastran y se cierran con la cruz o con clic derecho, como en
+  UO; `DragController` implementa arrastrar y soltar con eventos de puntero, así funciona igual con
+  mouse y con el dedo. Al empezar a arrastrar, el objeto se levanta (`DragSource.lift` lo esconde
+  de la mochila, del personaje o del suelo) y vuelve a verse si se suelta donde no va o el servidor
+  no lo acepta.
 - **network/** elige el transporte al compilar: `WebSocketGateway` (online) o `EmbeddedGateway`
   (modo solo, `vite --mode solo`). Es la única capa que puede importar el servidor embebido; en
   el build online ese código ni siquiera se incluye.
