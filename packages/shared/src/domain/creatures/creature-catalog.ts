@@ -21,7 +21,7 @@ export const CREATURE_KINDS = [
   'fire-elemental',
   'water-elemental',
   'daemon',
-  // Monturas mansas, sueltas siguiendo a su dueño
+  // Monturas, sueltas siguiendo a su dueño
   ...MOUNT_KINDS,
 ] as const;
 export type CreatureKind = (typeof CREATURE_KINDS)[number];
@@ -419,20 +419,29 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
   ...mounts(),
 };
 
-/** Las monturas sueltas: mansas, no pelean, siguen a su dueño a paso de persona. */
+/**
+ * Las monturas sueltas: siguen a su dueño a paso de persona, lo defienden y
+ * atacan a quien él ataque. Las criaturas y otros jugadores pueden matarlas.
+ */
 function mounts(): Record<MountKind, CreatureDefinition> {
+  // Cómo pelea cada especie: el caballo y la llama patean, el lagarto muerde.
+  const fight = {
+    horse: { name: 'coces', minDamage: 4, maxDamage: 9, swingMs: 2600, skill: 'wrestling' },
+    llama: { name: 'coces', minDamage: 2, maxDamage: 6, swingMs: 2400, skill: 'wrestling' },
+    runner: { name: 'mordida', minDamage: 5, maxDamage: 11, swingMs: 2400, skill: 'wrestling' },
+  } as const satisfies Record<string, Weapon>;
   const entries = MOUNT_KINDS.map((kind): [MountKind, CreatureDefinition] => [
     kind,
     {
       kind,
       name: MOUNTS[kind].name,
       article: MOUNTS[kind].article,
-      maxHits: MOUNTS[kind].species === 'llama' ? 45 : 70,
+      maxHits: MOUNTS[kind].species === 'llama' ? 45 : MOUNTS[kind].species === 'runner' ? 80 : 70,
       strength: 60,
       dexterity: 50,
-      armor: 6,
-      skill: 200,
-      weapon: { name: 'coces', minDamage: 1, maxDamage: 3, swingMs: 3000, skill: 'wrestling' },
+      armor: MOUNTS[kind].species === 'runner' ? 12 : 6,
+      skill: 450,
+      weapon: fight[MOUNTS[kind].species],
       moveMs: 200,
       aggroRange: 0,
       loot: [],

@@ -29,8 +29,17 @@ export class Attack {
     if (!target || target.id === playerId) return;
     if (target instanceof Npc) return refuse(`No podés atacar a ${target.name}.`);
     if (target instanceof Creature && target.ownerId === playerId)
-      return refuse('Es una criatura que invocaste vos.');
+      return refuse(target.isPet ? 'Es tu montura.' : 'Es una criatura que invocaste vos.');
     if (target.combat.isDead) return;
+    // La montura de otro jugador: atacarla es atacarlo a él (mismas reglas y mismas consecuencias).
+    const owner = target instanceof Creature && target.isPet ? this.petOwner(target) : undefined;
+    if (owner) {
+      if (this.world.map.safeZoneAt(player.position) || this.world.map.safeZoneAt(target.position))
+        return refuse('Dentro del pueblo no se puede atacar la montura de otro jugador.');
+      const reason = pvpRefusal(player, owner, this.world);
+      if (reason) return refuse(reason);
+      commitAggression(player, owner, this.clock.now(), this.notifier, this.social);
+    }
     if (target instanceof Player) {
       const reason = pvpRefusal(player, target, this.world);
       if (reason) return refuse(reason);
@@ -39,6 +48,10 @@ export class Attack {
 
     player.combat.targetId = target.id;
     this.mobiles.sendTarget(player);
+  }
+
+  private petOwner(pet: Creature): Player | undefined {
+    return pet.ownerId ? this.world.get(pet.ownerId) : undefined;
   }
 
   stop(playerId: EntityId): void {

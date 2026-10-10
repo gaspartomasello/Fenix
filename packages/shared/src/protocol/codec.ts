@@ -231,6 +231,8 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       break;
     case 'dismount':
       return { ok: true, message: { type: 'dismount' } };
+    case 'releasePet':
+      return { ok: true, message: { type: 'releasePet' } };
     case 'openCorpse':
     case 'lootAll':
       if (isId(data.corpseId))

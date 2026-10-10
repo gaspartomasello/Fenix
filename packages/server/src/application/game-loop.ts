@@ -25,7 +25,7 @@ import { resolveCast } from '../domain/magic/spellcasting';
 import type { Mobile } from '../domain/mobile';
 import { Player } from '../domain/player';
 import type { World } from '../domain/world';
-import type { Corpses } from './corpses';
+import { EMPTY_CORPSE_MS, type Corpses } from './corpses';
 import type { MountActions } from './use-cases/mount-actions';
 import type { ItemNotifications } from './item-notifications';
 import type { MobileNotifications } from './mobile-notifications';
@@ -352,6 +352,17 @@ export class GameLoop {
   }
 
   /** Saca una invocación del mundo (se le terminó el tiempo, murió o se fue su dueño). */
+  /** Avisa al dueño que atacan a su montura (una vez cada tanto, no en cada golpe). */
+  private warnPetOwner(pet: Creature, attacker: Mobile, now: number): void {
+    if (!pet.ownerId || attacker.id === pet.ownerId || now < pet.ownerWarnedUntil) return;
+    pet.ownerWarnedUntil = now + PET_WARNING_MS;
+    const article = attacker instanceof Creature ? `${attacker.definition.article} ` : '';
+    this.notifier.send(pet.ownerId, {
+      type: 'system',
+      text: `¡${capitalize(article + attacker.name)} ataca a tu ${pet.name}!`,
+    });
+  }
+
   dismiss(creature: Creature): void {
     this.mobiles.disappear(creature);
     creature.gone = true;
@@ -363,6 +374,7 @@ export class GameLoop {
     const { attacker, target } = result;
     if (target instanceof Creature && !target.ownerId && target.combat.targetId === null)
       target.combat.targetId = attacker.id;
+    if (target instanceof Creature && target.isPet) this.warnPetOwner(target, attacker, now);
     this.mobiles.swing(result);
     // Algunas criaturas envenenan al morder.
     const venom = attacker instanceof Creature ? attacker.definition.abilities?.poison : undefined;
@@ -410,6 +422,14 @@ export class GameLoop {
 
     const creature = victim as Creature;
     creature.despawnAt = now + CORPSE_MS;
+    // La montura muerta queda tirada un rato (sin botín) y el dueño se queda sin ella.
+    if (creature.isPet && creature.ownerId) {
+      creature.despawnAt = now + EMPTY_CORPSE_MS;
+      this.notifier.send(creature.ownerId, {
+        type: 'system',
+        text: `Mataron a tu ${creature.name}. Podés comprar otra montura en la caballeriza.`,
+      });
+    }
     if (killer instanceof Player) {
       this.notifier.send(killer.id, {
         type: 'system',
@@ -475,5 +495,8 @@ export class GameLoop {
     this.notifier.send(player.id, { type: 'system', text: '¡Volviste a la vida!' });
   }
 }
+
+/** Cada cuánto se repite el aviso de que atacan a la montura. */
+const PET_WARNING_MS = 20_000;
 
 const capitalize = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
