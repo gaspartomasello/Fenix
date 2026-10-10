@@ -40,7 +40,9 @@ export type WalkStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
  * `idle` = parado; 0..7 = caminata (un ciclo de dos pasos); `run-0..7` =
  * carrera; o un paso de una acción.
  */
-export type CharacterFrame = 'idle' | WalkStep | `run-${WalkStep}` | `${ActionKind}-${ActionStep}`;
+/** `dead`: tirado en el piso (el cuerpo muerto; ver corpse-art). */
+export type CharacterFrame =
+  'idle' | 'dead' | WalkStep | `run-${WalkStep}` | `${ActionKind}-${ActionStep}`;
 export const WALK_FRAMES: readonly WalkStep[] = [0, 1, 2, 3, 4, 5, 6, 7];
 
 /**
@@ -117,6 +119,12 @@ export const ART_DETAIL = 1;
 export function spriteCanvas(width: number, height: number, camera: Camera): VolumeCanvas {
   return new VolumeCanvas(width * ART_DETAIL, height * ART_DETAIL, camera);
 }
+
+/**
+ * Hace el lienzo donde se dibuja un sprite. Normalmente es `spriteCanvas`;
+ * los cuerpos tirados en el piso usan otro, que acuesta el modelo (ver corpse-art).
+ */
+export type CanvasFactory = (width: number, height: number, camera: Camera) => VolumeCanvas;
 
 /** Escala de las personas (el jinete y su montura se dibujan a la misma). */
 export const PERSON_ZOOM = HUMAN_ZOOM;
@@ -421,8 +429,21 @@ const ACTIONS: Readonly<Record<ActionKind, readonly BodyPose[]>> = {
   ],
 };
 
+/**
+ * Muerto (se dibuja de pie y después se acuesta el modelo entero): brazos
+ * abiertos y estirados, con el arma siguiendo la mano en el piso, y las
+ * piernas apenas separadas.
+ */
+const DEAD: BodyPose = {
+  right: { thigh: 0, knee: 0.12, spread: 0.14 },
+  left: { thigh: 0.05, knee: 0.05, spread: 0.1 },
+  rightArm: { raise: 0.1, spread: 0.8, bend: 0.12 },
+  leftArm: { raise: 0.05, spread: 0.55, bend: 0.35 },
+};
+
 function poseFor(frame: CharacterFrame): BodyPose {
   if (frame === 'idle') return { right: STAND, left: STAND };
+  if (frame === 'dead') return DEAD;
   // Caminar y correr: entre las cuatro poses clave se interpola, así hay más cuadros.
   const cycle = cyclePhase(frame);
   if (cycle) {

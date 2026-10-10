@@ -4,13 +4,15 @@ import {
   PERSON_ZOOM,
   cameraFor,
   cyclePhase,
+  spriteCanvas,
+  type CanvasFactory,
   type CharacterFrame,
   type Rig,
   type Seat,
 } from './humanoid-rig';
 import type { PixelImage, Rgb } from './pixel-art';
+import type { VolumeCanvas } from './volume';
 import {
-  VolumeCanvas,
   add,
   axesAlong,
   lerp,
@@ -57,8 +59,9 @@ export function drawMountFrame(
   kind: MountKind,
   direction: Direction,
   frame: CharacterFrame,
+  canvasFor: CanvasFactory = spriteCanvas,
 ): PixelImage {
-  const canvas = new VolumeCanvas(MOUNTED_ART_WIDTH, MOUNTED_ART_HEIGHT, mountedCamera(direction));
+  const canvas = canvasFor(MOUNTED_ART_WIDTH, MOUNTED_ART_HEIGHT, mountedCamera(direction));
   drawMount(canvas, kind, frame).tack(canvas, null);
   return canvas.toImage(OUTLINE);
 }

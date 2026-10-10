@@ -14,6 +14,11 @@ export function groundItemDepth(position: FractionalPosition): number {
   return depthOf(position) * 10 + 2;
 }
 
+/** Un cuerpo tirado va sobre los objetos del suelo y debajo de todo lo que está parado. */
+export function corpseDepth(position: FractionalPosition): number {
+  return depthOf(position) * 10 + 3;
+}
+
 export function characterDepth(position: FractionalPosition): number {
   return depthOf(position) * 10 + 6;
 }
