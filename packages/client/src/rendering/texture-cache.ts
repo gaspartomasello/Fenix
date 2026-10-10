@@ -1,5 +1,6 @@
 import {
   drawCharacterFrame,
+  drawCreatureCorpse,
   drawCreatureFrame,
   drawItem,
   itemVariant,
@@ -69,6 +70,13 @@ export class TextureCache {
 
   creature(kind: CreatureKind, direction: Direction, frame: CharacterFrame): Texture {
     return this.fromEntry(this.creatureEntry(kind, direction, frame));
+  }
+
+  /** El cuerpo de una criatura tirado en el piso (`fallen` < 1: cayendo). */
+  corpse(kind: CreatureKind, direction: Direction, fallen: number): Texture {
+    return this.getOrCreate(`k:${kind}:${direction}:${fallen}`, () =>
+      drawCreatureCorpse(kind, direction, fallen),
+    );
   }
 
   /**
