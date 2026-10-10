@@ -439,5 +439,8 @@ describe('ClientGame', () => {
     game.apply({ type: 'mountChanged', id: 'ana', mount: null });
     game.say('/desmontar');
     expect(sent.filter((m) => m.type === 'dismount')).toHaveLength(1);
+    // /liberar le pide al servidor que deje ir a la montura (suelta o montada).
+    game.say('/liberar');
+    expect(sent.at(-1)).toEqual({ type: 'releasePet' });
   });
 });

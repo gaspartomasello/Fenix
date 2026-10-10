@@ -15,6 +15,8 @@ export type ChatInput =
   | { readonly kind: 'logout' }
   /** `/desmontar`: bajarse de la montura. */
   | { readonly kind: 'dismount' }
+  /** `/liberar`: dejar ir a la montura para siempre. */
+  | { readonly kind: 'releasePet' }
   /** `/hora 22`: mover la hora del mundo (solo personajes de prueba). */
   | { readonly kind: 'hour'; readonly hour: number }
   /** `/cueva` y `/cueva fondo`: viajar a la mazmorra (solo personajes de prueba). */
@@ -36,6 +38,7 @@ export const CHAT_HELP = [
   '/dejargremio — dejar el gremio',
   '/desconectar — salir del juego (se guarda tu personaje)',
   '/desmontar — bajarte de tu montura',
+  '/liberar — dejar ir a tu montura (para siempre)',
   '/hora 22 — cambiar la hora del mundo (solo personajes de prueba)',
   '/cueva o /cueva fondo — ir a la mazmorra (solo personajes de prueba)',
   '/ir lugar — ir a un pueblo o lugar con nombre; /ir solo, la lista (solo personajes de prueba)',
@@ -78,6 +81,8 @@ export function parseChatInput(raw: string): ChatInput {
       return { kind: 'logout' };
     case 'desmontar':
       return { kind: 'dismount' };
+    case 'liberar':
+      return { kind: 'releasePet' };
     case 'hora': {
       const hour = Number(args.replace(',', '.'));
       return args && Number.isFinite(hour) && hour >= 0 && hour < 24

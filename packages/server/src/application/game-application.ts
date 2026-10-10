@@ -254,6 +254,9 @@ export class GameApplication {
       case 'dismount':
         this.mounts.dismount(playerId);
         break;
+      case 'releasePet':
+        this.mounts.releasePet(playerId);
+        break;
       case 'join':
         // Ya está en el mundo: se ignora un segundo ingreso.
         break;
