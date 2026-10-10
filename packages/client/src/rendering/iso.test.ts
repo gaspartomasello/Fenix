@@ -1,6 +1,6 @@
 import { ALL_DIRECTIONS, directionOffset } from '@fenix/shared';
 import { describe, expect, it } from 'vitest';
-import { screenToTile, screenVectorToDirection, tileToScreen } from './iso';
+import { renderResolution, screenToTile, screenVectorToDirection, tileToScreen } from './iso';
 
 describe('proyección isométrica', () => {
   it('ida y vuelta entre tile y pantalla', () => {
@@ -14,5 +14,16 @@ describe('proyección isométrica', () => {
       const screen = tileToScreen(offset);
       expect(screenVectorToDirection(screen.x, screen.y)).toBe(direction);
     }
+  });
+});
+
+describe('renderResolution', () => {
+  it('dibuja siempre a escala entera, la de arriba', () => {
+    expect(renderResolution(1)).toBe(1);
+    expect(renderResolution(1.25)).toBe(2);
+    expect(renderResolution(1.5)).toBe(2);
+    expect(renderResolution(2)).toBe(2);
+    expect(renderResolution(2.625)).toBe(3);
+    expect(renderResolution(undefined)).toBe(1);
   });
 });
