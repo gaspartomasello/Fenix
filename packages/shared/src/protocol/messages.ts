@@ -177,11 +177,13 @@ export interface SetHourRequest {
   readonly hour: number;
 }
 
-/** Viajar al instante a la boca de la cueva o a la guarida del jefe (solo personajes de prueba). */
-export interface TestTravelRequest {
-  readonly type: 'testTravel';
-  readonly to: 'cave' | 'lair';
-}
+/**
+ * Viajar al instante (solo personajes de prueba): a la boca de la cueva, a la
+ * guarida del jefe o a un lugar con nombre (un pueblo, unas ruinas…).
+ */
+export type TestTravelRequest =
+  | { readonly type: 'testTravel'; readonly to: 'cave' | 'lair' }
+  | { readonly type: 'testTravel'; readonly to: 'place'; readonly place: string };
 
 /** Comprar una montura en la caballeriza. */
 export interface BuyMountRequest {

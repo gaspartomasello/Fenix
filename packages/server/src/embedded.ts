@@ -45,7 +45,7 @@ export interface EmbeddedServer {
 
 export function createEmbeddedServer(options: EmbeddedServerOptions = {}): EmbeddedServer {
   const ids = new UuidGenerator();
-  const world = createWorld({ size: options.mapSize ?? 128, seed: options.mapSeed ?? 1997 }, ids);
+  const world = createWorld({ size: options.mapSize ?? 320, seed: options.mapSeed ?? 1997 }, ids);
   const sessions = new SessionRegistry();
   const clock = new SystemClock();
   const app = new GameApplication({

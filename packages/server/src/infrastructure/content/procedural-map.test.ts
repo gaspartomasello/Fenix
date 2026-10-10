@@ -13,16 +13,11 @@ describe('generateIslandMap', () => {
     );
   });
 
-  it('crecen varias especies de árboles: en la orilla, sauces y ceibos', () => {
+  it('crecen varias especies de árboles', () => {
     const { map } = generateIslandMap({ width: 128, height: 128, seed: 42 });
     const kinds = new Set(map.statics.map((s) => s.kind));
-    for (const kind of ['oak', 'pine', 'willow', 'ceibo', 'gomero', 'poplar'] as const)
+    for (const kind of ['oak', 'pine', 'willow', 'gomero'] as const)
       expect(kinds.has(kind), kind).toBe(true);
-    const nearWater = (s: Position): boolean =>
-      [-1, 0, 1].some((dy) =>
-        [-1, 0, 1].some((dx) => map.terrainAt({ x: s.x + dx, y: s.y + dy }) === Terrain.Water),
-      );
-    for (const s of map.statics.filter((s) => s.kind === 'willow')) expect(nearWater(s)).toBe(true);
   });
 
   it('sin pueblo deja una plaza transitable en el centro', () => {
@@ -42,46 +37,102 @@ describe('generateIslandMap', () => {
   });
 });
 
-describe('buildWorld (con el pueblo de Tiled)', () => {
-  const { map, spawnPoint } = buildWorld({ size: 128, seed: 1997 });
+describe('buildWorld: el continente', () => {
+  const world = buildWorld({ size: 320, seed: 1997 });
+  const { map, spawnPoint } = world;
+  const walkable = reachable(map, spawnPoint);
 
-  it('aparece en el pueblo, en un tile transitable', () => {
+  it('aparece en la capital, en un tile transitable', () => {
     expect(map.isWalkable(spawnPoint)).toBe(true);
     expect(map.regionAt(spawnPoint)?.name).toBe('Puerto Ceniza');
   });
 
-  it('desde la aparición se puede salir caminando del pueblo', () => {
-    // Búsqueda en anchura: debe alcanzarse un tile fuera de la zona del pueblo.
-    const region = map.regionAt(spawnPoint);
-    const seen = new Set<string>([`${spawnPoint.x},${spawnPoint.y}`]);
-    const queue = [spawnPoint];
-    let escaped = false;
-    while (queue.length > 0 && !escaped) {
-      const current = queue.shift();
-      if (!current) break;
-      for (const [dx, dy] of [
-        [1, 0],
-        [-1, 0],
-        [0, 1],
-        [0, -1],
-      ] as const) {
-        const next = { x: current.x + dx, y: current.y + dy };
-        const key = `${next.x},${next.y}`;
-        if (seen.has(key) || !map.isWalkable(next)) continue;
-        seen.add(key);
-        if (map.regionAt(next) !== region) escaped = true;
-        queue.push(next);
-      }
+  it('hay tres pueblos y se llega caminando de la capital a los otros dos', () => {
+    for (const name of ['Puerto Ceniza', 'Roca Alta', 'Junco Verde']) {
+      const region = map.regions.find((r) => r.name === name);
+      expect(region, name).toBeDefined();
+      if (!region) continue;
+      expect(map.safeZoneAt({ x: region.x + 2, y: region.y + 2 })?.name).toBe(name);
+      const center = `${region.x + Math.floor(region.width / 2)},${region.y + Math.floor(region.height / 2)}`;
+      const inside = [...walkable].some((key) => {
+        const [x = 0, y = 0] = key.split(',').map(Number);
+        return map.regionAt({ x, y })?.name === name;
+      });
+      expect(inside, `${name} (${center})`).toBe(true);
     }
-    expect(escaped).toBe(true);
+  });
+
+  it('tiene nieve al norte, desierto al sur, pantano y montañas', () => {
+    const terrains = new Set<Terrain | undefined>();
+    for (let y = 0; y < 320; y++)
+      for (let x = 0; x < 320; x++) terrains.add(map.terrainAt({ x, y }));
+    for (const t of [Terrain.Snow, Terrain.Sand, Terrain.Swamp, Terrain.Water, Terrain.Grass])
+      expect(terrains.has(t), String(t)).toBe(true);
+    const kinds = new Set(map.statics.map((s) => s.kind));
+    for (const kind of ['mountain', 'snow-pine', 'cactus', 'reeds', 'willow'] as const)
+      expect(kinds.has(kind), kind).toBe(true);
+    const snowRows = map.statics.filter((s) => s.kind === 'snow-pine').map((s) => s.y);
+    const cactusRows = map.statics.filter((s) => s.kind === 'cactus').map((s) => s.y);
+    expect(Math.max(...snowRows)).toBeLessThan(Math.min(...cactusRows));
+  });
+
+  it('a la salida de los pueblos los caminos van empedrados', () => {
+    for (const sign of map.signs) {
+      let paved = false;
+      for (let dy = -3; dy <= 3; dy++)
+        for (let dx = -3; dx <= 3; dx++)
+          if (map.terrainAt({ x: sign.x + dx, y: sign.y + dy }) === Terrain.Stone) paved = true;
+      expect(paved, sign.text).toBe(true);
+    }
+  });
+
+  it('las montañas forman macizos, sin cordones finos', () => {
+    const mountains = map.statics.filter((s) => s.kind === 'mountain');
+    const at = new Set(mountains.map((s) => `${s.x},${s.y}`));
+    for (const m of mountains) {
+      let around = 0;
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++)
+          if ((dx || dy) && at.has(`${m.x + dx},${m.y + dy}`)) around++;
+      expect(around).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it('los caminos tienen carteles con su destino', () => {
+    expect(map.signs.length).toBeGreaterThanOrEqual(4);
+    for (const sign of map.signs) {
+      expect(sign.text).toMatch(/^Camino a /);
+      expect(map.statics.some((s) => s.kind === 'sign' && s.x === sign.x && s.y === sign.y)).toBe(
+        true,
+      );
+    }
+  });
+
+  it('hay lugares con nombre que no protegen, con sus habitantes', () => {
+    const names = world.places.map((p) => p.name);
+    for (const name of [
+      'Campamento de los Colmillos',
+      'Torre Hueca',
+      'Cementerio Viejo',
+      'Faro del Cabo',
+      'Ruinas del Sol',
+    ])
+      expect(names).toContain(name);
+    for (const place of world.places) {
+      expect(map.regionAt(place.center)?.name).toBe(place.name);
+      expect(map.safeZoneAt(place.center)).toBeUndefined();
+    }
+    const camp = world.places.find((p) => p.name === 'Campamento de los Colmillos');
+    expect(camp?.creatures.filter((c) => c.kind === 'orc').length).toBeGreaterThanOrEqual(3);
+    expect(map.statics.some((s) => s.kind === 'lighthouse')).toBe(true);
   });
 });
 
 describe('createWorld', () => {
-  it('puebla la isla con criaturas, ninguna dentro del pueblo', () => {
-    const world = createWorld({ size: 128, seed: 1997 }, new SequentialIds());
+  it('puebla el continente con criaturas, ninguna dentro de un pueblo', () => {
+    const world = createWorld({ size: 320, seed: 1997 }, new SequentialIds());
     const creatures = world.allCreatures();
-    expect(creatures.length).toBeGreaterThanOrEqual(20);
+    expect(creatures.length).toBeGreaterThanOrEqual(80);
     const bodies = new Set(creatures.map((c) => c.body));
     for (const kind of ['rat', 'wolf', 'giant-spider', 'orc', 'troll', 'dragon', 'lich'])
       expect(bodies).toContain(kind);
@@ -89,6 +140,20 @@ describe('createWorld', () => {
       expect(world.map.safeZoneAt(creature.position)).toBeUndefined();
       expect(world.map.isWalkable(creature.position)).toBe(true);
     }
+  });
+
+  it('la gente de los pueblos nuevos tiene nombre propio', () => {
+    const world = createWorld({ size: 320, seed: 1997 }, new SequentialIds());
+    const names = world.allNpcs().map((n) => n.name);
+    expect(names).toContain('Anselmo el herrero');
+    expect(names).toContain('Clementina la hechicera');
+    expect(names).toContain('Tomás el herrero');
+  });
+
+  it('con un mapa chico queda solo la capital', () => {
+    const { map } = buildWorld({ size: 128, seed: 1997 });
+    expect(map.regions.some((r) => r.name === 'Roca Alta')).toBe(false);
+    expect(map.regions.some((r) => r.name === 'Puerto Ceniza')).toBe(true);
   });
 });
 
@@ -114,7 +179,7 @@ function reachable(map: TileMap, from: Position): Set<string> {
 }
 
 describe('mazmorra', () => {
-  const { map, spawnPoint, caveEntrance, lairs } = buildWorld({ size: 128, seed: 1997 });
+  const { map, spawnPoint, caveEntrance, lairs } = buildWorld({ size: 320, seed: 1997 });
   const inside = map.teleportAt(caveEntrance);
 
   it('la boca de la cueva se alcanza caminando desde el pueblo y lleva adentro', () => {
@@ -137,7 +202,7 @@ describe('mazmorra', () => {
     expect(map.isWalkable(ladder?.to ?? caveEntrance)).toBe(true);
   });
 
-  it('la mazmorra no se alcanza caminando desde la isla', () => {
+  it('la mazmorra no se alcanza caminando desde el continente', () => {
     if (!inside) throw new Error('sin entrada');
     expect(reachable(map, spawnPoint).has(`${inside.x},${inside.y}`)).toBe(false);
   });

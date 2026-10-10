@@ -117,8 +117,9 @@ infrastructure ──► application ──► domain
   - `network/`: `GameSocketServer` (WebSocket, rate limit, heartbeat) y `SessionRegistry`
     (implementa `Notifier`).
   - `http/`: sirve el cliente compilado y `/health`.
-  - `content/`: cargador de mapas de Tiled (valida y traduce), generador procedural de la isla
-    (bosques, rocas, flores) y `buildWorld`, que estampa el pueblo diseñado en el centro.
+  - `content/`: cargador de mapas de Tiled (valida y traduce), generador del continente
+    (`procedural-map.ts`), caminos (`roads.ts`), lugares y criaturas por territorio
+    (`places.ts`) y `buildWorld`, que junta todo con la mazmorra.
   - `system/`: reloj, ids, PRNG.
 - **main.ts**: raíz de composición del servidor en red (HTTP + WebSocket).
 - **embedded.ts**: segunda raíz de composición, sin red ni dependencias de Node, para correr el
@@ -146,8 +147,11 @@ app (orquestación)
 - **rendering/** solo **lee** el estado del core y lo dibuja. `TextureCache` es el único punto
   donde el arte generado (`assets/`) se convierte en texturas de Pixi.
 - **ui/** usa DOM nativo, separado del canvas. Los componentes reciben callbacks; no conocen la red.
-  Las ventanas (mochila, equipo) se arrastran; `DragController` implementa arrastrar y soltar con
-  eventos de puntero, así funciona igual con mouse y con el dedo.
+  Las ventanas (mochila, equipo) se arrastran y se cierran con la cruz o con clic derecho, como en
+  UO; `DragController` implementa arrastrar y soltar con eventos de puntero, así funciona igual con
+  mouse y con el dedo. Al empezar a arrastrar, el objeto se levanta (`DragSource.lift` lo esconde
+  de la mochila, del personaje o del suelo) y vuelve a verse si se suelta donde no va o el servidor
+  no lo acepta.
 - **network/** elige el transporte al compilar: `WebSocketGateway` (online) o `EmbeddedGateway`
   (modo solo, `vite --mode solo`). Es la única capa que puede importar el servidor embebido; en
   el build online ese código ni siquiera se incluye.
@@ -300,9 +304,47 @@ tapan bien entre sí: cuadrúpedos con patas en cadena (antebrazo o pierna, cañ
 y andares por fase de cada pata, y el lagarto bípedo. `humanoidRig` recibe el asiento (`Seat`) y
 sienta al jinete con la pose de montar.
 
+### Continente
+
+`procedural-map.ts` genera el continente (320×320 por defecto, `MAP_SIZE`) con campos de ruido:
+
+- **Elevación**: decide el mar y las costas (baja hacia los bordes) y sube alrededor de cada
+  pueblo para que quede en tierra firme. Un ruido "de crestas" marca las **cordilleras**
+  (objetos `mountain` que bloquean), con un arco abierto hacia la capital alrededor de Roca Alta.
+- **Latitud y humedad**: nieve al norte, desierto al sur, pantano alrededor de Junco Verde y en
+  los bajos húmedos; bosques y praderas en el resto. Al pie de las montañas, una franja
+  pedregosa. Cada bioma tiene su vegetación (pino nevado, cactus, juncos, sauces…).
+- **Ríos**: bajan desde el pie de la montaña siempre hacia lo más bajo hasta el mar (o terminan
+  en una laguna).
+
+Las cordilleras solo aparecen en algunas regiones y se les quitan los cordones de un tile (parecen
+cercos): quedan macizos, y el resto del continente es abierto, con bosques ralos.
+
+Encima se estampan los tres pueblos de Tiled (`TownPlan`: mapa, lugar y clima) y se trazan
+**caminos** entre ellos con A* (`roads.ts`): cada terreno tiene su costo (el agua y la montaña,
+mucho) y doblar también cuesta, así salen tramos largos y rectos que cruzan los ríos por lo más
+angosto con **puentes** de tablones. Son de tres tiles de ancho, con banquinas sin árboles, y van
+**empedrados** cerca de los pueblos (las calles de los pueblos también). A la salida de cada
+pueblo, un **cartel** (`TileMap.signs`) dice adónde lleva el camino. Cada lugar con nombre y la
+boca de la cueva tienen un **sendero** de tierra hasta el camino más cercano.
+
+`places.ts` ubica los **lugares con nombre** según su bioma y su distancia a la capital
+(campamento orco, torre en ruinas, cementerio, faro, refugio en la nieve, ruinas del desierto,
+paso de montaña) y la boca de la cueva al pie de una cordillera. Son zonas con `wild: true`: se
+ve el nombre pero no protegen. Las criaturas sueltas salen de una densidad por bioma
+(`BIOME_CREATURES`) y cada lugar tiene sus habitantes; los alrededores de los pueblos quedan
+tranquilos. Con un mapa chico (menos de 200) queda solo la capital.
+
+El **minimapa** (`ui/minimap.ts`) dibuja el mapa una vez a un pixel por tile y lo muestra girado
+como la vista isométrica, centrado en el jugador, con la gente cerca y los nombres de los
+lugares; se abre y se cierra con el botón Mapa o la tecla M y recuerda si quedó abierto.
+
+El cliente arma el terreno por bloques de 16×16 recién cuando entran en pantalla, y el servidor
+comprime los mensajes de la conexión (el mapa viaja al entrar).
+
 ### Mazmorra
 
-`world-builder.ts` arma un solo mapa: la isla a la izquierda, roca maciza en el medio y la
+`world-builder.ts` arma un solo mapa: el continente a la izquierda, roca maciza en el medio y la
 mazmorra (`dungeon-map.ts`) a la derecha. La mazmorra son salas en serpentina unidas por
 pasillos de dos tiles; la roca que toca el suelo se vuelve `cave-wall`. Se entra y se sale por
 **teletransportes** del mapa (`TileMap.teleporters`): `MovePlayer`, después de un paso, mira si el

@@ -45,8 +45,18 @@ export class WorldMounts {
       this.game.mount(pet);
       return;
     }
-    // Bajarse con un toque sobre uno mismo sería muy fácil por error: solo doble clic.
-    if (!touch && this.game.self?.mount && this.renderer.selfAt(point)) {
+    // Bajarse con un toque sobre uno mismo sería muy fácil por error: solo doble
+    // clic, y nunca en modo guerra (ahí el doble clic es para atacar). Si hay
+    // alguien o algo justo ahí, el doble clic es para eso y no para bajarse.
+    if (
+      !touch &&
+      !this.game.warMode &&
+      this.game.self?.mount &&
+      this.renderer.selfAt(point) &&
+      !this.renderer.creatureAt(point) &&
+      !this.renderer.humanAt(point, false) &&
+      !this.renderer.corpseAt(point)
+    ) {
       e.stopImmediatePropagation();
       e.preventDefault();
       this.game.dismount();

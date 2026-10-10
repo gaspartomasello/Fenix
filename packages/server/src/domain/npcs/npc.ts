@@ -72,8 +72,9 @@ export class Npc implements Mobile {
     readonly id: EntityId,
     readonly role: NpcRole,
     readonly position: Position,
+    name?: string,
   ) {
-    this.name = VENDORS[role].name;
+    this.name = name ?? VENDORS[role].name;
     this.appearance = LOOKS[role].appearance;
     this.equipment = LOOKS[role].equipment;
   }

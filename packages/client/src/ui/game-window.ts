@@ -3,7 +3,8 @@ import { el } from './dom';
 let topZ = 10;
 
 /**
- * Ventana flotante con barra de título arrastrable y botón para cerrarla.
+ * Ventana flotante con barra de título arrastrable y botón para cerrarla
+ * (como en UO, el clic derecho sobre la ventana también la cierra).
  * Recuerda su posición en el navegador (si está permitido guardar datos).
  */
 export class GameWindow {
@@ -38,6 +39,16 @@ export class GameWindow {
     this.moveTo(saved ?? fallback);
 
     close.addEventListener('click', () => this.hide(), { signal: this.abort.signal });
+    this.element.addEventListener(
+      'contextmenu',
+      (e) => {
+        // Sin menú del navegador y sin que el clic llegue al mundo (ahí mueve al personaje).
+        e.preventDefault();
+        e.stopPropagation();
+        this.hide();
+      },
+      { signal: this.abort.signal },
+    );
     this.element.addEventListener('pointerdown', () => this.bringToFront(), {
       signal: this.abort.signal,
     });

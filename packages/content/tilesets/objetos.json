@@ -3,10 +3,10 @@
   "name": "objetos",
   "tilewidth": 136,
   "tileheight": 168,
-  "tilecount": 30,
-  "columns": 30,
+  "tilecount": 39,
+  "columns": 39,
   "image": "objetos.png",
-  "imagewidth": 4080,
+  "imagewidth": 5304,
   "imageheight": 168,
   "tileoffset": {
     "x": -46,
@@ -310,6 +310,96 @@
           "name": "static",
           "type": "string",
           "value": "dead-tree"
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "mountain"
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "cactus"
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "tent"
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "campfire"
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "gravestone"
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "lighthouse"
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "rubble"
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "reeds"
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "snow-pine"
         }
       ]
     }

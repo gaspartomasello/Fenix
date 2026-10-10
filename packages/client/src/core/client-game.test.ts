@@ -241,6 +241,28 @@ describe('ClientGame', () => {
       expect(game.self?.direction).toBe(Direction.East);
     });
 
+    it('avisa quién te ataca, una vez por pelea, y también si no se lo ve', () => {
+      const log: string[] = [];
+      game.on('log', (line) => log.push(line.text));
+      const bite = (attackerId: string) =>
+        game.apply({
+          type: 'swing',
+          attackerId,
+          targetId: 'ana',
+          hit: true,
+          blocked: false,
+          damage: 2,
+        });
+      game.apply({ type: 'mobileAppeared', mobile: snapshot('rata', 1, 0) });
+      bite('rata');
+      bite('rata');
+      bite('escondido');
+      expect(log).toEqual(['Te ataca una rata gigante.', 'Algo te está atacando y no lo ves.']);
+      now += 25_000;
+      bite('rata');
+      expect(log.at(-1)).toBe('Te ataca una rata gigante.');
+    });
+
     it('la rata embiste al morder', () => {
       game.apply({ type: 'mobileAppeared', mobile: snapshot('rata', 1, 0) });
       game.apply({

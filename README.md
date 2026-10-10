@@ -46,7 +46,7 @@ Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña 
 | `PORT`            | `3000`        | Puerto HTTP/WebSocket                      |
 | `HOST`            | `0.0.0.0`     | Interfaz donde escucha                     |
 | `MAP_SEED`        | `1997`        | Semilla del mapa generado                  |
-| `MAP_SIZE`        | `128`         | Lado del mapa en tiles                     |
+| `MAP_SIZE`        | `320`         | Lado del mapa en tiles                     |
 | `START_HOUR`      | `8`           | Hora del juego con la que arranca el mundo |
 | `CLIENT_DIST`     | `client/dist` | Carpeta del cliente compilado a servir     |
 | `DATA_DIR`        | `data`        | Carpeta de los personajes guardados        |
@@ -56,7 +56,8 @@ Un **personaje de prueba** entra cada vez con todas las habilidades y atributos 
 vida y el maná llenos, 999.999 monedas de oro y 1000 de cada reactivo. En el modo solo lo es
 **Gaspar**; en el servidor en línea, solo los nombres que diga `TEST_CHARACTERS`. Un personaje de
 prueba puede escribir `/hora 22` en el chat para cambiar la hora del mundo (para probar la noche),
-`/cueva` para ir a la boca de la mazmorra y `/cueva fondo` para aparecer cerca del dragón.
+`/cueva` para ir a la boca de la mazmorra, `/cueva fondo` para aparecer cerca del dragón y `/ir lugar`
+para viajar a un pueblo o lugar con nombre (`/ir` solo muestra la lista).
 
 ## Controles
 
@@ -122,7 +123,7 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
 ## Hoja de ruta
 
 1. ✅ **Base online**: mapa isométrico, personajes, movimiento en tiempo real, chat.
-2. ✅ **Mundo**: isla de 128×128 con bosques, pueblo diseñado en Tiled, edificios y objetos con
+2. ✅ **Mundo**: isla de 128×128 (hoy, el continente de la etapa 15) con bosques, pueblo diseñado en Tiled, edificios y objetos con
    colisión, transiciones de terreno, rango de visión y día/noche con faroles.
 3. ✅ **Objetos**: tirarlos y levantarlos del suelo, mochila, ventana de equipo, armas,
    armaduras y ropa que se ven puestas, comida y pociones, arrastrar y soltar.
@@ -188,3 +189,12 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
     retorcido con flores rojas, gomero de tronco enorme con aletones y raíces aéreas, sauce
     llorón, álamo columnar y árbol seco. Sauces y ceibos crecen en las orillas, los gomeros
     sueltos en el campo y los álamos en cortinas al costado de los caminos.
+15. ✅ **El continente**: un mundo de 320×320 con nieve al norte, desierto al sur, pantanos,
+    bosques, praderas, cordilleras y ríos con puentes. Tres pueblos unidos por caminos con
+    carteles: Puerto Ceniza (la capital), Roca Alta (minero, entre montañas) y Junco Verde (en el
+    pantano), cada uno con su gente. Lugares con nombre y sus habitantes: Campamento de los
+    Colmillos (orcos), Torre Hueca (liche), Cementerio Viejo, Faro del Cabo, Refugio Helado,
+    Ruinas del Sol y Paso del Cuervo. Las criaturas viven según el terreno. Mundo abierto, con
+    caminos anchos y rectos (empedrados cerca de los pueblos), senderos a cada lugar y un
+    **minimapa** que se abre y se cierra con la tecla M. Para probar, `/ir` lleva a un personaje
+    de prueba a cualquier lugar.

@@ -3,10 +3,10 @@
   "name": "terreno",
   "tilewidth": 44,
   "tileheight": 44,
-  "tilecount": 8,
-  "columns": 8,
+  "tilecount": 10,
+  "columns": 10,
   "image": "terreno.png",
-  "imagewidth": 352,
+  "imagewidth": 440,
   "imageheight": 44,
   "tiles": [
     {
@@ -86,6 +86,26 @@
           "name": "terrain",
           "type": "string",
           "value": "rock"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "properties": [
+        {
+          "name": "terrain",
+          "type": "string",
+          "value": "snow"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "properties": [
+        {
+          "name": "terrain",
+          "type": "string",
+          "value": "swamp"
         }
       ]
     }
