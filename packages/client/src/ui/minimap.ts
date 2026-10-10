@@ -27,7 +27,7 @@ function staticColor(kind: StaticKind): string | null {
  * Minimapa: el mundo visto desde arriba, girado como la vista isométrica
  * (arriba en el minimapa es arriba en la pantalla), centrado en uno mismo.
  * Muestra a la gente cerca y los nombres de pueblos y lugares. Se abre y se
- * cierra con su botón o la tecla M; la rueda acerca o aleja.
+ * cierra con su botón, la tecla M o el clic derecho; la rueda acerca o aleja.
  */
 export class Minimap {
   readonly element: HTMLElement;
@@ -37,7 +37,11 @@ export class Minimap {
   private zoom = 1;
   private timer: number | null = null;
 
-  constructor(private readonly game: ClientGame) {
+  constructor(
+    private readonly game: ClientGame,
+    /** Se llama al abrirse o cerrarse (para el botón que queda presionado). */
+    private readonly onToggle: () => void = () => undefined,
+  ) {
     this.canvas = el('canvas', { className: 'minimap-canvas' }) as HTMLCanvasElement;
     const ratio = Math.max(1, Math.ceil(window.devicePixelRatio || 1));
     this.canvas.width = SIZE * ratio;
@@ -60,6 +64,13 @@ export class Minimap {
     this.canvas.addEventListener('click', () => {
       this.zoom = (this.zoom + 1) % ZOOMS.length;
       this.draw();
+    });
+    // Como las ventanas: el clic derecho lo cierra.
+    this.element.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.setOpen(false);
+      this.onToggle();
     });
     this.setOpen(readOpen());
   }

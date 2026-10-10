@@ -91,6 +91,12 @@ export class GameSession {
       },
     });
     this.game = new ClientGame(this.gateway, clock);
+    // En ninguna parte del juego aparece el menú del navegador con el clic
+    // derecho (en el mundo, el clic derecho mueve al personaje). Solo en los
+    // campos de texto, para poder copiar y pegar.
+    document.addEventListener('contextmenu', (e) => {
+      if (!isEditable(e.target)) e.preventDefault();
+    });
     this.login = new LoginScreen({
       subtitle: IS_SOLO ? 'Modo solo' : 'Entrá o creá tu personaje',
       askPassword: !IS_SOLO,
@@ -440,7 +446,7 @@ export class GameSession {
       { label: 'Salir', onPress: () => this.logout() },
     ]);
     this.game.on('logoutRequested', () => this.logout());
-    const minimap = new Minimap(this.game);
+    const minimap = new Minimap(this.game, () => buttons.refresh());
     const buttons = (this.hud = new HudButtons([
       { label: 'Mochila', key: 'b', onPress: () => backpack.window.toggle() },
       { label: 'Personaje', key: 'c', onPress: () => equipment.window.toggle() },
@@ -519,4 +525,12 @@ export class GameSession {
     if (!this.inWorld || this.loggingOut) return;
     showOverlay(this.hosts.ui, 'Conexión perdida', 'Se cortó la conexión con el servidor.');
   }
+}
+
+function isEditable(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    (target instanceof HTMLElement && target.isContentEditable)
+  );
 }
