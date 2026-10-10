@@ -13,7 +13,8 @@ export type DropTarget =
 export interface DragSource {
   readonly id: string;
   readonly iconUrl: string;
-  readonly onDrop: (target: DropTarget) => void;
+  /** Devuelve false si no va ahí (el objeto vuelve a su lugar al instante). */
+  readonly onDrop: (target: DropTarget) => boolean;
   readonly onDoubleTap: () => void;
   /**
    * Levanta el objeto de donde está (lo esconde) al empezar a arrastrarlo y
@@ -23,7 +24,7 @@ export interface DragSource {
 }
 
 /** Cuánto se espera la respuesta del servidor antes de volver a mostrar lo soltado. */
-const SETTLE_MS = 1500;
+const SETTLE_MS = 700;
 
 /** Levantar un ícono del DOM: queda su lugar vacío mientras se arrastra. */
 export function liftElement(element: HTMLElement): () => () => void {
@@ -79,11 +80,10 @@ export class DragController {
       this.ghost.hidden = true;
       if (dragging) {
         const target = resolveTarget(e.clientX, e.clientY);
-        if (target) {
-          source.onDrop(target);
-          // Si el servidor no lo acepta, el objeto vuelve a verse donde estaba.
-          if (restore) window.setTimeout(restore, SETTLE_MS);
-        } else restore?.();
+        const accepted = target !== null && source.onDrop(target);
+        // Si no va ahí, vuelve en el momento; si el servidor no lo acepta, enseguida.
+        if (!accepted) restore?.();
+        else if (restore) window.setTimeout(restore, SETTLE_MS);
       } else {
         this.registerTap(source);
       }

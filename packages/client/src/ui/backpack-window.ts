@@ -91,7 +91,9 @@ export class BackpackWindow {
           lift: liftElement(icon),
           onDrop: (target) => {
             const to = destinationFor(target, this.actions, item.kind);
-            if (to) this.actions.moveItem(item.id, to);
+            if (!to) return false;
+            this.actions.moveItem(item.id, to);
+            return true;
           },
           onDoubleTap: () => this.actions.useItem(item.id),
         },
