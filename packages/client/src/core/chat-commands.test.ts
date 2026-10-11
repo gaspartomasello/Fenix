@@ -40,6 +40,11 @@ describe('comandos del chat', () => {
     });
   });
 
+  it('/esconderse y /mirar usan esas habilidades', () => {
+    expect(parseChatInput('/esconderse')).toEqual({ kind: 'useSkill', skill: 'hiding' });
+    expect(parseChatInput('/mirar')).toEqual({ kind: 'useSkill', skill: 'detect-hidden' });
+  });
+
   it('/hora pide una hora válida', () => {
     expect(parseChatInput('/hora 22')).toEqual({ kind: 'hour', hour: 22 });
     expect(parseChatInput('/hora 6,5')).toEqual({ kind: 'hour', hour: 6.5 });

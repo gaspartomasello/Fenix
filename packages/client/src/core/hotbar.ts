@@ -1,9 +1,12 @@
 import {
   ITEMS,
+  SKILL_NAMES,
   SPELLS,
+  isActiveSkill,
   isItemKind,
   isSpellKey,
   type BackpackItemSnapshot,
+  type ActiveSkill,
   type ItemKind,
   type SpellKey,
 } from '@fenix/shared';
@@ -17,6 +20,7 @@ import {
 export type HotbarSlot =
   | { readonly type: 'item'; readonly kind: ItemKind }
   | { readonly type: 'spell'; readonly spell: SpellKey }
+  | { readonly type: 'skill'; readonly skill: ActiveSkill }
   | null;
 
 /** Diez casilleros: teclas 1 a 9 y 0. */
@@ -32,6 +36,7 @@ export function defaultHotbar(): HotbarSlot[] {
     { type: 'spell', spell: 'heal' },
     { type: 'spell', spell: 'magic-arrow' },
     { type: 'spell', spell: 'cure' },
+    { type: 'skill', skill: 'hiding' },
   ];
   return [...slots, ...Array<HotbarSlot>(HOTBAR_SIZE - slots.length).fill(null)];
 }
@@ -54,6 +59,8 @@ function parseSlot(value: unknown): HotbarSlot {
   const slot = value as { type?: unknown; kind?: unknown; spell?: unknown };
   if (slot.type === 'item' && isItemKind(slot.kind)) return { type: 'item', kind: slot.kind };
   if (slot.type === 'spell' && isSpellKey(slot.spell)) return { type: 'spell', spell: slot.spell };
+  const skill = (value as { skill?: unknown }).skill;
+  if (slot.type === 'skill' && isActiveSkill(skill)) return { type: 'skill', skill };
   return null;
 }
 
@@ -61,6 +68,7 @@ function parseSlot(value: unknown): HotbarSlot {
 export function slotLabel(slot: HotbarSlot): string {
   if (!slot) return 'Vacío';
   if (slot.type === 'spell') return SPELLS[slot.spell].name;
+  if (slot.type === 'skill') return SKILL_NAMES[slot.skill];
   return capitalize(ITEMS[slot.kind].plural);
 }
 
@@ -100,6 +108,7 @@ export function sameSlot(a: HotbarSlot, b: HotbarSlot): boolean {
   if (!a || !b) return a === b;
   if (a.type === 'item' && b.type === 'item') return a.kind === b.kind;
   if (a.type === 'spell' && b.type === 'spell') return a.spell === b.spell;
+  if (a.type === 'skill' && b.type === 'skill') return a.skill === b.skill;
   return false;
 }
 

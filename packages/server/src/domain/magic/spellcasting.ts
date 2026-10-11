@@ -10,6 +10,8 @@ import {
   poisonLevel,
   PROTECTION_ARMOR,
   resistChance,
+  invisibilityMs,
+  revealRadius,
   rollSpellPower,
   spellDamageBonus,
   spellDurationMs,
@@ -117,7 +119,7 @@ export function startCast(
     }
     case 'harmful': {
       const target = request.targetId ? world.getMobile(request.targetId) : undefined;
-      if (!target || target.id === player.id || target.combat.isDead)
+      if (!target || target.id === player.id || target.combat.isDead || world.isHidden(target))
         return fail('Elegí a quién lanzarle el hechizo.');
       if (target instanceof Npc) return fail(`No podés atacar a ${target.name}.`);
       if (tileDistance(target.position, player.position) > SPELL_RANGE)
@@ -154,7 +156,11 @@ export function startCast(
         return fail('Ya tenés demasiadas criaturas invocadas.');
       if (tileDistance(request.position, player.position) > SPELL_RANGE)
         return fail('Está demasiado lejos.');
-      if (!world.map.isWalkable(request.position) || world.isOccupied(request.position, player.id))
+      // Revelar va a cualquier lugar; para ir o invocar, tiene que estar libre.
+      if (
+        spell.effect.kind !== 'reveal' &&
+        (!world.map.isWalkable(request.position) || world.isOccupied(request.position, player.id))
+      )
         return fail('No podés ir ahí.');
       position = request.position;
       break;
@@ -200,6 +206,10 @@ export type CastOutcome =
       areaHits?: readonly AreaHit[];
       /** Criatura que apareció invocada. */
       summoned?: Creature;
+      /** Invisibilidad: a quién esconder y hasta cuándo (lo hace el ciclo del juego). */
+      conceal?: { target: Player; until: number };
+      /** Revelar: alrededor de qué lugar y hasta qué distancia. */
+      revealAt?: { position: Position; radius: number };
       /** Portal abierto: dónde aparece cada puerta (las crea el ciclo del juego). */
       gate?: { from: Position; to: Position };
       /** El objetivo volvió a la vida. */
@@ -346,6 +356,14 @@ export function resolveCast(
       provoke(target, player);
       return success({ amount: drained });
     }
+    case 'invisibility':
+      if (!(target instanceof Player))
+        return success({ message: 'Solo se puede volver invisible a una persona.' });
+      return success({ conceal: { target, until: now + invisibilityMs(magery) } });
+    case 'reveal':
+      return success({
+        revealAt: { position: pending.position ?? player.position, radius: revealRadius(magery) },
+      });
     case 'mark':
     case 'recall':
     case 'gate':

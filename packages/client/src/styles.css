@@ -1791,3 +1791,37 @@ body {
   max-height: min(50vh, 360px);
   overflow-y: auto;
 }
+
+/* ── Etapa 21: sigilo ─────────────────────────────────────────────── */
+
+.hotbar-spell--skill {
+  background: radial-gradient(circle at 35% 30%, #c9c2b4, #4a4640);
+}
+
+.skills-use {
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.75rem;
+}
+
+.hidden-badge {
+  position: absolute;
+  top: calc(140px + env(safe-area-inset-top, 0px));
+  left: 12px;
+  padding: 2px 8px;
+  font-size: 0.8rem;
+  color: #d8d2ff;
+  background: rgba(20, 16, 40, 0.8);
+  border: 1px solid #6a5ab0;
+  border-radius: var(--radius);
+  pointer-events: none;
+}
+
+.hidden-badge[hidden] {
+  display: none;
+}
+
+.touch-ui .hidden-badge {
+  top: calc(70px + env(safe-area-inset-top, 0px));
+  left: calc(var(--safe-left) + 184px);
+}

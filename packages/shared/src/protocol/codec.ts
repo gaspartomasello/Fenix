@@ -3,6 +3,7 @@ import { PASSWORD_MAX_LENGTH } from '../domain/character/password';
 import { isEquipmentSlot } from '../domain/items/equipment';
 import { isItemKind } from '../domain/items/item-catalog';
 import { isSpellKey } from '../domain/magic/spell-catalog';
+import { isActiveSkill } from '../domain/skills/stealth';
 import { isMountKind } from '../domain/mounts/mount-catalog';
 import { isChatChannel, isSocialCommand } from '../domain/social/groups';
 import { isDirection } from '../domain/geometry/direction';
@@ -235,6 +236,10 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       return { ok: true, message: { type: 'dismount' } };
     case 'releasePet':
       return { ok: true, message: { type: 'releasePet' } };
+    case 'useSkill':
+      if (isActiveSkill(data.skill))
+        return { ok: true, message: { type: 'useSkill', skill: data.skill } };
+      break;
     case 'openCorpse':
     case 'lootAll':
       if (isId(data.corpseId))
@@ -274,6 +279,7 @@ const SERVER_TYPES: ReadonlySet<ServerMessageType> = new Set<ServerMessageType>(
   'corpse',
   'corpseClosed',
   'mountChanged',
+  'hiddenChanged',
   'system',
 ]);
 

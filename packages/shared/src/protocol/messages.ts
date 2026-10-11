@@ -12,6 +12,7 @@ import type { ChatChannel, SocialCommand } from '../domain/social/groups';
 import type { Notoriety } from '../domain/social/reputation';
 import type { SpellKey } from '../domain/magic/spell-catalog';
 import type { SkillValues } from '../domain/skills/skill-catalog';
+import type { ActiveSkill } from '../domain/skills/stealth';
 import type { WorldTime } from '../domain/rules/daylight';
 import type { MoveMode } from '../domain/rules/movement';
 import type { TileMapData } from '../domain/world/tile-map';
@@ -220,6 +221,12 @@ export interface ReleasePetRequest {
   readonly type: 'releasePet';
 }
 
+/** Usar una habilidad a propósito (Esconderse, Mirar). */
+export interface UseSkillRequest {
+  readonly type: 'useSkill';
+  readonly skill: ActiveSkill;
+}
+
 /** Revisar el cuerpo de una criatura muerta (doble clic). */
 export interface OpenCorpseRequest {
   readonly type: 'openCorpse';
@@ -259,6 +266,7 @@ export type ClientMessage =
   | MountRequest
   | DismountRequest
   | ReleasePetRequest
+  | UseSkillRequest
   | SocialRequest;
 
 // ── Servidor → Cliente ────────────────────────────────────────────────
@@ -463,6 +471,12 @@ export interface MountChangedMessage {
   readonly mount: MountKind | null;
 }
 
+/** El jugador se escondió o lo descubrieron (solo a él: los demás dejan de verlo o lo ven aparecer). */
+export interface HiddenChangedMessage {
+  readonly type: 'hiddenChanged';
+  readonly hidden: boolean;
+}
+
 /** Lo que hay en un cuerpo que el jugador está revisando (se reenvía cuando cambia). */
 export interface CorpseMessage {
   readonly type: 'corpse';
@@ -510,6 +524,7 @@ export type ServerMessage =
   | CorpseMessage
   | CorpseClosedMessage
   | MountChangedMessage
+  | HiddenChangedMessage
   | SystemMessage;
 
 export type ServerMessageType = ServerMessage['type'];

@@ -78,7 +78,9 @@ para viajar a un pueblo o lugar con nombre (`/ir` solo muestra la lista).
 - **Monturas**: en la caballeriza de Bautista se compran caballos (alazán, negro, tordillo y
   overo), una llama o un lagarto corredor. La montura te sigue; **doble clic sobre ella** para
   montar y **doble clic sobre vos** (o `/desmontar`) para bajarte; en modo guerra el doble clic
-  no te baja. Montado se anda al doble de rápido y galopar no cansa. Suelta, la montura te
+  no te baja. Montado se anda al doble de rápido y galopar no cansa.
+- **Esconderse y Mirar**: botón **Usar** en la ventana de habilidades, `/esconderse` y `/mirar`
+  en el chat, o un casillero de la barra de atajos (Esconderse viene en el 8). Suelta, la montura te
   defiende y ataca a quien ataques; las criaturas y otros jugadores la pueden matar. Con
   `/liberar` la dejás ir para siempre.
 - **Doble clic sobre el cuerpo** de una criatura muerta (o un toque): revisarlo. El botín está
@@ -236,3 +238,10 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
     puertas de luz azul, una al lado tuyo y otra en el lugar de la runa, que cualquiera puede
     cruzar caminando durante 30 s. Al lanzarlos se elige la runa en una ventana, y cada runa dice
     qué lugar guarda. No se pueden marcar runas en la mazmorra.
+21. ✅ **Sigilo**: tres habilidades nuevas de UO. **Esconderse** te saca de la vista de los demás
+    jugadores y de las criaturas (no con una criatura atacándote al lado, ni montado); **Sigilo**
+    te deja dar un paso escondido cada 10 puntos (correr te descubre); **Mirar** encuentra a los
+    escondidos cerca, según tu Mirar contra su Esconderse. Atacar, lanzar un hechizo, hablar en
+    voz alta o recibir un golpe también te descubren. Hechizos del 6.º círculo:
+    **Invisibilidad** (esconde a alguien un rato) y **Revelar** (descubre a los escondidos
+    alrededor de un lugar). Escondido te ves translúcido y con el aviso "Escondido".

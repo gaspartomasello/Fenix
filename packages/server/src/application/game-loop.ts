@@ -33,6 +33,7 @@ import { Player } from '../domain/player';
 import type { World } from '../domain/world';
 import { EMPTY_CORPSE_MS, type Corpses } from './corpses';
 import type { Gates } from './gates';
+import type { Stealth } from './stealth';
 import type { MountActions } from './use-cases/mount-actions';
 import type { ItemNotifications } from './item-notifications';
 import type { MobileNotifications } from './mobile-notifications';
@@ -64,6 +65,7 @@ export class GameLoop {
     private readonly corpses: Corpses,
     private readonly mounts: MountActions,
     private readonly gates: Gates,
+    private readonly stealth: Stealth,
   ) {
     this.shrines = world.map.statics.filter((s) => s.kind === 'shrine');
   }
@@ -73,6 +75,7 @@ export class GameLoop {
     for (const creature of this.world.allCreatures()) this.tickCreature(creature, now);
     this.landDelayedSpells(now);
     this.gates.tick(now);
+    this.stealth.tick(now);
   }
 
   /** Hechizos lanzados que todavía no cayeron (la Explosión). */
@@ -182,7 +185,7 @@ export class GameLoop {
     const targetId = player.combat.targetId;
     if (targetId) {
       const target = this.world.getMobile(targetId);
-      if (!target || target.combat.isDead) {
+      if (!target || target.combat.isDead || this.world.isHidden(target)) {
         player.combat.targetId = null;
         this.mobiles.sendTarget(player);
       } else if (outOfAmmo(player, this.world)) {
@@ -257,6 +260,21 @@ export class GameLoop {
     const { target, amount, killed, resisted, effectsChanged, moveTo, message } = outcome;
     if (moveTo) this.teleport(player, moveTo);
     if (outcome.gate) this.gates.open(outcome.gate.from, outcome.gate.to, now, player.id);
+    if (outcome.conceal) this.stealth.conceal(outcome.conceal.target, outcome.conceal.until);
+    if (outcome.revealAt) {
+      const found = this.stealth.revealArea(
+        outcome.revealAt.position,
+        outcome.revealAt.radius,
+        player,
+      );
+      this.notifier.send(player.id, {
+        type: 'system',
+        text: found > 0 ? `Revelar descubrió a ${found}.` : 'No había nadie escondido.',
+      });
+    }
+    // Un hechizo de daño descubre al que estaba escondido.
+    if (spell.target === 'harmful' && outcome.target instanceof Player && outcome.target !== player)
+      this.stealth.reveal(outcome.target, 'Un hechizo te descubrió.');
     if (outcome.summoned) this.mobiles.appear(outcome.summoned);
     if (outcome.revived && target instanceof Player) {
       this.mobiles.sendVitals(target);
@@ -423,6 +441,10 @@ export class GameLoop {
   private resolveSwing(result: SwingResult, now: number): void {
     // Una criatura salvaje sin pelea se da vuelta contra quien la golpea (persona o invocación).
     const { attacker, target } = result;
+    // Pegar, o recibir un golpe, descubre al escondido.
+    if (attacker instanceof Player) this.stealth.reveal(attacker, 'Atacaste y te descubriste.');
+    if (target instanceof Player && result.hit && !result.blocked)
+      this.stealth.reveal(target, 'Te golpearon y te descubrieron.');
     if (target instanceof Creature && !target.ownerId && target.combat.targetId === null)
       target.combat.targetId = attacker.id;
     if (target instanceof Creature && target.isPet) this.warnPetOwner(target, attacker, now);

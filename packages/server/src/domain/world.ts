@@ -127,6 +127,11 @@ export class World {
     );
   }
 
+  /** Un jugador escondido: los demás no lo ven (ni las criaturas). */
+  isHidden(mobile: Mobile): boolean {
+    return mobile instanceof Player && mobile.hidden !== null;
+  }
+
   /** ¿Hay alguien vivo parado en ese tile? Las criaturas no se pisan entre sí ni a los jugadores. */
   isOccupied(position: Position, except?: EntityId): boolean {
     return this.mobilesNear(position, except === undefined ? {} : { except }).some(

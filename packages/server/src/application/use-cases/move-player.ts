@@ -12,6 +12,7 @@ import { freeSpotNear } from '../../domain/persistence/saved-character';
 import type { Player } from '../../domain/player';
 import type { World } from '../../domain/world';
 import type { Gates } from '../gates';
+import type { Stealth } from '../stealth';
 import type { ItemNotifications } from '../item-notifications';
 import type { MobileNotifications } from '../mobile-notifications';
 import type { Clock, Notifier } from '../ports';
@@ -35,6 +36,8 @@ export class MovePlayer {
     private readonly mobiles: MobileNotifications,
     /** Portales abiertos con el hechizo Portal. */
     private readonly gates?: Gates,
+    /** Escondido: cada paso gasta Sigilo (o lo descubre). */
+    private readonly stealth?: Stealth,
   ) {}
 
   execute({ playerId, direction, mode, seq }: MovePlayerInput): void {
@@ -60,6 +63,7 @@ export class MovePlayer {
     }
 
     this.notifier.send(playerId, { type: 'moveAck', seq, position: player.position });
+    this.stealth?.step(player, effectiveMode === 'run');
     if (effectiveMode === 'run' && !player.mount && player.registerRunStep())
       this.mobiles.sendVitals(player);
     this.updateVisibility(player, before, {
@@ -125,12 +129,15 @@ export class MovePlayer {
     // Solo los jugadores reciben mensajes; el que se movió ve aparecer o desaparecer a todos.
     const isPlayer = (id: EntityId): boolean => this.world.get(id) !== undefined;
 
-    this.notifier.sendMany(stayed.filter(isPlayer), moved);
-    this.notifier.sendMany(entered.filter(isPlayer), {
-      type: 'mobileAppeared',
-      mobile: this.world.snapshotOf(player),
-    });
-    this.notifier.sendMany(left.filter(isPlayer), { type: 'mobileDisappeared', id: player.id });
+    // Escondido, los demás no se enteran de que se movió.
+    if (!player.hidden) {
+      this.notifier.sendMany(stayed.filter(isPlayer), moved);
+      this.notifier.sendMany(entered.filter(isPlayer), {
+        type: 'mobileAppeared',
+        mobile: this.world.snapshotOf(player),
+      });
+      this.notifier.sendMany(left.filter(isPlayer), { type: 'mobileDisappeared', id: player.id });
+    }
 
     for (const id of entered) {
       const other = this.world.getMobile(id);
@@ -143,7 +150,13 @@ export class MovePlayer {
     for (const id of left) this.notifier.send(player.id, { type: 'mobileDisappeared', id });
   }
 
+  /** Los que están a la vista (los escondidos no se ven). */
   private idsNear(player: Player): Set<EntityId> {
-    return new Set(this.world.mobilesNear(player.position, { except: player.id }).map((m) => m.id));
+    return new Set(
+      this.world
+        .mobilesNear(player.position, { except: player.id })
+        .filter((m) => !this.world.isHidden(m))
+        .map((m) => m.id),
+    );
   }
 }

@@ -274,7 +274,13 @@ export class GameSession {
     const panel = new VitalsPanel();
     const ghost = new GhostBanner();
     const effects = new EffectsBar(clock);
-    this.hosts.ui.append(panel.element, effects.element, ghost.element);
+    // Escondido: un aviso chico (uno mismo, además, se ve translúcido).
+    const hiddenBadge = document.createElement('div');
+    hiddenBadge.className = 'hidden-badge';
+    hiddenBadge.textContent = 'Escondido';
+    hiddenBadge.hidden = true;
+    this.game.on('hiddenChanged', (hidden) => (hiddenBadge.hidden = !hidden));
+    this.hosts.ui.append(panel.element, effects.element, ghost.element, hiddenBadge);
     this.game.on('effectsChanged', (state) => effects.update(state));
     const render = (): void => {
       const state = this.game.vitals;
@@ -381,7 +387,7 @@ export class GameSession {
     };
 
     const spellbook = new SpellbookWindow((spell) => cast(spell));
-    const skills = new SkillsWindow();
+    const skills = new SkillsWindow((skill) => this.game.useSkill(skill));
     this.hosts.ui.append(spellbook.window.element, skills.window.element);
     const render = (): void => {
       const values = this.game.skills;
@@ -586,6 +592,10 @@ export class GameSession {
       const selfId = this.game.selfId;
       if (!slot || !selfId) return;
       bar.flash(index);
+      if (slot.type === 'skill') {
+        this.game.useSkill(slot.skill);
+        return;
+      }
       if (slot.type === 'spell') {
         if (SPELLS[slot.spell].target === 'beneficial')
           this.game.castSpell(slot.spell, { targetId: selfId });

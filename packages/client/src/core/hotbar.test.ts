@@ -24,6 +24,11 @@ describe('barra de atajos', () => {
     );
     expect(saved[0]).toEqual({ type: 'spell', spell: 'heal' });
     expect(saved[1]).toBeNull();
+    expect(parseHotbar(JSON.stringify([{ type: 'skill', skill: 'hiding' }]))[0]).toEqual({
+      type: 'skill',
+      skill: 'hiding',
+    });
+    expect(slotLabel({ type: 'skill', skill: 'detect-hidden' })).toBe('Mirar');
     expect(saved).toHaveLength(HOTBAR_SIZE);
   });
 

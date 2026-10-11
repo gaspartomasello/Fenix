@@ -29,6 +29,7 @@ export function updateTarget(creature: Creature, world: World): Mobile | null {
     current &&
     !(current instanceof Npc) &&
     !current.combat.isDead &&
+    !world.isHidden(current) &&
     tileDistance(current.position, creature.home) <= LEASH_RANGE
   ) {
     return current;
@@ -38,7 +39,7 @@ export function updateTarget(creature: Creature, world: World): Mobile | null {
   let best: Mobile | null = null;
   for (const mobile of world.mobilesNear(creature.position)) {
     const prey = mobile instanceof Player || (mobile instanceof Creature && mobile.isPet);
-    if (!prey || mobile.combat.isDead) continue;
+    if (!prey || mobile.combat.isDead || world.isHidden(mobile)) continue;
     const distance = tileDistance(mobile.position, creature.position);
     if (distance > creature.definition.aggroRange) continue;
     if (!best || distance < tileDistance(best.position, creature.position)) best = mobile;
@@ -53,7 +54,11 @@ export function updateTarget(creature: Creature, world: World): Mobile | null {
  */
 function updateSummonTarget(creature: Creature, ownerId: EntityId, world: World): Mobile | null {
   const alive = (m: Mobile | undefined): m is Mobile =>
-    m !== undefined && !m.combat.isDead && m.id !== creature.id && m.id !== ownerId;
+    m !== undefined &&
+    !m.combat.isDead &&
+    !world.isHidden(m) &&
+    m.id !== creature.id &&
+    m.id !== ownerId;
   const owner = world.get(ownerId);
   const ordered = owner?.combat.targetId ? world.getMobile(owner.combat.targetId) : undefined;
   if (alive(ordered) && !(ordered instanceof Npc)) {

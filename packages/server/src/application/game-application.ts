@@ -5,6 +5,7 @@ import type { World } from '../domain/world';
 import { Corpses } from './corpses';
 import { MountActions } from './use-cases/mount-actions';
 import { Gates } from './gates';
+import { Stealth } from './stealth';
 import { GameLoop } from './game-loop';
 import { ItemNotifications } from './item-notifications';
 import { MobileNotifications } from './mobile-notifications';
@@ -63,6 +64,7 @@ export class GameApplication {
   private readonly loop: GameLoop;
   private readonly corpses: Corpses;
   private readonly mounts: MountActions;
+  private readonly stealth: Stealth;
   private readonly mobiles: MobileNotifications;
   private readonly world: World;
   private readonly persistence: CharacterPersistence;
@@ -105,7 +107,16 @@ export class GameApplication {
     );
     this.leaveWorld = new LeaveWorld(world, notifier);
     const gates = new Gates(world, ids, notifications);
-    this.movePlayer = new MovePlayer(world, clock, notifier, notifications, this.mobiles, gates);
+    this.stealth = new Stealth(world, this.mobiles, notifier, random);
+    this.movePlayer = new MovePlayer(
+      world,
+      clock,
+      notifier,
+      notifications,
+      this.mobiles,
+      gates,
+      this.stealth,
+    );
     this.sendChat = new SendChat(world, notifier);
     this.economy = new EconomyActions(
       world,
@@ -150,7 +161,13 @@ export class GameApplication {
       this.corpses,
       this.mounts,
       gates,
+      this.stealth,
     );
+  }
+
+  private revealPlayer(playerId: EntityId, text: string): void {
+    const player = this.world.get(playerId);
+    if (player?.hidden) this.stealth.reveal(player, text);
   }
 
   /** Avanza el mundo: criaturas, golpes, regeneración. La infraestructura lo llama seguido. */
@@ -197,6 +214,9 @@ export class GameApplication {
         break;
       case 'chat':
         this.sendChat.execute(playerId, message.text, message.channel);
+        // Hablar en voz alta descubre al escondido (al grupo o al gremio, no).
+        if ((message.channel ?? 'say') === 'say')
+          this.revealPlayer(playerId, 'Hablaste y te oyeron.');
         break;
       case 'moveItem':
         this.moveItem.execute(playerId, message.itemId, message.to);
@@ -209,6 +229,8 @@ export class GameApplication {
         break;
       case 'attack':
         this.attack.execute(playerId, message.targetId);
+        if (this.world.get(playerId)?.combat.targetId === message.targetId)
+          this.revealPlayer(playerId, 'Atacaste y te descubriste.');
         break;
       case 'stopAttack':
         this.attack.stop(playerId);
@@ -221,6 +243,12 @@ export class GameApplication {
           ...(message.scrollId ? { scrollId: message.scrollId } : {}),
           ...(message.runeId ? { runeId: message.runeId } : {}),
         });
+        // Empezar a lanzar descubre al escondido.
+        if (this.world.get(playerId)?.pendingCast)
+          this.revealPlayer(playerId, 'Lanzar un hechizo te descubrió.');
+        break;
+      case 'useSkill':
+        this.stealth.use(playerId, message.skill);
         break;
       case 'gather':
         this.economy.gather(playerId, message.toolId, message.position);
