@@ -10,13 +10,16 @@ export interface TouchHudOptions {
   readonly hasTarget: () => boolean;
   /** Botones siempre a mano arriba a la derecha (mochila, mapa). */
   readonly quick: readonly Omit<HudButton, 'key'>[];
+  /** Atajos alrededor del botón de atacar (la barra ya armada). */
+  readonly ring?: HTMLElement | null;
   /** Todo lo demás, en el menú. */
   readonly menu: readonly Omit<HudButton, 'key'>[];
 }
 
 /**
  * Controles para jugar con el dedo (celular acostado): el botón grande de
- * atacar al lado del pulgar derecho, unos pocos botones arriba y el resto de
+ * atacar al lado del pulgar derecho con cuatro atajos alrededor, los de
+ * cambiar de objetivo y dejar de atacar arriba, unos pocos botones arriba y el resto de
  * las ventanas en un menú que se abre y se cierra. El joystick va aparte
  * (input/joystick.ts) y la barra de atajos es la misma de la computadora.
  */
@@ -52,7 +55,12 @@ export class TouchHud {
     });
     next.addEventListener('click', () => options.nextTarget(), { signal });
     this.side = el('div', { className: 'touch-side' }, [next, this.stop]);
-    this.actions = el('div', { className: 'touch-actions' }, [this.side, attack]);
+    // Atacar abajo a la derecha y sus atajos en arco alrededor, al alcance del pulgar.
+    const area = el('div', { className: 'touch-attack-area' }, [
+      ...(options.ring ? [options.ring] : []),
+      attack,
+    ]);
+    this.actions = el('div', { className: 'touch-actions' }, [this.side, area]);
 
     const menuButton = el('button', {
       className: 'touch-button',

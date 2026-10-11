@@ -29,11 +29,20 @@ import { StableWindow } from '../ui/stable-window';
 import { CraftingWindow } from '../ui/crafting-window';
 import { ShopWindow } from '../ui/shop-window';
 import { TilePicker } from './tile-picker';
-import { HotbarBar } from '../ui/hotbar-bar';
+import { HotbarBar, type HotbarOptions } from '../ui/hotbar-bar';
 import { RunePicker } from '../ui/rune-picker';
 import { Joystick } from '../input/joystick';
 import { TouchHud, enterFullscreen, prefersTouch } from '../ui/touch-hud';
-import { addToHotbar, findInBackpack, parseHotbar } from '../core/hotbar';
+import {
+  ATTACK_RING_SIZE,
+  HOTBAR_SIZE,
+  addToHotbar,
+  defaultAttackRing,
+  defaultHotbar,
+  findInBackpack,
+  parseHotbar,
+  type HotbarSlot,
+} from '../core/hotbar';
 import { WorldCombat } from './world-combat';
 import { WorldCorpses } from './world-corpses';
 import { WorldMounts } from './world-mounts';
@@ -84,6 +93,8 @@ export class GameSession {
   private inWorld = false;
   /** Salida pedida por el jugador: no es una conexión perdida. */
   private loggingOut = false;
+  /** Los atajos alrededor de Atacar (solo con el dedo). */
+  private attackRing: HTMLElement | null = null;
   /** Botones de pantalla que agregan otros módulos (hechizos, habilidades…). */
   private readonly hudExtras: HudButton[] = [];
   private hud: HudButtons | null = null;
@@ -567,6 +578,7 @@ export class GameSession {
       stopAttack: () => this.game.stopAttack(),
       hasTarget: () => this.game.targetId !== null,
       quick,
+      ring: this.attackRing,
       menu: [
         ...rest,
         { label: 'Hablar', onPress: () => chat.openInput() },
@@ -575,6 +587,8 @@ export class GameSession {
       ],
     });
     this.hosts.ui.append(hud.actions, hud.top, hud.sheet, hud.rotateHint);
+    chat.tapToType();
+    keepViewport();
     this.game.on('targetChanged', () => hud.refresh());
     this.game.on('warModeChanged', () => hud.refresh());
   }
@@ -586,12 +600,9 @@ export class GameSession {
    * Devuelve con qué volver a dibujarla.
    */
   private setUpHotbar(actions: ItemActions, magic: Magic): () => void {
-    let slots = parseHotbar(readStorage(HOTBAR_STORAGE_KEY));
-    const use = (index: number): void => {
-      const slot = slots[index];
+    const use = (slot: HotbarSlot): void => {
       const selfId = this.game.selfId;
       if (!slot || !selfId) return;
-      bar.flash(index);
       if (slot.type === 'skill') {
         this.game.useSkill(slot.skill);
         return;
@@ -610,24 +621,57 @@ export class GameSession {
       if (ITEMS[slot.kind].use === 'bandage') this.game.useOn(item.id, selfId);
       else actions.useItem(item.id);
     };
-    const bar = new HotbarBar({
-      onUse: use,
-      onAssign: (index, slot) => {
-        slots = slots.map((s, i) => (i === index ? slot : s));
-        writeStorage(HOTBAR_STORAGE_KEY, JSON.stringify(slots));
-        render();
-      },
-    });
+    const main = this.hotbar(HOTBAR_STORAGE_KEY, HOTBAR_SIZE, defaultHotbar, use);
     magic.spellbook.onPin((spell) => {
-      slots = addToHotbar(slots, { type: 'spell', spell });
-      writeStorage(HOTBAR_STORAGE_KEY, JSON.stringify(slots));
+      main.add({ type: 'spell', spell });
       this.game.notify(`${SPELLS[spell].name} quedó en la barra de atajos.`);
-      render();
     });
-    this.hosts.ui.append(bar.element, bar.editor.element);
-    const render = (): void => bar.render(slots, this.game.inventory.backpack, this.game.skills);
+    // Con el dedo, cuatro atajos más alrededor del botón de atacar.
+    const ring = document.documentElement.classList.contains('touch-ui')
+      ? this.hotbar(ATTACK_RING_STORAGE_KEY, ATTACK_RING_SIZE, defaultAttackRing, use, {
+          className: 'attack-ring',
+          label: 'Atajos alrededor de Atacar',
+          keys: false,
+          editorId: 'atajo-atacar',
+        })
+      : null;
+    this.attackRing = ring?.element ?? null;
+    const render = (): void => {
+      main.render();
+      ring?.render();
+    };
     this.game.on('skillsChanged', render);
     return render;
+  }
+
+  /** Una barra de atajos guardada en el navegador con su propia clave. */
+  private hotbar(
+    storageKey: string,
+    size: number,
+    defaults: () => HotbarSlot[],
+    use: (slot: HotbarSlot) => void,
+    options: HotbarOptions = {},
+  ): { element: HTMLElement; render: () => void; add: (slot: NonNullable<HotbarSlot>) => void } {
+    let slots = parseHotbar(readStorage(storageKey), size, defaults);
+    const save = (next: HotbarSlot[]): void => {
+      slots = next;
+      writeStorage(storageKey, JSON.stringify(slots));
+      render();
+    };
+    const bar = new HotbarBar(
+      {
+        onUse: (index) => {
+          bar.flash(index);
+          use(slots[index] ?? null);
+        },
+        onAssign: (index, slot) => save(slots.map((s, i) => (i === index ? slot : s))),
+      },
+      { ...options, size },
+    );
+    this.hosts.ui.append(bar.editor.element);
+    if (options.className === undefined) this.hosts.ui.append(bar.element);
+    const render = (): void => bar.render(slots, this.game.inventory.backpack, this.game.skills);
+    return { element: bar.element, render, add: (slot) => save(addToHotbar(slots, slot)) };
   }
 
   /**
@@ -649,7 +693,44 @@ export class GameSession {
   }
 }
 
+/**
+ * El celular no tiene que quedar acercado: al girarlo (o al cerrar el
+ * teclado) algunos navegadores dejan la página ampliada y solo se arreglaba
+ * tocando dos veces. Se frena el acercar del navegador (pellizcar y doble
+ * toque; el del juego va por su cuenta) y, al girar, se vuelve a escala 1.
+ */
+function keepViewport(): void {
+  const stop = (e: Event): void => e.preventDefault();
+  // Safari: gestos de pellizcar de la página.
+  for (const type of ['gesturestart', 'gesturechange', 'gestureend'])
+    document.addEventListener(type, stop, { passive: false });
+  // Dos dedos sobre la página (fuera del juego, que usa eventos de puntero).
+  document.addEventListener(
+    'touchmove',
+    (e) => {
+      if (e.touches.length > 1) e.preventDefault();
+    },
+    { passive: false },
+  );
+  document.addEventListener('dblclick', stop, { passive: false });
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
+  const reset = (): void => {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && active.matches('input, textarea')) active.blur();
+    if (meta) {
+      // Cambiar la etiqueta obliga al navegador a volver a aplicarla.
+      const content = meta.content;
+      meta.content = 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0';
+      window.requestAnimationFrame(() => (meta.content = content));
+    }
+    window.scrollTo(0, 0);
+  };
+  screen.orientation?.addEventListener('change', reset);
+  window.addEventListener('orientationchange', reset);
+}
+
 const HOTBAR_STORAGE_KEY = 'fenix.atajos';
+const ATTACK_RING_STORAGE_KEY = 'fenix.atajos-atacar';
 
 function readStorage(key: string): string | null {
   try {

@@ -1825,3 +1825,202 @@ body {
   top: calc(70px + env(safe-area-inset-top, 0px));
   left: calc(var(--safe-left) + 184px);
 }
+
+/* ── Etapa 22: ventanas compactas ─────────────────────────────────── */
+
+.game-window {
+  min-width: 160px;
+}
+
+.window-bar {
+  padding: 0.2rem 0.3rem 0.2rem 0.6rem;
+}
+
+.window-title {
+  font-size: 0.85rem;
+}
+
+.window-close {
+  width: 24px;
+  height: 24px;
+}
+
+.window-body {
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem;
+}
+
+/* Las ayudas se acomodan al ancho de la ventana en vez de ensancharla. */
+.window-hint {
+  contain: inline-size;
+  font-size: 0.75rem;
+}
+
+.spell-list {
+  gap: 0.3rem;
+  width: min(300px, calc(100vw - 40px));
+}
+
+.spell {
+  gap: 0.4rem;
+  padding: 0.3rem 0.4rem;
+}
+
+.spell-meta {
+  font-size: 0.7rem;
+  line-height: 1.25;
+}
+
+.spell-buttons {
+  flex-direction: column;
+  gap: 3px;
+}
+
+.spell-buttons .button--small {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.skills-list {
+  gap: 0.05rem 1rem;
+  font-size: 0.88rem;
+}
+
+.social-section {
+  gap: 0.3rem;
+  width: min(270px, calc(100vw - 40px));
+}
+
+.paperdoll {
+  padding: 0.45rem;
+}
+
+.paperdoll-frame {
+  gap: 0.4rem;
+}
+
+.paperdoll-button {
+  min-width: 5.6rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.72rem;
+}
+
+.touch-ui .game-window {
+  font-size: 0.8rem;
+}
+
+/* ── Etapa 22: celular ────────────────────────────────────────────── */
+
+/* Que el navegador no amplíe la página: ni al escribir (iPhone acerca los campos de menos de 16px) ni al girar. */
+.touch-ui,
+.touch-ui body {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+.touch-ui input,
+.touch-ui .chat-input {
+  font-size: 16px;
+}
+
+/* Tocar los mensajes abre el campo para escribir. */
+.touch-ui .chat-log {
+  pointer-events: auto;
+  cursor: text;
+  touch-action: manipulation;
+}
+
+/* Joystick casi transparente: se ve el mundo a través. */
+.touch-ui .joystick-base {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.12));
+  border-color: rgba(201, 164, 92, 0.3);
+}
+
+.touch-ui .joystick-knob {
+  opacity: 0.45;
+}
+
+.touch-ui .joystick--active .joystick-knob {
+  opacity: 0.7;
+}
+
+/* Atacar con cuatro atajos en arco alrededor; cambiar y soltar objetivo arriba. */
+.touch-ui .touch-actions {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.touch-attack-area {
+  --attack: 84px;
+  --ring-slot: 44px;
+  --ring-radius: 80px;
+  position: relative;
+  width: calc(var(--attack) / 2 + var(--ring-radius) + var(--ring-slot) / 2 + 4px);
+  height: calc(var(--attack) / 2 + var(--ring-radius) + var(--ring-slot) / 2 + 4px);
+  pointer-events: none;
+}
+
+.touch-ui .touch-attack-area .touch-attack {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: var(--attack);
+  height: var(--attack);
+  pointer-events: auto;
+}
+
+.attack-ring {
+  position: absolute;
+  inset: 0;
+}
+
+.attack-ring .hotbar-slot {
+  --hotbar-slot: var(--ring-slot);
+  position: absolute;
+  /* Centro de Atacar, corrido `--ring-radius` en el ángulo de cada casillero. */
+  right: calc(var(--attack) / 2 - var(--ring-slot) / 2 - var(--ring-radius) * cos(var(--angle)));
+  bottom: calc(var(--attack) / 2 - var(--ring-slot) / 2 + var(--ring-radius) * sin(var(--angle)));
+  width: var(--ring-slot);
+  height: var(--ring-slot);
+  border-radius: 50%;
+  pointer-events: auto;
+}
+
+.attack-ring .hotbar-slot:nth-child(1) {
+  --angle: 180deg;
+}
+
+.attack-ring .hotbar-slot:nth-child(2) {
+  --angle: 150deg;
+}
+
+.attack-ring .hotbar-slot:nth-child(3) {
+  --angle: 120deg;
+}
+
+.attack-ring .hotbar-slot:nth-child(4) {
+  --angle: 90deg;
+}
+
+.touch-ui .touch-side {
+  grid-auto-flow: column;
+  margin-bottom: 0;
+}
+
+@media (orientation: landscape) and (max-width: 760px) {
+  .touch-attack-area {
+    --attack: 76px;
+    --ring-slot: 40px;
+    --ring-radius: 72px;
+  }
+}
+
+/* En la pantalla baja del celular, las habilidades en dos columnas (entran sin desplazar). */
+.touch-ui .skills-list {
+  grid-template-columns: 1fr auto 1fr auto;
+  column-gap: 0.75rem;
+  max-height: none;
+}

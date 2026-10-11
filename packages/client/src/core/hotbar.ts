@@ -41,17 +41,37 @@ export function defaultHotbar(): HotbarSlot[] {
   return [...slots, ...Array<HotbarSlot>(HOTBAR_SIZE - slots.length).fill(null)];
 }
 
-/** Lo guardado en el navegador → casilleros válidos (lo que no se entiende queda vacío). */
-export function parseHotbar(raw: string | null): HotbarSlot[] {
-  if (!raw) return defaultHotbar();
+/** Cuatro atajos alrededor del botón de atacar (celular). */
+export const ATTACK_RING_SIZE = 4;
+
+/** Para empezar, alrededor de Atacar: curarse fuerte y pegar con magia. */
+export function defaultAttackRing(): HotbarSlot[] {
+  return [
+    { type: 'item', kind: 'bandage' },
+    { type: 'spell', spell: 'greater-heal' },
+    { type: 'spell', spell: 'lightning' },
+    { type: 'spell', spell: 'explosion' },
+  ];
+}
+
+/**
+ * Lo guardado en el navegador → casilleros válidos (lo que no se entiende
+ * queda vacío). Sin nada guardado, los de `defaults`.
+ */
+export function parseHotbar(
+  raw: string | null,
+  size = HOTBAR_SIZE,
+  defaults: () => HotbarSlot[] = defaultHotbar,
+): HotbarSlot[] {
+  if (!raw) return defaults();
   let value: unknown;
   try {
     value = JSON.parse(raw);
   } catch {
-    return defaultHotbar();
+    return defaults();
   }
-  if (!Array.isArray(value)) return defaultHotbar();
-  return Array.from({ length: HOTBAR_SIZE }, (_, i) => parseSlot(value[i]));
+  if (!Array.isArray(value)) return defaults();
+  return Array.from({ length: size }, (_, i) => parseSlot(value[i]));
 }
 
 function parseSlot(value: unknown): HotbarSlot {

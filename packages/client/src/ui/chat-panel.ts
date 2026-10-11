@@ -62,6 +62,12 @@ export class ChatPanel {
     );
   }
 
+  /** En el celular: tocar los mensajes abre el campo para escribir. */
+  tapToType(): void {
+    this.log.addEventListener('click', () => this.openInput(), { signal: this.abort.signal });
+    this.log.title = 'Tocá para escribir';
+  }
+
   /** Abre el campo para escribir (en el celular está escondido hasta que se pide). */
   openInput(): void {
     this.element.classList.add('chat-panel--typing');
