@@ -83,8 +83,12 @@ para viajar a un pueblo o lugar con nombre (`/ir` solo muestra la lista).
   `/liberar` la dejás ir para siempre.
 - **Doble clic sobre el cuerpo** de una criatura muerta (o un toque): revisarlo. El botín está
   adentro: se arrastra cada objeto a la mochila o se usa **Tomar todo**.
-- **L**: libro de hechizos, con una página por círculo. **1 a 8**: lanzar los hechizos de la página
-  abierta. Los de ataque van al objetivo de combate o piden tocar a alguien; los de ayuda piden
+- **Barra de atajos** (abajo al centro): **1 a 9 y 0** usan cada casillero. Viene con vendas,
+  pociones y algunos hechizos; un casillero vacío, el clic derecho o mantenerlo apretado con el
+  dedo abre la ventana para elegir qué poner (objetos de la mochila que se usan y hechizos que ya
+  sabés lanzar). Las vendas y los hechizos de ayuda de la barra van a uno mismo, sin elegir.
+- **L**: libro de hechizos, con una página por círculo. Con el libro abierto, **1 a 8** lanzan
+  los hechizos de la página; **Atajo** pone un hechizo en la barra. Los de ataque van al objetivo de combate o piden tocar a alguien; los de ayuda piden
   tocar a alguien o a uno mismo, y Teletransporte un lugar. **K**: habilidades, por grupo.
 - **Doble clic sobre una venda** y tocar a alguien (o a uno mismo): vendarlo. Sobre un pergamino:
   lanzar su hechizo sin libro ni reactivos. Sobre una poción: tomarla (queda la botella).
@@ -104,6 +108,15 @@ para viajar a un pueblo o lugar con nombre (`/ir` solo muestra la lista).
   `/aceptar`, `/rechazar`, `/salir`, `/fundar SIGLAS Nombre`, `/reclutar nombre`,
   `/dejargremio`. `/ayuda` los muestra en el juego.
 - **Rueda del mouse**: acercar o alejar la cámara.
+
+### En el celular
+
+Se juega acostado (ver [docs/CELULAR.md](docs/CELULAR.md)): **joystick** con el pulgar izquierdo
+(al borde se corre), botón **Atacar** con el derecho (la criatura más cercana; **⟳** pasa a la
+siguiente y **✕** deja de atacar), la **barra de atajos** abajo, **Mochila** y **Mapa** arriba y el
+resto en **Menú** (personaje, hechizos, habilidades, social, guerra, hablar, pantalla completa y
+salir). Con dos dedos se acerca o aleja. Tocar una criatura también la ataca y tocar un cuerpo lo
+revisa. En la computadora se puede probar con `?tactil` en la dirección.
 
 ## Estructura
 
@@ -208,3 +221,7 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
 17. ✅ **Monturas que pelean**: suelta, la montura defiende a su dueño y ataca a quien él ataque
     (el caballo y la llama patean, el lagarto muerde). Las criaturas y otros jugadores la pueden
     matar: el dueño recibe el aviso y su cuerpo queda en el piso. Con `/liberar` se la deja ir.
+18. ✅ **Celular y barra de atajos**: barra de diez atajos (vendas, pociones y hechizos a un toque,
+    teclas 1 a 0) en la computadora y en el celular. Versión para jugar con el celular acostado:
+    joystick, botón de atacar a la criatura más cercana, menú con todas las ventanas, chat plegado,
+    pantalla completa, acercar con dos dedos y aviso para girar el celular.

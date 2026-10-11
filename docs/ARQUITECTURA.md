@@ -398,6 +398,20 @@ gremio llega a sus miembros estén donde estén).
   continuo y se veía peor. El cliente dibuja de antemano el ciclo hacia donde mira cada uno (`TextureCache.pump`), unos
   milisegundos por cuadro, así moverse no da tirones.
 
+## Interfaz: atajos y celular
+
+- **Barra de atajos**: el modelo está en `core/hotbar.ts` (casilleros con un objeto por tipo o un
+  hechizo, lo guardado en el navegador, contar y buscar en la mochila) y la vista en
+  `ui/hotbar-bar.ts`. `GameSession.setUpHotbar` decide qué hace cada casillero: los objetos se
+  buscan en la mochila al usarlos (las vendas y los hechizos de ayuda van a uno mismo). El
+  servidor no sabe nada de la barra: recibe los mismos pedidos que con doble clic o el libro.
+- **Modo táctil** (`html.touch-ui`, cuando la pantalla es táctil sin mouse o con `?tactil`):
+  `input/joystick.ts` da una intención de movimiento con prioridad sobre el resto en
+  `InputController` (que además acerca o aleja con dos dedos); `ui/touch-hud.ts` pone el botón
+  de atacar, el menú y el aviso de girar el celular. El botón de atacar usa `nextAutoTarget`
+  (`core/targeting.ts`): la criatura salvaje viva más cercana, sin personas ni criaturas con
+  dueño. El diseño de la pantalla es solo CSS. El diseño de juego está en `docs/CELULAR.md`.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.
