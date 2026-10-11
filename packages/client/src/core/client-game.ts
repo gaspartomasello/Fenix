@@ -35,6 +35,7 @@ import {
 } from '@fenix/shared';
 import { CHAT_HELP, parseChatInput } from './chat-commands';
 import { ATTACK_ANIMATION_MS, Entity } from './entity';
+import { nextAutoTarget } from './targeting';
 import { EventEmitter } from './event-emitter';
 import { MovementPredictor } from './movement-predictor';
 import type { ServerGateway } from './ports';
@@ -437,6 +438,23 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   /** Busca un personaje o criatura a la vista. */
   entity(id: EntityId): Entity | undefined {
     return this.entities.get(id);
+  }
+
+  /**
+   * Botón de atacar (celular): la criatura salvaje más cercana (o la que ya
+   * estaba peleando); con `next`, la siguiente más cercana.
+   */
+  attackNearest(next = false): void {
+    const self = this.self;
+    if (!self) return;
+    if (self.dead) {
+      this.notify('Los fantasmas no pueden pelear.');
+      return;
+    }
+    const others = [...this.entities.values()].filter((e) => e.id !== self.id);
+    const id = nextAutoTarget(others, self.position, this._targetId, next);
+    if (id) this.attack(id);
+    else this.notify('No hay criaturas cerca para atacar.');
   }
 
   stopAttack(): void {

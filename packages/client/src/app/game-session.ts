@@ -29,6 +29,10 @@ import { StableWindow } from '../ui/stable-window';
 import { CraftingWindow } from '../ui/crafting-window';
 import { ShopWindow } from '../ui/shop-window';
 import { TilePicker } from './tile-picker';
+import { HotbarBar } from '../ui/hotbar-bar';
+import { Joystick } from '../input/joystick';
+import { TouchHud, enterFullscreen, prefersTouch } from '../ui/touch-hud';
+import { addToHotbar, findInBackpack, parseHotbar } from '../core/hotbar';
 import { WorldCombat } from './world-combat';
 import { WorldCorpses } from './world-corpses';
 import { WorldMounts } from './world-mounts';
@@ -154,7 +158,15 @@ export class GameSession {
     const worldMounts = new WorldMounts(this.game, renderer, tooltip);
     new WorldSigns(renderer, tooltip);
     const worldItems = new WorldItems(this.game, renderer, drag, tooltip);
+    // Con el dedo: joystick para caminar y los controles táctiles (ver setUpTouch).
+    const touch = prefersTouch();
+    const joystick = touch ? new Joystick() : null;
+    if (touch) {
+      document.documentElement.classList.add('touch-ui');
+      if (joystick) this.hosts.ui.append(joystick.element);
+    }
     const input = new InputController({
+      extraIntent: () => joystick?.intent() ?? null,
       surface: renderer.canvas,
       selfScreenPosition: () => renderer.selfScreenPosition(),
       onZoom: (delta) => renderer.stepZoom(delta),
@@ -171,9 +183,18 @@ export class GameSession {
     const targeting: Targeting = { banner, worldCombat, tilePicker };
     const magic = this.setUpMagic(targeting);
     this.setUpSocial();
-    this.setUpInventory(drag, worldItems, tooltip, magic, economy, targeting, renderer);
-    this.setUpVitals();
     const chat = new ChatPanel((text) => this.game.say(text));
+    const menu = this.setUpInventory(
+      drag,
+      worldItems,
+      tooltip,
+      magic,
+      economy,
+      targeting,
+      renderer,
+    );
+    if (touch) this.setUpTouch(menu, chat);
+    this.setUpVitals();
     const status = new StatusBar();
     this.hosts.ui.append(status.element, chat.element);
     this.game.on('log', (entry) => chat.append(entry));
@@ -360,8 +381,11 @@ export class GameSession {
     this.game.on('effectsChanged', (state) => skills.renderAttributes(state.attributes));
     render();
 
+    // Con el libro abierto, las teclas 1 a 8 lanzan los hechizos de su página;
+    // si no, los números son de la barra de atajos.
     window.addEventListener('keydown', (e) => {
       if (e.target instanceof HTMLInputElement || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (!spellbook.window.visible) return;
       const index = Number(e.key) - 1;
       const spell = index >= 0 && index < 8 ? spellbook.spellAt(index) : undefined;
       if (spell) {
@@ -385,9 +409,9 @@ export class GameSession {
     economy: EconomyUi,
     { banner, tilePicker, worldCombat }: Targeting,
     renderer: GameRenderer,
-  ): void {
+  ): HudButton[] {
     const self = this.game.self;
-    if (!self) return;
+    if (!self) return [];
     const done = (): void => banner.hide();
     // Doble clic: algunos objetos abren ventanas o piden elegir un objetivo en vez de avisar al servidor.
     const actions = {
@@ -447,7 +471,7 @@ export class GameSession {
     ]);
     this.game.on('logoutRequested', () => this.logout());
     const minimap = new Minimap(this.game, () => buttons.refresh());
-    const buttons = (this.hud = new HudButtons([
+    const hudList: HudButton[] = [
       { label: 'Mochila', key: 'b', onPress: () => backpack.window.toggle() },
       { label: 'Personaje', key: 'c', onPress: () => equipment.window.toggle() },
       ...this.hudExtras,
@@ -460,7 +484,8 @@ export class GameSession {
         },
         pressed: () => minimap.open,
       },
-    ]));
+    ];
+    const buttons = (this.hud = new HudButtons(hudList));
     buttons.refresh();
     equipment.refreshButtons();
     this.game.on('warModeChanged', () => equipment.refreshButtons());
@@ -499,13 +524,89 @@ export class GameSession {
       minimap.element,
     );
 
+    const hotbar = this.setUpHotbar(actions, magic);
     const render = (): void => {
       backpack.render(this.game.inventory.backpack);
       equipment.render(this.game.inventory.equipment);
       economy.renderInventory();
+      hotbar();
     };
     this.game.on('inventoryChanged', render);
     render();
+    return [...hudList, { label: 'Salir', key: '', onPress: () => this.logout() }];
+  }
+
+  /**
+   * Celular: botón de atacar al más cercano, un par de botones arriba y el
+   * resto en un menú; el chat queda plegado hasta que se pide hablar.
+   */
+  private setUpTouch(buttons: readonly HudButton[], chat: ChatPanel): void {
+    const pick = (label: string): HudButton | undefined => buttons.find((b) => b.label === label);
+    const quick = ['Mochila', 'Mapa'].flatMap((label) => pick(label) ?? []);
+    const rest = buttons.filter((b) => !quick.includes(b) && b.label !== 'Salir');
+    const hud = new TouchHud({
+      attack: () => this.game.attackNearest(),
+      nextTarget: () => this.game.attackNearest(true),
+      stopAttack: () => this.game.stopAttack(),
+      hasTarget: () => this.game.targetId !== null,
+      quick,
+      menu: [
+        ...rest,
+        { label: 'Hablar', onPress: () => chat.openInput() },
+        { label: 'Pantalla completa', onPress: () => void enterFullscreen() },
+        ...buttons.filter((b) => b.label === 'Salir'),
+      ],
+    });
+    this.hosts.ui.append(hud.actions, hud.top, hud.sheet, hud.rotateHint);
+    this.game.on('targetChanged', () => hud.refresh());
+    this.game.on('warModeChanged', () => hud.refresh());
+  }
+
+  /**
+   * Barra de atajos: vendas, pociones y hechizos a un toque (o con las
+   * teclas 1 a 0). Las vendas y los hechizos de ayuda van a uno mismo, sin
+   * tener que elegir: es lo que se quiere casi siempre en medio de una pelea.
+   * Devuelve con qué volver a dibujarla.
+   */
+  private setUpHotbar(actions: ItemActions, magic: Magic): () => void {
+    let slots = parseHotbar(readStorage(HOTBAR_STORAGE_KEY));
+    const use = (index: number): void => {
+      const slot = slots[index];
+      const selfId = this.game.selfId;
+      if (!slot || !selfId) return;
+      bar.flash(index);
+      if (slot.type === 'spell') {
+        if (SPELLS[slot.spell].target === 'beneficial')
+          this.game.castSpell(slot.spell, { targetId: selfId });
+        else magic.cast(slot.spell);
+        return;
+      }
+      const item = findInBackpack(this.game.inventory.backpack, slot.kind);
+      if (!item) {
+        this.game.notify(`No te quedan ${ITEMS[slot.kind].plural} en la mochila.`);
+        return;
+      }
+      if (ITEMS[slot.kind].use === 'bandage') this.game.useOn(item.id, selfId);
+      else actions.useItem(item.id);
+    };
+    const bar = new HotbarBar({
+      onUse: use,
+      onAssign: (index, slot) => {
+        slots = slots.map((s, i) => (i === index ? slot : s));
+        writeStorage(HOTBAR_STORAGE_KEY, JSON.stringify(slots));
+        render();
+      },
+    });
+    magic.spellbook.onPin((spell) => {
+      slots = addToHotbar(slots, { type: 'spell', spell });
+      writeStorage(HOTBAR_STORAGE_KEY, JSON.stringify(slots));
+      this.game.notify(`${SPELLS[spell].name} quedó en la barra de atajos.`);
+      render();
+    });
+    this.hosts.ui.append(bar.element, bar.editor.element);
+    const render = (): void => bar.render(slots, this.game.inventory.backpack, this.game.skills);
+    this.game.on('skillsChanged', render);
+    return render;
   }
 
   /**
@@ -524,6 +625,24 @@ export class GameSession {
   private onDisconnected(): void {
     if (!this.inWorld || this.loggingOut) return;
     showOverlay(this.hosts.ui, 'Conexión perdida', 'Se cortó la conexión con el servidor.');
+  }
+}
+
+const HOTBAR_STORAGE_KEY = 'fenix.atajos';
+
+function readStorage(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStorage(key: string, value: string): void {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // Sin almacenamiento (ventana privada): los atajos duran hasta recargar.
   }
 }
 
