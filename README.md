@@ -89,7 +89,9 @@ para viajar a un pueblo o lugar con nombre (`/ir` solo muestra la lista).
   sabés lanzar). Las vendas y los hechizos de ayuda de la barra van a uno mismo, sin elegir.
 - **L**: libro de hechizos, con una página por círculo. Con el libro abierto, **1 a 8** lanzan
   los hechizos de la página; **Atajo** pone un hechizo en la barra. Los de ataque van al objetivo de combate o piden tocar a alguien; los de ayuda piden
-  tocar a alguien o a uno mismo, y Teletransporte un lugar. **K**: habilidades, por grupo.
+  tocar a alguien o a uno mismo, y Teletransporte un lugar. La **Explosión** estalla 2,5 s
+  después de lanzada: lanzando la Columna de fuego enseguida, caen las dos juntas. **K**:
+  habilidades, por grupo.
 - **Doble clic sobre una venda** y tocar a alguien (o a uno mismo): vendarlo. Sobre un pergamino:
   lanzar su hechizo sin libro ni reactivos. Sobre una poción: tomarla (queda la botella).
 - **Clic sobre una criatura con un arco en la mano**: dispararle de lejos (gasta flechas).

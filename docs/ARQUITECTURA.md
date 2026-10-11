@@ -235,6 +235,13 @@ mínima y tiempo de lanzamiento, y cada hechizo dice a quién va (`self`, `benef
 teletransporte, comida, drenar maná, protección, visión nocturna, daño en área, resurrección o
 invocación).
 
+Algunos hechizos **caen más tarde** (`delayMs`): la Explosión gasta el maná al lanzarla y estalla
+2,5 s después, como en UO. `resolveCast` devuelve `delayed` en vez de aplicar el daño, el ciclo del
+juego lo guarda y `landDelayedSpell` lo aplica al vencer (con la tirada de Resistencia en ese
+momento; cae aunque el objetivo se haya alejado, no si murió o se fue). Mientras tanto se puede
+lanzar otro: la Columna de fuego tarda 2,25 s, así que lanzada enseguida cae junto con la
+Explosión, si el jugador tiene buena mano.
+
 Las **invocaciones** son `Creature` con dueño (`ownerId`) y vencimiento (`expiresAt`): atacan al
 objetivo de su dueño o a quien lo ataque, si no lo siguen (pueden entrar al pueblo), lo que matan
 cuenta para él, no reaparecen y se van cuando vencen, mueren o su dueño se desconecta. Hay como

@@ -107,7 +107,7 @@ export class SpellbookWindow {
             el('span', { className: 'spell-meta', text: spell.description }),
             el('span', {
               className: 'spell-meta',
-              text: `${spell.mana} de maná · ${TARGET_HINTS[spell.target]} · ${reagents}${locked ? ` · requiere Magia ${formatSkill(spell.minSkill)}` : ''}`,
+              text: `${spell.mana} de maná · ${TARGET_HINTS[spell.target]}${spell.delayMs ? ` · cae ${formatSeconds(spell.delayMs)} después` : ''} · ${reagents}${locked ? ` · requiere Magia ${formatSkill(spell.minSkill)}` : ''}`,
             }),
           ]),
           el('div', { className: 'spell-buttons' }, [button, pin]),
@@ -115,4 +115,9 @@ export class SpellbookWindow {
       }),
     );
   }
+}
+
+/** 2500 → "2,5 s". */
+function formatSeconds(ms: number): string {
+  return `${(ms / 1000).toLocaleString('es-AR', { maximumFractionDigits: 1 })} s`;
 }
