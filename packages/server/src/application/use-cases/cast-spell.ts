@@ -12,6 +12,7 @@ export interface CastSpellInput {
   readonly targetId?: EntityId;
   readonly position?: Position;
   readonly scrollId?: EntityId;
+  readonly runeId?: EntityId;
 }
 
 /** Empezar a lanzar un hechizo; el ciclo del juego lo resuelve al terminar el tiempo de lanzamiento. */

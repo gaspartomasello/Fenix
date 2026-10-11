@@ -2,11 +2,11 @@ import {
   BACKPACK_AREA,
   ITEMS,
   ITEM_ICON_SIZE,
-  describeItem,
   type BackpackItemSnapshot,
   type ItemDestination,
   type ItemKind,
 } from '@fenix/shared';
+import { itemLabel } from './item-label';
 import { el } from './dom';
 import { liftElement, type DragController, type DropTarget } from './drag-controller';
 import { GameWindow } from './game-window';
@@ -65,7 +65,7 @@ export class BackpackWindow {
   }
 
   private icon(item: BackpackItemSnapshot): HTMLElement {
-    const label = describeItem(item.kind, item.amount);
+    const label = itemLabel(item);
     const icon = el(
       'button',
       { className: 'item-icon', attrs: { type: 'button', title: label, 'aria-label': label } },

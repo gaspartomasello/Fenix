@@ -6,6 +6,7 @@ import type {
   GroundItemSnapshot,
   ItemKind,
   Position,
+  RuneMark,
 } from '@fenix/shared';
 
 /** Dónde está un objeto: en el suelo, en una mochila, puesto o dentro de un cuerpo. */
@@ -31,6 +32,14 @@ export class Item {
     public location: ItemLocation,
   ) {}
 
+  /** Runa marcada: el lugar que guarda (null en blanco). */
+  mark: RuneMark | null = null;
+
+  /** Lo que el cliente ve además de tipo y cantidad. */
+  private get extra(): { mark?: RuneMark } {
+    return this.mark ? { mark: this.mark } : {};
+  }
+
   ownerId(): EntityId | null {
     return this.location.type === 'ground' || this.location.type === 'corpse'
       ? null
@@ -39,17 +48,35 @@ export class Item {
 
   toGroundSnapshot(): GroundItemSnapshot | null {
     if (this.location.type !== 'ground') return null;
-    return { id: this.id, kind: this.kind, amount: this.amount, position: this.location.position };
+    return {
+      id: this.id,
+      kind: this.kind,
+      amount: this.amount,
+      position: this.location.position,
+      ...this.extra,
+    };
   }
 
   toBackpackSnapshot(): BackpackItemSnapshot | null {
     const inside = this.location.type;
     if (inside !== 'backpack' && inside !== 'bank' && inside !== 'corpse') return null;
-    return { id: this.id, kind: this.kind, amount: this.amount, position: this.location.position };
+    return {
+      id: this.id,
+      kind: this.kind,
+      amount: this.amount,
+      position: this.location.position,
+      ...this.extra,
+    };
   }
 
   toEquippedSnapshot(): EquippedItemSnapshot | null {
     if (this.location.type !== 'equipment') return null;
-    return { id: this.id, kind: this.kind, amount: this.amount, slot: this.location.slot };
+    return {
+      id: this.id,
+      kind: this.kind,
+      amount: this.amount,
+      slot: this.location.slot,
+      ...this.extra,
+    };
   }
 }

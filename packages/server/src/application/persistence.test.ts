@@ -65,6 +65,12 @@ describe('guardado de personajes', () => {
     player.reputation.award(120, 80);
     player.combat.takeDamage(10);
     player.combat.raiseAttribute('intelligence');
+    // Una runa marcada guarda su lugar.
+    first.world.items.add('runa-1', 'rune', 1, {
+      type: 'backpack',
+      ownerId: ana,
+      position: { x: 4, y: 4 },
+    }).mark = { x: 7, y: 9, label: 'Puerto Ceniza' };
     const position = player.position;
     const backpack = first.world.items
       .backpackOf(ana)
@@ -88,6 +94,11 @@ describe('guardado de personajes', () => {
         .map((i) => i.kind)
         .sort(),
     ).toEqual(backpack);
+    expect(second.world.items.backpackOf(again).find((i) => i.kind === 'rune')?.mark).toEqual({
+      x: 7,
+      y: 9,
+      label: 'Puerto Ceniza',
+    });
   });
 
   it('guarda solo a intervalos mientras se juega', () => {

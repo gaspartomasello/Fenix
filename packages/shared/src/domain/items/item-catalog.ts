@@ -49,6 +49,8 @@ export const BASE_ITEM_KINDS = [
   // Magia
   'spellbook',
   'blank-scroll',
+  'rune',
+  'moongate',
   'black-pearl',
   'blood-moss',
   'garlic',
@@ -128,6 +130,8 @@ export interface ItemDefinition {
   readonly potion?: PotionEffect;
   /** Pergamino: qué hechizo tiene. */
   readonly spell?: SpellKey;
+  /** No se puede levantar ni mover (un portal abierto). */
+  readonly fixed?: boolean;
 }
 
 type Spec = Omit<ItemDefinition, 'kind' | 'stackable' | 'use'> &
@@ -178,6 +182,9 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
     stackable: true,
   },
   bandage: { name: 'venda', plural: 'vendas', article: 'una', stackable: true, use: 'bandage' },
+  // Viajes: la runa guarda un lugar (con Marcar) y el portal lo abre Portal.
+  rune: { name: 'runa', plural: 'runas', article: 'una', color: 0x8a7a9c },
+  moongate: { name: 'portal', plural: 'portales', article: 'un', fixed: true, color: 0x4aa8ff },
 
   dagger: weapon('daga', 'dagas', 'una'),
   kryss: weapon('estoque', 'estoques', 'un'),

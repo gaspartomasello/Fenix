@@ -15,6 +15,7 @@ import {
   type Direction,
   type EquipmentSlot,
   type ItemKind,
+  type RuneMark,
   type MountKind,
   type Position,
   type SkillValues,
@@ -34,6 +35,8 @@ export interface SavedItem {
   readonly kind: ItemKind;
   readonly amount: number;
   readonly location: SavedItemLocation;
+  /** Runa marcada: el lugar que guarda. */
+  readonly mark?: RuneMark;
 }
 
 /** Todo lo que sobrevive a desconectarse: un personaje como datos planos (JSON). */
@@ -91,12 +94,14 @@ export function captureCharacter(
     guild: guild ? { name: guild.name, tag: guild.tag } : null,
     items: owned.flatMap((item): SavedItem[] => {
       const { location } = item;
+      const mark = item.mark ? { mark: item.mark } : {};
       if (location.type === 'equipment')
         return [
           {
             kind: item.kind,
             amount: item.amount,
             location: { type: 'equipment', slot: location.slot },
+            ...mark,
           },
         ];
       if (location.type === 'backpack' || location.type === 'bank')
@@ -105,6 +110,7 @@ export function captureCharacter(
             kind: item.kind,
             amount: item.amount,
             location: { type: location.type, position: location.position },
+            ...mark,
           },
         ];
       return [];
@@ -158,15 +164,29 @@ function parseItem(value: unknown): SavedItem | null {
   const amount = Math.min(MAX_STACK, Math.max(1, Math.round(value.amount)));
   const location = value.location;
   if (!isObject(location)) return null;
+  const mark = parseMark(value.mark);
+  const extra = mark ? { mark } : {};
   if (location.type === 'equipment' && isEquipmentSlot(location.slot))
-    return { kind: value.kind, amount, location: { type: 'equipment', slot: location.slot } };
+    return {
+      kind: value.kind,
+      amount,
+      location: { type: 'equipment', slot: location.slot },
+      ...extra,
+    };
   if ((location.type === 'backpack' || location.type === 'bank') && isPosition(location.position))
     return {
       kind: value.kind,
       amount,
       location: { type: location.type, position: location.position },
+      ...extra,
     };
   return null;
+}
+
+function parseMark(value: unknown): RuneMark | null {
+  if (!isObject(value) || !isNumber(value.x) || !isNumber(value.y)) return null;
+  const label = typeof value.label === 'string' ? value.label.slice(0, 60) : 'Tierras salvajes';
+  return { x: Math.round(value.x), y: Math.round(value.y), label };
 }
 
 /** Valida un personaje leído de almacenamiento. Devuelve null si está dañado. */
@@ -241,17 +261,19 @@ export function restoreCharacter(
     const { location } = item;
     if (location.type === 'equipment' && !usedSlots.has(location.slot)) {
       usedSlots.add(location.slot);
-      world.items.add(nextId(), item.kind, item.amount, {
+      const restored = world.items.add(nextId(), item.kind, item.amount, {
         type: 'equipment',
         ownerId: player.id,
         slot: location.slot,
       });
+      restored.mark = item.mark ?? null;
     } else {
-      world.items.add(nextId(), item.kind, item.amount, {
+      const restored = world.items.add(nextId(), item.kind, item.amount, {
         type: location.type === 'bank' ? 'bank' : 'backpack',
         ownerId: player.id,
         position: location.type === 'equipment' ? { x: 0, y: 0 } : location.position,
       });
+      restored.mark = item.mark ?? null;
     }
   }
   if (saved.mount?.riding) player.mount = saved.mount.kind;

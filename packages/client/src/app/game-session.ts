@@ -30,6 +30,7 @@ import { CraftingWindow } from '../ui/crafting-window';
 import { ShopWindow } from '../ui/shop-window';
 import { TilePicker } from './tile-picker';
 import { HotbarBar } from '../ui/hotbar-bar';
+import { RunePicker } from '../ui/rune-picker';
 import { Joystick } from '../input/joystick';
 import { TouchHud, enterFullscreen, prefersTouch } from '../ui/touch-hud';
 import { addToHotbar, findInBackpack, parseHotbar } from '../core/hotbar';
@@ -321,11 +322,21 @@ export class GameSession {
    * objetivo: nada (a uno mismo), alguien (para ayudar o dañar) o un lugar.
    */
   private setUpMagic({ banner, worldCombat, tilePicker }: Targeting): Magic {
+    const runes = new RunePicker((spell, runeId, scrollId) =>
+      this.game.castSpell(spell, { runeId, ...(scrollId ? { scrollId } : {}) }),
+    );
+    this.hosts.ui.append(runes.window.element);
     const cast = (spell: SpellKey, scrollId?: string): void => {
       const definition = SPELLS[spell];
       const from = scrollId ? { scrollId } : {};
       const done = (): void => banner.hide();
       switch (definition.target) {
+        case 'rune': {
+          // Viajes: se elige la runa en una ventana (también leyendo un pergamino).
+          const warning = runes.open(spell, this.game.inventory.backpack, scrollId);
+          if (warning) this.game.notify(warning);
+          return;
+        }
         case 'self':
           this.game.castSpell(spell, from);
           return;

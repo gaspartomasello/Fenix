@@ -238,6 +238,14 @@ mínima y tiempo de lanzamiento, y cada hechizo dice a quién va (`self`, `benef
 teletransporte, comida, drenar maná, protección, visión nocturna, daño en área, resurrección o
 invocación).
 
+Los **viajes** usan runas: un `Item` de tipo `rune` puede tener `mark` (lugar y nombre de la zona),
+que viaja en los snapshots y se guarda con el personaje. Los hechizos de objetivo `rune` (Marcar,
+Recordar, Portal) reciben `runeId`: Marcar graba el lugar (no en la mazmorra), Recordar devuelve
+`moveTo` y Portal devuelve `gate`. `Gates` (aplicación) pone dos objetos fijos `moongate` en el
+suelo (todos los ven con los objetos del suelo), los une, los cierra a los 30 s, y `MovePlayer`
+manda al otro lado a quien pisa uno, igual que la entrada de la mazmorra. Lo `fixed` no se puede
+mover.
+
 Algunos hechizos **caen más tarde** (`delayMs`): la Explosión gasta el maná al lanzarla y estalla
 2,5 s después, como en UO. `resolveCast` devuelve `delayed` en vez de aplicar el daño, el ciclo del
 juego lo guarda y `landDelayedSpell` lo aplica al vencer (con la tirada de Resistencia en ese

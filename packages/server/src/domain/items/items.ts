@@ -152,6 +152,13 @@ export class Items {
     );
   }
 
+  /** Saca un objeto del mundo (un portal que se cierra). */
+  remove(id: EntityId): Item | undefined {
+    const item = this.byId.get(id);
+    this.byId.delete(id);
+    return item;
+  }
+
   /** El cuerpo se deshizo: lo que quedaba adentro se pierde con él. */
   removeCorpse(corpseId: EntityId): void {
     for (const item of this.corpseOf(corpseId)) this.byId.delete(item.id);
@@ -289,11 +296,12 @@ export class Items {
     }
   }
 
-  private all(): Item[] {
+  all(): Item[] {
     return [...this.byId.values()];
   }
 
   private checkAccess(actor: ItemActor, item: Item): string | null {
+    if (ITEMS[item.kind].fixed) return 'Eso no se puede mover.';
     if (item.location.type === 'ground') {
       return withinReach(actor.position, item.location.position) ? null : 'Está demasiado lejos.';
     }

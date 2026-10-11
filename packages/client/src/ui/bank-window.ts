@@ -1,10 +1,6 @@
-import {
-  BACKPACK_AREA,
-  ITEM_ICON_SIZE,
-  describeItem,
-  type BackpackItemSnapshot,
-} from '@fenix/shared';
+import { BACKPACK_AREA, ITEM_ICON_SIZE, type BackpackItemSnapshot } from '@fenix/shared';
 import { destinationFor, type ItemActions } from './backpack-window';
+import { itemLabel } from './item-label';
 import { el } from './dom';
 import { liftElement, type DragController } from './drag-controller';
 import { GameWindow } from './game-window';
@@ -32,7 +28,7 @@ export class BankWindow {
   render(items: readonly BackpackItemSnapshot[]): void {
     this.area.replaceChildren(
       ...items.map((item) => {
-        const label = describeItem(item.kind, item.amount);
+        const label = itemLabel(item);
         const icon = el(
           'button',
           { className: 'item-icon', attrs: { type: 'button', title: label, 'aria-label': label } },

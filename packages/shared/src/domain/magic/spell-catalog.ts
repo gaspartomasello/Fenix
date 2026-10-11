@@ -28,15 +28,18 @@ export const SPELL_KEYS = [
   'greater-heal',
   'lightning',
   'mana-drain',
+  'recall',
   // Quinto círculo
   'mind-blast',
   'paralyze',
   // Sexto círculo
   'energy-bolt',
   'explosion',
+  'mark',
   // Séptimo círculo
   'flamestrike',
   'mana-vampire',
+  'gate-travel',
   // Octavo círculo
   'earthquake',
   'energy-vortex',
@@ -87,9 +90,9 @@ const CIRCLE_MIN_SKILL: Readonly<Record<SpellCircle, number>> = {
 
 /**
  * A quién se lanza: a uno mismo, a otro para ayudarlo (o a uno mismo), a
- * otro para dañarlo, o a un lugar del suelo.
+ * otro para dañarlo, a un lugar del suelo o a una runa de la mochila (viajes).
  */
-export type SpellTarget = 'self' | 'beneficial' | 'harmful' | 'location';
+export type SpellTarget = 'self' | 'beneficial' | 'harmful' | 'location' | 'rune';
 
 /** Qué hace el hechizo al salir. */
 export type SpellEffect =
@@ -114,6 +117,10 @@ export type SpellEffect =
     }
   | { readonly kind: 'protection' }
   | { readonly kind: 'night-sight' }
+  /** Viajes con runas: grabar el lugar, ir hasta él o abrir un portal para todos. */
+  | { readonly kind: 'mark' }
+  | { readonly kind: 'recall' }
+  | { readonly kind: 'gate' }
   /** Daña a todos los que estén cerca del lanzador (menos a él y a su grupo). */
   | {
       readonly kind: 'area-damage';
@@ -414,6 +421,16 @@ const LIST: readonly SpellDefinition[] = [
     { kind: 'mana-drain', power: [10, 20], steal: false },
     'Le quita maná al objetivo.',
   ),
+  spell(
+    'recall',
+    4,
+    'Recordar',
+    'Via Memor',
+    ['BP', 'BM', 'MR'],
+    'rune',
+    { kind: 'recall' },
+    'Te lleva al lugar grabado en una runa marcada.',
+  ),
 
   spell(
     'mind-blast',
@@ -457,6 +474,16 @@ const LIST: readonly SpellDefinition[] = [
     'El aire estalla alrededor del objetivo, un momento después de lanzarlo.',
     { delayMs: EXPLOSION_DELAY_MS },
   ),
+  spell(
+    'mark',
+    6,
+    'Marcar',
+    'Signum Loci',
+    ['BP', 'BM', 'MR'],
+    'rune',
+    { kind: 'mark' },
+    'Graba en una runa el lugar donde estás, para volver con Recordar o Portal.',
+  ),
 
   spell(
     'flamestrike',
@@ -477,6 +504,16 @@ const LIST: readonly SpellDefinition[] = [
     'harmful',
     { kind: 'mana-drain', power: [20, 40], steal: true },
     'Le roba maná al objetivo y te lo quedás.',
+  ),
+  spell(
+    'gate-travel',
+    7,
+    'Portal',
+    'Porta Viae',
+    ['BP', 'MR', 'SA'],
+    'rune',
+    { kind: 'gate' },
+    'Abre un portal al lugar de una runa marcada: cualquiera puede cruzarlo, un rato.',
   ),
 
   spell(
@@ -568,6 +605,9 @@ export const SPELLS: Readonly<Record<SpellKey, SpellDefinition>> = Object.fromEn
 export function spellsOfCircle(circle: SpellCircle): SpellDefinition[] {
   return LIST.filter((s) => s.circle === circle);
 }
+
+/** Cuánto queda abierto un portal. */
+export const GATE_DURATION_MS = 30_000;
 
 /** Distancia máxima para lanzar un hechizo a otro o a un lugar. */
 export const SPELL_RANGE = 10;

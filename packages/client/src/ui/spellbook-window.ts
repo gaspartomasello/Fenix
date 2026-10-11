@@ -17,6 +17,7 @@ const TARGET_HINTS = {
   beneficial: 'a quien elijas',
   harmful: 'a un enemigo',
   location: 'a un lugar',
+  rune: 'con una runa',
 } as const;
 
 /**

@@ -1,7 +1,7 @@
 import { ITEM_ART_SIZE } from '@fenix/art';
 import type { EntityId, GroundItemSnapshot } from '@fenix/shared';
 import { Sprite, type Container } from 'pixi.js';
-import { groundItemDepth } from './depth';
+import { characterDepth, groundItemDepth } from './depth';
 import { CHARACTER_SCALE, tileToScreen, type ScreenPoint } from './iso';
 import type { TextureCache } from './texture-cache';
 
@@ -27,6 +27,14 @@ export class ItemLayer {
       sprite.scale.set(CHARACTER_SCALE);
       sprite.position.set(screen.x, screen.y - 4);
       sprite.zIndex = groundItemDepth(item.position);
+      if (item.kind === 'moongate') {
+        // El portal está parado y es alto como una persona: se apoya en el piso y brilla.
+        sprite.anchor.set(0.5, 0.92);
+        sprite.scale.set(CHARACTER_SCALE * 1.8);
+        sprite.position.set(screen.x, screen.y + 6);
+        sprite.zIndex = characterDepth(item.position) - 1;
+        sprite.alpha = 0.88;
+      }
       this.target.addChild(sprite);
       this.sprites.set(item.id, { sprite, item });
     }
