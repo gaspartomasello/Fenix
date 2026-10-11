@@ -95,6 +95,7 @@ export function trySwing(
   }
   attacker.combat.nextSwingAt = now + weapon.swingMs;
   const tactics = attacker instanceof Player ? attacker.skills.get('tactics') : 500;
+  const anatomy = attacker instanceof Player ? attacker.skills.get('anatomy') : 0;
   const defense = defenseFor(target, world);
   const outcome = resolveAttack(
     {
@@ -102,6 +103,7 @@ export function trySwing(
       weapon,
       skill: fightingSkill(attacker, world),
       tactics,
+      anatomy,
     },
     defense,
     random,
@@ -110,7 +112,14 @@ export function trySwing(
 
   const gains: SkillGain[] = [];
   if (attacker instanceof Player) {
-    for (const skill of [weapon.skill, 'tactics'] as const) {
+    // Anatomía se aprende pegando de verdad (golpes que entran).
+    const landed = outcome.hit && !outcome.blocked;
+    const practiced: SkillKey[] = [
+      weapon.skill,
+      'tactics',
+      ...(landed ? ['anatomy' as const] : []),
+    ];
+    for (const skill of practiced) {
       if (attacker.skills.tryGain(skill, random)) gains.push({ player: attacker, skill });
     }
   }

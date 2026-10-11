@@ -67,6 +67,10 @@ describe('reglas de combate', () => {
     expect(resolveAttack({ ...attacker, tactics: 0 }, defender, sequence(0.1, 0.99)).damage).toBe(
       4,
     );
+    // Con Anatomía al máximo, un 50 % más: 6 × 1,5 = 9.
+    expect(
+      resolveAttack({ ...attacker, anatomy: 1000 }, defender, sequence(0.1, 0.99)).damage,
+    ).toBe(9);
     expect(resolveAttack(attacker, { ...defender, armor: 1000 }, sequence(0.1, 0)).damage).toBe(1);
   });
 

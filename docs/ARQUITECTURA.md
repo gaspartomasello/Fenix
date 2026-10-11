@@ -226,8 +226,9 @@ debajo de lo que está parado.
 ### Habilidades y magia
 
 Cada jugador tiene un `SkillSet` (valores en décimas). Al pelear, practica el arma y Tácticas (y
-Parada si lo atacan con escudo); al regenerar maná, Meditación; al lanzar, Magia. El acierto usa la
-fórmula de UO con las habilidades de ambos.
+Anatomía con cada golpe que entra, y Parada si lo atacan con escudo); al regenerar maná,
+Meditación; al lanzar, Magia. El acierto usa la fórmula de UO con las habilidades de ambos. El
+daño del golpe se multiplica por Tácticas (60 %–100 %) y por Anatomía (hasta +50 %, como en UO).
 
 Los hechizos (`spell-catalog.ts`) van en ocho círculos, como en UO: cada círculo fija maná, Magia
 mínima y tiempo de lanzamiento, y cada hechizo dice a quién va (`self`, `beneficial`, `harmful` o

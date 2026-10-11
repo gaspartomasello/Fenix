@@ -8,9 +8,11 @@ export const MELEE_RANGE = 1;
 export interface AttackerStats {
   readonly strength: number;
   readonly weapon: Weapon;
-  /** Habilidad con el arma y Tácticas, en décimas. */
+  /** Habilidad con el arma, Tácticas y Anatomía, en décimas. */
   readonly skill: number;
   readonly tactics: number;
+  /** Conocer el cuerpo: dónde pegar. Las criaturas no tienen. */
+  readonly anatomy?: number;
 }
 
 export interface DefenderStats {
@@ -48,8 +50,9 @@ export function blockChance(parrying: number): number {
 
 /**
  * Resuelve un golpe: acierto según habilidades; el escudo puede bloquearlo;
- * daño del arma más bonus por fuerza, multiplicado por Tácticas (60 %–100 %);
- * la armadura absorbe hasta un 60 %. Un golpe que pasa hace al menos 1.
+ * daño del arma más bonus por fuerza, multiplicado por Tácticas (60 %–100 %)
+ * y por Anatomía (hasta +50 %, como en UO); la armadura absorbe hasta un 60 %.
+ * Un golpe que pasa hace al menos 1.
  */
 export function resolveAttack(
   attacker: AttackerStats,
@@ -67,9 +70,16 @@ export function resolveAttack(
     minDamage +
     Math.floor(random() * (maxDamage - minDamage + 1)) +
     Math.floor(attacker.strength / 20);
-  const raw = Math.round(base * (0.6 + attacker.tactics / 2500));
+  const raw = Math.round(
+    base * (0.6 + attacker.tactics / 2500) * anatomyBonus(attacker.anatomy ?? 0),
+  );
   const absorbed = Math.round(raw * Math.min(0.6, defender.armor / 50));
   return { hit: true, blocked: false, damage: Math.max(1, raw - absorbed) };
+}
+
+/** Multiplicador de daño por Anatomía: ×1 sin práctica, ×1,5 con la habilidad al máximo. */
+export function anatomyBonus(anatomy: number): number {
+  return 1 + anatomy / 2000;
 }
 
 /** Correr gasta energía: un punto cada 4 tiles. Sin energía, solo se puede caminar. */
