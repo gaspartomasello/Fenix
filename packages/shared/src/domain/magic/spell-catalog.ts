@@ -600,6 +600,14 @@ export function rollSpellPower(
 }
 
 /**
+ * Multiplicador de daño de los hechizos por Evaluar inteligencia (el
+ * "Tácticas" del mago en UO): ×1 sin práctica, ×1,5 con la habilidad al máximo.
+ */
+export function spellDamageBonus(evaluatingIntelligence: number): number {
+  return 1 + evaluatingIntelligence / 2000;
+}
+
+/**
  * Probabilidad de que la Resistencia mágica del objetivo aguante el hechizo
  * (reduce a la mitad el daño o la duración): sube con la habilidad y baja
  * con el círculo. Como mucho, 70 %.

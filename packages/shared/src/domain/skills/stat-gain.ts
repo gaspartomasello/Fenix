@@ -19,6 +19,7 @@ export const SKILL_STATS: Readonly<
   parrying: ['dexterity', 'strength'],
   healing: ['intelligence', 'dexterity'],
   magery: ['intelligence'],
+  'evaluating-intelligence': ['intelligence'],
   meditation: ['intelligence'],
   'magic-resist': ['intelligence', 'strength'],
   inscription: ['intelligence'],

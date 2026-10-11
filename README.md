@@ -227,3 +227,6 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
     teclas 1 a 0) en la computadora y en el celular. Versión para jugar con el celular acostado:
     joystick, botón de atacar a la criatura más cercana, menú con todas las ventanas, chat plegado,
     pantalla completa, acercar con dos dedos y aviso para girar el celular.
+19. ✅ **Evaluar inteligencia**: habilidad nueva de magia que agranda el daño de los hechizos
+    (hasta +50 % al máximo), como Anatomía y Tácticas para los guerreros. La Explosión cae 2,5 s
+    después de lanzada (para combinarla con la Columna de fuego) y Anatomía suma daño.

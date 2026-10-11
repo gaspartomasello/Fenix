@@ -214,6 +214,14 @@ export class GameLoop {
     const spell = SPELLS[spellKey];
     if (player.skills.tryGain('magery', this.roll))
       this.mobiles.skillGains([{ player, skill: 'magery' }]);
+    // Evaluar inteligencia se aprende con los hechizos de daño que salen.
+    const damaging = spell.effect.kind === 'damage' || spell.effect.kind === 'area-damage';
+    if (
+      damaging &&
+      (outcome.kind === 'success' || outcome.kind === 'delayed') &&
+      player.skills.tryGain('evaluating-intelligence', this.roll)
+    )
+      this.mobiles.skillGains([{ player, skill: 'evaluating-intelligence' }]);
 
     switch (outcome.kind) {
       case 'lost-target':
