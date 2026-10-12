@@ -242,6 +242,16 @@ body {
   font-style: italic;
 }
 
+/* Subió una habilidad: celeste, como en UO. */
+.chat-line--skill {
+  color: #5fe3ea;
+}
+
+/* Subió un atributo: verde. */
+.chat-line--stat {
+  color: #6cf06c;
+}
+
 .chat-author {
   color: var(--color-accent);
   font-weight: bold;

@@ -353,13 +353,36 @@ describe('ClientGame', () => {
     });
   });
 
+  it('las subidas de habilidad y de atributo llegan con su color', () => {
+    const log: LogEntry[] = [];
+    game.on('log', (entry: LogEntry) => log.push(entry));
+    game.apply({ type: 'system', text: 'Tu habilidad de Espadas subió a 50.1.', tone: 'skill' });
+    game.apply({ type: 'system', text: 'Tu fuerza subió a 51.', tone: 'stat' });
+    game.apply({ type: 'system', text: 'Hola.' });
+    expect(log.map((e) => e.kind)).toEqual(['skill', 'stat', 'system']);
+  });
+
+  describe('modo guerra', () => {
+    it('si lo atacan pasa solo a modo guerra y avisa; los demás se ven en guardia', () => {
+      const log: string[] = [];
+      game.on('log', (entry: LogEntry) => log.push(entry.text));
+      game.apply({ type: 'warModeChanged', id: 'ana', war: true, auto: true });
+      expect(game.warMode).toBe(true);
+      expect(game.self?.war).toBe(true);
+      expect(log).toEqual(['¡Te atacan! Pasaste a modo guerra y te defendés.']);
+    });
+  });
+
   describe('combate entre jugadores', () => {
     it('solo se ataca a otras personas en modo guerra', () => {
       game.attack('bruno');
       expect(sent).toEqual([]);
       game.toggleWarMode();
       game.attack('bruno');
-      expect(sent).toEqual([{ type: 'attack', targetId: 'bruno' }]);
+      expect(sent).toEqual([
+        { type: 'setWarMode', war: true },
+        { type: 'attack', targetId: 'bruno' },
+      ]);
     });
 
     it('actualiza la reputación y el gremio de quien se ve', () => {

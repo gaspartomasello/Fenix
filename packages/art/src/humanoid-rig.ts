@@ -41,19 +41,37 @@ export type WalkStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
  * carrera; o un paso de una acción.
  */
 /** `dead`: tirado en el piso (el cuerpo muerto; ver corpse-art). */
+/** `guard`: en guardia (modo guerra); `guard-0..7`: caminando en guardia. */
 export type CharacterFrame =
-  'idle' | 'dead' | WalkStep | `run-${WalkStep}` | `${ActionKind}-${ActionStep}`;
+  | 'idle'
+  | 'dead'
+  | 'guard'
+  | WalkStep
+  | `run-${WalkStep}`
+  | `guard-${WalkStep}`
+  | `${ActionKind}-${ActionStep}`;
 export const WALK_FRAMES: readonly WalkStep[] = [0, 1, 2, 3, 4, 5, 6, 7];
 
 /**
  * En qué punto del ciclo de caminar o correr está un cuadro (0–1, un ciclo
  * son dos pasos), o null si no es caminar ni correr.
  */
-export function cyclePhase(frame: CharacterFrame): { phase: number; running: boolean } | null {
+export function cyclePhase(
+  frame: CharacterFrame,
+): { phase: number; running: boolean; guard?: boolean } | null {
   if (typeof frame === 'number') return { phase: frame / WALK_FRAME_COUNT, running: false };
   if (frame.startsWith('run-'))
     return { phase: Number(frame.slice(4)) / WALK_FRAME_COUNT, running: true };
+  if (frame.startsWith('guard-'))
+    return { phase: Number(frame.slice(6)) / WALK_FRAME_COUNT, running: false, guard: true };
   return null;
+}
+
+/** El mismo cuadro de caminata, pero en guardia (o parado en guardia). */
+export function guardFrame(frame: CharacterFrame): CharacterFrame {
+  if (frame === 'idle') return 'guard';
+  if (typeof frame === 'number') return `guard-${frame}`;
+  return frame;
 }
 
 /** Con qué gesto ataca según lo que tenga en la mano derecha. */
@@ -231,6 +249,53 @@ const WALK: Readonly<Record<0 | 1 | 2 | 3, BodyPose>> = {
   2: { right: BACK, left: FORWARD },
   3: { right: PASSING, left: STAND },
 };
+
+/**
+ * En guardia, como en UO: rodillas flexionadas (la cadera baja sola, porque
+ * el pie queda en el suelo), pie izquierdo adelantado y el derecho atrás,
+ * peso un poco adelante, hombro del arma retrasado y los brazos arriba
+ * (ver `guardArms`, que dependen de si tiene arma).
+ */
+const GUARD: BodyPose = {
+  right: { thigh: -0.12, knee: 0.5, spread: 0.13 },
+  left: { thigh: 0.42, knee: 0.62, spread: 0.1 },
+  twist: 0.26,
+  lean: 1.1,
+  hipShift: -0.3,
+};
+
+/**
+ * Caminar en guardia: pasos más cortos y con las rodillas siempre dobladas
+ * (sin estirar la pierna), el torso quieto y los brazos en guardia, sin
+ * bambolearse. Parte de la caminata normal, achicada y agachada.
+ */
+const GUARD_WALK: readonly BodyPose[] = [WALK[0], WALK[1], WALK[2], WALK[3]].map((key) => {
+  const crouch = (leg: LegPose): LegPose => ({
+    thigh: leg.thigh * 0.62 + 0.14,
+    knee: leg.knee * 0.75 + 0.5,
+    spread: 0.11,
+  });
+  return {
+    right: crouch(key.right),
+    left: crouch(key.left),
+    twist: GUARD.twist ?? 0,
+    lean: GUARD.lean ?? 0,
+  };
+});
+
+/** Brazos en guardia: el arma al frente con el codo doblado, o los puños arriba. */
+function guardArms(armed: boolean): { rightArm: ArmPose; leftArm: ArmPose } {
+  return armed
+    ? {
+        // Codo junto al cuerpo y la hoja casi vertical, apuntando arriba y adelante.
+        rightArm: { raise: 0.45, spread: 0.3, bend: 1.95 },
+        leftArm: { raise: 0.45, spread: 0.26, bend: 1.3 },
+      }
+    : {
+        rightArm: { raise: 0.5, spread: 0.22, bend: 1.75 },
+        leftArm: { raise: 0.65, spread: 0.18, bend: 1.7 },
+      };
+}
 
 /** Pasos de cada acción (las que tienen menos de 4 repiten el último). */
 const ACTIONS: Readonly<Record<ActionKind, readonly BodyPose[]>> = {
@@ -444,10 +509,15 @@ const DEAD: BodyPose = {
 function poseFor(frame: CharacterFrame): BodyPose {
   if (frame === 'idle') return { right: STAND, left: STAND };
   if (frame === 'dead') return DEAD;
+  if (frame === 'guard') return GUARD;
   // Caminar y correr: entre las cuatro poses clave se interpola, así hay más cuadros.
   const cycle = cyclePhase(frame);
   if (cycle) {
-    const keys = cycle.running ? ACTIONS.run : [WALK[0], WALK[1], WALK[2], WALK[3]];
+    const keys = cycle.running
+      ? ACTIONS.run
+      : cycle.guard
+        ? GUARD_WALK
+        : [WALK[0], WALK[1], WALK[2], WALK[3]];
     const at = cycle.phase * keys.length;
     const index = Math.floor(at);
     const a = keys[index % keys.length] ?? WALK[0];
@@ -570,7 +640,9 @@ export function humanoidRig(
   build: Build = BUILDS.male,
   seat?: Seat,
 ): Rig {
-  const base = poseFor(frame);
+  const posed = poseFor(frame);
+  const guarding = frame === 'guard' || cyclePhase(frame)?.guard === true;
+  const base: BodyPose = guarding ? { ...posed, ...guardArms(armed) } : posed;
   const moving = frame === 'idle' || cyclePhase(frame) !== null;
   const galloping = cyclePhase(frame)?.running === true;
   // Montado, las piernas van siempre en la montura; los brazos llevan las

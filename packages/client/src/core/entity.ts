@@ -88,6 +88,7 @@ export class Entity {
   private _notoriety: Notoriety;
   private _guildTag: string | null;
   private _mount: MountKind | null;
+  private _war: boolean;
   /** Criatura con dueño (invocación o montura suelta): de quién es. */
   readonly ownerId: EntityId | null;
 
@@ -105,6 +106,7 @@ export class Entity {
     this._notoriety = snapshot.notoriety;
     this._guildTag = snapshot.guildTag;
     this._mount = snapshot.mount ?? null;
+    this._war = snapshot.war ?? false;
     this.ownerId = snapshot.ownerId ?? null;
   }
 
@@ -115,6 +117,15 @@ export class Entity {
 
   setMount(mount: MountKind | null): void {
     this._mount = mount;
+  }
+
+  /** En modo guerra: se dibuja en guardia. */
+  get war(): boolean {
+    return this._war;
+  }
+
+  setWar(war: boolean): void {
+    this._war = war;
   }
 
   /** Reputación: define el color del nombre. */

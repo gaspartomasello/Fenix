@@ -44,7 +44,8 @@ import type { ServerGateway } from './ports';
 /** Después de este tiempo sin golpes, un atacante vuelve a avisarse. */
 const ATTACK_WARNING_MS = 20_000;
 
-export type LogKind = 'chat' | 'system';
+/** Mensajes del registro; `skill` y `stat` son las subidas (celeste y verde, como en UO). */
+export type LogKind = 'chat' | 'system' | 'skill' | 'stat';
 
 export interface LogEntry {
   readonly kind: LogKind;
@@ -345,12 +346,19 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
 
   /** Entrar o salir del modo guerra. Al salir se deja de atacar, como en UO. */
   toggleWarMode(): void {
-    this._warMode = !this._warMode;
-    if (!this._warMode) this.stopAttack();
-    this.notify(
-      this._warMode ? 'Modo guerra: podés atacar a otras personas fuera del pueblo.' : 'Modo paz.',
-    );
-    this.emit('warModeChanged', this._warMode);
+    if (!this.self) return;
+    const war = !this._warMode;
+    this.gateway.send({ type: 'setWarMode', war });
+    this.applyWarMode(war);
+    this.notify(war ? 'Modo guerra: podés atacar a otras personas fuera del pueblo.' : 'Modo paz.');
+  }
+
+  private applyWarMode(war: boolean): void {
+    if (!war) this.stopAttack();
+    this.self?.setWar(war);
+    if (this._warMode === war) return;
+    this._warMode = war;
+    this.emit('warModeChanged', war);
   }
 
   /** Arrastrar y soltar un objeto. El servidor decide si se puede. */
@@ -565,7 +573,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         });
         break;
       case 'system':
-        this.emit('log', { kind: 'system', text: message.text });
+        this.emit('log', { kind: message.tone ?? 'system', text: message.text });
         break;
       case 'corpse': {
         const opened = this.corpseRequested === message.corpseId;
@@ -664,6 +672,13 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         break;
       case 'mountChanged':
         this.entities.get(message.id)?.setMount(message.mount);
+        break;
+      case 'warModeChanged':
+        if (message.id === this.selfIdValue) {
+          if (message.auto && !this._warMode)
+            this.notify('¡Te atacan! Pasaste a modo guerra y te defendés.');
+          if (message.war !== this._warMode) this.applyWarMode(message.war);
+        } else this.entities.get(message.id)?.setWar(message.war);
         break;
       case 'hiddenChanged':
         this._hidden = message.hidden;

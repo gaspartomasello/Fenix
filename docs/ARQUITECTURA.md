@@ -312,8 +312,22 @@ puede atacar a otro: nunca dentro de un pueblo ni a alguien del propio grupo o g
 un inocente marca como criminal por dos minutos; matarlo suma una muerte (con cinco se es
 asesino), y cada muerte se olvida a la media hora.
 
-En el cliente, `parseChatInput` (en `core`) traduce los comandos del chat, el modo guerra es
-estado local de `ClientGame` y `SocialWindow` muestra todo con botones.
+En el cliente, `parseChatInput` (en `core`) traduce los comandos del chat y `SocialWindow` muestra
+todo con botones.
+
+### Modo guerra y defensa propia
+
+El modo guerra lo decide el servidor (`Player.warMode`, módulo `WarMode`): el cliente lo pide con
+`setWarMode` y todos los que lo ven reciben `warModeChanged` (el personaje se dibuja en guardia:
+cuadros `guard` y `guard-0..7` del esqueleto, rodillas flexionadas y brazos arriba; corriendo
+vuelve a la carrera normal). Atacar pone en guerra; pasar a paz deja de atacar. Defensa propia
+para todos los jugadores: si alguien (criatura o persona) le pega a un jugador que no está
+peleando, pasa solo a guerra (`auto`) y le devuelve los golpes; al matar a su objetivo sigue con
+el más cercano de los que lo siguen atacando. Contra personas valen las reglas de `pvpRefusal`, y
+devolver el golpe no es delito. El modo guerra no se guarda: se entra al juego en paz.
+
+Las subidas de habilidad y de atributo llegan como `system` con `tone` (`skill` o `stat`) y el
+chat las pinta en celeste y en verde, como en UO.
 
 ### Persistencia
 

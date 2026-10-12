@@ -75,6 +75,7 @@ export class MobileNotifications {
       this.notifier.send(player.id, {
         type: 'system',
         text: `Tu habilidad de ${SKILL_NAMES[skill]} subió a ${formatSkill(player.skills.get(skill))}.`,
+        tone: 'skill',
       });
     }
     players.forEach((player) => this.sendSkills(player));

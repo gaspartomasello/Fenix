@@ -236,6 +236,10 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       return { ok: true, message: { type: 'dismount' } };
     case 'releasePet':
       return { ok: true, message: { type: 'releasePet' } };
+    case 'setWarMode':
+      if (typeof data.war === 'boolean')
+        return { ok: true, message: { type: 'setWarMode', war: data.war } };
+      break;
     case 'useSkill':
       if (isActiveSkill(data.skill))
         return { ok: true, message: { type: 'useSkill', skill: data.skill } };
@@ -252,41 +256,44 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
   return { ok: false, error: `Mensaje inválido: ${String(data.type)}` };
 }
 
-const SERVER_TYPES: ReadonlySet<ServerMessageType> = new Set<ServerMessageType>([
-  'welcome',
-  'joinRejected',
-  'mobileAppeared',
-  'mobileDisappeared',
-  'mobileMoved',
-  'moveAck',
-  'moveRejected',
-  'chat',
-  'groundItems',
-  'inventory',
-  'playerEquipment',
-  'vitals',
-  'mobileHealth',
-  'combatTarget',
-  'swing',
-  'skills',
-  'castStart',
-  'spellEffect',
-  'effects',
-  'mobileTeleported',
-  'worldTime',
-  'mobileStatus',
-  'social',
-  'corpse',
-  'corpseClosed',
-  'mountChanged',
-  'hiddenChanged',
-  'system',
-]);
+const SERVER_TYPE_FLAGS: Readonly<Record<ServerMessageType, true>> = {
+  welcome: true,
+  joinRejected: true,
+  mobileAppeared: true,
+  mobileDisappeared: true,
+  mobileMoved: true,
+  moveAck: true,
+  moveRejected: true,
+  chat: true,
+  groundItems: true,
+  inventory: true,
+  playerEquipment: true,
+  vitals: true,
+  mobileHealth: true,
+  combatTarget: true,
+  swing: true,
+  skills: true,
+  castStart: true,
+  spellEffect: true,
+  effects: true,
+  mobileTeleported: true,
+  worldTime: true,
+  mobileStatus: true,
+  social: true,
+  corpse: true,
+  corpseClosed: true,
+  mountChanged: true,
+  hiddenChanged: true,
+  warModeChanged: true,
+  system: true,
+};
+// Con un Record el compilador exige cada tipo nuevo: si falta, el cliente lo descartaría.
+const SERVER_TYPES: ReadonlySet<string> = new Set(Object.keys(SERVER_TYPE_FLAGS));
 
 /** Decodifica un mensaje del servidor (fuente confiable: solo se verifica el tipo). */
 export function decodeServerMessage(raw: string): DecodeResult<ServerMessage> {
   const data = parseObject(raw);
-  if (!data || !SERVER_TYPES.has(data.type as ServerMessageType)) {
+  if (!data || !SERVER_TYPES.has(String(data.type))) {
     return { ok: false, error: 'Mensaje del servidor desconocido' };
   }
   return { ok: true, message: data as unknown as ServerMessage };

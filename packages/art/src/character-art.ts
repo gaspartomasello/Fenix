@@ -55,6 +55,7 @@ export {
   attackStyleFor,
   cyclePhase,
   cameraFor,
+  guardFrame,
   humanoidRig,
   type ActionKind,
   type ActionStep,
