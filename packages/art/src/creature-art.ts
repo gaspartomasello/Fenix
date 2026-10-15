@@ -8,10 +8,12 @@ import {
   drawSkeletonFrame,
   type CharacterFrame,
 } from './character-art';
+import { spriteCanvas } from './humanoid-rig';
 import type { PixelImage, Rgb } from './pixel-art';
 import { drawSummonFrame, isSummonKind } from './summon-art';
 import { drawMonsterFrame, isMonsterKind } from './monster-art';
-import { VolumeCanvas, add, axesAlong, normalize, ramp, solid, tone, type Vec3 } from './volume';
+import type { VolumeCanvas } from './volume';
+import { add, axesAlong, normalize, ramp, solid, tone, type Vec3 } from './volume';
 import { biteOffset, fur, gait } from './creature-motion';
 
 /** Dibuja un frame de una criatura, en el mismo lienzo que los personajes. */
@@ -25,7 +27,7 @@ export function drawCreatureFrame(
   if (isMonsterKind(kind)) return drawMonsterFrame(kind, direction, frame);
   if (isMountKind(kind)) return drawMountFrame(kind, direction, frame);
   const zoom = kind === 'rat' ? 1.6 : 1.25;
-  const canvas = new VolumeCanvas(
+  const canvas = spriteCanvas(
     CHARACTER_ART_WIDTH,
     CHARACTER_ART_HEIGHT,
     cameraFor(direction, zoom),

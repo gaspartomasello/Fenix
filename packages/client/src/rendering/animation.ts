@@ -1,4 +1,4 @@
-import type { ActionStep, CharacterFrame } from '@fenix/art';
+import { WALK_FRAME_COUNT, type ActionStep, type CharacterFrame, type WalkStep } from '@fenix/art';
 
 /**
  * Qué cuadro de animación mostrar en cada momento: caminar o correr, el
@@ -29,10 +29,15 @@ export function castFrame(elapsed: number): CharacterFrame {
   return Math.floor(elapsed / CAST_STEP_MS) % 2 === 0 ? 'cast-0' : 'cast-1';
 }
 
-/** Cada paso recorre medio ciclo; pasos pares e impares alternan la pierna. */
+/**
+ * Cada paso recorre medio ciclo (la mitad de los cuadros); pasos pares e
+ * impares alternan la pierna.
+ */
 export function stepFrame(stepCount: number, progress: number, running: boolean): CharacterFrame {
-  const half = stepCount % 2 === 0 ? 0 : 2;
-  const step = (half + (progress < 0.5 ? 0 : 1)) as 0 | 1 | 2 | 3;
+  const perStep = WALK_FRAME_COUNT / 2;
+  const half = stepCount % 2 === 0 ? 0 : perStep;
+  const within = Math.min(perStep - 1, Math.floor(Math.max(0, progress) * perStep));
+  const step = (half + within) as WalkStep;
   return running ? `run-${step}` : step;
 }
 

@@ -260,10 +260,22 @@ export function ramp(base: Rgb): Ramp {
   ];
 }
 
-/** Tono de la escala según la luz; `bias` corre uno o más escalones. */
+/**
+ * Tono de la escala según la luz; `bias` corre uno o más escalones. Entre
+ * dos tonos de la escala se pasa en degradé (sombreado suave, como los
+ * sprites renderizados de UO), sin escalones marcados.
+ */
 export function tone(colors: Ramp, light: number, bias = 0): Rgb {
-  const index = Math.max(0, Math.min(4, Math.floor(light * 4.6 - 0.2) + bias));
-  return colors[index] ?? colors[2];
+  const at = Math.max(0, Math.min(4, light * 4.6 - 0.7 + bias));
+  const low = Math.floor(at);
+  const a = colors[low] ?? colors[2];
+  const b = colors[Math.min(4, low + 1)] ?? a;
+  const t = at - low;
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * t),
+    Math.round(a[1] + (b[1] - a[1]) * t),
+    Math.round(a[2] + (b[2] - a[2]) * t),
+  ];
 }
 
 /** Material liso de un color. */
@@ -278,6 +290,15 @@ export const metal =
   (s) =>
     s.light > 0.92 ? [250, 250, 245] : tone(colors, s.light * 1.15 - 0.08);
 
+/** Materiales que pueden dejar un pixel sin pintar (devuelven null): se resuelven en el momento. */
+const CLIPPING = new WeakSet<Material>();
+
+/** Marca un material que puede devolver null (máscaras de pelo, telas con huecos). */
+export function clipping(material: Material): Material {
+  CLIPPING.add(material);
+  return material;
+}
+
 /** Hash determinístico de una posición, para texturas (pelaje, tela). */
 export function noise(x: number, y: number, z = 0): number {
   const h = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453;
@@ -291,6 +312,15 @@ export function noise(x: number, y: number, z = 0): number {
 export class VolumeCanvas {
   private readonly depth: Float32Array;
   private readonly colors: (Rgb | null)[];
+  /**
+   * Sombreado diferido: cada pixel guarda la cara más cercana (normal y
+   * material) y recién al final se calcula su color, una sola vez, aunque
+   * muchas piezas se hayan pisado encima.
+   */
+  private readonly pending: Int32Array;
+  private readonly normals: Float32Array;
+  private readonly materials: Material[] = [];
+  private readonly materialIndex = new Map<Material, number>();
 
   constructor(
     readonly width: number,
@@ -299,6 +329,8 @@ export class VolumeCanvas {
   ) {
     this.depth = new Float32Array(width * height).fill(-Infinity);
     this.colors = new Array<Rgb | null>(width * height).fill(null);
+    this.pending = new Int32Array(width * height).fill(-1);
+    this.normals = new Float32Array(width * height * 3);
   }
 
   /** Elipsoide con centro y ejes (ortonormales) en el espacio del modelo. */
@@ -308,46 +340,94 @@ export class VolumeCanvas {
     modelRadii: Vec3,
     material: Material,
   ): void {
+    this.rasterize(center, axes, modelRadii, (x, y, t, normal) =>
+      this.paint(x, y, t, normal, material),
+    );
+  }
+
+  /**
+   * Recorre los pixeles que cubre un elipsoide y llama a `hit` con la
+   * profundidad y la normal (en la cámara) de los que quedan adelante de lo
+   * ya pintado. Cuentas planas, sin crear vectores por pixel: es el corazón
+   * del dibujo y se llama millones de veces.
+   */
+  private rasterize(
+    center: Vec3,
+    axes: readonly [Vec3, Vec3, Vec3],
+    modelRadii: Vec3,
+    hit: (x: number, y: number, t: number, normal: Vec3) => void,
+  ): void {
     const c = this.camera.point(center);
-    const radii = scale(modelRadii, this.camera.zoom);
-    // Cada eje en la imagen (y crece hacia abajo) junto con su radio; `axis` es el dual,
-    // que sirve para saber si un punto de la imagen cae adentro.
-    const parts = axes.map((axis, i) => ({
-      axis: this.camera.dual(axis),
-      image: this.camera.forward(axis),
-      r: radii[i] ?? 1,
-    }));
-    const extentX = Math.sqrt(parts.reduce((sum, { image, r }) => sum + (image[0] * r) ** 2, 0));
-    const extentY = Math.sqrt(parts.reduce((sum, { image, r }) => sum + (image[1] * r) ** 2, 0));
+    const zoom = this.camera.zoom;
+    // Por eje: el dual (para saber si un punto cae adentro), su radio y su extensión en la imagen.
+    let ax0 = 0,
+      ay0 = 0,
+      az0 = 0,
+      ax1 = 0,
+      ay1 = 0,
+      az1 = 0,
+      ax2 = 0,
+      ay2 = 0,
+      az2 = 0;
+    let extentX = 0;
+    let extentY = 0;
+    const r0 = (modelRadii[0] ?? 1) * zoom;
+    const r1 = (modelRadii[1] ?? 1) * zoom;
+    const r2 = (modelRadii[2] ?? 1) * zoom;
+    for (let i = 0; i < 3; i++) {
+      const axis = axes[i] ?? [0, 0, 1];
+      const dual = this.camera.dual(axis);
+      const image = this.camera.forward(axis);
+      const r = i === 0 ? r0 : i === 1 ? r1 : r2;
+      extentX += (image[0] * r) ** 2;
+      extentY += (image[1] * r) ** 2;
+      if (i === 0) [ax0, ay0, az0] = dual;
+      else if (i === 1) [ax1, ay1, az1] = dual;
+      else [ax2, ay2, az2] = dual;
+    }
+    extentX = Math.sqrt(extentX);
+    extentY = Math.sqrt(extentY);
     const minX = Math.max(0, Math.floor(c[0] - extentX));
     const maxX = Math.min(this.width - 1, Math.ceil(c[0] + extentX));
     const minY = Math.max(0, Math.floor(c[1] - extentY));
     const maxY = Math.min(this.height - 1, Math.ceil(c[1] + extentY));
+    // a_i = axis_z / r (constante); b_i = (d · axis) / r, lineal en x e y.
+    const a0 = az0 / r0;
+    const a1 = az1 / r1;
+    const a2 = az2 / r2;
+    const qa = a0 * a0 + a1 * a1 + a2 * a2;
+    const dz = -c[2];
+    const depth = this.depth;
+    const width = this.width;
 
     for (let y = minY; y <= maxY; y++) {
+      const dy = y + 0.5 - c[1];
       for (let x = minX; x <= maxX; x++) {
-        const d: Vec3 = [x + 0.5 - c[0], y + 0.5 - c[1], -c[2]];
-        let qa = 0;
-        let qb = 0;
-        let qc = -1;
-        for (const { axis, r } of parts) {
-          const a = axis[2] / r;
-          const b = dot(d, axis) / r;
-          qa += a * a;
-          qb += 2 * a * b;
-          qc += b * b;
-        }
+        const dx = x + 0.5 - c[0];
+        const b0 = (dx * ax0 + dy * ay0 + dz * az0) / r0;
+        const b1 = (dx * ax1 + dy * ay1 + dz * az1) / r1;
+        const b2 = (dx * ax2 + dy * ay2 + dz * az2) / r2;
+        const qb = 2 * (a0 * b0 + a1 * b1 + a2 * b2);
+        const qc = b0 * b0 + b1 * b1 + b2 * b2 - 1;
         const disc = qb * qb - 4 * qa * qc;
         if (disc < 0) continue;
         const t = (-qb + Math.sqrt(disc)) / (2 * qa);
-        if (t <= this.depthAt(x, y)) continue;
+        if (t <= (depth[y * width + x] ?? Infinity)) continue;
         // Normal: gradiente de la ecuación del elipsoide.
-        const local: Vec3 = [x + 0.5 - c[0], y + 0.5 - c[1], t - c[2]];
-        let normal: Vec3 = [0, 0, 0];
-        for (const { axis, r } of parts) {
-          normal = add(normal, scale(axis, dot(local, axis) / r ** 2));
-        }
-        this.paint(x, y, t, this.camera.modelNormal(normal), material);
+        const lz = t - c[2];
+        const k0 = (dx * ax0 + dy * ay0 + lz * az0) / (r0 * r0);
+        const k1 = (dx * ax1 + dy * ay1 + lz * az1) / (r1 * r1);
+        const k2 = (dx * ax2 + dy * ay2 + lz * az2) / (r2 * r2);
+        hit(
+          x,
+          y,
+          t,
+          this.camera.modelNormal([
+            ax0 * k0 + ax1 * k1 + ax2 * k2,
+            ay0 * k0 + ay1 * k1 + ay2 * k2,
+            az0 * k0 + az1 * k1 + az2 * k2,
+          ]),
+        );
       }
     }
   }
@@ -356,13 +436,86 @@ export class VolumeCanvas {
     this.ellipsoid(center, IDENTITY, [radius, radius, radius], material);
   }
 
-  /** Extremidad redondeada de `a` a `b`, que se afina de `ra` a `rb`. */
+  /**
+   * Extremidad redondeada de `a` a `b`, que se afina de `ra` a `rb`: la
+   * superficie que barre una esfera al recorrer el eje (un "tubo" liso).
+   * Para cada pixel se busca el punto del eje cuya esfera queda más
+   * adelante; de ahí salen la profundidad y la normal.
+   */
   limb(a: Vec3, b: Vec3, ra: number, rb: number, material: Material): void {
-    const length = Math.hypot(...sub(b, a));
-    const steps = Math.max(1, Math.ceil(length / 0.6));
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      this.sphere(lerp(a, b, t), ra + (rb - ra) * t, material);
+    const zoom = this.camera.zoom;
+    const ca = this.camera.point(a);
+    const cb = this.camera.point(b);
+    const r0 = ra * zoom;
+    const r1 = rb * zoom;
+    const reach = Math.max(r0, r1);
+    const minX = Math.max(0, Math.floor(Math.min(ca[0], cb[0]) - reach));
+    const maxX = Math.min(this.width - 1, Math.ceil(Math.max(ca[0], cb[0]) + reach));
+    const minY = Math.max(0, Math.floor(Math.min(ca[1], cb[1]) - reach));
+    const maxY = Math.min(this.height - 1, Math.ceil(Math.max(ca[1], cb[1]) + reach));
+    const ex = cb[0] - ca[0];
+    const ey = cb[1] - ca[1];
+    const ez = cb[2] - ca[2];
+    const er = r1 - r0;
+    const depth = this.depth;
+    const width = this.width;
+
+    const axis2 = ex * ex + ey * ey;
+    const endOn = axis2 < (reach * 2) ** 2;
+    const band = endOn ? 1 : (reach * 1.05) / Math.sqrt(axis2);
+    const cz = ca[2];
+    // Altura de la esfera en el punto k del eje sobre (px, py), o -∞ si no lo cubre.
+    let px = 0;
+    let py = 0;
+    const front = (k: number): number => {
+      const dx = px - (ca[0] + ex * k);
+      const dy = py - (ca[1] + ey * k);
+      const r = r0 + er * k;
+      const h = r * r - dx * dx - dy * dy;
+      return h < 0 ? -Infinity : cz + ez * k + Math.sqrt(h);
+    };
+
+    for (let y = minY; y <= maxY; y++) {
+      py = y + 0.5;
+      for (let x = minX; x <= maxX; x++) {
+        px = x + 0.5;
+        // Descarte rápido: lejos del eje en la imagen no hay nada.
+        const along =
+          axis2 > 0 ? Math.max(0, Math.min(1, ((px - ca[0]) * ex + (py - ca[1]) * ey) / axis2)) : 0;
+        const gx = px - (ca[0] + ex * along);
+        const gy = py - (ca[1] + ey * along);
+        if (gx * gx + gy * gy > reach * reach) continue;
+        // La altura es cóncava en k: búsqueda ternaria cerca de la proyección, y los extremos.
+        // Solo puede cubrir este pixel la parte del eje a menos de un radio de la
+        // proyección (si apunta casi hacia la cámara, se busca en todo el eje).
+        let lo = endOn ? 0 : Math.max(0, along - band);
+        let hi = endOn ? 1 : Math.min(1, along + band);
+        for (let i = 0; i < 9; i++) {
+          const m1 = lo + (hi - lo) / 3;
+          const m2 = hi - (hi - lo) / 3;
+          if (front(m1) < front(m2)) lo = m1;
+          else hi = m2;
+        }
+        let k = (lo + hi) / 2;
+        let z = front(k);
+        const z0 = front(0);
+        if (z0 > z) {
+          k = 0;
+          z = z0;
+        }
+        const z1 = front(1);
+        if (z1 > z) {
+          k = 1;
+          z = z1;
+        }
+        if (z === -Infinity || z <= (depth[y * width + x] ?? Infinity)) continue;
+        const normal = this.camera.modelNormal([
+          px - (ca[0] + ex * k),
+          py - (ca[1] + ey * k),
+          z - (cz + ez * k),
+        ]);
+        this.paint(x, y, z, normal, material);
+      }
     }
   }
 
@@ -464,6 +617,7 @@ export class VolumeCanvas {
    */
   decal(point: Vec3, normal: Vec3, color: Rgb, width = 1, height = 1): void {
     if (dot(normalize(normal), this.camera.viewDir) < 0.2) return;
+    this.resolve();
     const [cx, cy, cz] = this.camera.point(point);
     const left = Math.round(cx - width / 2);
     const top = Math.round(cy - height / 2);
@@ -481,19 +635,60 @@ export class VolumeCanvas {
   }
 
   private paint(x: number, y: number, z: number, modelNormal: Vec3, material: Material): void {
+    const i = y * this.width + x;
+    if (CLIPPING.has(material)) {
+      // Puede dejar el pixel sin pintar (máscaras): se resuelve ya.
+      const color = this.shade(x, y, z, modelNormal, material);
+      if (!color) return;
+      this.depth[i] = z;
+      this.colors[i] = color;
+      this.pending[i] = -1;
+      return;
+    }
+    let index = this.materialIndex.get(material);
+    if (index === undefined) {
+      index = this.materials.length;
+      this.materials.push(material);
+      this.materialIndex.set(material, index);
+    }
+    this.depth[i] = z;
+    this.pending[i] = index;
+    this.normals[i * 3] = modelNormal[0];
+    this.normals[i * 3 + 1] = modelNormal[1];
+    this.normals[i * 3 + 2] = modelNormal[2];
+  }
+
+  private shade(
+    x: number,
+    y: number,
+    z: number,
+    modelNormal: Vec3,
+    material: Material,
+  ): Rgb | null {
     const n = normalize(modelNormal);
     const light = AMBIENT + (1 - AMBIENT) * Math.max(0, dot(n, this.camera.lightDir));
-    const color = material({
-      x,
-      y,
-      p: this.camera.unproject(x + 0.5, y + 0.5, z),
-      n,
-      light,
-    });
-    if (!color) return;
-    const i = y * this.width + x;
-    this.depth[i] = z;
-    this.colors[i] = color;
+    return material({ x, y, p: this.camera.unproject(x + 0.5, y + 0.5, z), n, light });
+  }
+
+  /** Calcula el color de los pixeles que quedaron pendientes. */
+  private resolve(): void {
+    for (let i = 0; i < this.pending.length; i++) {
+      const index = this.pending[i] ?? -1;
+      if (index < 0) continue;
+      this.pending[i] = -1;
+      const material = this.materials[index];
+      if (!material) continue;
+      const x = i % this.width;
+      const y = (i - x) / this.width;
+      const normal: Vec3 = [
+        this.normals[i * 3] ?? 0,
+        this.normals[i * 3 + 1] ?? 0,
+        this.normals[i * 3 + 2] ?? 1,
+      ];
+      const color = this.shade(x, y, this.depth[i] ?? 0, normal, material);
+      if (color) this.colors[i] = color;
+      else this.depth[i] = -Infinity;
+    }
   }
 
   /**
@@ -501,6 +696,7 @@ export class VolumeCanvas {
    * (diferencia grande de profundidad) y agrega el contorno exterior.
    */
   toImage(outline: Rgb): PixelImage {
+    this.resolve();
     const image = new PixelImage(this.width, this.height);
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {

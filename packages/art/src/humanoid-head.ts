@@ -2,6 +2,7 @@ import type { FacialHair, HairStyle } from '@fenix/shared';
 import type { Basis } from './humanoid-rig';
 import type { Rgb } from './pixel-art';
 import {
+  clipping,
   metal,
   noise,
   normalize,
@@ -55,10 +56,10 @@ class HeadParts {
 
   /** Material que recibe la normal en el sistema de la cabeza (para máscaras de pelo, casco…). */
   masked(mask: (n: Vec3, p: Vec3) => boolean, material: Material): Material {
-    return (s) => {
+    return clipping((s) => {
       const p = scale(this.basis.local(s.p), 1 / HEAD_SCALE);
       return mask(this.basis.localDir(s.n), p) ? material(s) : null;
-    };
+    });
   }
 }
 

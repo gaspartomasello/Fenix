@@ -1,16 +1,18 @@
 import type { CreatureKind, Direction } from '@fenix/shared';
 import { OUTLINE } from './character-art';
+import { spriteCanvas } from './humanoid-rig';
 import {
   CHARACTER_ART_HEIGHT,
   CHARACTER_ART_WIDTH,
   cameraFor,
   humanoidRig,
+  cyclePhase,
   type CharacterFrame,
   type Rig,
 } from './humanoid-rig';
 import type { PixelImage, Rgb } from './pixel-art';
+import type { VolumeCanvas } from './volume';
 import {
-  VolumeCanvas,
   add,
   axesAlong,
   lerp,
@@ -58,9 +60,10 @@ const ZOOM: Readonly<Record<SummonKind, number>> = {
 
 /** Fase de la animación (0–3), para que el fuego, el agua y el viento se muevan. */
 function phaseOf(frame: CharacterFrame): number {
-  if (typeof frame === 'number') return frame;
+  const cycle = cyclePhase(frame);
+  if (cycle) return cycle.phase * 4;
   if (frame === 'idle') return 0;
-  return Number(frame.slice(-1)) || 0;
+  return Number(String(frame).slice(-1)) || 0;
 }
 
 /** Material que brilla por sí mismo: nunca se oscurece del todo. */
@@ -73,7 +76,7 @@ export function drawSummonFrame(
   direction: Direction,
   frame: CharacterFrame,
 ): PixelImage {
-  const canvas = new VolumeCanvas(
+  const canvas = spriteCanvas(
     CHARACTER_ART_WIDTH,
     CHARACTER_ART_HEIGHT,
     cameraFor(direction, ZOOM[kind]),

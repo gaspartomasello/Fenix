@@ -12,9 +12,11 @@ describe('animación de personajes', () => {
 
   it('correr usa su propio ciclo, distinto de caminar', () => {
     expect(stepFrame(0, 0.2, false)).toBe(0);
-    expect(stepFrame(1, 0.7, false)).toBe(3);
+    // Ocho cuadros por ciclo: cada paso recorre cuatro.
+    expect(stepFrame(0, 0.6, false)).toBe(2);
+    expect(stepFrame(1, 0.7, false)).toBe(6);
     expect(stepFrame(0, 0.2, true)).toBe('run-0');
-    expect(stepFrame(1, 0.7, true)).toBe('run-3');
+    expect(stepFrame(1, 0.7, true)).toBe('run-6');
   });
 
   it('al lanzar un hechizo las manos suben y bajan', () => {

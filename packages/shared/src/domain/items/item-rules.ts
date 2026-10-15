@@ -5,6 +5,8 @@ export const ITEM_REACH = 2;
 
 /** Área de la mochila en pixeles: los objetos se ubican libremente adentro, como en UO. */
 export const BACKPACK_AREA = { width: 240, height: 160 } as const;
+/** Lugar para los objetos dentro de un cuerpo (el ataúd es angosto y largo, como en UO). */
+export const CORPSE_AREA = { width: 132, height: 176 } as const;
 /** Tamaño de un ícono de objeto en la mochila. */
 export const ITEM_ICON_SIZE = 44;
 export const MAX_BACKPACK_ITEMS = 40;

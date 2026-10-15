@@ -1,6 +1,7 @@
 import { ITEMS, SPELLS, type BaseItemKind, type ItemKind } from '@fenix/shared';
 import { hexToRgb, type PixelImage, type Rgb } from './pixel-art';
 import {
+  clipping,
   Camera,
   VolumeCanvas,
   add,
@@ -251,8 +252,11 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     });
   },
   'leather-cap'(c, color) {
-    c.ellipsoid([0, 0.2, 0], lying(0), [4, 3.2, 4], (s) =>
-      s.p[1] > 0 ? tone(color, s.light) : null,
+    c.ellipsoid(
+      [0, 0.2, 0],
+      lying(0),
+      [4, 3.2, 4],
+      clipping((s) => (s.p[1] > 0 ? tone(color, s.light) : null)),
     );
     c.ellipsoid([0, 0.4, 0.4], lying(0), [4.9, 0.5, 5.2], solid(color, -1));
   },
@@ -260,8 +264,11 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     helmet(c);
   },
   'plate-helm'(c) {
-    c.ellipsoid([0, 0.4, 0], lying(0), [4.4, 4.6, 4.8], (s) =>
-      s.p[1] < 0 ? null : metal(STEEL)(s),
+    c.ellipsoid(
+      [0, 0.4, 0],
+      lying(0),
+      [4.4, 4.6, 4.8],
+      clipping((s) => (s.p[1] < 0 ? null : metal(STEEL)(s))),
     );
     c.ellipsoid([0, 2.4, 4.4], lying(0), [2.8, 0.45, 0.5], solid(ramp([24, 22, 26])));
     c.limb([0, 4.8, -3.6], [0, 4.9, 3.2], 0.5, 0.4, metal(STEEL));
@@ -466,12 +473,16 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
   },
   'mortar-pestle'(c) {
     const stone = ramp([168, 160, 150]);
-    c.sphere([0, 2.6, 0], 3.2, (s) =>
-      s.p[1] > 4
-        ? null
-        : s.n[1] > 0.6 && s.p[1] > 3
-          ? tone(stone, s.light - 0.3, -1)
-          : tone(stone, s.light),
+    c.sphere(
+      [0, 2.6, 0],
+      3.2,
+      clipping((s) =>
+        s.p[1] > 4
+          ? null
+          : s.n[1] > 0.6 && s.p[1] > 3
+            ? tone(stone, s.light - 0.3, -1)
+            : tone(stone, s.light),
+      ),
     );
     c.limb([0.4, 3.4, 0.2], [3.2, 8, -1], 0.7, 0.9, solid(stone, 1));
   },
@@ -649,8 +660,12 @@ function scroll(c: VolumeCanvas, ribbon: Ramp | null): void {
   );
   c.limb([-4.6, 1.3, 1.8], [-4.8, 1.3, 3.4], 0.6, 0.6, solid(PAPER, -1));
   if (ribbon) {
-    c.limb([0.2, 1.4, -0.4], [0.8, 1.4, 1.2], 1.6, 1.6, (s) =>
-      Math.abs(s.p[0] - 0.5) < 0.5 ? tone(ribbon, s.light) : null,
+    c.limb(
+      [0.2, 1.4, -0.4],
+      [0.8, 1.4, 1.2],
+      1.6,
+      1.6,
+      clipping((s) => (Math.abs(s.p[0] - 0.5) < 0.5 ? tone(ribbon, s.light) : null)),
     );
     c.sphere([0.8, 2.8, 0.4], 0.8, solid(ribbon, 1));
   }
@@ -680,11 +695,16 @@ function tunic(c: VolumeCanvas, material: Material): void {
 
 /** Yelmo apoyado: casco con banda y nasal. */
 function helmet(c: VolumeCanvas): void {
-  c.ellipsoid([0, 0.4, 0], lying(0), [4.2, 4, 4.4], (s) => {
-    if (s.p[1] < 0) return null;
-    if (Math.abs(s.p[1] - 1.2) < 0.45) return tone(GOLD, s.light);
-    return tone(DARK_STEEL, s.light + 0.2, s.light > 0.85 ? 1 : 0);
-  });
+  c.ellipsoid(
+    [0, 0.4, 0],
+    lying(0),
+    [4.2, 4, 4.4],
+    clipping((s) => {
+      if (s.p[1] < 0) return null;
+      if (Math.abs(s.p[1] - 1.2) < 0.45) return tone(GOLD, s.light);
+      return tone(DARK_STEEL, s.light + 0.2, s.light > 0.85 ? 1 : 0);
+    }),
+  );
   // Abertura de la cara y nasal.
   c.ellipsoid([0, 1.6, 3.9], lying(0), [2.4, 1.2, 0.6], solid(ramp([30, 26, 26])));
   c.limb([0, 3.4, 4.1], [0, 0.6, 4.6], 0.6, 0.5, metal(STEEL));

@@ -1,9 +1,17 @@
 import { MOUNTS, type Direction, type MountKind } from '@fenix/shared';
 import { OUTLINE } from './character-art';
-import { PERSON_ZOOM, cameraFor, type CharacterFrame, type Rig, type Seat } from './humanoid-rig';
-import type { PixelImage, Rgb } from './pixel-art';
+import { spriteCanvas } from './humanoid-rig';
 import {
-  VolumeCanvas,
+  PERSON_ZOOM,
+  cameraFor,
+  cyclePhase,
+  type CharacterFrame,
+  type Rig,
+  type Seat,
+} from './humanoid-rig';
+import type { PixelImage, Rgb } from './pixel-art';
+import type { VolumeCanvas } from './volume';
+import {
   add,
   axesAlong,
   lerp,
@@ -37,6 +45,61 @@ export function mountedCamera(direction: Direction) {
   return cameraFor(direction, PERSON_ZOOM, MOUNTED_FRAME);
 }
 
+/** Lo que se usa del lienzo para dibujar una montura. */
+interface Painter {
+  ellipsoid(center: Vec3, axes: readonly [Vec3, Vec3, Vec3], radii: Vec3, material: Material): void;
+  sphere(center: Vec3, radius: number, material: Material): void;
+  limb(a: Vec3, b: Vec3, ra: number, rb: number, material: Material): void;
+}
+
+/**
+ * Dibuja agrandado `k` veces desde el suelo: así la montura tiene el tamaño
+ * justo al lado del jinete sin tocar sus medidas internas.
+ */
+class Scaled implements Painter {
+  constructor(
+    private readonly canvas: VolumeCanvas,
+    readonly k: number,
+  ) {}
+
+  ellipsoid(
+    center: Vec3,
+    axes: readonly [Vec3, Vec3, Vec3],
+    radii: Vec3,
+    material: Material,
+  ): void {
+    this.canvas.ellipsoid(scale(center, this.k), axes, scale(radii, this.k), material);
+  }
+
+  sphere(center: Vec3, radius: number, material: Material): void {
+    this.canvas.sphere(scale(center, this.k), radius * this.k, material);
+  }
+
+  limb(a: Vec3, b: Vec3, ra: number, rb: number, material: Material): void {
+    this.canvas.limb(scale(a, this.k), scale(b, this.k), ra * this.k, rb * this.k, material);
+  }
+}
+
+/** Manos y pies del jinete, en las medidas de la montura (para riendas y estribos). */
+interface RiderHold {
+  readonly hands: Readonly<Record<1 | -1, Vec3>>;
+  readonly feet: Readonly<Record<1 | -1, Vec3>>;
+}
+
+function holdOf(rider: Rig | null, k: number): RiderHold | null {
+  if (!rider) return null;
+  const local = (p: Vec3): Vec3 => scale(p, 1 / k);
+  return {
+    hands: { 1: local(rider.arms[1].hand), [-1]: local(rider.arms[-1].hand) },
+    feet: { 1: local(rider.legs[1].ankle), [-1]: local(rider.legs[-1].ankle) },
+  };
+}
+
+/** El asiento, pasado de las medidas de la montura a las del lienzo. */
+function seatAt(point: Vec3, girth: number, bob: number, k: number): Seat {
+  return { y: (point[1] + 1.4) * k, z: (point[2] - 1) * k, girth: girth * k, bob: bob * k };
+}
+
 /** Lo que el jinete necesita de su montura. */
 export interface MountPose {
   /** Dónde va sentado. */
@@ -51,13 +114,14 @@ export function drawMountFrame(
   direction: Direction,
   frame: CharacterFrame,
 ): PixelImage {
-  const canvas = new VolumeCanvas(MOUNTED_ART_WIDTH, MOUNTED_ART_HEIGHT, mountedCamera(direction));
+  const canvas = spriteCanvas(MOUNTED_ART_WIDTH, MOUNTED_ART_HEIGHT, mountedCamera(direction));
   drawMount(canvas, kind, frame).tack(canvas, null);
   return canvas.toImage(OUTLINE);
 }
 
 /** Dibuja la montura en el lienzo y devuelve dónde se sienta el jinete. */
 export function drawMount(canvas: VolumeCanvas, kind: MountKind, frame: CharacterFrame): MountPose {
+  // Un poco más grandes que en la vida real al lado de una persona, como en UO.
   switch (MOUNTS[kind].species) {
     case 'horse':
       return drawQuadruped(
@@ -119,8 +183,9 @@ function legAt(phase: number, support: number, amplitude: number, lift: number):
  * se hacen con la montura parada.
  */
 function quadrupedGait(frame: CharacterFrame): GaitPose {
-  if (typeof frame === 'number') {
-    const t = frame / 4;
+  const cycle = cyclePhase(frame);
+  if (cycle && !cycle.running) {
+    const t = cycle.phase;
     const at = (offset: number, amplitude: number) => legAt(t + offset, 0.62, amplitude, 1);
     return {
       legs: { lh: at(0, 0.32), lf: at(0.25, 0.34), rh: at(0.5, 0.32), rf: at(0.75, 0.34) },
@@ -132,24 +197,28 @@ function quadrupedGait(frame: CharacterFrame): GaitPose {
       bob: Math.abs(Math.sin(t * Math.PI * 2)) * 0.6,
     };
   }
-  if (frame.startsWith('run-')) {
-    const step = Number(frame.slice(4));
-    const t = step / 4;
-    const at = (offset: number, amplitude: number) => legAt(t + offset, 0.38, amplitude, 1.25);
+  if (cycle) {
+    const t = cycle.phase;
+    const at = (offset: number, amplitude: number) => legAt(t + offset, 0.4, amplitude, 1.25);
+    // Galope de cuatro tiempos: trasera izquierda, trasera derecha, delantera
+    // izquierda y delantera derecha. Las de un mismo par van bien desfasadas:
+    // mientras una se estira adelante la otra queda atrás, cruzadas.
+    const legs = { lh: at(0, 0.55), rh: at(0.2, 0.55), lf: at(0.36, 0.62), rf: at(0.62, 0.62) };
+    const flying = Object.values(legs).every((leg) => leg.flex > 0.05);
     return {
-      // Galope: las traseras empujan casi juntas, después las delanteras, y vuela.
-      legs: { lh: at(0, 0.55), rh: at(0.1, 0.55), lf: at(0.42, 0.6), rf: at(0.52, 0.6) },
+      legs,
       pitch: Math.sin(t * Math.PI * 2) * 0.07,
-      airborne: step === 3 ? 2.4 : 0,
+      airborne: flying ? 2.4 : 0,
       nod: -Math.sin(t * Math.PI * 2) * 0.16,
       tailLift: 0.75,
       tailSwing: Math.sin(t * Math.PI * 2) * 1,
-      bob: [1.6, 0.2, -0.6, 2.2][step] ?? 0,
+      bob: 0.8 + Math.cos(t * Math.PI * 2) * 1.2,
     };
   }
+  const pose = String(frame);
   // Parado. Los gestos de reposo mueven la cola o bajan la cabeza.
-  const swish = frame.startsWith('shrug-') ? (Number(frame.slice(6)) < 2 ? 3 : -3) : 0;
-  const graze = frame.startsWith('stance-') ? 0.25 : 0;
+  const swish = pose.startsWith('shrug-') ? (Number(pose.slice(6)) < 2 ? 3 : -3) : 0;
+  const graze = pose.startsWith('stance-') ? 0.25 : 0;
   return {
     legs: { lf: STILL, rf: STILL, lh: STILL, rh: { swing: 0.06, flex: 0.18 } },
     pitch: 0,
@@ -185,6 +254,8 @@ interface QuadrupedBuild {
   readonly pivot: Vec3;
   readonly saddle: { readonly y: number; readonly z: number; readonly girth: number };
   readonly body: (part: BodyKit) => HeadAnchors;
+  /** Escala del animal al lado del jinete. */
+  readonly size: number;
   /** Patas finas que terminan en dos dedos acolchados (llama), o en casco. */
   readonly padded: boolean;
 }
@@ -204,7 +275,7 @@ interface Coat {
 
 /** Lo que necesita quien dibuja el cuerpo: el lienzo y cómo ubicar cada punto. */
 interface BodyKit {
-  readonly canvas: VolumeCanvas;
+  readonly canvas: Painter;
   readonly at: (p: Vec3) => Vec3;
   readonly axes: (forward: Vec3) => readonly [Vec3, Vec3, Vec3];
   readonly coat: Coat;
@@ -220,11 +291,12 @@ interface HeadAnchors {
 }
 
 function drawQuadruped(
-  canvas: VolumeCanvas,
+  target: VolumeCanvas,
   build: QuadrupedBuild,
   coat: Coat,
   frame: CharacterFrame,
 ): MountPose {
+  const canvas = new Scaled(target, build.size);
   const gait = quadrupedGait(frame);
   // El cuerpo cabecea sobre su centro; las patas cuelgan de él.
   const tilt = (p: Vec3): Vec3 => add(build.pivot, pitch(sub(p, build.pivot), gait.pitch));
@@ -254,10 +326,12 @@ function drawQuadruped(
   drawSaddle(canvas, at, axes, saddle, coat.blanket);
 
   return {
-    seat: { y: seatPoint[1] + 1.4, z: seatPoint[2] - 1, girth: saddle.girth, bob: gait.bob },
+    seat: seatAt(seatPoint, saddle.girth, gait.bob, build.size),
     tack: (c, rider) => {
-      drawStirrups(c, at, saddle, rider);
-      drawReins(c, anchors, rider);
+      const painter = new Scaled(c, build.size);
+      const hold = holdOf(rider, build.size);
+      drawStirrups(painter, at, saddle, hold);
+      drawReins(painter, anchors, hold);
     },
   };
 }
@@ -312,7 +386,7 @@ function mapChain(joints: LegJoints, f: (p: Vec3) => Vec3): LegJoints {
 }
 
 function drawLeg(
-  canvas: VolumeCanvas,
+  canvas: Painter,
   leg: LegBuild,
   j: LegJoints,
   coat: Coat,
@@ -353,7 +427,7 @@ function drawLeg(
 
 /** Mantilla, montura con borrén adelante y atrás, y cincha bajo la panza. */
 function drawSaddle(
-  canvas: VolumeCanvas,
+  canvas: Painter,
   at: (p: Vec3) => Vec3,
   axes: (forward: Vec3) => readonly [Vec3, Vec3, Vec3],
   saddle: QuadrupedBuild['saddle'],
@@ -397,17 +471,17 @@ function drawSaddle(
 
 /** Estribos: cuelgan de la montura hasta los pies del jinete (o sueltos). */
 function drawStirrups(
-  canvas: VolumeCanvas,
+  canvas: Painter,
   at: (p: Vec3) => Vec3,
   saddle: QuadrupedBuild['saddle'],
-  rider: Rig | null,
+  rider: RiderHold | null,
 ): void {
   const strap = solid(ramp([90, 56, 32]), -1);
   const iron = metal(ramp([150, 150, 156]));
   for (const side of [1, -1] as const) {
     const hang = at([side * (saddle.girth + 0.3), saddle.y - 2.5, saddle.z]);
     const foot = rider
-      ? add(rider.legs[side].ankle, [0, -1.2, 0.8])
+      ? add(rider.feet[side], [0, -1.2, 0.8])
       : at([side * (saddle.girth + 0.8), saddle.y - 14, saddle.z + 0.5]);
     canvas.limb(hang, add(foot, [0, 1.4, 0]), 0.4, 0.4, strap);
     canvas.ellipsoid(foot, axesAlong([0, 0, 1]), [1.6, 0.5, 1.9], iron);
@@ -415,12 +489,12 @@ function drawStirrups(
 }
 
 /** Riendas: del freno a las manos del jinete, o apoyadas en la cruz. */
-function drawReins(canvas: VolumeCanvas, anchors: HeadAnchors, rider: Rig | null): void {
+function drawReins(canvas: Painter, anchors: HeadAnchors, rider: RiderHold | null): void {
   const leather = solid(ramp([70, 42, 24]), -1);
   for (const side of [1, -1] as const) {
     const bit = anchors.bit[side];
     if (rider) {
-      const hand = rider.arms[side].hand;
+      const hand = rider.hands[side];
       // Un poco de comba entre la boca y la mano.
       const middle = add(lerp(bit, hand, 0.5), [0, -1.4, 0]);
       canvas.limb(bit, middle, 0.32, 0.32, leather);
@@ -459,6 +533,7 @@ const HORSE: QuadrupedBuild = {
   hoof: 2.4,
   pivot: [0, 30, 0],
   saddle: { y: 41.6, z: 3, girth: 9.4 },
+  size: 1.14,
   padded: false,
   body: drawHorseBody,
 };
@@ -520,33 +595,44 @@ function drawHorseBody({ canvas, at, axes, coat, gait }: BodyKit): HeadAnchors {
     const ear = add(poll, [side * 1.7, 1.2, -0.6]);
     canvas.limb(ear, add(ear, [side * 0.7, 5, -1.4]), 1.15, 0.25, body);
   }
-  // Crin: mechones que caen hacia la derecha a lo largo de la cresta, y copete.
+  // Crin: una cresta y mechones finos que caen hacia la derecha, y el copete.
   const mane = coat.mane;
+  // Cerdas: vetas finas a lo largo del pelo, claras y oscuras.
   const strands: Material = (s) =>
-    tone(
-      mane,
-      s.light,
-      noise(Math.floor(s.p[0] * 2), Math.floor((s.p[1] + s.p[2]) * 1.5)) > 0.7 ? 1 : 0,
-    );
-  for (let i = 0; i <= 8; i++) {
-    const t = i / 8;
-    const crest = add(lerp(nape, base, t), [1.8, 4.1 - t * 0.6, -1.4 - t * 0.6]);
-    canvas.ellipsoid(crest, axesAlong(neckDir), [1.5, 3 - t * 0.4, 2.3], strands);
+    tone(mane, s.light, Math.sin(s.p[0] * 5.1 + s.p[2] * 3.7) > 0.55 ? 0.6 : 0);
+  const crestTop = (t: number): Vec3 =>
+    add(lerp(nape, base, t), [0.6, 4.2 - t * 0.7, -1.2 - t * 0.6]);
+  canvas.limb(crestTop(0), crestTop(1), 1.5, 1.8, strands);
+  for (let i = 0; i <= 12; i++) {
+    const t = i / 12;
+    const root = crestTop(t);
+    const fall = 3.8 + t * 1.8 + noise(i, 3) * 1.2;
+    const tip = add(root, [2.4 + noise(i, 5) * 0.8, -fall, -0.8 - noise(i, 7)]);
+    canvas.limb(root, lerp(root, tip, 0.55), 1.15, 0.85, strands);
+    canvas.limb(lerp(root, tip, 0.55), tip, 0.85, 0.3, strands);
   }
-  canvas.limb(add(poll, [0, 2, -0.5]), head(6, [0.4, 1.8, 0]), 1.3, 0.6, strands);
+  canvas.limb(add(poll, [0, 2, -0.5]), head(6, [0.4, 1.8, 0]), 1.3, 0.5, strands);
 
   // Cola: sale del maslo alta y cae en una cascada de cerdas; al galope vuela.
   const dock = at([0, 37.6, -24.4]);
   const w = gait.tailLift;
   const swing = gait.tailSwing;
   const c1 = add(dock, [0, -1 + w, -3.5 - w]);
-  const c2 = add(dock, [swing * 0.5, -7 + w * 4, -6.5 - w * 4]);
-  const c3 = add(dock, [swing, -16 + w * 9, -7 - w * 8]);
-  const c4 = add(dock, [swing * 1.3, -24 + w * 14, -5.5 - w * 12]);
-  canvas.limb(dock, c1, 1.9, 2.2, strands);
-  canvas.limb(c1, c2, 2.3, 3.1, strands);
-  canvas.limb(c2, c3, 3.1, 3, strands);
-  canvas.limb(c3, c4, 3, 1.5, strands);
+  canvas.limb(dock, c1, 1.9, 2.1, coat.body);
+  for (let i = 0; i < 9; i++) {
+    const spread = (i - 4) * 0.45;
+    const length = 0.85 + noise(i, 11) * 0.25;
+    const c2 = add(c1, [spread * 0.5 + swing * 0.5, (-6 + w * 4) * length, (-3 - w * 4) * length]);
+    const c3 = add(c1, [spread + swing, (-15 + w * 9) * length, (-3.5 - w * 7) * length]);
+    const c4 = add(c1, [
+      spread * 1.4 + swing * 1.3,
+      (-22 + w * 13) * length,
+      (-2 - w * 11) * length,
+    ]);
+    canvas.limb(c1, c2, 1.4, 1.5, strands);
+    canvas.limb(c2, c3, 1.5, 1.2, strands);
+    canvas.limb(c3, c4, 1.2, 0.35, strands);
+  }
 
   // Cabezada: carrilleras, muserola y anillas del freno.
   const strap = solid(ramp([70, 42, 24]), -1);
@@ -594,7 +680,7 @@ function horseCoat(
 }
 
 const CHESTNUT = ramp([160, 86, 44]);
-const BLACK = ramp([50, 46, 50]);
+const BLACK = ramp([40, 36, 42]);
 const GRAY = ramp([182, 182, 178]);
 
 /** Tordillo: manchas redondas más oscuras (rodados) y patas que se oscurecen hacia abajo. */
@@ -670,6 +756,7 @@ const LLAMA: QuadrupedBuild = {
   hoof: 1.4,
   pivot: [0, 24, 0],
   saddle: { y: 32.4, z: 1, girth: 7.6 },
+  size: 1.12,
   padded: true,
   body: drawLlamaBody,
 };
@@ -757,16 +844,21 @@ const scaly: Material = (s) => {
  * larga, patas traseras fuertes con el tobillo alto (apoya los dedos),
  * bracitos, cuello curvo y cabeza alargada con cresta.
  */
-function drawRunner(canvas: VolumeCanvas, frame: CharacterFrame): MountPose {
-  const running = typeof frame === 'string' && frame.startsWith('run-');
-  const walking = typeof frame === 'number';
-  const step = walking ? frame : running ? Number(frame.slice(4)) : 0;
-  const t = step / 4;
+const RUNNER_SIZE = 1.1;
+
+function drawRunner(target: VolumeCanvas, frame: CharacterFrame): MountPose {
+  const canvas = new Scaled(target, RUNNER_SIZE);
+  const cycle = cyclePhase(frame);
+  const running = cycle?.running === true;
+  const walking = cycle !== null && !running;
+  const t = cycle?.phase ?? 0;
   const amplitude = running ? 0.75 : walking ? 0.45 : 0;
   const leg = (offset: number): LegState =>
     amplitude === 0 ? STILL : legAt(t + offset, running ? 0.42 : 0.6, amplitude, running ? 1.3 : 1);
   const legs = { 1: leg(0), [-1]: leg(0.5) } as Record<1 | -1, LegState>;
-  const bob = running ? (step % 2 === 1 ? 1.8 : -0.4) : walking ? (step % 2) * 0.6 : 0;
+  // Rebota dos veces por ciclo (una por pisada).
+  const bounce = Math.abs(Math.sin(t * Math.PI * 2));
+  const bob = running ? bounce * 2.2 - 0.4 : walking ? bounce * 0.6 : 0;
   const lean = running ? 0.1 : 0;
   const tailSway = Math.sin(t * Math.PI * 2) * (running ? 1.4 : 2.4);
 
@@ -849,15 +941,12 @@ function drawRunner(canvas: VolumeCanvas, frame: CharacterFrame): MountPose {
   for (const side of [1, -1] as const) canvas.sphere(bit[side], 0.55, metal(ramp([170, 170, 176])));
   const seatPoint = at([0, saddle.y, saddle.z]);
   return {
-    seat: {
-      y: seatPoint[1] + 1.4,
-      z: seatPoint[2] - 1,
-      girth: saddle.girth,
-      bob: running ? bob * 0.5 : 0,
-    },
+    seat: seatAt(seatPoint, saddle.girth, running ? bob * 0.5 : 0, RUNNER_SIZE),
     tack: (c, rider) => {
-      drawStirrups(c, at2, saddle, rider);
-      drawReins(c, { bit, withers: at([0, 38, 9]) }, rider);
+      const painter = new Scaled(c, RUNNER_SIZE);
+      const hold = holdOf(rider, RUNNER_SIZE);
+      drawStirrups(painter, at2, saddle, hold);
+      drawReins(painter, { bit, withers: at([0, 38, 9]) }, hold);
     },
   };
 }

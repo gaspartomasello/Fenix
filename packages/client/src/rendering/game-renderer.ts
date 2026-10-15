@@ -14,6 +14,8 @@ import { TerrainLayer } from './terrain-layer';
 import { TextureCache } from './texture-cache';
 
 const ZOOM_LEVELS = [1, 1.5, 2] as const;
+/** Tiempo por cuadro para dibujar de antemano personajes y criaturas. */
+const PREPARE_BUDGET_MS = 4;
 const GHOST_TINT = 0x8c8c9c;
 /** Caja de un personaje en pantalla respecto de sus pies, para saber si se lo tocó. */
 const MOBILE_HIT_BOX = { halfWidth: 16, height: 64 };
@@ -170,6 +172,8 @@ export class GameRenderer {
         underground: this.game.currentRegion()?.dungeon === true,
       });
     }
+    // Entre cuadro y cuadro, se adelantan unos milisegundos de dibujo de personajes.
+    this.textures.pump(PREPARE_BUDGET_MS);
     this.app.render();
   }
 

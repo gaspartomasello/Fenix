@@ -30,8 +30,16 @@ import { toCanvas } from '../platform/canvas';
  * Convierte el arte generado en texturas de Pixi y las reutiliza.
  * Es el único punto donde `@fenix/art` y Pixi se encuentran.
  */
+/** Un cuadro por dibujar: su clave en la caché y cómo dibujarlo. */
+interface Entry {
+  readonly key: string;
+  readonly draw: () => PixelImage;
+}
+
 export class TextureCache {
   private readonly textures = new Map<string, Texture>();
+  /** Cuadros pedidos de antemano, que se dibujan de a poco entre un cuadro y otro. */
+  private readonly upcoming = new Map<string, Entry>();
 
   terrain(terrain: Terrain, variant: number, neighbors: TerrainNeighbors): Texture {
     const v = variant % TERRAIN_VARIANTS;
@@ -46,6 +54,10 @@ export class TextureCache {
     return this.getOrCreate(`s:${kind}:${v}`, () => drawStatic(kind, v));
   }
 
+  /**
+   * Personas, criaturas y monturas se dibujan al doble de detalle (ver
+   * `ART_DETAIL`) y se achican al mostrarlas: filtro suave, no pixelado.
+   */
   character(
     appearance: Appearance,
     direction: Direction,
@@ -54,6 +66,68 @@ export class TextureCache {
     role: NpcRole | null = null,
     mount: MountKind | null = null,
   ): Texture {
+    return this.fromEntry(
+      this.characterEntry(appearance, direction, frame, equipment, role, mount),
+    );
+  }
+
+  creature(kind: CreatureKind, direction: Direction, frame: CharacterFrame): Texture {
+    return this.fromEntry(this.creatureEntry(kind, direction, frame));
+  }
+
+  /**
+   * Pide de antemano cuadros de una persona (el ciclo de caminar hacia donde
+   * mira, por ejemplo), para que al moverse ya estén dibujados.
+   */
+  prepareCharacter(
+    appearance: Appearance,
+    direction: Direction,
+    frames: readonly CharacterFrame[],
+    equipment: EquipmentLook,
+    role: NpcRole | null,
+    mount: MountKind | null,
+  ): void {
+    for (const frame of frames)
+      this.prepare(this.characterEntry(appearance, direction, frame, equipment, role, mount));
+  }
+
+  /** Pide de antemano cuadros de una criatura. */
+  prepareCreature(
+    kind: CreatureKind,
+    direction: Direction,
+    frames: readonly CharacterFrame[],
+  ): void {
+    for (const frame of frames) this.prepare(this.creatureEntry(kind, direction, frame));
+  }
+
+  /** Dibuja cuadros pedidos de antemano hasta gastar `budgetMs` (una vez por cuadro de pantalla). */
+  pump(budgetMs: number): void {
+    const until = performance.now() + budgetMs;
+    for (const [key, entry] of this.upcoming) {
+      this.upcoming.delete(key);
+      this.fromEntry(entry);
+      if (performance.now() >= until) return;
+    }
+  }
+
+  private prepare(entry: Entry): void {
+    if (!this.textures.has(entry.key) && !this.upcoming.has(entry.key))
+      this.upcoming.set(entry.key, entry);
+  }
+
+  private fromEntry(entry: Entry): Texture {
+    this.upcoming.delete(entry.key);
+    return this.getOrCreate(entry.key, entry.draw, 'linear');
+  }
+
+  private characterEntry(
+    appearance: Appearance,
+    direction: Direction,
+    frame: CharacterFrame,
+    equipment: EquipmentLook,
+    role: NpcRole | null,
+    mount: MountKind | null,
+  ): Entry {
     const worn = EQUIPMENT_SLOTS.map((slot) => equipment[slot] ?? '').join(',');
     const look = [
       appearance.gender ?? '',
@@ -64,16 +138,17 @@ export class TextureCache {
       appearance.facialHair ?? '',
       role ?? '',
     ].join(':');
-    const key = `c:${look}:${direction}:${frame}:${worn}:${mount ?? ''}`;
-    return this.getOrCreate(key, () =>
-      drawCharacterFrame(appearance, direction, frame, equipment, role, mount),
-    );
+    return {
+      key: `c:${look}:${direction}:${frame}:${worn}:${mount ?? ''}`,
+      draw: () => drawCharacterFrame(appearance, direction, frame, equipment, role, mount),
+    };
   }
 
-  creature(kind: CreatureKind, direction: Direction, frame: CharacterFrame): Texture {
-    return this.getOrCreate(`m:${kind}:${direction}:${frame}`, () =>
-      drawCreatureFrame(kind, direction, frame),
-    );
+  private creatureEntry(kind: CreatureKind, direction: Direction, frame: CharacterFrame): Entry {
+    return {
+      key: `m:${kind}:${direction}:${frame}`,
+      draw: () => drawCreatureFrame(kind, direction, frame),
+    };
   }
 
   item(kind: ItemKind, amount = 1): Texture {
