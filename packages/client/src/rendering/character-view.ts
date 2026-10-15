@@ -2,7 +2,6 @@ import {
   CHARACTER_ART_HEIGHT,
   CHARACTER_FEET_Y,
   CHARACTER_HEAD_Y,
-  ART_DETAIL,
   MOUNTED_ART_HEIGHT,
   WALK_FRAMES,
   MOUNTED_FEET_Y,
@@ -75,8 +74,7 @@ export class CharacterView {
     private readonly isSelf: boolean,
     private readonly ownPet = false,
   ) {
-    // Las texturas vienen al doble de detalle: se muestran a la mitad.
-    this.sprite.scale.set(CHARACTER_SCALE / ART_DETAIL);
+    this.sprite.scale.set(CHARACTER_SCALE);
     this.targetRing.visible = false;
 
     this.nameLabel = new Text({

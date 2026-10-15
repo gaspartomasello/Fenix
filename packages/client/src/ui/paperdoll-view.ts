@@ -1,4 +1,4 @@
-import { ART_DETAIL, drawCharacterFrame, type PixelImage } from '@fenix/art';
+import { drawCharacterFrame, type PixelImage } from '@fenix/art';
 import {
   Direction,
   EQUIPMENT_SLOTS,
@@ -189,13 +189,11 @@ export class PaperdollView {
       this.masks.set(slot, difference(full, without));
     }
     const art = toCanvas(full);
-    // El arte viene al doble de detalle: se agranda menos y con suavizado.
-    this.figure.width = (art.width * FIGURE_SCALE) / ART_DETAIL;
-    this.figure.height = (art.height * FIGURE_SCALE) / ART_DETAIL;
+    this.figure.width = art.width * FIGURE_SCALE;
+    this.figure.height = art.height * FIGURE_SCALE;
     const ctx = this.figure.getContext('2d');
     if (ctx) {
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
+      ctx.imageSmoothingEnabled = false;
       ctx.drawImage(art, 0, 0, this.figure.width, this.figure.height);
     }
 

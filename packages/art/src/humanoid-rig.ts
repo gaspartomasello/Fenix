@@ -107,11 +107,11 @@ export function cameraFor(
 }
 
 /**
- * Detalle de los sprites de personas, criaturas y monturas: se dibujan a
- * este múltiplo de su tamaño en pantalla y se muestran achicados, así los
- * bordes y las sombras quedan suaves (y nítidos al acercar la cámara).
+ * Detalle de los sprites de personas, criaturas y monturas: múltiplo de su
+ * tamaño en pantalla al que se dibujan. En 1 se dibujan pixel a pixel, con
+ * el aspecto de siempre (se probó 2, con filtro suave, y se veía peor).
  */
-export const ART_DETAIL = 2;
+export const ART_DETAIL = 1;
 
 /** Lienzo de un sprite de `width`×`height` (en pixeles de pantalla), al detalle de arte. */
 export function spriteCanvas(width: number, height: number, camera: Camera): VolumeCanvas {

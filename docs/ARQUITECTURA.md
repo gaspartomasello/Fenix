@@ -324,10 +324,9 @@ gremio llega a sus miembros estén donde estén).
   no hay oscuridad: se ve como de día. En una mazmorra es de noche siempre, con un ambiente más
   oscuro y sin azul de luna; los braseros iluminan las salas.
 - Personajes: modelos de volumen en 8 direcciones, con caminata, carrera y acciones. Caminar y
-  correr tienen 8 cuadros por ciclo (las poses clave se interpolan). Personas, criaturas y
-  monturas se dibujan al doble de detalle (`ART_DETAIL`) y se muestran achicadas con filtro
-  suave; el sombreado es un degradé continuo y las extremidades son superficies lisas. El
-  cliente dibuja de antemano el ciclo hacia donde mira cada uno (`TextureCache.pump`), unos
+  correr tienen 8 cuadros por ciclo (las poses clave se interpolan). Se dibujan pixel a pixel
+  (`ART_DETAIL` = 1) y se muestran sin suavizar; se probó el doble de detalle con sombreado
+  continuo y se veía peor. El cliente dibuja de antemano el ciclo hacia donde mira cada uno (`TextureCache.pump`), unos
   milisegundos por cuadro, así moverse no da tirones.
 
 ## Convenciones

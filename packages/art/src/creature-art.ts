@@ -14,7 +14,7 @@ import { drawSummonFrame, isSummonKind } from './summon-art';
 import { drawMonsterFrame, isMonsterKind } from './monster-art';
 import type { VolumeCanvas } from './volume';
 import { add, axesAlong, normalize, ramp, solid, tone, type Vec3 } from './volume';
-import { biteOffset, fur, gait } from './creature-motion';
+import { biteOffset, fur, gait, tailWag } from './creature-motion';
 
 /** Dibuja un frame de una criatura, en el mismo lienzo que los personajes. */
 export function drawCreatureFrame(
@@ -73,7 +73,7 @@ function drawWolf(canvas: VolumeCanvas, frame: CharacterFrame): void {
   canvas.sphere([0, 12 + bob, -5.8], 3.7, body);
 
   // Cola peluda que se mueve al caminar.
-  const wag = frame === 'idle' ? 0 : frame === 0 || frame === 2 ? 1.2 : -1.2;
+  const wag = tailWag(frame) * 1.2;
   canvas.limb([0, 13.5 + bob, -8.5], [wag * 0.5, 12.5 + bob, -12], 1.8, 1.9, body);
   canvas.limb([wag * 0.5, 12.5 + bob, -12], [wag, 9 + bob, -14.5], 1.9, 0.9, (s) =>
     s.p[2] < -13.6 ? tone(WOLF_BELLY, s.light) : body(s),
