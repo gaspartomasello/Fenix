@@ -40,6 +40,8 @@ export class Creature implements Mobile {
   /** Vida recuperada en fracciones, hasta juntar un punto (regeneración). */
   regenCarry = 0;
   lastTickAt = 0;
+  /** Montura: hasta cuándo no se vuelve a avisar al dueño que la atacan. */
+  ownerWarnedUntil = 0;
   /** Invocada: jugador que la llamó (pelea para él) y cuándo se desvanece. */
   readonly ownerId: EntityId | null;
   readonly expiresAt: number | null;
@@ -48,7 +50,7 @@ export class Creature implements Mobile {
     readonly id: EntityId,
     kind: CreatureKind,
     readonly home: Position,
-    /** Invocación (vence en `expiresAt`) o montura mansa (`expiresAt` null). */
+    /** Invocación (vence en `expiresAt`) o montura (`expiresAt` null). */
     summon: { ownerId: EntityId; expiresAt: number | null } | null = null,
   ) {
     this.ownerId = summon?.ownerId ?? null;
@@ -70,7 +72,7 @@ export class Creature implements Mobile {
     this.gone = false;
   }
 
-  /** Montura mansa suelta: sigue a su dueño, no pelea y se puede montar. */
+  /** Montura suelta: sigue a su dueño, lo defiende y se puede montar. */
   get isPet(): boolean {
     return this.ownerId !== null && isMountKind(this.body);
   }

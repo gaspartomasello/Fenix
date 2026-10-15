@@ -303,9 +303,14 @@ solo no pide contraseña: el servidor embebido se compone sin hasher.
 
 ### Monturas
 
-`MOUNTS` (shared) lista las monturas; cada una es también una `CreatureKind` mansa. Comprada en
-la caballeriza (`buyMount`), queda en el mundo como `Creature` con dueño y sin vencimiento
-(`isPet`): sigue al dueño, no pelea y viaja con él en los teletransportes. `MountActions` la monta
+`MOUNTS` (shared) lista las monturas; cada una es también una `CreatureKind`. Comprada en la
+caballeriza (`buyMount`), queda en el mundo como `Creature` con dueño y sin vencimiento
+(`isPet`): sigue al dueño y viaja con él en los teletransportes. Suelta pelea como una invocación
+(`updateSummonTarget`): ataca al objetivo de su dueño y a quien lo ataque a él o a ella. Las
+criaturas salvajes la eligen como presa igual que a un jugador, y atacar la montura de otro jugador
+sigue las reglas del combate entre jugadores contra su dueño (el pueblo la protege y es un crimen
+si el dueño es inocente). Al dueño se le avisa cuando la atacan y cuando la matan; el cuerpo queda
+20 s y después puede comprar otra. `releasePet` (`/liberar`) la deja ir, montada o suelta. `MountActions` la monta
 (`mount`: la criatura sale del mundo y `Player.mount` guarda la especie), la baja (`dismount`, o al
 morir) y avisa con `mountChanged`. Montado, `moveDuration(mode, true)` da los tiempos de UO (200 ms
 al paso, 100 ms al galope) en el servidor y en la predicción del cliente, y correr no gasta

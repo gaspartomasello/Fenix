@@ -278,6 +278,10 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         if (this.self?.mount) this.dismount();
         else this.notify('No estás montado.');
         return;
+      case 'releasePet':
+        // El servidor sabe si hay montura (suelta o montada) y responde.
+        this.gateway.send({ type: 'releasePet' });
+        return;
       case 'hour':
         this.gateway.send({ type: 'setHour', hour: input.hour });
         return;

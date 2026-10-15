@@ -78,7 +78,9 @@ para viajar a un pueblo o lugar con nombre (`/ir` solo muestra la lista).
 - **Monturas**: en la caballeriza de Bautista se compran caballos (alazán, negro, tordillo y
   overo), una llama o un lagarto corredor. La montura te sigue; **doble clic sobre ella** para
   montar y **doble clic sobre vos** (o `/desmontar`) para bajarte; en modo guerra el doble clic
-  no te baja. Montado se anda al doble de rápido y galopar no cansa.
+  no te baja. Montado se anda al doble de rápido y galopar no cansa. Suelta, la montura te
+  defiende y ataca a quien ataques; las criaturas y otros jugadores la pueden matar. Con
+  `/liberar` la dejás ir para siempre.
 - **Doble clic sobre el cuerpo** de una criatura muerta (o un toque): revisarlo. El botín está
   adentro: se arrastra cada objeto a la mochila o se usa **Tomar todo**.
 - **L**: libro de hechizos, con una página por círculo. **1 a 8**: lanzar los hechizos de la página
@@ -203,3 +205,6 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
     brazos abiertos y el arma en el suelo, lobos, ratas y monturas de costado, la araña panza
     arriba y el dragón desplomado con las alas caídas. Al morir se ve la caída, y el cuerpo se
     revisa con doble clic. Las criaturas nuevas tienen su cuerpo sin dibujar nada aparte.
+17. ✅ **Monturas que pelean**: suelta, la montura defiende a su dueño y ataca a quien él ataque
+    (el caballo y la llama patean, el lagarto muerde). Las criaturas y otros jugadores la pueden
+    matar: el dueño recibe el aviso y su cuerpo queda en el piso. Con `/liberar` se la deja ir.

@@ -13,19 +13,15 @@ import type { Mobile } from '../mobile';
 import { Npc } from '../npcs/npc';
 import { Player } from '../player';
 import type { World } from '../world';
-import { LEASH_RANGE, WANDER_RANGE, type Creature } from './creature';
+import { Creature, LEASH_RANGE, WANDER_RANGE } from './creature';
 
 /**
  * Decide el objetivo de una criatura: sigue al actual mientras esté vivo y
- * no se haya alejado demasiado de su lugar; si no, busca al jugador vivo
- * más cercano dentro de su rango de agresión.
+ * no se haya alejado demasiado de su lugar; si no, busca al jugador (o la
+ * montura suelta de alguien) más cercano dentro de su rango de agresión.
  */
 export function updateTarget(creature: Creature, world: World): Mobile | null {
-  // Las monturas mansas no pelean: solo siguen a su dueño.
-  if (creature.isPet) {
-    creature.combat.targetId = null;
-    return null;
-  }
+  // Invocaciones y monturas pelean para su dueño: lo defienden y atacan a quien él ataque.
   if (creature.ownerId) return updateSummonTarget(creature, creature.ownerId, world);
   const current = creature.combat.targetId ? world.getMobile(creature.combat.targetId) : undefined;
   // Persigue a quien la atacó (persona o invocación) mientras no se aleje mucho de su lugar.
@@ -39,9 +35,10 @@ export function updateTarget(creature: Creature, world: World): Mobile | null {
   }
   creature.combat.targetId = null;
 
-  let best: Player | null = null;
+  let best: Mobile | null = null;
   for (const mobile of world.mobilesNear(creature.position)) {
-    if (!(mobile instanceof Player) || mobile.combat.isDead) continue;
+    const prey = mobile instanceof Player || (mobile instanceof Creature && mobile.isPet);
+    if (!prey || mobile.combat.isDead) continue;
     const distance = tileDistance(mobile.position, creature.position);
     if (distance > creature.definition.aggroRange) continue;
     if (!best || distance < tileDistance(best.position, creature.position)) best = mobile;

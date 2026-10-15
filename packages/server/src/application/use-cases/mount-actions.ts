@@ -20,7 +20,8 @@ import type { IdGenerator, Notifier } from '../ports';
  * Monturas, como en UO: se compran en la caballeriza, la montura suelta
  * sigue a su dueño, con doble clic se monta (y desaparece del mundo: va
  * debajo del jinete) y al desmontar vuelve a aparecer al lado. Cada jugador
- * tiene una sola. Al morir se cae de la montura.
+ * tiene una sola. Al morir se cae de la montura. Suelta, pelea para su
+ * dueño y la pueden matar; con `/liberar` se la deja ir.
  */
 export class MountActions {
   constructor(
@@ -49,7 +50,7 @@ export class MountActions {
         `No te alcanza: ${article} ${name} cuesta ${price} monedas de oro.`,
       );
     this.items.publish(changes, playerId);
-    this.release(player, kind);
+    this.place(player, kind);
     this.say(
       playerId,
       `Compraste ${article} ${name}. Te sigue a todos lados; hacé doble clic sobre ${article === 'una' ? 'ella' : 'él'} para montar.`,
@@ -80,7 +81,7 @@ export class MountActions {
     const kind = player.mount;
     player.mount = null;
     this.announce(player);
-    this.release(player, kind);
+    this.place(player, kind);
   }
 
   /** Al morir se cae de la montura, que queda al lado (como en UO). */
@@ -88,8 +89,33 @@ export class MountActions {
     if (player.mount) this.dismount(player.id);
   }
 
+  /**
+   * `/liberar`: la montura deja de ser del jugador y se va (si estaba
+   * montado, se baja primero). No hay vuelta atrás.
+   */
+  releasePet(playerId: EntityId): void {
+    const player = this.world.get(playerId);
+    if (!player) return;
+    if (player.combat.isDead)
+      return this.say(playerId, 'Los fantasmas no pueden liberar monturas.');
+    let name: string;
+    if (player.mount) {
+      name = MOUNTS[player.mount].name;
+      player.mount = null;
+      this.announce(player);
+    } else {
+      const pet = this.world.petOf(playerId);
+      if (!pet) return this.say(playerId, 'No tenés ninguna montura para liberar.');
+      name = pet.name;
+      this.mobiles.disappear(pet);
+      pet.gone = true;
+      this.world.removeCreature(pet.id);
+    }
+    this.say(playerId, `Liberaste a tu ${name}. Se aleja al trote y se pierde de vista.`);
+  }
+
   /** Pone la montura suelta en el mundo, al lado de su dueño. */
-  private release(player: Player, kind: MountKind): void {
+  private place(player: Player, kind: MountKind): void {
     const pet = new Creature(this.ids.next(), kind, freeSpotNear(this.world, player.position), {
       ownerId: player.id,
       expiresAt: null,

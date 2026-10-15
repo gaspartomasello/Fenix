@@ -62,7 +62,7 @@ function createStable(store = new FakeCharacterStore()) {
 }
 
 describe('monturas', () => {
-  it('se compra en la caballeriza y la montura sigue a su dueño sin pelear', () => {
+  it('se compra en la caballeriza y la montura sigue a su dueño', () => {
     const f = createStable();
     f.app.handle(f.ana, { type: 'buyMount', vendorId: 'bautista', mount: 'horse-black' });
     expect(f.texts().at(-1)).toContain('No te alcanza');
@@ -81,11 +81,81 @@ describe('monturas', () => {
     f.gold(2000);
     f.app.handle(f.ana, { type: 'buyMount', vendorId: 'bautista', mount: 'llama' });
     expect(f.texts().at(-1)).toContain('Ya tenés una montura');
+  });
 
-    // Un lobo que pasa no la ataca, y ella tampoco pelea.
-    f.world.addCreature(new Creature('lobo', 'wolf', { x: 8, y: 4 }));
+  it('pelea para su dueño: ataca a quien él ataca', () => {
+    const f = createStable();
+    f.gold(1000);
+    f.app.handle(f.ana, { type: 'buyMount', vendorId: 'bautista', mount: 'horse-chestnut' });
+    const pet = f.world.petOf(f.ana);
+    f.world.addCreature(new Creature('rata', 'rat', { x: 10, y: 5 }));
     f.app.tick(100);
     expect(pet?.combat.targetId).toBeNull();
+    f.app.handle(f.ana, { type: 'attack', targetId: 'rata' });
+    f.app.tick(200);
+    expect(pet?.combat.targetId).toBe('rata');
+    // No se ataca a la propia montura.
+    f.app.handle(f.ana, { type: 'attack', targetId: pet?.id ?? '' });
+    expect(f.texts().at(-1)).toBe('Es tu montura.');
+  });
+
+  it('las criaturas la atacan y la pueden matar: el dueño se entera y puede comprar otra', () => {
+    const f = createStable();
+    f.gold(2000);
+    f.app.handle(f.ana, { type: 'buyMount', vendorId: 'bautista', mount: 'llama' });
+    const pet = f.world.petOf(f.ana);
+    if (!pet) throw new Error('sin montura');
+    // La llama queda pegada al lobo y la dueña lejos: el lobo va por la llama.
+    pet.position = { x: 9, y: 4 };
+    const wolf = new Creature('lobo', 'wolf', { x: 10, y: 4 });
+    f.world.addCreature(wolf);
+    pet.combat.takeDamage(pet.combat.current.hits - 1);
+    let t = 100;
+    for (; t <= 30_000 && !pet.combat.isDead; t += 100) f.app.tick(t);
+    expect(pet.combat.isDead).toBe(true);
+    expect(f.texts()).toContain('¡Un lobo gris ataca a tu llama!');
+    expect(f.texts().at(-1)).toContain('Mataron a tu llama');
+    expect(f.world.petOf(f.ana)).toBeUndefined();
+    // El cuerpo queda tirado un rato y después se va.
+    f.app.tick(t + 1000);
+    expect(pet.gone).toBe(false);
+    f.app.tick(t + 25_000);
+    expect(pet.gone).toBe(true);
+    f.app.handle(f.ana, { type: 'buyMount', vendorId: 'bautista', mount: 'llama' });
+    expect(f.world.petOf(f.ana)?.body).toBe('llama');
+  });
+
+  it('atacar la montura de otro es atacar a su dueño', () => {
+    const f = createStable();
+    f.gold(1000);
+    f.app.handle(f.ana, { type: 'buyMount', vendorId: 'bautista', mount: 'horse-gray' });
+    const pet = f.world.petOf(f.ana);
+    const bruno = f.join('Bruno');
+    f.app.handle(bruno, { type: 'attack', targetId: pet?.id ?? '' });
+    expect(f.world.get(bruno)?.combat.targetId).toBe(pet?.id);
+    expect(f.world.get(bruno)?.reputation.notoriety).toBe('criminal');
+    expect(f.texts()).toContain('¡Bruno te está atacando!');
+  });
+
+  it('/liberar deja ir a la montura, suelta o montada', () => {
+    const f = createStable();
+    f.app.handle(f.ana, { type: 'releasePet' });
+    expect(f.texts().at(-1)).toBe('No tenés ninguna montura para liberar.');
+
+    f.gold(3000);
+    f.app.handle(f.ana, { type: 'buyMount', vendorId: 'bautista', mount: 'runner' });
+    f.app.handle(f.ana, { type: 'releasePet' });
+    expect(f.texts().at(-1)).toContain('Liberaste a tu lagarto corredor');
+    expect(f.world.petOf(f.ana)).toBeUndefined();
+    expect(f.world.allCreatures().filter((c) => c.isPet && !c.gone)).toHaveLength(0);
+
+    f.app.handle(f.ana, { type: 'buyMount', vendorId: 'bautista', mount: 'horse-black' });
+    const pet = f.world.petOf(f.ana);
+    f.app.handle(f.ana, { type: 'mount', petId: pet?.id ?? '' });
+    f.app.handle(f.ana, { type: 'releasePet' });
+    expect(f.world.get(f.ana)?.mount).toBeNull();
+    expect(f.world.petOf(f.ana)).toBeUndefined();
+    expect(f.notifier.ofType('mountChanged').at(-1)?.message).toMatchObject({ mount: null });
   });
 
   it('montado se anda al doble de rápido y al desmontar la montura vuelve al lado', () => {

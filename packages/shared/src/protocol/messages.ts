@@ -203,6 +203,11 @@ export interface DismountRequest {
   readonly type: 'dismount';
 }
 
+/** Liberar la montura (`/liberar`): se va y deja de ser del jugador. */
+export interface ReleasePetRequest {
+  readonly type: 'releasePet';
+}
+
 /** Revisar el cuerpo de una criatura muerta (doble clic). */
 export interface OpenCorpseRequest {
   readonly type: 'openCorpse';
@@ -241,6 +246,7 @@ export type ClientMessage =
   | BuyMountRequest
   | MountRequest
   | DismountRequest
+  | ReleasePetRequest
   | SocialRequest;
 
 // ── Servidor → Cliente ────────────────────────────────────────────────
