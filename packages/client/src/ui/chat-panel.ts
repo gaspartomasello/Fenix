@@ -28,6 +28,9 @@ export class ChatPanel {
       },
     });
     this.element = el('div', { className: 'chat-panel' }, [this.log, this.input]);
+    this.input.addEventListener('blur', () => this.element.classList.remove('chat-panel--typing'), {
+      signal: this.abort.signal,
+    });
 
     this.input.addEventListener(
       'keydown',
@@ -57,6 +60,12 @@ export class ChatPanel {
       },
       { signal: this.abort.signal },
     );
+  }
+
+  /** Abre el campo para escribir (en el celular está escondido hasta que se pide). */
+  openInput(): void {
+    this.element.classList.add('chat-panel--typing');
+    this.input.focus();
   }
 
   append(entry: LogEntry): void {

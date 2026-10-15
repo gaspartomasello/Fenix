@@ -21,8 +21,9 @@ const TARGET_HINTS = {
 
 /**
  * Libro de hechizos, como en UO: una página por círculo, cada hechizo con
- * su maná, reactivos y un botón para lanzarlo. Las teclas 1 a 8 lanzan los
- * hechizos de la página abierta.
+ * su maná, reactivos, un botón para lanzarlo y otro para ponerlo en la barra
+ * de atajos. Con el libro abierto, las teclas 1 a 8 lanzan los hechizos de la
+ * página abierta.
  */
 export class SpellbookWindow {
   readonly window: GameWindow;
@@ -30,6 +31,7 @@ export class SpellbookWindow {
   private readonly list: HTMLElement;
   private circle: SpellCircle = 1;
   private skills: SkillValues | null = null;
+  private pin: ((spell: SpellKey) => void) | null = null;
 
   constructor(private readonly onCast: (spell: SpellKey) => void) {
     this.window = new GameWindow('hechizos', 'Libro de hechizos', { x: 270, y: 150 });
@@ -40,10 +42,16 @@ export class SpellbookWindow {
       this.list,
       el('p', {
         className: 'window-hint',
-        text: 'Atajos: teclas 1 a 8 para los hechizos de esta página.',
+        text: 'Con el libro abierto, las teclas 1 a 8 lanzan los hechizos de esta página. «Atajo» lo pone en la barra de abajo.',
       }),
     );
     this.render(null);
+  }
+
+  /** Qué hacer al tocar «Atajo» (ponerlo en la barra de atajos). */
+  onPin(pin: (spell: SpellKey) => void): void {
+    this.pin = pin;
+    this.render(this.skills);
   }
 
   /** El hechizo en la posición `index` (0, 1…) de la página abierta. */
@@ -85,6 +93,14 @@ export class SpellbookWindow {
         });
         button.disabled = locked;
         button.addEventListener('click', () => this.onCast(spell.key));
+        const pin = el('button', {
+          className: 'button button--small button--quiet',
+          text: 'Atajo',
+          attrs: { type: 'button', 'aria-label': `Poner ${spell.name} en la barra de atajos` },
+        });
+        pin.disabled = locked;
+        pin.hidden = this.pin === null;
+        pin.addEventListener('click', () => this.pin?.(spell.key));
         return el('li', { className: `spell${locked ? ' spell--locked' : ''}` }, [
           el('div', { className: 'spell-info', attrs: { title: spell.description } }, [
             el('strong', { text: `${index + 1}. ${spell.name}` }),
@@ -94,7 +110,7 @@ export class SpellbookWindow {
               text: `${spell.mana} de maná · ${TARGET_HINTS[spell.target]} · ${reagents}${locked ? ` · requiere Magia ${formatSkill(spell.minSkill)}` : ''}`,
             }),
           ]),
-          button,
+          el('div', { className: 'spell-buttons' }, [button, pin]),
         ]);
       }),
     );
