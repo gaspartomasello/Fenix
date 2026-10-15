@@ -38,3 +38,14 @@ export function screenVectorToDirection(dx: number, dy: number): Direction | nul
 export function depthOf({ x, y }: FractionalPosition): number {
   return x + y;
 }
+
+/**
+ * Resolución a la que se dibuja: siempre entera. Con pantallas escaladas
+ * (125 %, 150 %) dibujar a 1,25 o 1,5 pixeles por pixel deja los bordes de
+ * cada tile en medio pixel: se ven las líneas de la grilla y el terreno
+ * vibra al moverse. Se dibuja al entero de arriba (cada pixel del juego,
+ * un cuadrado exacto) y el navegador achica la imagen entera de una vez.
+ */
+export function renderResolution(devicePixelRatio: number | undefined): number {
+  return Math.max(1, Math.ceil((devicePixelRatio || 1) - 0.01));
+}

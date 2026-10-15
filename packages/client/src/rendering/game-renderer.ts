@@ -7,7 +7,7 @@ import type { Entity } from '../core/entity';
 import { CharacterView } from './character-view';
 import { EffectsLayer } from './effects-layer';
 import { ItemLayer } from './item-layer';
-import { screenToTile, tileToScreen, type ScreenPoint } from './iso';
+import { renderResolution, screenToTile, tileToScreen, type ScreenPoint } from './iso';
 import { Lighting } from './lighting';
 import { StaticLayer } from './static-layer';
 import { TerrainLayer } from './terrain-layer';
@@ -205,7 +205,7 @@ export class GameRenderer {
       antialias: false,
       roundPixels: true,
       autoDensity: true,
-      resolution: window.devicePixelRatio || 1,
+      resolution: renderResolution(window.devicePixelRatio),
     });
     // El loop lo maneja la aplicación: Pixi solo renderiza cuando se le pide.
     this.app.ticker.stop();
