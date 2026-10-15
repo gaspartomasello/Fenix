@@ -53,7 +53,7 @@ al final de su tileset y no corren nada.
 - **Faroles** iluminan de noche (radio de 5 tiles).
 - **Santuario** (`shrine`): los fantasmas que llegan a 2 tiles vuelven a la vida. Tiene que haber
 - **Forja y yunque** (`forge`, `anvil`): para fundir mineral y fabricar. Los árboles (`oak`,
-  `pine`) dan troncos y las rocas (`rock`) mineral.
+  `pine`, `ceibo`, `gomero`, `willow`, `poplar`, `dead-tree`) dan troncos y las rocas (`rock`) mineral.
 - **Comerciantes**: en la capa `zonas`, un punto de clase `npc` con una propiedad `rol`
   (`blacksmith`, `mage`, `innkeeper` o `banker`).
   al menos uno en el mapa.

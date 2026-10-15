@@ -1,5 +1,6 @@
 import type { StaticKind } from '@fenix/shared';
 import { PixelImage, type Rgb } from './pixel-art';
+import { TREE_SHADOWS, drawTree, type TreeSpecies } from './tree-art';
 import {
   VolumeCanvas,
   WorldProjection,
@@ -19,9 +20,9 @@ import {
  * El rombo del tile donde está apoyado ocupa la parte de abajo: centro en
  * GROUND, y el resto es para lo que sube (árboles, paredes, faroles).
  */
-export const STATIC_ART_WIDTH = 88;
-export const STATIC_ART_HEIGHT = 132;
-export const STATIC_GROUND = { x: 44, y: 110 } as const;
+export const STATIC_ART_WIDTH = 136;
+export const STATIC_ART_HEIGHT = 168;
+export const STATIC_GROUND = { x: 68, y: 146 } as const;
 export const STATIC_VARIANTS = 3;
 
 const OUTLINE: Rgb = [27, 19, 14];
@@ -93,8 +94,6 @@ function cylinder(
 // ── Materiales ──────────────────────────────────────────────────────
 
 const BARK = ramp([96, 66, 42]);
-const LEAF = ramp([62, 116, 48]);
-const PINE = ramp([40, 88, 52]);
 const STONE = ramp([150, 142, 128]);
 const WOOD = ramp([132, 92, 54]);
 const IRON = ramp([70, 72, 80]);
@@ -165,49 +164,6 @@ function glowing(colors: Ramp): Material {
 }
 
 // ── Vegetación ──────────────────────────────────────────────────────
-
-const oak: Model = (c, variant) => {
-  cylinder(c, [0, 0, 0], 40, (t) => 4.8 - t * 1.6, bark);
-  // Raíces que asoman.
-  for (const a of [0.3, 2.2, 4.1])
-    c.limb([0, 1.5, 0], [Math.cos(a) * 8, 0, Math.sin(a) * 8], 2.6, 1, bark);
-  // Ramas hacia la copa.
-  c.limb([0, 30, 0], [-10, 48, 3], 2.4, 1.2, bark);
-  c.limb([0, 32, 0], [10, 50, -3], 2.4, 1.2, bark);
-  const leaves = foliage(LEAF, variant * 13);
-  const shift = (variant - 1) * 3;
-  const blobs: [number, number, number, number][] = [
-    [0, 62, 0, 20],
-    [-16, 54, 4, 14],
-    [16, 55, -4, 14],
-    [-6, 74, -5, 14],
-    [8, 72, 6, 14],
-    [0, 52, 13, 12],
-    [-4, 53, -13, 12],
-    [12, 64, 10, 11],
-  ];
-  for (const [x, y, z, r] of blobs) c.sphere([x + shift, y, z], r, leaves);
-};
-
-const pine: Model = (c, variant) => {
-  cylinder(c, [0, 0, 0], 16, (t) => 2.6 - t * 0.6, bark);
-  const needles = foliage(PINE, variant * 7);
-  // Pisos de ramas: discos que se achican hacia la punta.
-  const levels = 8 + variant;
-  for (let i = 0; i < levels; i++) {
-    const t = i / (levels - 1);
-    const y = 14 + t * 62;
-    const r = 17 * (1 - t) + 2;
-    // Cada piso, apenas girado y con el borde caído.
-    c.ellipsoid(
-      [0, y, 0],
-      axesAlong([Math.sin(i * 1.3), -0.25, Math.cos(i * 1.3)]),
-      [r, 5.5 - t * 2, r],
-      needles,
-    );
-  }
-  c.limb([0, 74, 0], [0, 84, 0], 1.6, 0.3, needles);
-};
 
 const bush: Model = (c, variant) => {
   const leaves = foliage(ramp([70, 128, 54]), variant * 5);
@@ -564,9 +520,14 @@ const stalagmite: Model = (c, variant) => {
   if (variant !== 0) cylinder(c, [7, 0, 4], 14, (t) => 4 * (1 - t) + 0.4, material);
 };
 
+/** Los árboles los dibuja `tree-art`, cada especie con su ramificación. */
+function tree(species: TreeSpecies): StaticSpec {
+  return { model: (c, variant) => drawTree(c, species, variant), shadow: TREE_SHADOWS[species] };
+}
+
 const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
-  oak: { model: oak, shadow: [34, 14] },
-  pine: { model: pine, shadow: [20, 9] },
+  oak: tree('oak'),
+  pine: tree('pine'),
   bush: { model: bush, shadow: [13, 6] },
   rock: { model: rock, shadow: [14, 6] },
   flowers: { model: flowers },
@@ -590,4 +551,9 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   brazier: { model: brazier, shadow: [9, 4] },
   bones: { model: bones },
   stalagmite: { model: stalagmite, shadow: [9, 4] },
+  ceibo: tree('ceibo'),
+  gomero: tree('gomero'),
+  willow: tree('willow'),
+  poplar: tree('poplar'),
+  'dead-tree': tree('dead-tree'),
 };

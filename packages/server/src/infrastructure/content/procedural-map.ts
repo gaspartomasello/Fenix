@@ -35,6 +35,7 @@ export function generateIslandMap(options: WorldGenerationOptions): GeneratedWor
   const patches = new ValueNoise(seed + 1, 7);
   const forests = new ValueNoise(seed + 2, 14);
   const conifers = new ValueNoise(seed + 3, 20);
+  const windbreaks = new ValueNoise(seed + 4, 10);
   const center = { x: Math.floor(width / 2), y: Math.floor(height / 2) };
 
   const terrain: Terrain[] = new Array<Terrain>(width * height);
@@ -127,9 +128,27 @@ export function generateIslandMap(options: WorldGenerationOptions): GeneratedWor
       for (let x = 1; x < width - 1; x++) {
         const index = y * width + x;
         const tile = terrain[index];
-        if (roads[index] || tile === Terrain.Water || nearWater(x, y)) continue;
+        if (roads[index] || tile === Terrain.Water) continue;
         const roll = hash(seed, x, y);
-        const kind = pickVegetation(tile, roll, forests.at(x, y), conifers.at(x, y));
+        const pick = hash(seed + 11, x, y);
+        if (nearWater(x, y)) {
+          // En la orilla: sauces llorones y ceibos, que crecen junto al agua.
+          if (tile === Terrain.Grass && roll < 0.08)
+            placed.push({ kind: pick < 0.55 ? 'willow' : 'ceibo', x, y });
+          continue;
+        }
+        // Cortinas de álamos a un tile del camino, en algunos tramos.
+        const besideRoad = Math.abs(x - center.x) === 3 || Math.abs(y - center.y) === 3;
+        if (
+          tile === Terrain.Grass &&
+          besideRoad &&
+          (x + y) % 2 === 0 &&
+          windbreaks.at(x, y) > 0.62
+        ) {
+          placed.push({ kind: 'poplar', x, y });
+          continue;
+        }
+        const kind = pickVegetation(tile, roll, pick, forests.at(x, y), conifers.at(x, y));
         if (kind) placed.push({ kind, x, y });
       }
     }
@@ -137,27 +156,40 @@ export function generateIslandMap(options: WorldGenerationOptions): GeneratedWor
   }
 }
 
-/** Qué crece en un tile: bosques densos donde el ruido es alto, algo suelto en el resto. */
+/**
+ * Qué crece en un tile: bosques densos (de pinos o de robles, con algún
+ * árbol seco) donde el ruido es alto, y árboles sueltos de varias especies
+ * en el campo abierto. `pick` elige la especie.
+ */
 function pickVegetation(
   tile: Terrain | undefined,
   roll: number,
+  pick: number,
   forest: number,
   conifer: number,
 ): StaticKind | null {
   if (tile === Terrain.Sand) return roll < 0.025 ? 'rock' : null;
   if (tile === Terrain.Dirt) return roll < 0.02 ? 'rock' : null;
   if (tile !== Terrain.Grass) return null;
-  const tree: StaticKind = conifer > 0.55 ? 'pine' : 'oak';
   if (forest > 0.62) {
-    if (roll < 0.34) return tree;
+    if (roll < 0.34) return conifer > 0.55 ? 'pine' : pick < 0.06 ? 'dead-tree' : 'oak';
     if (roll < 0.42) return 'bush';
     return null;
   }
-  if (roll < 0.025) return tree;
+  if (roll < 0.025) return conifer > 0.55 ? 'pine' : loneTree(pick);
   if (roll < 0.04) return 'bush';
   if (roll < 0.055) return 'flowers';
   if (roll < 0.06) return 'rock';
   return null;
+}
+
+/** Árbol suelto en el campo. */
+function loneTree(pick: number): StaticKind {
+  if (pick < 0.5) return 'oak';
+  if (pick < 0.68) return 'gomero';
+  if (pick < 0.82) return 'poplar';
+  if (pick < 0.94) return 'ceibo';
+  return 'dead-tree';
 }
 
 function hash(seed: number, x: number, y: number): number {

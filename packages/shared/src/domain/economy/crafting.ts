@@ -16,6 +16,11 @@ export interface ResourceSource {
 export const RESOURCE_SOURCES: Partial<Record<StaticKind, ResourceSource>> = {
   oak: { resource: 'logs', tool: 'axe', skill: 'lumberjacking' },
   pine: { resource: 'logs', tool: 'axe', skill: 'lumberjacking' },
+  ceibo: { resource: 'logs', tool: 'axe', skill: 'lumberjacking' },
+  gomero: { resource: 'logs', tool: 'axe', skill: 'lumberjacking' },
+  willow: { resource: 'logs', tool: 'axe', skill: 'lumberjacking' },
+  poplar: { resource: 'logs', tool: 'axe', skill: 'lumberjacking' },
+  'dead-tree': { resource: 'logs', tool: 'axe', skill: 'lumberjacking' },
   rock: { resource: 'iron-ore', tool: 'pickaxe', skill: 'mining' },
 };
 

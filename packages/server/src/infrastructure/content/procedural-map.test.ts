@@ -13,6 +13,18 @@ describe('generateIslandMap', () => {
     );
   });
 
+  it('crecen varias especies de árboles: en la orilla, sauces y ceibos', () => {
+    const { map } = generateIslandMap({ width: 128, height: 128, seed: 42 });
+    const kinds = new Set(map.statics.map((s) => s.kind));
+    for (const kind of ['oak', 'pine', 'willow', 'ceibo', 'gomero', 'poplar'] as const)
+      expect(kinds.has(kind), kind).toBe(true);
+    const nearWater = (s: Position): boolean =>
+      [-1, 0, 1].some((dy) =>
+        [-1, 0, 1].some((dx) => map.terrainAt({ x: s.x + dx, y: s.y + dy }) === Terrain.Water),
+      );
+    for (const s of map.statics.filter((s) => s.kind === 'willow')) expect(nearWater(s)).toBe(true);
+  });
+
   it('sin pueblo deja una plaza transitable en el centro', () => {
     const { map, spawnPoint } = generateIslandMap(options);
     expect(map.terrainAt(spawnPoint)).toBe(Terrain.Stone);
