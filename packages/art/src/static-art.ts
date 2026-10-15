@@ -449,6 +449,121 @@ const anvil: Model = (c) => {
   c.limb([8, 15.5, 0], [13, 15.8, 0], 2.2, 0.5, iron);
 };
 
+// ── Mazmorra ────────────────────────────────────────────────────────
+
+const CAVE_ROCK = ramp([92, 84, 76]);
+const BONE = ramp([214, 204, 178]);
+
+/** Roca de cueva: oscura, con vetas y alguna gota de humedad que brilla. */
+function caveRock(seed: number): Material {
+  return (s) => {
+    const grain = noise(
+      Math.floor(s.p[0] / 3) + seed,
+      Math.floor(s.p[1] / 2.5),
+      Math.floor(s.p[2] / 3),
+    );
+    if (grain > 0.97 && s.light > 0.6) return [170, 176, 184];
+    return tone(CAVE_ROCK, s.light, grain > 0.8 ? 1 : grain < 0.25 ? -1 : 0);
+  };
+}
+
+/** Cara de roca: estratos irregulares y manchas; arriba, la roca maciza casi negra. */
+function rockFace(seed: number): Material {
+  return (s) => {
+    if (s.n[1] > 0.6) {
+      const grain = noise(Math.floor(s.p[0] / 3), Math.floor(s.p[2] / 3), seed);
+      return tone(ramp([44, 40, 38]), 0.5, grain > 0.75 ? 1 : 0);
+    }
+    const along = s.p[0] + s.p[2] + 100;
+    const wobble = noise(Math.floor(along / 5), seed) * 4;
+    const height = s.p[1] + wobble;
+    const stratum = Math.floor(height / 6);
+    const patch = noise(Math.floor(along / 4), stratum, seed);
+    if (height % 6 < 0.8) return tone(CAVE_ROCK, s.light, -1);
+    return tone(CAVE_ROCK, s.light, patch > 0.72 ? 1 : patch < 0.22 ? -1 : 0);
+  };
+}
+
+/** Pared de cueva: un bloque de roca que llena el tile, como las cuevas de UO. */
+const caveWall: Model = (c, variant) => {
+  c.box([0, 19, 0], UP, [H, 19, H], rockFace(variant * 7));
+};
+
+/** Boca de una cueva: un peñasco grande con un hueco oscuro que mira al frente. */
+const caveEntrance: Model = (c) => {
+  const material = rocky(ramp([128, 118, 106]), 5);
+  const front = axesAlong([1, 0, 1]);
+  // Peñasco principal y hombros de roca a los costados.
+  c.ellipsoid([-8, 14, -8], front, [26, 24, 14], material);
+  c.ellipsoid([-2, 30, -10], axesAlong([1, 0.2, 0.6]), [14, 10, 10], material);
+  c.ellipsoid([10, 8, -14], axesAlong([0.4, 0, 1]), [9, 9, 9], material);
+  c.ellipsoid([-14, 7, 10], axesAlong([1, 0, 0.3]), [9, 8, 8], material);
+  c.ellipsoid([12, 4, 8], axesAlong([1, 0.2, 0.2]), [5, 4, 5], material);
+  // La boca: un arco negro con un borde de piedra más clara.
+  c.ellipsoid([1, 11, 1], front, [12.5, 15, 3], solid(ramp([96, 88, 80]), -1));
+  c.ellipsoid([2.5, 10, 2.5], front, [10, 13, 3], (s) => tone(ramp([22, 18, 16]), s.light * 0.15));
+  // El suelo de la entrada baja y se oscurece.
+  c.ellipsoid([5, 0.4, 5], front, [9, 0.8, 6], (s) => tone(ramp([46, 38, 32]), s.light * 0.4));
+};
+
+/** Escalera de madera apoyada contra la roca, para volver a la superficie. */
+const ladder: Model = (c) => {
+  const wood = planks(WOOD, 1);
+  c.ellipsoid([0, 24, -H + 2], UP, [H, 26, 5], caveRock(3));
+  for (const x of [-6, 6]) c.limb([x, 0, -4], [x, 54, -H + 5], 1.4, 1.2, wood);
+  for (let i = 1; i <= 8; i++) {
+    const t = i / 9;
+    const z = -4 + t * (-H + 9);
+    c.limb([-6, t * 54, z], [6, t * 54, z], 0.9, 0.9, solid(WOOD, 1));
+  }
+};
+
+/** Brasero: cuenco de hierro sobre un trípode, con fuego que ilumina. */
+const brazier: Model = (c) => {
+  const iron = metal(IRON);
+  for (let i = 0; i < 3; i++) {
+    const a = (i * Math.PI * 2) / 3 + 0.4;
+    c.limb(
+      [Math.cos(a) * 7, 0, Math.sin(a) * 7],
+      [Math.cos(a) * 3, 16, Math.sin(a) * 3],
+      1,
+      1,
+      iron,
+    );
+  }
+  cylinder(c, [0, 16, 0], 6, (t) => 4 + t * 4, iron);
+  const fire = glowing(ramp([255, 150, 50]));
+  c.ellipsoid([0, 23, 0], UP, [6, 3, 6], fire);
+  c.limb([0, 23, 0], [1, 34, -1], 4, 0.5, glowing(ramp([255, 200, 90])));
+  c.limb([-2, 23, 1], [-3, 30, 2], 2.4, 0.4, glowing(ramp([255, 230, 150])));
+};
+
+/** Huesos sueltos y un cráneo en el suelo. */
+const bones: Model = (c, variant) => {
+  const bone = solid(BONE);
+  for (let i = 0; i < 5; i++) {
+    const x = (noise(i, variant, 21) - 0.5) * 20;
+    const z = (noise(i, variant, 22) - 0.5) * 20;
+    const a = noise(i, variant, 23) * Math.PI;
+    const len = 4 + noise(i, variant, 24) * 4;
+    const dx = Math.cos(a) * len;
+    const dz = Math.sin(a) * len;
+    c.limb([x - dx, 0.8, z - dz], [x + dx, 0.8, z + dz], 0.7, 0.7, bone);
+    c.sphere([x - dx, 0.9, z - dz], 1.1, bone);
+    c.sphere([x + dx, 0.9, z + dz], 1.1, bone);
+  }
+  c.sphere([3, 3, 2], 3.2, bone);
+  c.ellipsoid([3, 2, 4.6], UP, [2.2, 1.2, 1], solid(BONE, -1));
+  for (const x of [1.8, 4.2]) c.sphere([x, 3.4, 4.8], 0.8, solid(ramp([30, 26, 22])));
+};
+
+/** Estalagmita: un cono de roca que sube del suelo. */
+const stalagmite: Model = (c, variant) => {
+  const material = caveRock(variant * 5 + 2);
+  cylinder(c, [0, 0, 0], 30 + variant * 6, (t) => 7 * (1 - t) ** 1.2 + 0.6, material);
+  if (variant !== 0) cylinder(c, [7, 0, 4], 14, (t) => 4 * (1 - t) + 0.4, material);
+};
+
 const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   oak: { model: oak, shadow: [34, 14] },
   pine: { model: pine, shadow: [20, 9] },
@@ -469,4 +584,10 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   shrine: { model: shrine, shadow: [18, 8] },
   forge: { model: forge, shadow: [20, 8] },
   anvil: { model: anvil, shadow: [14, 6] },
+  'cave-wall': { model: caveWall },
+  'cave-entrance': { model: caveEntrance, shadow: [34, 14] },
+  ladder: { model: ladder },
+  brazier: { model: brazier, shadow: [9, 4] },
+  bones: { model: bones },
+  stalagmite: { model: stalagmite, shadow: [9, 4] },
 };

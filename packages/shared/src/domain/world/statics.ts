@@ -22,6 +22,12 @@ export const STATIC_KINDS = [
   'shrine',
   'forge',
   'anvil',
+  'cave-wall',
+  'cave-entrance',
+  'ladder',
+  'brazier',
+  'bones',
+  'stalagmite',
 ] as const;
 
 export type StaticKind = (typeof STATIC_KINDS)[number];
@@ -61,6 +67,12 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   shrine: define('shrine', 'santuario', true, 4),
   forge: define('forge', 'forja', true, 3),
   anvil: define('anvil', 'yunque', true),
+  'cave-wall': define('cave-wall', 'pared de roca', true),
+  'cave-entrance': define('cave-entrance', 'entrada a la cueva', false),
+  ladder: define('ladder', 'escalera de salida', false),
+  brazier: define('brazier', 'brasero', true, 6),
+  bones: define('bones', 'huesos', false),
+  stalagmite: define('stalagmite', 'estalagmita', true),
 };
 
 export function isStaticKind(value: unknown): value is StaticKind {

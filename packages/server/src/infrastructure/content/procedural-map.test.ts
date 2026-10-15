@@ -1,4 +1,4 @@
-import { Terrain } from '@fenix/shared';
+import { Terrain, type Position, type TileMap } from '@fenix/shared';
 import { describe, expect, it } from 'vitest';
 import { generateIslandMap } from './procedural-map';
 import { buildWorld, createWorld } from './world-builder';
@@ -70,10 +70,69 @@ describe('createWorld', () => {
     const world = createWorld({ size: 128, seed: 1997 }, new SequentialIds());
     const creatures = world.allCreatures();
     expect(creatures.length).toBeGreaterThanOrEqual(20);
-    expect(new Set(creatures.map((c) => c.body))).toEqual(new Set(['rat', 'wolf', 'skeleton']));
+    const bodies = new Set(creatures.map((c) => c.body));
+    for (const kind of ['rat', 'wolf', 'giant-spider', 'orc', 'troll', 'dragon', 'lich'])
+      expect(bodies).toContain(kind);
     for (const creature of creatures) {
-      expect(world.map.regionAt(creature.position)).toBeUndefined();
+      expect(world.map.safeZoneAt(creature.position)).toBeUndefined();
       expect(world.map.isWalkable(creature.position)).toBe(true);
     }
+  });
+});
+
+/** Tiles alcanzables caminando desde `from` (sin usar teletransportes). */
+function reachable(map: TileMap, from: Position): Set<string> {
+  const seen = new Set([`${from.x},${from.y}`]);
+  const queue = [from];
+  for (let current = queue.shift(); current; current = queue.shift()) {
+    for (const [dx, dy] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ] as const) {
+      const next = { x: current.x + dx, y: current.y + dy };
+      const key = `${next.x},${next.y}`;
+      if (seen.has(key) || !map.isWalkable(next)) continue;
+      seen.add(key);
+      queue.push(next);
+    }
+  }
+  return seen;
+}
+
+describe('mazmorra', () => {
+  const { map, spawnPoint, caveEntrance, lairs } = buildWorld({ size: 128, seed: 1997 });
+  const inside = map.teleportAt(caveEntrance);
+
+  it('la boca de la cueva se alcanza caminando desde el pueblo y lleva adentro', () => {
+    expect(reachable(map, spawnPoint).has(`${caveEntrance.x},${caveEntrance.y}`)).toBe(true);
+    expect(inside).toBeDefined();
+    if (!inside) return;
+    expect(map.regionAt(inside)?.dungeon).toBe(true);
+    expect(map.terrainAt(inside)).toBe(Terrain.Cave);
+    expect(map.isWalkable(inside)).toBe(true);
+  });
+
+  it('adentro se llega caminando a todas las criaturas y a la escalera de salida', () => {
+    if (!inside) throw new Error('sin entrada');
+    const cave = reachable(map, inside);
+    for (const { home } of lairs) expect(cave.has(`${home.x},${home.y}`)).toBe(true);
+    const ladder = map.teleporters.find((t) => map.regionAt(t)?.dungeon);
+    expect(ladder && cave.has(`${ladder.x},${ladder.y}`)).toBe(true);
+    // La escalera devuelve al lado de la boca, afuera.
+    expect(ladder?.to).toEqual({ x: caveEntrance.x, y: caveEntrance.y + 2 });
+    expect(map.isWalkable(ladder?.to ?? caveEntrance)).toBe(true);
+  });
+
+  it('la mazmorra no se alcanza caminando desde la isla', () => {
+    if (!inside) throw new Error('sin entrada');
+    expect(reachable(map, spawnPoint).has(`${inside.x},${inside.y}`)).toBe(false);
+  });
+
+  it('hay un solo dragón, en la última sala, y las criaturas fuertes van al fondo', () => {
+    const dragons = lairs.filter((l) => l.kind === 'dragon');
+    expect(dragons).toHaveLength(1);
+    expect(lairs.some((l) => l.kind === 'lich')).toBe(true);
   });
 });

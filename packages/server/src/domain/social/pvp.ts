@@ -6,7 +6,7 @@ import type { World } from '../world';
  * pelea, y nadie ataca a alguien de su grupo o de su gremio.
  */
 export function pvpRefusal(attacker: Player, target: Player, world: World): string | null {
-  if (world.map.regionAt(attacker.position) || world.map.regionAt(target.position))
+  if (world.map.safeZoneAt(attacker.position) || world.map.safeZoneAt(target.position))
     return 'Dentro del pueblo no se puede pelear con otros jugadores.';
   if (world.parties.sameParty(attacker.id, target.id))
     return 'No podés atacar a alguien de tu grupo.';

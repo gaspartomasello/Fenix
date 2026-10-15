@@ -22,10 +22,12 @@ import { EffectsBar } from '../ui/effects-bar';
 import { ITEMS, VENDORS, VENDOR_RANGE, reputationTitle, type NpcRole } from '@fenix/shared';
 import type { ItemActions } from '../ui/backpack-window';
 import { BankWindow } from '../ui/bank-window';
+import { CorpseWindow } from '../ui/corpse-window';
 import { CraftingWindow } from '../ui/crafting-window';
 import { ShopWindow } from '../ui/shop-window';
 import { TilePicker } from './tile-picker';
 import { WorldCombat } from './world-combat';
+import { WorldCorpses } from './world-corpses';
 import { WorldNpcs } from './world-npcs';
 import { WorldItems } from './world-items';
 import { LoginScreen, type LoginRequest } from '../ui/login-screen';
@@ -138,6 +140,7 @@ export class GameSession {
       economy.openNpc(id, role),
     );
     const worldCombat = new WorldCombat(this.game, renderer, tooltip);
+    const worldCorpses = new WorldCorpses(this.game, renderer, tooltip);
     const worldItems = new WorldItems(this.game, renderer, drag, tooltip);
     const input = new InputController({
       surface: renderer.canvas,
@@ -147,6 +150,7 @@ export class GameSession {
         !tilePicker.isPicking &&
         !worldItems.hasItemAt(point) &&
         !worldCombat.hasTargetAt(point) &&
+        !worldCorpses.hasCorpseAt(point) &&
         !worldNpcs.hasNpcAt(point),
     });
     const banner = new TargetingBanner();
@@ -447,6 +451,18 @@ export class GameSession {
     const viewer = new PaperdollViewer();
     this.hosts.ui.append(viewer.window.element);
     new WorldPaperdolls(this.game, renderer, viewer, () => equipment.window.show());
+    // Cuerpos que se revisan: la ventana se abre con el doble clic y se
+    // actualiza cuando alguien saca algo.
+    const corpse = new CorpseWindow(drag, actions, (id) => this.game.lootAll(id));
+    this.hosts.ui.append(corpse.window.element);
+    this.game.on('corpseChanged', ({ corpse: contents, opened }) => {
+      if (!contents) {
+        corpse.window.hide();
+        return;
+      }
+      corpse.render(contents);
+      if (opened) corpse.window.show();
+    });
     this.hosts.ui.append(
       backpack.window.element,
       equipment.window.element,

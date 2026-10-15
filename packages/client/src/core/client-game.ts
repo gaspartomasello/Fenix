@@ -75,6 +75,18 @@ export interface ClientGameEvents extends Record<string, unknown> {
   warModeChanged: boolean;
   /** El jugador pidió salir del juego (`/desconectar`). */
   logoutRequested: null;
+  /**
+   * Cambió el cuerpo que se está revisando (`corpse` null: se cerró);
+   * `opened` es true cuando llega la respuesta al doble clic propio.
+   */
+  corpseChanged: { corpse: CorpseContents | null; opened: boolean };
+}
+
+/** Lo que hay en el cuerpo que se está revisando. */
+export interface CorpseContents {
+  readonly corpseId: EntityId;
+  readonly name: string;
+  readonly items: readonly BackpackItemSnapshot[];
 }
 
 /** Efectos activos propios; `receivedAt` sirve para descontar el tiempo que pasa. */
@@ -115,6 +127,8 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   private _social: SocialState | null = null;
   private _warMode = false;
   private _effects: EffectsState | null = null;
+  private _corpse: CorpseContents | null = null;
+  private corpseRequested: EntityId | null = null;
 
   constructor(
     private readonly gateway: ServerGateway,
@@ -179,7 +193,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     return this.ground.values();
   }
 
-  /** Busca un objeto propio (mochila o equipo) o del suelo por id. */
+  /** Busca un objeto propio (mochila, banco o equipo), del suelo o del cuerpo abierto. */
   findItem(
     itemId: EntityId,
   ): GroundItemSnapshot | BackpackItemSnapshot | EquippedItemSnapshot | undefined {
@@ -187,6 +201,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       this.ground.get(itemId) ??
       this._inventory.backpack.find((i) => i.id === itemId) ??
       this._inventory.bank.find((i) => i.id === itemId) ??
+      this._corpse?.items.find((i) => i.id === itemId) ??
       this._inventory.equipment.find((i) => i.id === itemId)
     );
   }
@@ -252,6 +267,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         return;
       case 'hour':
         this.gateway.send({ type: 'setHour', hour: input.hour });
+        return;
+      case 'travel':
+        this.gateway.send({ type: 'testTravel', to: input.to });
         return;
       case 'help':
         CHAT_HELP.forEach((line) => this.notify(line));
@@ -335,6 +353,22 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
 
   craft(recipe: string): void {
     if (this.self) this.gateway.send({ type: 'craft', recipe });
+  }
+
+  /** Cuerpo que se está revisando, si hay uno abierto. */
+  get corpse(): CorpseContents | null {
+    return this._corpse;
+  }
+
+  /** Doble clic sobre un cuerpo: pedir ver qué tiene. */
+  openCorpse(corpseId: EntityId): void {
+    if (!this.self) return;
+    this.corpseRequested = corpseId;
+    this.gateway.send({ type: 'openCorpse', corpseId });
+  }
+
+  lootAll(corpseId: EntityId): void {
+    if (this.self) this.gateway.send({ type: 'lootAll', corpseId });
   }
 
   /** ¿Está el jugador a esta distancia (en tiles) o menos de alguien? */
@@ -446,6 +480,18 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         break;
       case 'system':
         this.emit('log', { kind: 'system', text: message.text });
+        break;
+      case 'corpse': {
+        const opened = this.corpseRequested === message.corpseId;
+        this.corpseRequested = null;
+        this._corpse = { corpseId: message.corpseId, name: message.name, items: message.items };
+        this.emit('corpseChanged', { corpse: this._corpse, opened });
+        break;
+      }
+      case 'corpseClosed':
+        if (this._corpse?.corpseId !== message.corpseId) break;
+        this._corpse = null;
+        this.emit('corpseChanged', { corpse: null, opened: false });
         break;
       case 'groundItems':
         for (const id of message.removed) this.ground.delete(id);

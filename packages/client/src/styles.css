@@ -949,6 +949,19 @@ body {
   touch-action: none;
 }
 
+/* Cuerpo que se revisa: fondo más oscuro y el botón "Tomar todo" abajo. */
+.corpse-area {
+  background:
+    radial-gradient(circle at 50% 40%, rgba(120, 30, 20, 0.12), transparent 70%),
+    linear-gradient(#2e2620, #1d1813);
+}
+
+.window-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.4rem;
+}
+
 /* Botones a la derecha, repartidos a lo alto del personaje. */
 .paperdoll-buttons {
   display: grid;

@@ -8,9 +8,17 @@ import type {
   Position,
 } from '@fenix/shared';
 
-/** Dónde está un objeto: en el suelo, en una mochila o puesto. */
+/** Dónde está un objeto: en el suelo, en una mochila, puesto o dentro de un cuerpo. */
 export type ItemLocation =
   | { readonly type: 'ground'; readonly position: Position }
+  | {
+      readonly type: 'corpse';
+      readonly corpseId: EntityId;
+      /** Tile donde está el cuerpo. */
+      readonly at: Position;
+      /** Lugar en pixeles dentro de la ventana del cuerpo. */
+      readonly position: Position;
+    }
   | { readonly type: 'backpack'; readonly ownerId: EntityId; readonly position: Position }
   | { readonly type: 'bank'; readonly ownerId: EntityId; readonly position: Position }
   | { readonly type: 'equipment'; readonly ownerId: EntityId; readonly slot: EquipmentSlot };
@@ -24,7 +32,9 @@ export class Item {
   ) {}
 
   ownerId(): EntityId | null {
-    return this.location.type === 'ground' ? null : this.location.ownerId;
+    return this.location.type === 'ground' || this.location.type === 'corpse'
+      ? null
+      : this.location.ownerId;
   }
 
   toGroundSnapshot(): GroundItemSnapshot | null {
@@ -33,7 +43,8 @@ export class Item {
   }
 
   toBackpackSnapshot(): BackpackItemSnapshot | null {
-    if (this.location.type !== 'backpack' && this.location.type !== 'bank') return null;
+    const inside = this.location.type;
+    if (inside !== 'backpack' && inside !== 'bank' && inside !== 'corpse') return null;
     return { id: this.id, kind: this.kind, amount: this.amount, position: this.location.position };
   }
 

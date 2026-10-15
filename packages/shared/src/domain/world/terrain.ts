@@ -6,6 +6,8 @@ export const Terrain = {
   Stone: 3,
   Water: 4,
   Wood: 5,
+  Cave: 6,
+  Rock: 7,
 } as const;
 
 export type Terrain = (typeof Terrain)[keyof typeof Terrain];
@@ -65,6 +67,20 @@ export const TERRAINS: Readonly<Record<Terrain, TerrainDefinition>> = {
     key: 'wood',
     name: 'piso de madera',
     walkable: true,
+    blendPriority: -1,
+  },
+  [Terrain.Cave]: {
+    id: Terrain.Cave,
+    key: 'cave',
+    name: 'suelo de cueva',
+    walkable: true,
+    blendPriority: -1,
+  },
+  [Terrain.Rock]: {
+    id: Terrain.Rock,
+    key: 'rock',
+    name: 'roca maciza',
+    walkable: false,
     blendPriority: -1,
   },
 };

@@ -5,3 +5,4 @@ export * from './static-art';
 export * from './item-art';
 export * from './creature-art';
 export * from './volume';
+export * from './monster-art';

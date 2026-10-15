@@ -84,6 +84,10 @@ export class GameRenderer {
     return this.mobileAt(point, (view) => view.isAliveCreature);
   }
 
+  corpseAt(point: ScreenPoint): EntityId | null {
+    return this.mobileAt(point, (view) => view.isCreatureCorpse);
+  }
+
   /** Otra persona viva bajo un punto de la pantalla. */
   playerAt(point: ScreenPoint): EntityId | null {
     return this.mobileAt(point, (view) => view.isOtherLivingPlayer);
@@ -106,9 +110,9 @@ export class GameRenderer {
       if (!accept(view)) continue;
       const { x, y } = view.feet;
       const inside =
-        Math.abs(world.x - x) <= MOBILE_HIT_BOX.halfWidth &&
+        Math.abs(world.x - x) <= MOBILE_HIT_BOX.halfWidth * (view.spriteHeight > 70 ? 2.5 : 1) &&
         world.y <= y + 6 &&
-        world.y >= y - MOBILE_HIT_BOX.height;
+        world.y >= y - Math.max(MOBILE_HIT_BOX.height, view.spriteHeight);
       if (inside && (!best || y > best.y)) best = { id: view.entityId, y };
     }
     return best?.id ?? null;
@@ -152,6 +156,7 @@ export class GameRenderer {
         focus,
         lights: this.statics?.visibleLights() ?? [],
         nightVision: this.game.hasEffect('night-sight'),
+        underground: this.game.currentRegion()?.dungeon === true,
       });
     }
     this.app.render();

@@ -15,6 +15,8 @@ export type ChatInput =
   | { readonly kind: 'logout' }
   /** `/hora 22`: mover la hora del mundo (solo personajes de prueba). */
   | { readonly kind: 'hour'; readonly hour: number }
+  /** `/cueva` y `/cueva fondo`: viajar a la mazmorra (solo personajes de prueba). */
+  | { readonly kind: 'travel'; readonly to: 'cave' | 'lair' }
   | { readonly kind: 'help' }
   | { readonly kind: 'error'; readonly text: string };
 
@@ -30,6 +32,7 @@ export const CHAT_HELP = [
   '/dejargremio — dejar el gremio',
   '/desconectar — salir del juego (se guarda tu personaje)',
   '/hora 22 — cambiar la hora del mundo (solo personajes de prueba)',
+  '/cueva o /cueva fondo — ir a la mazmorra (solo personajes de prueba)',
 ] as const;
 
 /** Interpreta una línea del chat: texto común o un comando que empieza con "/". */
@@ -73,6 +76,8 @@ export function parseChatInput(raw: string): ChatInput {
         ? { kind: 'hour', hour }
         : needs('la hora, de 0 a 23 (por ejemplo: /hora 22)');
     }
+    case 'cueva':
+      return { kind: 'travel', to: args.toLocaleLowerCase() === 'fondo' ? 'lair' : 'cave' };
     case 'ayuda':
     case '?':
       return { kind: 'help' };

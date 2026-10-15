@@ -176,14 +176,26 @@ objetivo y turno de golpe. El cliente solo elige objetivo (`attack`); el golpe l
 `GameLoop.tick`, que la infraestructura llama cada 100 ms y que también:
 
 - hace actuar a las criaturas (`creature-ai.ts`): buscan al jugador vivo más cercano dentro de su
-  rango, lo persiguen y atacan; no entran a zonas con nombre (los pueblos son seguros) y vuelven a
-  su lugar si se alejan demasiado;
+  rango, lo persiguen y atacan; no entran a las zonas protegidas (los pueblos son seguros; las
+  mazmorras no) y vuelven a su lugar si se alejan demasiado. Las que huyen se alejan con poca
+  vida y las que lanzan hechizos guardan distancia;
+- usa las habilidades de cada criatura (`abilities` en el catálogo, `creature-magic.ts`): veneno al
+  morder, hechizos (y curarse), aliento de fuego, regeneración y resistencia mágica;
 - resuelve golpes con `resolveAttack` (acierto por destreza, daño del arma, la armadura absorbe);
   el arco dispara desde lejos y gasta una flecha por tiro;
-- regenera vitales, tira el botín de las criaturas muertas y las hace reaparecer a los 30 s;
+- regenera vitales, guarda el botín dentro del cuerpo de las criaturas muertas y las hace
+  reaparecer a los 30 s de que el cuerpo se deshaga;
 - resucita a los fantasmas que llegan a 2 tiles del santuario.
 
 `MobileNotifications` avisa vitales al dueño, vida y golpes (`swing`) a quienes ven al mobile.
+
+### Cuerpos
+
+El botín de una criatura es otra ubicación de los objetos (`corpse`): queda dentro de su cuerpo,
+que es la misma criatura muerta. `Corpses` (capa de aplicación) recuerda qué cuerpo tiene abierto
+cada jugador: `openCorpse` lo abre si está a 2 tiles, `lootAll` pasa todo a la mochila y cada
+cambio (incluido arrastrar un objeto con `moveItem`) reenvía `corpse` a quienes lo miran. Con
+botín dura 90 s; vacío, 3 s. Al deshacerse se envía `corpseClosed` y lo que quedaba se pierde.
 
 ### Habilidades y magia
 
@@ -263,6 +275,17 @@ Implementaciones: `JsonFileCharacterStore` (servidor, escritura atómica y agrup
 `KeyValueCharacterStore` (modo solo, sobre `localStorage`) y `ScryptPasswordHasher`. El modo
 solo no pide contraseña: el servidor embebido se compone sin hasher.
 
+### Mazmorra
+
+`world-builder.ts` arma un solo mapa: la isla a la izquierda, roca maciza en el medio y la
+mazmorra (`dungeon-map.ts`) a la derecha. La mazmorra son salas en serpentina unidas por
+pasillos de dos tiles; la roca que toca el suelo se vuelve `cave-wall`. Se entra y se sale por
+**teletransportes** del mapa (`TileMap.teleporters`): `MovePlayer`, después de un paso, mira si el
+tile lleva a otro lado y llama a `teleport`. El cliente no predice pasos desde un teletransporte.
+La zona de la mazmorra tiene `dungeon: true`: no es protegida (`safeZoneAt`) y el cliente la dibuja
+oscura a cualquier hora. Las criaturas de cada sala salen de `LAIR_LEVELS` según la profundidad;
+la última es la guarida del dragón.
+
 ### Rango de visión
 
 Cada jugador solo recibe lo que pasa a 18 tiles o menos (como en UO): al moverse, el servidor
@@ -283,7 +306,8 @@ gremio llega a sus miembros estén donde estén).
   y los halos cálidos de los faroles, la forja, el santuario y el propio jugador, sumados. Así
   la luz ilumina el terreno, las paredes, las criaturas y los personajes que toca en vez de
   taparlos. Los hechizos y las flechas van por encima (brillan de noche). Con Visión nocturna
-  no hay oscuridad: se ve como de día.
+  no hay oscuridad: se ve como de día. En una mazmorra es de noche siempre, con un ambiente más
+  oscuro y sin azul de luna; los braseros iluminan las salas.
 - Personajes: modelos de volumen en 8 direcciones, con caminata, carrera y acciones.
 
 ## Convenciones

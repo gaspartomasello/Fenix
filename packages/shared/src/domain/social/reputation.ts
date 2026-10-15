@@ -20,7 +20,17 @@ export const FAME_MAX = 10_000;
 export const KARMA_MAX = 10_000;
 
 /** Fama y karma que da matar cada tipo de criatura. */
-export const CREATURE_FAME: Readonly<Record<string, number>> = { rat: 5, wolf: 15, skeleton: 30 };
+export const CREATURE_FAME: Readonly<Record<string, number>> = {
+  rat: 5,
+  wolf: 15,
+  'giant-spider': 20,
+  skeleton: 30,
+  orc: 35,
+  'skeleton-mage': 50,
+  troll: 70,
+  lich: 200,
+  dragon: 1000,
+};
 
 export function notorietyOf(murders: number, criminalUntil: number, now: number): Notoriety {
   if (murders >= MURDERER_KILLS) return 'murderer';

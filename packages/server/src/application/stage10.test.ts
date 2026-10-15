@@ -175,6 +175,7 @@ describe('etapa 10: hechizos, efectos, vendas y oficios', () => {
         groundAdded: [],
         inventories: new Set(),
         looks: new Set(),
+        corpses: new Set(),
       });
     const rat = new Creature('rata', 'rat', { x: 6, y: 2 });
     f.world.addCreature(rat);

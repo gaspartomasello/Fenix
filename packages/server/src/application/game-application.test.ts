@@ -127,6 +127,28 @@ describe('GameApplication', () => {
       ctx.app.handle(ana, { type: 'move', direction: Direction.South, mode: 'walk', seq: 3 });
       expect(ctx.notifier.ofType('moveAck')).toHaveLength(1);
     });
+
+    it('al pisar un teletransporte (la boca de una cueva) aparece del otro lado', () => {
+      const terrain = new Array<Terrain>(5 * 3).fill(G);
+      const map = new TileMap({
+        width: 5,
+        height: 3,
+        terrain,
+        teleporters: [{ x: 1, y: 0, to: { x: 4, y: 2 } }],
+      });
+      const cave = createApp(map);
+      const ana = cave.join('Ana');
+      cave.notifier.clear();
+      cave.app.handle(ana, { type: 'move', direction: Direction.North, mode: 'walk', seq: 1 });
+
+      expect(cave.world.get(ana)?.position).toEqual({ x: 4, y: 2 });
+      expect(cave.notifier.ofType('mobileTeleported')).toEqual([
+        {
+          to: ana,
+          message: { type: 'mobileTeleported', id: ana, position: { x: 4, y: 2 } },
+        },
+      ]);
+    });
   });
 
   describe('rango de visión', () => {

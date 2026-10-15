@@ -1,7 +1,8 @@
-import { formatGameTime, type ClientMessage, type EntityId } from '@fenix/shared';
+import { formatGameTime, type ClientMessage, type EntityId, type Position } from '@fenix/shared';
 import { isTestCharacter } from '../domain/testing/test-character';
 import type { WorldClock } from '../domain/world-clock';
 import type { World } from '../domain/world';
+import { Corpses } from './corpses';
 import { GameLoop } from './game-loop';
 import { ItemNotifications } from './item-notifications';
 import { MobileNotifications } from './mobile-notifications';
@@ -58,6 +59,7 @@ export class GameApplication {
   private readonly socialActions: SocialActions;
   private readonly social: SocialNotifications;
   private readonly loop: GameLoop;
+  private readonly corpses: Corpses;
   private readonly mobiles: MobileNotifications;
   private readonly world: World;
   private readonly persistence: CharacterPersistence;
@@ -130,6 +132,7 @@ export class GameApplication {
       this.social,
       notifier,
     );
+    this.corpses = new Corpses(world, clock, ids, notifications, notifier);
     this.loop = new GameLoop(
       world,
       this.mobiles,
@@ -139,6 +142,7 @@ export class GameApplication {
       random,
       this.social,
       (player, position) => this.movePlayer.teleport(player, position),
+      this.corpses,
     );
   }
 
@@ -228,6 +232,15 @@ export class GameApplication {
       case 'setHour':
         this.setHour(playerId, message.hour);
         break;
+      case 'testTravel':
+        this.testTravel(playerId, message.to);
+        break;
+      case 'openCorpse':
+        this.corpses.open(playerId, message.corpseId);
+        break;
+      case 'lootAll':
+        this.corpses.lootAll(playerId, message.corpseId);
+        break;
       case 'join':
         // Ya está en el mundo: se ignora un segundo ingreso.
         break;
@@ -254,6 +267,41 @@ export class GameApplication {
     });
   }
 
+  /**
+   * `/cueva`: un personaje de prueba va a la boca de la mazmorra (afuera);
+   * `/cueva fondo`, al lado del jefe de la última sala.
+   */
+  private testTravel(playerId: EntityId, to: 'cave' | 'lair'): void {
+    const player = this.world.get(playerId);
+    if (!player) return;
+    if (!isTestCharacter(player.name, this.testCharacters)) {
+      this.notifier.send(playerId, {
+        type: 'system',
+        text: 'Solo los personajes de prueba pueden viajar así.',
+      });
+      return;
+    }
+    const map = this.world.map;
+    const destination =
+      to === 'cave' ? map.teleporters.find((t) => map.regionAt(t)?.dungeon)?.to : this.nearLair();
+    if (!destination) {
+      this.notifier.send(playerId, { type: 'system', text: 'Este mundo no tiene mazmorra.' });
+      return;
+    }
+    this.movePlayer.teleport(player, destination);
+  }
+
+  /** Un tile libre cerca del jefe de la mazmorra (el dragón). */
+  private nearLair(): Position | undefined {
+    const boss = this.world.allCreatures().find((c) => c.body === 'dragon');
+    if (!boss) return undefined;
+    for (let r = 7; r >= 3; r--) {
+      const spot = { x: boss.home.x - r, y: boss.home.y };
+      if (this.world.map.isWalkable(spot)) return spot;
+    }
+    return boss.home;
+  }
+
   leave(playerId: EntityId): void {
     const player = this.world.get(playerId);
     if (player) {
@@ -262,6 +310,7 @@ export class GameApplication {
       this.socialActions.disconnect(player);
       this.persistence.release(player);
     }
+    this.corpses.forget(playerId);
     this.leaveWorld.execute(playerId);
   }
 }

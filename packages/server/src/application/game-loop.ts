@@ -1,6 +1,7 @@
 import {
   ATTRIBUTE_NAMES,
   CREATURE_FAME,
+  poisonDurationMs,
   REGEN_INTERVAL_MS,
   SPELLS,
   describeItem,
@@ -11,6 +12,11 @@ import {
 } from '@fenix/shared';
 import { outOfAmmo, trySwing, type SwingResult } from '../domain/combat/combat';
 import { resolveBandage } from '../domain/healing/bandage';
+import {
+  breatheFire,
+  resolveCreatureCast,
+  startCreatureCast,
+} from '../domain/creatures/creature-magic';
 import { commitAggression } from './use-cases/aggression';
 import { CORPSE_MS, Creature, RESPAWN_MS } from '../domain/creatures/creature';
 import { canMoveTo, chooseStep, updateTarget } from '../domain/creatures/creature-ai';
@@ -19,6 +25,7 @@ import { resolveCast } from '../domain/magic/spellcasting';
 import type { Mobile } from '../domain/mobile';
 import { Player } from '../domain/player';
 import type { World } from '../domain/world';
+import type { Corpses } from './corpses';
 import type { ItemNotifications } from './item-notifications';
 import type { MobileNotifications } from './mobile-notifications';
 import type { IdGenerator, Notifier, RandomSource } from './ports';
@@ -46,6 +53,7 @@ export class GameLoop {
     private readonly social: SocialNotifications,
     /** Mueve a un jugador al instante, avisando a quienes lo ven. */
     private readonly teleport: (player: Player, position: Position) => void,
+    private readonly corpses: Corpses,
   ) {
     this.shrines = world.map.statics.filter((s) => s.kind === 'shrine');
   }
@@ -259,6 +267,7 @@ export class GameLoop {
           return;
         }
         this.mobiles.disappear(creature);
+        this.corpses.remove(creature.id);
         creature.gone = true;
         creature.respawnAt = now + RESPAWN_MS;
       }
@@ -266,7 +275,9 @@ export class GameLoop {
     }
 
     const target = updateTarget(creature, this.world);
-    if (target) {
+    this.creatureAbilities(creature, target, now);
+    if (creature.combat.isDead) return;
+    if (target && !creature.fleeing) {
       const result = trySwing(creature, target, this.world, now, this.roll);
       if (result) this.resolveSwing(result, now);
     }
@@ -285,6 +296,59 @@ export class GameLoop {
     if (!target && creature.combat.regenerate(now).hits) this.mobiles.broadcastHealth(creature);
   }
 
+  /**
+   * Lo que hace cada criatura además de pegar: regenerarse, lanzar
+   * hechizos (o curarse) y escupir fuego.
+   */
+  private creatureAbilities(creature: Creature, target: Mobile | null, now: number): void {
+    const abilities = creature.definition.abilities;
+    const elapsed = creature.lastTickAt ? now - creature.lastTickAt : 0;
+    creature.lastTickAt = now;
+    if (!abilities) return;
+    if (abilities.regeneration && creature.combat.health < 1) {
+      creature.regenCarry += (abilities.regeneration * elapsed) / 1000;
+      const whole = Math.floor(creature.regenCarry);
+      if (whole > 0) {
+        creature.regenCarry -= whole;
+        creature.combat.heal(whole);
+        this.mobiles.broadcastHealth(creature);
+      }
+    }
+    const cast = resolveCreatureCast(creature, this.world, now, this.roll);
+    if (cast) {
+      this.mobiles.spellEffect(creature, cast.target, cast.spell, cast.amount, cast.resisted);
+      this.afterHarm(creature, cast.target, cast.amount, cast.killed, cast.effectsChanged, now);
+    }
+    if (!target || creature.fleeing) return;
+    const spell = startCreatureCast(creature, target, now, this.roll);
+    if (spell) this.mobiles.castStart(creature, spell);
+    // El aliento no sale siempre que puede: así no es predecible.
+    const hits =
+      this.roll() < 0.5 ? breatheFire(creature, target, this.world, now, this.roll) : null;
+    for (const hit of hits ?? []) {
+      this.mobiles.spellEffect(creature, hit.target, 'flamestrike', hit.amount, false);
+      this.afterHarm(creature, hit.target, hit.amount, hit.killed, false, now);
+    }
+  }
+
+  /** Avisos después de que una criatura dañó o hechizó a alguien. */
+  private afterHarm(
+    attacker: Mobile,
+    target: Mobile,
+    amount: number,
+    killed: boolean,
+    effectsChanged: boolean,
+    now: number,
+  ): void {
+    this.mobiles.broadcastHealth(target);
+    if (target instanceof Player) {
+      this.mobiles.sendVitals(target);
+      if (effectsChanged) this.mobiles.sendEffects(target);
+    }
+    if (amount > 0 && target !== attacker) this.disrupt(target);
+    if (killed) this.handleKill(attacker, target, now);
+  }
+
   /** Saca una invocación del mundo (se le terminó el tiempo, murió o se fue su dueño). */
   dismiss(creature: Creature): void {
     this.mobiles.disappear(creature);
@@ -298,6 +362,21 @@ export class GameLoop {
     if (target instanceof Creature && !target.ownerId && target.combat.targetId === null)
       target.combat.targetId = attacker.id;
     this.mobiles.swing(result);
+    // Algunas criaturas envenenan al morder.
+    const venom = attacker instanceof Creature ? attacker.definition.abilities?.poison : undefined;
+    if (venom && result.hit && !result.blocked && !result.killed && this.roll() < venom.chance) {
+      target.combat.applyEffect(
+        'poison',
+        venom.level,
+        poisonDurationMs(venom.level),
+        now,
+        attacker.id,
+      );
+      if (target instanceof Player) {
+        this.mobiles.sendEffects(target);
+        this.notifier.send(target.id, { type: 'system', text: '¡Te envenenaron!' });
+      }
+    }
     if (result.itemChanges) this.items.publish(result.itemChanges, result.attacker.id);
     if (result.hit && !result.blocked && result.damage > 0) this.disrupt(result.target);
     if (result.killed) this.handleKill(result.attacker, result.target, now);
@@ -369,24 +448,17 @@ export class GameLoop {
     this.social.sendSocial(killer);
   }
 
+  /** El botín queda dentro del cuerpo, que se revisa con doble clic. */
   private dropLoot(creature: Creature): void {
+    // Las invocaciones no dejan nada: se desvanecen.
+    if (creature.ownerId) return;
     const drops = rollLoot(creature.definition, this.roll);
-    for (const drop of drops) {
-      const item = this.world.items.add(this.ids.next(), drop.kind, drop.amount, {
-        type: 'ground',
-        position: creature.position,
-      });
-      this.items.publish(
-        { groundRemoved: [], groundAdded: [item], inventories: new Set(), looks: new Set() },
-        creature.id,
-      );
-    }
+    if (!this.corpses.fill(creature, drops)) return;
     const names = drops.map((d) => describeItem(d.kind, d.amount));
-    if (names.length === 0) return;
     for (const id of this.mobiles.watchers(creature)) {
       this.notifier.send(id, {
         type: 'system',
-        text: `${capitalize(creature.definition.article)} ${creature.name} dejó: ${names.join(', ')}.`,
+        text: `El cuerpo ${creature.definition.article === 'una' ? 'de la' : 'del'} ${creature.name} tiene: ${names.join(', ')}. Doble clic para revisarlo.`,
       });
     }
   }

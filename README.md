@@ -55,7 +55,8 @@ Abrí <http://localhost:5173>. Para probar el multijugador, abrí otra pestaña 
 Un **personaje de prueba** entra cada vez con todas las habilidades y atributos al máximo, la
 vida y el maná llenos, 999.999 monedas de oro y 1000 de cada reactivo. En el modo solo lo es
 **Gaspar**; en el servidor en línea, solo los nombres que diga `TEST_CHARACTERS`. Un personaje de
-prueba puede escribir `/hora 22` en el chat para cambiar la hora del mundo (para probar la noche).
+prueba puede escribir `/hora 22` en el chat para cambiar la hora del mundo (para probar la noche),
+`/cueva` para ir a la boca de la mazmorra y `/cueva fondo` para aparecer cerca del dragón.
 
 ## Controles
 
@@ -73,6 +74,8 @@ prueba puede escribir `/hora 22` en el chat para cambiar la hora del mundo (para
   levantarlo.
 - **Clic** (o toque) sobre una criatura: atacarla. El personaje golpea solo mientras la tenga al
   lado. **Escape**: dejar de atacar.
+- **Doble clic sobre el cuerpo** de una criatura muerta (o un toque): revisarlo. El botín está
+  adentro: se arrastra cada objeto a la mochila o se usa **Tomar todo**.
 - **L**: libro de hechizos, con una página por círculo. **1 a 8**: lanzar los hechizos de la página
   abierta. Los de ataque van al objetivo de combate o piden tocar a alguien; los de ayuda piden
   tocar a alguien o a uno mismo, y Teletransporte un lugar. **K**: habilidades, por grupo.
@@ -159,3 +162,10 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
     en la proyección de UO. De noche, la luz de faroles y fuegos ilumina el suelo, las paredes y
     los personajes que toca, sin velar la pantalla; Visión nocturna hace ver como de día. El
     oro se ve como una moneda, un puñado, una pila o una montaña según la cantidad.
+12. ✅ **Criaturas y mazmorra**: araña gigante (envenena), orco (huye cuando le queda poca vida),
+    trol (se regenera), esqueleto mago y liche (lanzan hechizos de lejos y se curan) y dragón
+    rojo (aliento de fuego que alcanza a los de al lado). La **Cueva del Lamento**: se entra por
+    una boca de piedra en el bosque y se sale por una escalera; salas unidas por pasillos,
+    oscura a cualquier hora (los braseros iluminan las salas), criaturas más fuertes cuanto más
+    hondo y el dragón en la última sala. El botín queda **dentro del cuerpo**, que se revisa con
+    doble clic.

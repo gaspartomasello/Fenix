@@ -1,6 +1,7 @@
 import { DEFAULT_APPEARANCE, Direction, Terrain, TileMap, type EntityId } from '@fenix/shared';
 import { describe, expect, it } from 'vitest';
-import { CORPSE_MS, Creature, RESPAWN_MS } from '../domain/creatures/creature';
+import { Creature, RESPAWN_MS } from '../domain/creatures/creature';
+import { EMPTY_CORPSE_MS } from './corpses';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
@@ -57,7 +58,7 @@ describe('ciclo del juego: combate', () => {
     expect(arena.notifier.ofType('vitals').some((d) => d.to === ana)).toBe(true);
   });
 
-  it('el jugador mata a su objetivo, deja botín y la criatura reaparece', () => {
+  it('el jugador mata a su objetivo, revisa el cuerpo y la criatura reaparece', () => {
     const arena = createArena();
     const ana = arena.join('Ana');
     const rat = new Creature('rata', 'rat', { x: 2, y: 1 });
@@ -76,11 +77,27 @@ describe('ciclo del juego: combate', () => {
       .ofType('system')
       .map((d) => (d.message.type === 'system' ? d.message.text : ''));
     expect(texts).toContain('Mataste una rata gigante.');
-    expect(texts.some((t) => t.startsWith('Una rata gigante dejó:'))).toBe(true);
-    expect(arena.world.items.groundNear({ x: 2, y: 1 }).map((i) => i.kind)).toContain('gold');
+    expect(texts.some((t) => t.startsWith('El cuerpo de la rata gigante tiene:'))).toBe(true);
+    // El botín no cae al suelo: queda dentro del cuerpo.
+    expect(arena.world.items.groundNear({ x: 2, y: 1 }).map((i) => i.kind)).not.toContain('gold');
+    expect(arena.world.items.corpseOf('rata').map((i) => i.kind)).toContain('gold');
 
-    arena.run(CORPSE_MS + 200);
+    arena.app.handle(ana, { type: 'openCorpse', corpseId: 'rata' });
+    const opened = arena.notifier.ofType('corpse').at(-1)?.message;
+    if (opened?.type !== 'corpse') throw new Error('no se abrió el cuerpo');
+    expect(opened.name).toBe('rata gigante');
+    expect(opened.items.map((i) => i.kind)).toContain('gold');
+
+    arena.app.handle(ana, { type: 'lootAll', corpseId: 'rata' });
+    expect(arena.world.items.corpseOf('rata')).toHaveLength(0);
+    expect(arena.world.items.countInBackpack(ana, 'gold')).toBeGreaterThan(0);
+    const emptied = arena.notifier.ofType('corpse').at(-1)?.message;
+    expect(emptied?.type === 'corpse' && emptied.items).toEqual([]);
+
+    // Vacío, el cuerpo se deshace enseguida y se cierra la ventana.
+    arena.run(EMPTY_CORPSE_MS + 200);
     expect(rat.gone).toBe(true);
+    expect(arena.notifier.ofType('corpseClosed')).toHaveLength(1);
     expect(
       arena.notifier
         .ofType('mobileDisappeared')

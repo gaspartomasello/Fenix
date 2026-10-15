@@ -17,6 +17,7 @@ import {
   drawCharacterFrame,
 } from './character-art';
 import { drawCreatureFrame } from './creature-art';
+import { creatureLayout } from './monster-art';
 import { ITEM_ART_SIZE, drawItem, itemVariant } from './item-art';
 import { STATIC_ART_HEIGHT, STATIC_ART_WIDTH, drawStatic } from './static-art';
 import { TERRAIN_ART_SIZE, drawTerrainTile } from './terrain-art';
@@ -71,7 +72,7 @@ describe('arte procedural (sin DOM)', () => {
       for (const direction of ALL_DIRECTIONS) {
         for (const frame of ['idle', 0, 1, 2, 3] as const) {
           const image = drawCreatureFrame(kind, direction, frame);
-          expect(image.height).toBe(CHARACTER_ART_HEIGHT);
+          expect(image.height).toBe(creatureLayout(kind).height);
           expect(opaquePixels(image.data)).toBeGreaterThan(15);
         }
       }

@@ -10,8 +10,8 @@ estampa en el centro.
 packages/content/
 ├── maps/puerto-ceniza.json     El pueblo (mapa de Tiled en formato JSON)
 └── tilesets/
-    ├── terreno.json / .png     Pasto, tierra, arena, empedrado, agua, madera
-    └── objetos.json / .png     Árboles, rocas, paredes, cercas, faroles…
+    ├── terreno.json / .png     Pasto, tierra, arena, empedrado, agua, madera, cueva, roca
+    └── objetos.json / .png     Árboles, rocas, paredes, cercas, faroles, paredes de cueva…
 ```
 
 Los tilesets se generan a partir del arte del juego. **No se editan a mano**: si cambia el arte o
@@ -20,6 +20,10 @@ se agregan terrenos u objetos, se regeneran con:
 ```bash
 npm run tilesets -w @fenix/content
 ```
+
+Si se agrega un **terreno**, el tileset `terreno` crece y el `firstgid` de `objetos` en el mapa
+tiene que correrse lo mismo (y con él, los números de la capa `objetos`). Los objetos nuevos van
+al final de su tileset y no corren nada.
 
 ## Editar el pueblo
 

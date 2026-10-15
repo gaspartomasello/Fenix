@@ -172,6 +172,24 @@ export interface SetHourRequest {
   readonly hour: number;
 }
 
+/** Viajar al instante a la boca de la cueva o a la guarida del jefe (solo personajes de prueba). */
+export interface TestTravelRequest {
+  readonly type: 'testTravel';
+  readonly to: 'cave' | 'lair';
+}
+
+/** Revisar el cuerpo de una criatura muerta (doble clic). */
+export interface OpenCorpseRequest {
+  readonly type: 'openCorpse';
+  readonly corpseId: EntityId;
+}
+
+/** Pasar todo lo que hay en un cuerpo a la mochila. */
+export interface LootAllRequest {
+  readonly type: 'lootAll';
+  readonly corpseId: EntityId;
+}
+
 export interface CraftRequest {
   readonly type: 'craft';
   readonly recipe: string;
@@ -192,6 +210,9 @@ export type ClientMessage =
   | SellRequest
   | CraftRequest
   | SetHourRequest
+  | TestTravelRequest
+  | OpenCorpseRequest
+  | LootAllRequest
   | SocialRequest;
 
 // ── Servidor → Cliente ────────────────────────────────────────────────
@@ -389,6 +410,21 @@ export interface SocialMessage {
   readonly notoriety: Notoriety;
 }
 
+/** Lo que hay en un cuerpo que el jugador está revisando (se reenvía cuando cambia). */
+export interface CorpseMessage {
+  readonly type: 'corpse';
+  readonly corpseId: EntityId;
+  /** "lobo gris", "dragón rojo"… */
+  readonly name: string;
+  readonly items: readonly BackpackItemSnapshot[];
+}
+
+/** El cuerpo ya no se puede revisar (se deshizo o el jugador se alejó). */
+export interface CorpseClosedMessage {
+  readonly type: 'corpseClosed';
+  readonly corpseId: EntityId;
+}
+
 export interface SystemMessage {
   readonly type: 'system';
   readonly text: string;
@@ -418,6 +454,8 @@ export type ServerMessage =
   | WorldTimeMessage
   | MobileStatusMessage
   | SocialMessage
+  | CorpseMessage
+  | CorpseClosedMessage
   | SystemMessage;
 
 export type ServerMessageType = ServerMessage['type'];
