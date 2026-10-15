@@ -3,7 +3,7 @@ import { Application, Container, Rectangle } from 'pixi.js';
 // Evita `eval` en Pixi: necesario en páginas con Content Security Policy estricta.
 import 'pixi.js/unsafe-eval';
 import type { ClientGame } from '../core/client-game';
-import type { Entity } from '../core/entity';
+import type { Entity, FractionalPosition } from '../core/entity';
 import { CharacterView } from './character-view';
 import { EffectsLayer } from './effects-layer';
 import { ItemLayer } from './item-layer';
@@ -16,9 +16,13 @@ import { TextureCache } from './texture-cache';
 const ZOOM_LEVELS = [1, 1.5, 2] as const;
 /** Tiempo por cuadro para dibujar de antemano personajes y criaturas. */
 const PREPARE_BUDGET_MS = 4;
+/** Distancia (en tiles) a la que se destapa a los demás detrás de árboles y paredes. */
+const NEARBY_REVEAL = 4;
 const GHOST_TINT = 0x8c8c9c;
 /** Caja de un personaje en pantalla respecto de sus pies, para saber si se lo tocó. */
 const MOBILE_HIT_BOX = { halfWidth: 16, height: 64 };
+/** El jinete sobre la montura: angosto y de la montura para arriba. */
+const RIDER_HIT_BOX = { halfWidth: 12, bottom: 44 };
 /** El personaje se dibuja un poco por debajo del centro, como en UO. */
 const CAMERA_VERTICAL_OFFSET = 30;
 /** Margen alrededor de la pantalla para crear objetos antes de que entren. */
@@ -76,6 +80,22 @@ export class GameRenderer {
     return { x: Math.round(tile.x), y: Math.round(tile.y) };
   }
 
+  /** Levanta un objeto del suelo (se deja de ver) mientras se lo arrastra. */
+  liftGroundItem(id: EntityId): () => void {
+    return this.groundItems.lift(id);
+  }
+
+  /** Texto del cartel bajo un punto de la pantalla (el poste sube un poco sobre su tile). */
+  signAt(point: ScreenPoint): string | null {
+    const map = this.game.map;
+    if (!map) return null;
+    for (const lift of [0, 14, 28]) {
+      const text = map.signAt(this.screenToTile({ x: point.x, y: point.y + lift * this.zoom }));
+      if (text) return text;
+    }
+    return null;
+  }
+
   /** Objeto del suelo bajo un punto de la pantalla, si hay. */
   groundItemAt(point: ScreenPoint): GroundItemSnapshot | null {
     return this.groundItems.itemAt(this.toWorld(point));
@@ -91,10 +111,22 @@ export class GameRenderer {
     return this.mobileAt(point, (view) => view.isOwnPet && !view.isCreatureCorpse);
   }
 
-  /** Uno mismo bajo un punto de la pantalla. */
+  /**
+   * Uno mismo bajo un punto de la pantalla. Montado cuenta solo el jinete
+   * (no todo el caballo), para no bajarse por tocar algo que está al lado.
+   */
   selfAt(point: ScreenPoint): EntityId | null {
     const self = this.game.self;
-    return self ? this.mobileAt(point, (view) => view.entityId === self.id) : null;
+    const view = self ? this.views.get(self.id) : undefined;
+    if (!self || !view) return null;
+    if (!self.mount) return this.mobileAt(point, (v) => v === view);
+    const world = this.toWorld(point);
+    const { x, y } = view.feet;
+    const inside =
+      Math.abs(world.x - x) <= RIDER_HIT_BOX.halfWidth &&
+      world.y <= y - RIDER_HIT_BOX.bottom &&
+      world.y >= y - view.spriteHeight;
+    return inside ? self.id : null;
   }
 
   corpseAt(point: ScreenPoint): EntityId | null {
@@ -106,9 +138,9 @@ export class GameRenderer {
     return this.mobileAt(point, (view) => view.isOtherLivingPlayer);
   }
 
-  /** Cualquier persona (incluido uno mismo) bajo un punto de la pantalla. */
-  humanAt(point: ScreenPoint): EntityId | null {
-    return this.mobileAt(point, (view) => view.isHuman);
+  /** Cualquier persona (incluido uno mismo, salvo con `self` en false) bajo un punto de la pantalla. */
+  humanAt(point: ScreenPoint, self = true): EntityId | null {
+    return this.mobileAt(point, (view) => view.isHuman && (self || !view.isSelf));
   }
 
   /** Personaje del pueblo bajo un punto de la pantalla. */
@@ -149,7 +181,16 @@ export class GameRenderer {
     const focus = self.renderPosition(now);
     const view = this.updateCamera(focus);
     this.terrain?.cull(view);
-    this.statics?.update(view, focus);
+    // Lo que tapa a uno mismo o a quien esté cerca (por ejemplo, un orco que
+    // ataca escondido detrás de un árbol) se vuelve translúcido.
+    const nearby: FractionalPosition[] = [focus];
+    for (const entity of this.game.allEntities()) {
+      if (entity.id === self.id || entity.dead) continue;
+      const p = entity.renderPosition(now);
+      if (Math.max(Math.abs(p.x - focus.x), Math.abs(p.y - focus.y)) <= NEARBY_REVEAL)
+        nearby.push(p);
+    }
+    this.statics?.update(view, nearby);
 
     this.effects.update(now);
     // De fantasma el mundo se ve gris, como en UO.

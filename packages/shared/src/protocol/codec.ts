@@ -216,6 +216,8 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
     case 'testTravel':
       if (data.to === 'cave' || data.to === 'lair')
         return { ok: true, message: { type: 'testTravel', to: data.to } };
+      if (data.to === 'place' && typeof data.place === 'string' && data.place.length <= 60)
+        return { ok: true, message: { type: 'testTravel', to: 'place', place: data.place } };
       break;
     case 'buyMount':
       if (isId(data.vendorId) && isMountKind(data.mount))

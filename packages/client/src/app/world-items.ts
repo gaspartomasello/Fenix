@@ -1,4 +1,4 @@
-import { describeItem, type ItemDestination } from '@fenix/shared';
+import { describeItem, withinReach, type ItemDestination } from '@fenix/shared';
 import type { ClientGame } from '../core/client-game';
 import type { GameRenderer } from '../rendering/game-renderer';
 import { destinationFor, type ItemActions } from '../ui/backpack-window';
@@ -53,9 +53,12 @@ export class WorldItems {
       {
         id: item.id,
         iconUrl: itemIconUrl(item.kind, item.amount),
+        lift: () => this.renderer.liftGroundItem(item.id),
         onDrop: (target) => {
           const to = destinationFor(target, this.actions, item.kind);
-          if (to) this.game.moveItem(item.id, to);
+          if (!to) return false;
+          this.game.moveItem(item.id, to);
+          return true;
         },
         onDoubleTap: () => this.game.moveItem(item.id, { type: 'backpack' }),
       },
@@ -73,18 +76,31 @@ export class WorldItems {
       this.renderer.creatureAt(point) === null &&
       this.renderer.npcAt(point) === null &&
       this.renderer.corpseAt(point) === null &&
-      this.renderer.ownPetAt(point) === null
+      this.renderer.ownPetAt(point) === null &&
+      this.renderer.signAt(point) === null
     ) {
       this.tooltip.hide();
     }
   }
 
-  private groundAt(clientX: number, clientY: number): ItemDestination {
+  /**
+   * Dónde cae un objeto soltado sobre el mundo. El alcance se mide desde uno
+   * mismo (como en UO), con la misma regla que el servidor: si no llega, se
+   * avisa en el momento y el objeto vuelve a su lugar sin esperar respuesta.
+   */
+  private groundAt(clientX: number, clientY: number): ItemDestination | null {
     const rect = this.renderer.canvas.getBoundingClientRect();
-    return {
-      type: 'ground',
-      position: this.renderer.screenToTile({ x: clientX - rect.left, y: clientY - rect.top }),
-    };
+    const position = this.renderer.screenToTile({ x: clientX - rect.left, y: clientY - rect.top });
+    const self = this.game.self;
+    if (self && !withinReach(self.position, position)) {
+      this.game.notify('Está demasiado lejos para tirarlo ahí.');
+      return null;
+    }
+    if (this.game.map && !this.game.map.isWalkable(position)) {
+      this.game.notify('No podés tirar eso ahí.');
+      return null;
+    }
+    return { type: 'ground', position };
   }
 
   private local(e: PointerEvent): { x: number; y: number } {

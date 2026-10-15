@@ -14,6 +14,18 @@ export interface RegionData {
    * protección de los pueblos: las criaturas entran y se puede pelear.
    */
   readonly dungeon?: boolean;
+  /**
+   * Lugar con nombre en las tierras salvajes (un campamento, unas ruinas):
+   * se ve el nombre, pero no protege como un pueblo.
+   */
+  readonly wild?: boolean;
+}
+
+/** Cartel con texto (los destinos de un cruce de caminos). */
+export interface SignData {
+  readonly x: number;
+  readonly y: number;
+  readonly text: string;
 }
 
 /** Tile que lleva a otro lugar al pisarlo (entrada y salida de una mazmorra). */
@@ -32,6 +44,7 @@ export interface TileMapData {
   readonly statics: readonly StaticPlacement[];
   readonly regions: readonly RegionData[];
   readonly teleporters: readonly Teleporter[];
+  readonly signs?: readonly SignData[];
 }
 
 /** Datos para construir un mapa; objetos y zonas son opcionales. */
@@ -45,6 +58,7 @@ export class TileMap {
   readonly statics: readonly StaticPlacement[];
   readonly regions: readonly RegionData[];
   readonly teleporters: readonly Teleporter[];
+  readonly signs: readonly SignData[];
   private readonly terrain: readonly Terrain[];
   private readonly blocked: Uint8Array;
 
@@ -60,6 +74,7 @@ export class TileMap {
     this.statics = data.statics ?? [];
     this.regions = data.regions ?? [];
     this.teleporters = data.teleporters ?? [];
+    this.signs = data.signs ?? [];
     this.blocked = new Uint8Array(data.width * data.height);
     for (const placed of this.statics) {
       if (STATICS[placed.kind].blocking && this.contains(placed)) {
@@ -107,7 +122,12 @@ export class TileMap {
   /** Zona protegida (un pueblo): las criaturas no entran y no se pelea entre jugadores. */
   safeZoneAt(position: Position): RegionData | undefined {
     const region = this.regionAt(position);
-    return region && !region.dungeon ? region : undefined;
+    return region && !region.dungeon && !region.wild ? region : undefined;
+  }
+
+  /** Texto del cartel del tile, si hay uno. */
+  signAt(position: Position): string | undefined {
+    return this.signs.find((s) => s.x === position.x && s.y === position.y)?.text;
   }
 
   /** Adónde lleva el tile, si es un teletransporte. */
@@ -123,6 +143,7 @@ export class TileMap {
       statics: this.statics,
       regions: this.regions,
       teleporters: this.teleporters,
+      signs: this.signs,
     };
   }
 }

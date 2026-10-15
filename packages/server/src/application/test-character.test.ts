@@ -11,6 +11,7 @@ function createApp() {
     height: 6,
     terrain: new Array<Terrain>(36).fill(Terrain.Grass),
     statics: [],
+    regions: [{ name: 'Roca Alta', x: 4, y: 4, width: 2, height: 2 }],
   });
   const world = new World(map, { x: 2, y: 2 });
   const notifier = new RecordingNotifier();
@@ -66,5 +67,21 @@ describe('personaje de prueba', () => {
     app.handle(gaspar.id, { type: 'setHour', hour: 22 });
     expect(worldClock.timeAt(0).dayProgress).toBeCloseTo(22 / 24);
     expect(notifier.ofType('worldTime').at(-1)?.to).toBe('all');
+  });
+
+  it('/ir lleva a un personaje de prueba a un lugar con nombre (sin importar tildes ni mayúsculas)', () => {
+    const { world, join, app, notifier } = createApp();
+    const gaspar = join('Gaspar');
+    app.handle(gaspar.id, { type: 'testTravel', to: 'place', place: 'roca' });
+    expect(world.map.regionAt(gaspar.position)?.name).toBe('Roca Alta');
+
+    app.handle(gaspar.id, { type: 'testTravel', to: 'place', place: 'Atlántida' });
+    const last = notifier.ofType('system').at(-1)?.message;
+    expect(last?.type === 'system' && last.text).toContain('No conozco ningún lugar');
+
+    const ana = join('Ana');
+    const before = ana.position;
+    app.handle(ana.id, { type: 'testTravel', to: 'place', place: 'Roca Alta' });
+    expect(ana.position).toEqual(before);
   });
 });

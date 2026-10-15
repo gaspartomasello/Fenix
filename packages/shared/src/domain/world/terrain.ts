@@ -8,6 +8,8 @@ export const Terrain = {
   Wood: 5,
   Cave: 6,
   Rock: 7,
+  Snow: 8,
+  Swamp: 9,
 } as const;
 
 export type Terrain = (typeof Terrain)[keyof typeof Terrain];
@@ -82,6 +84,20 @@ export const TERRAINS: Readonly<Record<Terrain, TerrainDefinition>> = {
     name: 'roca maciza',
     walkable: false,
     blendPriority: -1,
+  },
+  [Terrain.Snow]: {
+    id: Terrain.Snow,
+    key: 'snow',
+    name: 'nieve',
+    walkable: true,
+    blendPriority: 4,
+  },
+  [Terrain.Swamp]: {
+    id: Terrain.Swamp,
+    key: 'swamp',
+    name: 'pantano',
+    walkable: true,
+    blendPriority: 0.5,
   },
 };
 

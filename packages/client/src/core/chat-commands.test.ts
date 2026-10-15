@@ -47,6 +47,11 @@ describe('comandos del chat', () => {
     expect(parseChatInput('/hora').kind).toBe('error');
   });
 
+  it('/ir va a un lugar; solo, pide la lista', () => {
+    expect(parseChatInput('/ir Roca Alta')).toEqual({ kind: 'goto', place: 'Roca Alta' });
+    expect(parseChatInput('/ir')).toEqual({ kind: 'goto', place: '' });
+  });
+
   it('/desconectar pide salir del juego', () => {
     expect(parseChatInput('/desconectar')).toEqual({ kind: 'logout' });
   });

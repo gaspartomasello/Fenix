@@ -1,10 +1,12 @@
 import {
+  CREATURES,
   SPELLS,
   TileMap,
   advanceTime,
   bodyMoveMs,
   directionBetween,
   effectiveMoveMode,
+  isCreatureKind,
   isMountKind,
   moveDuration,
   sanitizeChatText,
@@ -36,6 +38,9 @@ import { ATTACK_ANIMATION_MS, Entity } from './entity';
 import { EventEmitter } from './event-emitter';
 import { MovementPredictor } from './movement-predictor';
 import type { ServerGateway } from './ports';
+
+/** Después de este tiempo sin golpes, un atacante vuelve a avisarse. */
+const ATTACK_WARNING_MS = 20_000;
 
 export type LogKind = 'chat' | 'system';
 
@@ -118,6 +123,8 @@ export interface Inventory {
 export class ClientGame extends EventEmitter<ClientGameEvents> {
   private readonly entities = new Map<EntityId, Entity>();
   private _map: TileMap | null = null;
+  /** Último golpe recibido de cada atacante (para avisar una vez por pelea). */
+  private readonly attackWarnings = new Map<EntityId, number>();
   private selfIdValue: EntityId | null = null;
   private predictor: MovementPredictor | null = null;
   private time: { value: WorldTime; receivedAt: number } | null = null;
@@ -277,6 +284,15 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       case 'travel':
         this.gateway.send({ type: 'testTravel', to: input.to });
         return;
+      case 'goto': {
+        if (input.place) {
+          this.gateway.send({ type: 'testTravel', to: 'place', place: input.place });
+          return;
+        }
+        const places = (this._map?.regions ?? []).filter((r) => !r.dungeon).map((r) => r.name);
+        this.notify(`Lugares: ${places.join(', ')}.`);
+        return;
+      }
       case 'help':
         CHAT_HELP.forEach((line) => this.notify(line));
         return;
@@ -627,6 +643,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   private applySwing(message: Extract<ServerMessage, { type: 'swing' }>, now: number): void {
     const attacker = this.entities.get(message.attackerId);
     const target = this.entities.get(message.targetId);
+    if (message.targetId === this.selfIdValue) this.warnAttacker(message.attackerId, attacker, now);
     if (attacker && target) {
       // Personas y esqueletos hacen el gesto de su arma, mirando al objetivo; las bestias embisten.
       if (attacker.isHumanoid) {
@@ -646,6 +663,24 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         message.targetId === this.selfIdValue ? 'damage-taken' : 'damage-dealt',
         now,
       );
+  }
+
+  /**
+   * Como en UO: la primera vez que algo te ataca (o vuelve a hacerlo después
+   * de un rato), el chat avisa quién. Si no se lo ve, igual se avisa.
+   */
+  private warnAttacker(id: EntityId, attacker: Entity | undefined, now: number): void {
+    const last = this.attackWarnings.get(id);
+    this.attackWarnings.set(id, now);
+    if (last !== undefined && now - last < ATTACK_WARNING_MS) return;
+    if (!attacker) {
+      this.notify('Algo te está atacando y no lo ves.');
+      return;
+    }
+    const creature = isCreatureKind(attacker.body) ? CREATURES[attacker.body] : null;
+    this.notify(
+      creature ? `Te ataca ${creature.article} ${creature.name}.` : `Te ataca ${attacker.name}.`,
+    );
   }
 
   private addEntity(entity: Entity): void {

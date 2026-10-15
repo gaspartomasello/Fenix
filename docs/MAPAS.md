@@ -1,16 +1,20 @@
 # Diseñar mapas con Tiled
 
-El pueblo de **Puerto Ceniza** está diseñado en [Tiled](https://www.mapeditor.org), un editor de
-mapas gratuito. El resto de la isla (bosques, costas, lagos) lo genera el servidor; el pueblo se
-estampa en el centro.
+Los pueblos están diseñados en [Tiled](https://www.mapeditor.org), un editor de mapas gratuito:
+**Puerto Ceniza** (la capital), **Roca Alta** (pueblo minero de piedra, entre montañas) y
+**Junco Verde** (aldea de madera junto a una laguna, en el pantano). El resto del continente
+(biomas, ríos, caminos, lugares) lo genera el servidor y los pueblos se estampan encima (ver
+`docs/ARQUITECTURA.md`, «Continente»).
 
 ## Archivos
 
 ```
 packages/content/
-├── maps/puerto-ceniza.json     El pueblo (mapa de Tiled en formato JSON)
+├── maps/puerto-ceniza.json     La capital (mapa de Tiled en formato JSON)
+├── maps/roca-alta.json         El pueblo de la montaña
+├── maps/junco-verde.json       La aldea del pantano
 └── tilesets/
-    ├── terreno.json / .png     Pasto, tierra, arena, empedrado, agua, madera, cueva, roca
+    ├── terreno.json / .png     Pasto, tierra, arena, empedrado, agua, madera, cueva, roca, nieve, pantano
     └── objetos.json / .png     Árboles, rocas, paredes, cercas, faroles, paredes de cueva…
 ```
 
@@ -25,9 +29,9 @@ Si se agrega un **terreno**, el tileset `terreno` crece y el `firstgid` de `obje
 tiene que correrse lo mismo (y con él, los números de la capa `objetos`). Los objetos nuevos van
 al final de su tileset y no corren nada.
 
-## Editar el pueblo
+## Editar un pueblo
 
-1. Instalá Tiled y abrí `packages/content/maps/puerto-ceniza.json`.
+1. Instalá Tiled y abrí uno de los mapas de `packages/content/maps/`.
 2. Usá las tres capas que el juego entiende:
 
 | Capa              | Tipo             | Qué va                                                                                          |
@@ -55,7 +59,10 @@ al final de su tileset y no corren nada.
 - **Forja y yunque** (`forge`, `anvil`): para fundir mineral y fabricar. Los árboles (`oak`,
   `pine`, `ceibo`, `gomero`, `willow`, `poplar`, `dead-tree`) dan troncos y las rocas (`rock`) mineral.
 - **Comerciantes**: en la capa `zonas`, un punto de clase `npc` con una propiedad `rol`
-  (`blacksmith`, `mage`, `innkeeper` o `banker`).
+  (`blacksmith`, `mage`, `innkeeper`, `banker` o `stablemaster`) y, si se quiere, `nombre` (si no,
+  usa el de su oficio).
+- **Caminos**: el generador une los pueblos entrando por el medio de cada lado; conviene que el
+  mapa tenga caminos que lleguen al borde en el medio de cada lado.
   al menos uno en el mapa.
 - **Zonas** (`region`): además de nombrar el lugar, son **seguras**: las criaturas no entran.
 - **Zonas** (`region`): su nombre aparece en la barra de estado cuando el jugador está adentro.

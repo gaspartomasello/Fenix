@@ -386,7 +386,8 @@ function foliage(
 
 // ── Especies ────────────────────────────────────────────────────────
 
-export type TreeSpecies = 'oak' | 'pine' | 'ceibo' | 'gomero' | 'willow' | 'poplar' | 'dead-tree';
+export type TreeSpecies =
+  'oak' | 'pine' | 'snow-pine' | 'ceibo' | 'gomero' | 'willow' | 'poplar' | 'dead-tree';
 
 /** Sombra en el suelo de cada especie (radios en pixeles de pantalla). */
 export const TREE_SHADOWS: Readonly<Record<TreeSpecies, readonly [number, number]>> = {
@@ -397,6 +398,7 @@ export const TREE_SHADOWS: Readonly<Record<TreeSpecies, readonly [number, number
   willow: [40, 16],
   poplar: [15, 6],
   'dead-tree': [24, 10],
+  'snow-pine': [26, 11],
 };
 
 export function drawTree(c: VolumeCanvas, species: TreeSpecies, variant: number): void {
@@ -461,6 +463,7 @@ function oak(c: VolumeCanvas, variant: number): void {
 
 const PINE_BARK = barkOf(ramp([126, 80, 54]), plates, 0.72);
 const PINE_NEEDLES = ramp([40, 88, 52]);
+const SNOW = ramp([226, 232, 242]);
 
 /**
  * Pino: un solo tronco recto hasta la punta (la guía manda) con pisos de
@@ -468,8 +471,8 @@ const PINE_NEEDLES = ramp([40, 88, 52]);
  * de arriba cortas y alzadas: copa cónica. Abajo el tronco queda pelado, con
  * muñones de ramas secas, y las agujas forman almohadillas sobre cada rama.
  */
-function pine(c: VolumeCanvas, variant: number): void {
-  const t = startTree(c, 211, variant);
+function pine(c: VolumeCanvas, variant: number, snowy = false): void {
+  const t = startTree(c, 211 + (snowy ? 50 : 0), variant);
   const s = t.size;
   const height = 104 * s;
   roots(t, 3.4 * s, 4, 7 * s, PINE_BARK);
@@ -496,13 +499,27 @@ function pine(c: VolumeCanvas, variant: number): void {
       PINE_BARK,
     );
   }
-  const needles = leaves(
+  const green = leaves(
     PINE_NEEDLES,
     { center: [0, height * 0.55, 0], width: 30 * s, height: height * 0.5 },
     variant * 7,
     0.5,
     1,
   );
+  // En la nieve, lo que mira al cielo queda blanco.
+  const needles: Material = snowy
+    ? clipping((sample) => {
+        const color = green(sample);
+        if (!color || sample.n[1] < 0.88) return color;
+        if (noise(Math.floor(sample.p[0] / 1.5), Math.floor(sample.p[2] / 1.5), 5) < 0.3)
+          return color;
+        return tone(
+          SNOW,
+          sample.light,
+          noise(Math.floor(sample.p[0]), Math.floor(sample.p[2])) > 0.85 ? -1 : 0,
+        );
+      })
+    : green;
   let azimuth = t.rand() * Math.PI * 2;
   for (let y = 22 * s; y < height - 5; y += 7.2 * s * (0.9 + t.rand() * 0.2)) {
     const k = y / height;
@@ -925,4 +942,5 @@ const TREES: Readonly<Record<TreeSpecies, (c: VolumeCanvas, variant: number) => 
   willow,
   poplar,
   'dead-tree': deadTree,
+  'snow-pine': (c, variant) => pine(c, variant, true),
 };

@@ -30,7 +30,13 @@ export class GameSocketServer {
     private readonly app: GameApplication,
     private readonly sessions: SessionRegistry,
   ) {
-    this.wss = new WebSocketServer({ server: httpServer, path: WEBSOCKET_PATH, maxPayload: 4096 });
+    this.wss = new WebSocketServer({
+      server: httpServer,
+      path: WEBSOCKET_PATH,
+      maxPayload: 4096,
+      // El mapa del continente viaja al entrar: comprimido pesa mucho menos.
+      perMessageDeflate: { threshold: 1024 },
+    });
     this.wss.on('connection', (socket) => this.onConnection(socket));
     this.heartbeat = setInterval(() => this.checkHeartbeats(), HEARTBEAT_INTERVAL_MS);
   }

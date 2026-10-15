@@ -33,6 +33,15 @@ export const STATIC_KINDS = [
   'willow',
   'poplar',
   'dead-tree',
+  'mountain',
+  'cactus',
+  'tent',
+  'campfire',
+  'gravestone',
+  'lighthouse',
+  'rubble',
+  'reeds',
+  'snow-pine',
 ] as const;
 
 export type StaticKind = (typeof STATIC_KINDS)[number];
@@ -83,6 +92,15 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   willow: define('willow', 'sauce llorón', true),
   poplar: define('poplar', 'álamo', true),
   'dead-tree': define('dead-tree', 'árbol seco', true),
+  mountain: define('mountain', 'montaña', true),
+  cactus: define('cactus', 'cactus', true),
+  tent: define('tent', 'carpa', true),
+  campfire: define('campfire', 'fogata', true, 4),
+  gravestone: define('gravestone', 'lápida', true),
+  lighthouse: define('lighthouse', 'faro', true, 9),
+  rubble: define('rubble', 'escombros', false),
+  reeds: define('reeds', 'juncos', false),
+  'snow-pine': define('snow-pine', 'pino nevado', true),
 };
 
 export function isStaticKind(value: unknown): value is StaticKind {

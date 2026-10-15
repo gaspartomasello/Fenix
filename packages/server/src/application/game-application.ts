@@ -237,7 +237,7 @@ export class GameApplication {
         this.setHour(playerId, message.hour);
         break;
       case 'testTravel':
-        this.testTravel(playerId, message.to);
+        this.testTravel(playerId, message.to === 'place' ? { place: message.place } : message.to);
         break;
       case 'openCorpse':
         this.corpses.open(playerId, message.corpseId);
@@ -284,7 +284,7 @@ export class GameApplication {
    * `/cueva`: un personaje de prueba va a la boca de la mazmorra (afuera);
    * `/cueva fondo`, al lado del jefe de la última sala.
    */
-  private testTravel(playerId: EntityId, to: 'cave' | 'lair'): void {
+  private testTravel(playerId: EntityId, to: 'cave' | 'lair' | { place: string }): void {
     const player = this.world.get(playerId);
     if (!player) return;
     if (!isTestCharacter(player.name, this.testCharacters)) {
@@ -295,6 +295,18 @@ export class GameApplication {
       return;
     }
     const map = this.world.map;
+    if (typeof to === 'object') {
+      const spot = this.placeSpot(to.place);
+      if (!spot) {
+        this.notifier.send(playerId, {
+          type: 'system',
+          text: `No conozco ningún lugar que se llame "${to.place}". Escribí /ir para ver la lista.`,
+        });
+        return;
+      }
+      this.movePlayer.teleport(player, spot);
+      return;
+    }
     const destination =
       to === 'cave' ? map.teleporters.find((t) => map.regionAt(t)?.dungeon)?.to : this.nearLair();
     if (!destination) {
@@ -302,6 +314,30 @@ export class GameApplication {
       return;
     }
     this.movePlayer.teleport(player, destination);
+  }
+
+  /** Un tile libre en el centro de un lugar con nombre (sin importar mayúsculas ni tildes). */
+  private placeSpot(name: string): Position | undefined {
+    const plain = (text: string): string =>
+      text
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLocaleLowerCase()
+        .trim();
+    const wanted = plain(name);
+    const region = this.world.map.regions.find(
+      (r) => !r.dungeon && plain(r.name).startsWith(wanted),
+    );
+    if (!region) return undefined;
+    const cx = region.x + Math.floor(region.width / 2);
+    const cy = region.y + Math.floor(region.height / 2);
+    for (let r = 0; r <= Math.max(region.width, region.height); r++)
+      for (let dy = -r; dy <= r; dy++)
+        for (let dx = -r; dx <= r; dx++) {
+          const spot = { x: cx + dx, y: cy + dy };
+          if (this.world.map.isWalkable(spot)) return spot;
+        }
+    return undefined;
   }
 
   /** Un tile libre cerca del jefe de la mazmorra (el dragón). */

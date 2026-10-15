@@ -71,7 +71,7 @@ export class CharacterView {
   constructor(
     private readonly entity: Entity,
     private readonly textures: TextureCache,
-    private readonly isSelf: boolean,
+    readonly isSelf: boolean,
     private readonly ownPet = false,
   ) {
     this.sprite.scale.set(CHARACTER_SCALE);

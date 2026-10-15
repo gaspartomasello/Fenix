@@ -11,6 +11,19 @@ describe('decodeClientMessage', () => {
     });
   });
 
+  it('acepta viajes de prueba a un lugar con nombre, con un nombre razonable', () => {
+    const ok = decodeClientMessage(
+      JSON.stringify({ type: 'testTravel', to: 'place', place: 'Roca Alta' }),
+    );
+    expect(ok).toEqual({
+      ok: true,
+      message: { type: 'testTravel', to: 'place', place: 'Roca Alta' },
+    });
+    const long = JSON.stringify({ type: 'testTravel', to: 'place', place: 'x'.repeat(61) });
+    expect(decodeClientMessage(long).ok).toBe(false);
+    expect(decodeClientMessage(JSON.stringify({ type: 'testTravel', to: 'place' })).ok).toBe(false);
+  });
+
   it('descarta campos extra', () => {
     const raw = JSON.stringify({ type: 'chat', text: 'hola', admin: true });
     expect(decodeClientMessage(raw)).toEqual({ ok: true, message: { type: 'chat', text: 'hola' } });

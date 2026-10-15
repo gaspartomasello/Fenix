@@ -35,7 +35,7 @@ duerme sin uso y **los personajes se borran en cada reinicio**: sirve para proba
 | `HOST`        | `0.0.0.0`     | Interfaz donde escucha                     |
 | `DATA_DIR`    | `data`        | Carpeta de los personajes guardados        |
 | `MAP_SEED`    | `1997`        | Semilla del mapa generado                  |
-| `MAP_SIZE`    | `128`         | Lado del mapa en tiles                     |
+| `MAP_SIZE`    | `320`         | Lado del mapa en tiles                     |
 | `START_HOUR`  | `8`           | Hora del juego con la que arranca el mundo |
 | `CLIENT_DIST` | `client/dist` | Carpeta del cliente compilado a servir     |
 

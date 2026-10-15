@@ -4,7 +4,7 @@ import { toCanvas } from '../platform/canvas';
 import type { CorpseContents } from '../core/client-game';
 import { destinationFor, type ItemActions } from './backpack-window';
 import { el } from './dom';
-import type { DragController } from './drag-controller';
+import { liftElement, type DragController } from './drag-controller';
 import { GameWindow } from './game-window';
 import { itemIconUrl } from './item-icons';
 
@@ -85,9 +85,12 @@ export class CorpseWindow {
             {
               id: item.id,
               iconUrl: itemIconUrl(item.kind, item.amount),
+              lift: liftElement(icon),
               onDrop: (target) => {
                 const to = destinationFor(target, this.actions, item.kind);
-                if (to) this.actions.moveItem(item.id, to);
+                if (!to) return false;
+                this.actions.moveItem(item.id, to);
+                return true;
               },
               onDoubleTap: () => this.actions.moveItem(item.id, { type: 'backpack' }),
             },

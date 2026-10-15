@@ -51,14 +51,17 @@ export class StaticLayer {
     }
   }
 
-  /** Crea o destruye sprites según lo visible y aplica transparencia cerca de `focus`. */
-  update(view: Rectangle, focus: FractionalPosition): void {
+  /**
+   * Crea o destruye sprites según lo visible y vuelve translúcido lo que tapa
+   * a alguno de `focuses` (uno mismo primero y quienes estén cerca).
+   */
+  update(view: Rectangle, focuses: readonly FractionalPosition[]): void {
     for (const chunk of this.chunks) {
       const visible = chunk.bounds.intersects(view);
       if (visible && !chunk.sprites) this.show(chunk);
       if (!visible && chunk.sprites) this.hide(chunk);
     }
-    this.fadeOccluders(focus);
+    this.fadeOccluders(focuses);
   }
 
   /** Objetos visibles que emiten luz, con su radio en tiles. */
@@ -97,25 +100,24 @@ export class StaticLayer {
   }
 
   /** Lo que está delante del personaje y se superpone con él se vuelve translúcido. */
-  private fadeOccluders(focus: FractionalPosition): void {
-    const self = tileToScreen(focus);
-    const selfDepth = depthOf(focus);
+  private fadeOccluders(focuses: readonly FractionalPosition[]): void {
+    const boxes = focuses.map((f) => ({ screen: tileToScreen(f), depth: depthOf(f) }));
     for (const chunk of this.chunks) {
       if (!chunk.sprites) continue;
       for (const { sprite, placement } of chunk.sprites) {
         if (LOW_STATICS.has(placement.kind)) continue;
         const depth = depthOf(placement);
-        let alpha = 1;
-        if (depth > selfDepth && depth - selfDepth <= 6) {
-          const s = tileToScreen(placement);
-          const overlaps =
-            s.x - SPRITE_LEFT < self.x + CHARACTER_BOX.right &&
-            s.x + SPRITE_RIGHT > self.x - CHARACTER_BOX.left &&
-            s.y - SPRITE_TOP < self.y &&
-            s.y + SPRITE_BOTTOM > self.y - CHARACTER_BOX.top;
-          if (overlaps) alpha = OCCLUDER_ALPHA;
-        }
-        sprite.alpha = alpha;
+        const s = tileToScreen(placement);
+        const hides = boxes.some(
+          (box) =>
+            depth > box.depth &&
+            depth - box.depth <= 6 &&
+            s.x - SPRITE_LEFT < box.screen.x + CHARACTER_BOX.right &&
+            s.x + SPRITE_RIGHT > box.screen.x - CHARACTER_BOX.left &&
+            s.y - SPRITE_TOP < box.screen.y &&
+            s.y + SPRITE_BOTTOM > box.screen.y - CHARACTER_BOX.top,
+        );
+        sprite.alpha = hides ? OCCLUDER_ALPHA : 1;
       }
     }
   }

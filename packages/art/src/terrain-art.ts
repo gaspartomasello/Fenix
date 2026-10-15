@@ -203,6 +203,38 @@ const STYLES: Readonly<Record<Terrain, TerrainStyle>> = {
       return mix([26, 24, 22], [52, 48, 44], fbm(u, v, seed, 3, 2));
     },
   },
+  [Terrain.Snow]: {
+    varies: true,
+    base: [226, 232, 240],
+    paint(u, v, seed) {
+      // Nieve: blanca con sombras azuladas en los pozos, montículos y algún brillo.
+      const drift = fbm(u, v, seed, 2, 3);
+      let color = mix([186, 198, 218], [242, 246, 250], drift);
+      const sparkle = periodicNoise(u, v, 17, seed + 3);
+      if (sparkle > 0.9) color = [252, 253, 255];
+      // Huellas de viento: surcos finos en diagonal.
+      const furrow = Math.sin((u * 0.7 + v + fbm(u, v, seed + 9, 2, 2) * 0.4) * Math.PI * 6);
+      if (furrow < -0.93) color = shade(color, 0.92);
+      return color;
+    },
+  },
+  [Terrain.Swamp]: {
+    varies: true,
+    base: [70, 82, 54],
+    paint(u, v, seed) {
+      // Barro verdoso con charcos oscuros que reflejan y matas de pasto ralo.
+      const mud = fbm(u, v, seed, 2, 3);
+      let color = mix([54, 60, 40], [92, 98, 60], mud);
+      const puddle = fbm(u, v, seed + 21, 3, 2);
+      if (puddle > 0.62) {
+        color = mix([38, 56, 52], [60, 84, 74], (puddle - 0.62) * 3);
+        if (periodicNoise(u * 1.4, v, 8, seed + 4) > 0.86) color = mix(color, [128, 150, 130], 0.5);
+      } else if (periodicNoise(u, v * 0.4, 20, seed + 7) > 0.8) {
+        color = mix(color, [104, 128, 60], 0.7);
+      }
+      return color;
+    },
+  },
 };
 
 /** Color promedio del terreno (para minimapas y fondos). */

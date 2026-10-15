@@ -48,7 +48,11 @@ export interface MapRegion {
   readonly spawn: Position | null;
   readonly items: readonly PlacedItem[];
   /** Personajes del pueblo (comerciantes, banquera). */
-  readonly npcs: readonly { readonly role: NpcRole; readonly position: Position }[];
+  readonly npcs: readonly {
+    readonly role: NpcRole;
+    readonly position: Position;
+    readonly name?: string;
+  }[];
 }
 
 const FLIP_FLAGS = 0xf0000000;
@@ -112,18 +116,21 @@ export function loadTiledMap(
   const toTile = (value: number): number => value / map.tileheight;
   const regions: RegionData[] = [];
   let spawn: Position | null = null;
-  const npcs: { role: NpcRole; position: Position }[] = [];
+  const npcs: { role: NpcRole; position: Position; name?: string }[] = [];
   for (const object of zonesLayer?.objects ?? []) {
     if (object.point && object.name === TILED.spawnObject) {
       spawn = { x: Math.floor(toTile(object.x)), y: Math.floor(toTile(object.y)) };
     } else if ((object.class ?? object.type) === TILED.npcClass) {
       const role = object.properties?.find((p) => p.name === TILED.roleProperty)?.value;
       if (!isNpcRole(role)) fail(`el personaje "${object.name}" no tiene un rol válido`);
-      else
+      else {
+        const name = object.properties?.find((p) => p.name === TILED.nameProperty)?.value;
         npcs.push({
           role,
           position: { x: Math.floor(toTile(object.x)), y: Math.floor(toTile(object.y)) },
+          ...(typeof name === 'string' && name ? { name } : {}),
         });
+      }
     } else if ((object.class ?? object.type) === TILED.regionClass) {
       if (!object.name) fail('hay una zona sin nombre');
       regions.push({

@@ -520,6 +520,197 @@ const stalagmite: Model = (c, variant) => {
   if (variant !== 0) cylinder(c, [7, 0, 4], 14, (t) => 4 * (1 - t) + 0.4, material);
 };
 
+// ── Lugares del mundo ───────────────────────────────────────────────
+
+/** Montaña: una mole de roca con riscos angulosos; juntas forman cordilleras. */
+const mountain: Model = (c, variant) => {
+  const face = rocky(ramp([124, 116, 104]), variant * 11 + 4);
+  const dark = rocky(ramp([98, 92, 84]), variant * 11 + 5);
+  // La base llena el tile y se derrama sobre los vecinos, así no quedan huecos.
+  c.ellipsoid([0, 6, 0], UP, [H * 1.5, 12, H * 1.5], dark);
+  // Riscos: lajas de roca inclinadas, de distinto alto, que se apoyan unas en otras.
+  for (let i = 0; i < 7; i++) {
+    const x = (noise(i, variant, 61) - 0.5) * 26;
+    const z = (noise(i, variant, 62) - 0.5) * 26;
+    const height = 18 + noise(i, variant, 63) * 30 + (i === 0 ? 22 : 0);
+    const turn = noise(i, variant, 64) * Math.PI;
+    const tilt = (noise(i, variant, 65) - 0.5) * 0.5;
+    const axes = axesAlong([Math.cos(turn), 0, Math.sin(turn)], [tilt, 1, tilt * 0.5]);
+    c.box(
+      [x, height / 2, z],
+      axes,
+      [7 + noise(i, variant, 66) * 4, height / 2, 5],
+      i % 2 ? face : dark,
+    );
+    c.ellipsoid([x, height, z], axes, [5, 4, 4], face);
+  }
+};
+
+/** Cactus columnar con dos brazos, costillas a lo largo y espinas. */
+const cactus: Model = (c, variant) => {
+  const green = ramp([78, 128, 66]);
+  const ribbed: Material = (s) => {
+    const rib = Math.floor((Math.atan2(s.p[2], s.p[0]) + Math.PI) * 2.6);
+    if (noise(Math.floor(s.p[0] * 2), Math.floor(s.p[1] * 2), Math.floor(s.p[2] * 2)) > 0.95)
+      return [232, 224, 190];
+    return tone(green, s.light, rib % 2 === 0 ? 0 : -1);
+  };
+  const height = 50 + variant * 6;
+  cylinder(c, [0, 0, 0], height, (t) => 5.2 - t * 0.6 + (t > 0.94 ? (t - 0.94) * -30 : 0), ribbed);
+  for (const [side, at, reach] of [
+    [1, 0.38, 12],
+    [-1, 0.52 - variant * 0.05, 11],
+  ] as const) {
+    const y = height * at;
+    c.limb([0, y, 0], [side * reach, y + 2, side * reach * 0.3], 3.6, 3.4, ribbed);
+    cylinder(
+      c,
+      [side * reach, y + 2, side * reach * 0.3],
+      18 + variant * 3,
+      (t) => 3.4 - t * 0.5,
+      ribbed,
+    );
+  }
+};
+
+/** Carpa de cuero del campamento orco: dos faldones, palos y la entrada oscura. */
+const tent: Model = (c, variant) => {
+  const hide = ramp(variant === 2 ? [118, 92, 70] : [146, 116, 80]);
+  const patched: Material = (s) => {
+    const patch = noise(Math.floor(s.p[0] / 6), Math.floor(s.p[1] / 6), Math.floor(s.p[2] / 6));
+    return tone(hide, s.light, patch > 0.8 ? -1 : 0);
+  };
+  const ridge = 30;
+  for (const side of [1, -1]) {
+    c.polygon(
+      [
+        [-16, ridge, 0],
+        [16, ridge, 0],
+        [18, 0, side * 16],
+        [-18, 0, side * 16],
+      ],
+      patched,
+    );
+  }
+  // El fondo cerrado y la entrada abierta al frente (hacia la cámara, en x).
+  c.polygon(
+    [
+      [-16, ridge, 0],
+      [-18, 0, 16],
+      [-18, 0, -16],
+    ],
+    patched,
+  );
+  c.polygon(
+    [
+      [16.2, ridge - 2, 0],
+      [18.2, 0, 9],
+      [18.2, 0, -9],
+    ],
+    () => [26, 20, 16],
+  );
+  const pole = solid(ramp([96, 70, 44]));
+  for (const x of [-17, 17]) c.limb([x, 0, 0], [x * 0.95, ridge + 6, 0], 0.9, 0.7, pole);
+  c.limb([-18, ridge + 1, 0], [18, ridge + 1, 0], 0.8, 0.8, pole);
+};
+
+/** Fogata: piedras en ronda, leños cruzados y el fuego, que alumbra. */
+const campfire: Model = (c) => {
+  const stones = rocky(ramp([118, 110, 100]), 9);
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    c.ellipsoid([Math.cos(a) * 8, 1.4, Math.sin(a) * 8], UP, [2.4, 1.8, 2.2], stones);
+  }
+  const log = solid(ramp([88, 60, 38]));
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI + 0.3;
+    c.limb(
+      [Math.cos(a) * 6, 1.2, Math.sin(a) * 6],
+      [-Math.cos(a) * 1.5, 6, -Math.sin(a) * 1.5],
+      1.3,
+      1,
+      log,
+    );
+  }
+  c.ellipsoid([0, 2, 0], UP, [4.5, 2, 4.5], glowing(ramp([255, 120, 40])));
+  c.limb([0, 4, 0], [0.6, 15, -0.4], 3.4, 0.4, glowing(ramp([255, 170, 60])));
+  c.limb([-1.5, 4, 1], [-2, 11, 1.4], 2, 0.3, glowing(ramp([255, 220, 130])));
+};
+
+/** Lápida de piedra con la cruz grabada y el montículo de tierra adelante. */
+const gravestone: Model = (c, variant) => {
+  const stone = rocky(ramp([146, 142, 136]), variant * 3 + 1);
+  const lean = axesAlong([1, 0, 1], [0.08 * (variant - 1), 1, 0]);
+  c.box([-4, 9, -4], lean, [6, 9, 2], stone);
+  c.ellipsoid([-4 + (variant - 1) * 0.6, 18, -4], lean, [6, 3.4, 2], stone);
+  const engraved = solid(ramp([70, 68, 64]));
+  c.box([-2.1, 12, -2.1], lean, [0.6, 4, 0.3], engraved);
+  c.box([-2.1, 13.2, -2.1], lean, [2.2, 0.6, 0.3], engraved);
+  c.ellipsoid([5, 0.6, 5], axesAlong([1, 0, 1]), [10, 1.6, 5], solid(ramp([96, 78, 58])));
+};
+
+/** Faro: torre de piedra a franjas blancas y rojas, balcón y la linterna que alumbra. */
+const lighthouse: Model = (c) => {
+  const height = 96;
+  const banded: Material = (s) => {
+    const band = Math.floor(s.p[1] / 16) % 2;
+    const colors = band === 0 ? ramp([226, 222, 212]) : ramp([176, 60, 50]);
+    const course = Math.abs((s.p[1] % 4) - 2) > 1.7 ? -1 : 0;
+    return tone(colors, s.light, course);
+  };
+  cylinder(c, [0, 0, 0], 8, () => 14, rocky(STONE, 2));
+  cylinder(c, [0, 8, 0], height, (t) => 11 - t * 4, banded);
+  c.ellipsoid([0, height + 9, 0], UP, [10, 1.6, 10], metal(IRON));
+  c.box([7.5, 14, 7.5], axesAlong([1, 0, 1]), [3, 5, 0.6], solid(ramp([70, 50, 34])));
+  cylinder(c, [0, height + 10, 0], 9, () => 5.5, glowing(ramp([255, 230, 140])));
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    c.limb(
+      [Math.cos(a) * 5.8, height + 10, Math.sin(a) * 5.8],
+      [Math.cos(a) * 5.8, height + 19, Math.sin(a) * 5.8],
+      0.5,
+      0.5,
+      metal(IRON),
+    );
+  }
+  cylinder(c, [0, height + 19, 0], 8, (t) => 7 * (1 - t) + 0.4, solid(ramp([60, 64, 70])));
+};
+
+/** Escombros: bloques de piedra caídos de una construcción en ruinas. */
+const rubble: Model = (c, variant) => {
+  for (let i = 0; i < 6; i++) {
+    const x = (noise(i, variant, 41) - 0.5) * 24;
+    const z = (noise(i, variant, 42) - 0.5) * 24;
+    const size = 2 + noise(i, variant, 43) * 3.5;
+    const turn = noise(i, variant, 44) * Math.PI;
+    c.box(
+      [x, size * 0.8, z],
+      axesAlong([Math.cos(turn), 0.15, Math.sin(turn)]),
+      [size * 1.4, size * 0.8, size],
+      masonry(0),
+    );
+  }
+};
+
+/** Juncos y totoras: hojas finas y altas con las espigas marrones. */
+const reeds: Model = (c, variant) => {
+  const leaf = solid(ramp([96, 132, 62]));
+  const dark = solid(ramp([70, 102, 50]));
+  const head = solid(ramp([110, 72, 44]));
+  for (let i = 0; i < 16; i++) {
+    const x = (noise(i, variant, 51) - 0.5) * 18;
+    const z = (noise(i, variant, 52) - 0.5) * 18;
+    const h = 14 + noise(i, variant, 53) * 14;
+    const lean: Vec3 = [
+      x + (noise(i, variant, 54) - 0.5) * 6,
+      h,
+      z + (noise(i, variant, 55) - 0.5) * 6,
+    ];
+    c.limb([x, 0, z], lean, 0.7, 0.3, i % 3 === 0 ? dark : leaf);
+    if (i % 4 === 0) c.ellipsoid(lean, UP, [0.9, 2.6, 0.9], head);
+  }
+};
+
 /** Los árboles los dibuja `tree-art`, cada especie con su ramificación. */
 function tree(species: TreeSpecies): StaticSpec {
   return { model: (c, variant) => drawTree(c, species, variant), shadow: TREE_SHADOWS[species] };
@@ -556,4 +747,13 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   willow: tree('willow'),
   poplar: tree('poplar'),
   'dead-tree': tree('dead-tree'),
+  mountain: { model: mountain, shadow: [30, 13] },
+  cactus: { model: cactus, shadow: [10, 4] },
+  tent: { model: tent, shadow: [26, 11] },
+  campfire: { model: campfire, shadow: [10, 4] },
+  gravestone: { model: gravestone, shadow: [10, 4] },
+  lighthouse: { model: lighthouse, shadow: [24, 10] },
+  rubble: { model: rubble },
+  reeds: { model: reeds },
+  'snow-pine': tree('snow-pine'),
 };

@@ -13,6 +13,8 @@ import { WorldPaperdolls } from './world-paperdolls';
 import { HudButtons, type HudButton } from '../ui/hud-buttons';
 import { SocialWindow } from '../ui/social-window';
 import { WorldTooltip } from '../ui/world-tooltip';
+import { WorldSigns } from './world-signs';
+import { Minimap } from '../ui/minimap';
 import { GhostBanner } from '../ui/ghost-banner';
 import { SkillsWindow } from '../ui/skills-window';
 import { SpellbookWindow } from '../ui/spellbook-window';
@@ -89,6 +91,12 @@ export class GameSession {
       },
     });
     this.game = new ClientGame(this.gateway, clock);
+    // En ninguna parte del juego aparece el menú del navegador con el clic
+    // derecho (en el mundo, el clic derecho mueve al personaje). Solo en los
+    // campos de texto, para poder copiar y pegar.
+    document.addEventListener('contextmenu', (e) => {
+      if (!isEditable(e.target)) e.preventDefault();
+    });
     this.login = new LoginScreen({
       subtitle: IS_SOLO ? 'Modo solo' : 'Entrá o creá tu personaje',
       askPassword: !IS_SOLO,
@@ -144,6 +152,7 @@ export class GameSession {
     const worldCombat = new WorldCombat(this.game, renderer, tooltip);
     const worldCorpses = new WorldCorpses(this.game, renderer, tooltip);
     const worldMounts = new WorldMounts(this.game, renderer, tooltip);
+    new WorldSigns(renderer, tooltip);
     const worldItems = new WorldItems(this.game, renderer, drag, tooltip);
     const input = new InputController({
       surface: renderer.canvas,
@@ -437,10 +446,20 @@ export class GameSession {
       { label: 'Salir', onPress: () => this.logout() },
     ]);
     this.game.on('logoutRequested', () => this.logout());
+    const minimap = new Minimap(this.game, () => buttons.refresh());
     const buttons = (this.hud = new HudButtons([
       { label: 'Mochila', key: 'b', onPress: () => backpack.window.toggle() },
       { label: 'Personaje', key: 'c', onPress: () => equipment.window.toggle() },
       ...this.hudExtras,
+      {
+        label: 'Mapa',
+        key: 'm',
+        onPress: () => {
+          minimap.toggle();
+          buttons.refresh();
+        },
+        pressed: () => minimap.open,
+      },
     ]));
     buttons.refresh();
     equipment.refreshButtons();
@@ -477,6 +496,7 @@ export class GameSession {
       equipment.window.element,
       buttons.element,
       tooltip.element,
+      minimap.element,
     );
 
     const render = (): void => {
@@ -505,4 +525,12 @@ export class GameSession {
     if (!this.inWorld || this.loggingOut) return;
     showOverlay(this.hosts.ui, 'Conexión perdida', 'Se cortó la conexión con el servidor.');
   }
+}
+
+function isEditable(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    (target instanceof HTMLElement && target.isContentEditable)
+  );
 }

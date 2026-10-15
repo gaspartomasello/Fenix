@@ -21,6 +21,8 @@ export const RESOURCE_SOURCES: Partial<Record<StaticKind, ResourceSource>> = {
   willow: { resource: 'logs', tool: 'axe', skill: 'lumberjacking' },
   poplar: { resource: 'logs', tool: 'axe', skill: 'lumberjacking' },
   'dead-tree': { resource: 'logs', tool: 'axe', skill: 'lumberjacking' },
+  'snow-pine': { resource: 'logs', tool: 'axe', skill: 'lumberjacking' },
+  mountain: { resource: 'iron-ore', tool: 'pickaxe', skill: 'mining' },
   rock: { resource: 'iron-ore', tool: 'pickaxe', skill: 'mining' },
 };
 

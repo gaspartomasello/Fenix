@@ -8,7 +8,7 @@ export class GhostBanner {
     this.element = el('div', { className: 'panel ghost-banner', attrs: { role: 'status' } }, [
       el('strong', { text: 'Sos un fantasma.' }),
       el('span', {
-        text: ' Caminá hasta el santuario (el cristal azul en la plaza de Puerto Ceniza) para volver a la vida.',
+        text: ' Caminá hasta el santuario de cualquier pueblo (el cristal azul de la plaza) para volver a la vida.',
       }),
     ]);
     this.element.hidden = true;

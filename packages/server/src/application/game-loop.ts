@@ -402,7 +402,7 @@ export class GameLoop {
       this.mobiles.sendTarget(victim);
       this.notifier.send(victim.id, {
         type: 'system',
-        text: 'Moriste. Caminá hasta el santuario de Puerto Ceniza para volver a la vida.',
+        text: 'Moriste. Caminá hasta el santuario de un pueblo (el cristal azul de la plaza) para volver a la vida.',
       });
       if (killer instanceof Player && killer !== victim) this.handlePlayerKill(killer, victim, now);
       return;

@@ -400,6 +400,31 @@ body {
   opacity: 0.85;
 }
 
+/* Minimapa: arriba a la derecha, debajo de la barra de estado. */
+.minimap {
+  position: absolute;
+  top: calc(58px + env(safe-area-inset-top, 0px));
+  right: 12px;
+  z-index: 800;
+  padding: 4px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+.minimap[hidden] {
+  display: none;
+}
+
+.minimap-canvas {
+  display: block;
+  width: 196px;
+  height: 196px;
+  border-radius: calc(var(--radius) - 2px);
+  cursor: zoom-in;
+}
+
 .hud-buttons {
   position: absolute;
   right: 12px;
@@ -466,6 +491,19 @@ body {
 
   .hud-button kbd {
     display: none;
+  }
+
+  /* En el celular el minimapa es más chico y queda a la izquierda de los botones. */
+  .minimap {
+    right: auto;
+    left: 12px;
+    top: auto;
+    bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .minimap-canvas {
+    width: 132px;
+    height: 132px;
   }
 }
 
