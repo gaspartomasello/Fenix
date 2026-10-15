@@ -5,9 +5,9 @@ import type { ItemNotifications } from './item-notifications';
 import type { Clock, IdGenerator, Notifier } from './ports';
 
 /** Cuánto queda un cuerpo con botín antes de deshacerse (y lo que tenga, con él). */
-export const LOOTED_CORPSE_MS = 90_000;
-/** Un cuerpo vacío se deshace enseguida. */
-export const EMPTY_CORPSE_MS = 3_000;
+export const LOOTED_CORPSE_MS = 120_000;
+/** Un cuerpo vacío (sin botín, o ya revisado) queda tirado un rato y se deshace. */
+export const EMPTY_CORPSE_MS = 20_000;
 
 /**
  * Cuerpos que se revisan, como en UO: el botín de una criatura queda dentro

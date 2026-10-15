@@ -8,7 +8,7 @@ import {
   drawSkeletonFrame,
   type CharacterFrame,
 } from './character-art';
-import { spriteCanvas } from './humanoid-rig';
+import { spriteCanvas, type CanvasFactory } from './humanoid-rig';
 import type { PixelImage, Rgb } from './pixel-art';
 import { drawSummonFrame, isSummonKind } from './summon-art';
 import { drawMonsterFrame, isMonsterKind } from './monster-art';
@@ -21,17 +21,14 @@ export function drawCreatureFrame(
   kind: CreatureKind,
   direction: Direction,
   frame: CharacterFrame,
+  canvasFor: CanvasFactory = spriteCanvas,
 ): PixelImage {
-  if (kind === 'skeleton') return drawSkeletonFrame(direction, frame);
-  if (isSummonKind(kind)) return drawSummonFrame(kind, direction, frame);
-  if (isMonsterKind(kind)) return drawMonsterFrame(kind, direction, frame);
-  if (isMountKind(kind)) return drawMountFrame(kind, direction, frame);
+  if (kind === 'skeleton') return drawSkeletonFrame(direction, frame, canvasFor);
+  if (isSummonKind(kind)) return drawSummonFrame(kind, direction, frame, canvasFor);
+  if (isMonsterKind(kind)) return drawMonsterFrame(kind, direction, frame, canvasFor);
+  if (isMountKind(kind)) return drawMountFrame(kind, direction, frame, canvasFor);
   const zoom = kind === 'rat' ? 1.6 : 1.25;
-  const canvas = spriteCanvas(
-    CHARACTER_ART_WIDTH,
-    CHARACTER_ART_HEIGHT,
-    cameraFor(direction, zoom),
-  );
+  const canvas = canvasFor(CHARACTER_ART_WIDTH, CHARACTER_ART_HEIGHT, cameraFor(direction, zoom));
   if (kind === 'wolf') drawWolf(canvas, frame);
   else drawRat(canvas, frame);
   return canvas.toImage(OUTLINE);

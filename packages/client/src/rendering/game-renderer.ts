@@ -19,8 +19,6 @@ const PREPARE_BUDGET_MS = 4;
 /** Distancia (en tiles) a la que se destapa a los demás detrás de árboles y paredes. */
 const NEARBY_REVEAL = 4;
 const GHOST_TINT = 0x8c8c9c;
-/** Caja de un personaje en pantalla respecto de sus pies, para saber si se lo tocó. */
-const MOBILE_HIT_BOX = { halfWidth: 16, height: 64 };
 /** El jinete sobre la montura: angosto y de la montura para arriba. */
 const RIDER_HIT_BOX = { halfWidth: 12, bottom: 44 };
 /** El personaje se dibuja un poco por debajo del centro, como en UO. */
@@ -154,10 +152,9 @@ export class GameRenderer {
     for (const view of this.views.values()) {
       if (!accept(view)) continue;
       const { x, y } = view.feet;
+      const box = view.hitBox;
       const inside =
-        Math.abs(world.x - x) <= MOBILE_HIT_BOX.halfWidth * (view.spriteHeight > 70 ? 2.5 : 1) &&
-        world.y <= y + 6 &&
-        world.y >= y - Math.max(MOBILE_HIT_BOX.height, view.spriteHeight);
+        Math.abs(world.x - x) <= box.halfWidth && world.y <= y + box.down && world.y >= y - box.up;
       if (inside && (!best || y > best.y)) best = { id: view.entityId, y };
     }
     return best?.id ?? null;

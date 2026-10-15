@@ -94,7 +94,7 @@ describe('ciclo del juego: combate', () => {
     const emptied = arena.notifier.ofType('corpse').at(-1)?.message;
     expect(emptied?.type === 'corpse' && emptied.items).toEqual([]);
 
-    // Vacío, el cuerpo se deshace enseguida y se cierra la ventana.
+    // Vacío, el cuerpo se deshace al rato y se cierra la ventana.
     arena.run(EMPTY_CORPSE_MS + 200);
     expect(rat.gone).toBe(true);
     expect(arena.notifier.ofType('corpseClosed')).toHaveLength(1);

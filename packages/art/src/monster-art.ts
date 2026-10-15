@@ -1,6 +1,6 @@
 import { isMountKind, type CreatureKind, type Direction } from '@fenix/shared';
 import { OUTLINE } from './character-art';
-import { ART_DETAIL, spriteCanvas } from './humanoid-rig';
+import { ART_DETAIL, spriteCanvas, type CanvasFactory } from './humanoid-rig';
 import { MOUNTED_ART_HEIGHT, MOUNTED_ART_WIDTH, MOUNTED_FEET_Y } from './mount-art';
 import { biteOffset, gait } from './creature-motion';
 import { drawSkullHead } from './humanoid-head';
@@ -95,10 +95,11 @@ export function drawMonsterFrame(
   kind: MonsterKind,
   direction: Direction,
   frame: CharacterFrame,
+  canvasFor: CanvasFactory = spriteCanvas,
 ): PixelImage {
   const layout = creatureLayout(kind);
   const camera = kind === 'dragon' ? dragonCamera(direction) : cameraFor(direction, ZOOM[kind]);
-  const canvas = spriteCanvas(layout.width, layout.height, camera);
+  const canvas = canvasFor(layout.width, layout.height, camera);
   switch (kind) {
     case 'giant-spider':
       drawSpider(canvas, frame);
@@ -422,11 +423,13 @@ function drawDragon(c: VolumeCanvas, frame: CharacterFrame): void {
   };
   const bob = step.lift;
   // Alas: membranas grandes que se abren hacia arriba y atrás.
+  // Muerto, caen abiertas hasta el suelo.
+  const dead = frame === 'dead';
   const flap = typeof frame === 'string' && frame.endsWith('-1') ? 6 : step.lift > 0.5 ? 3 : 0;
   for (const side of [1, -1] as const) {
     const root: Vec3 = [side * 5, 30 + bob, 2];
-    const elbow: Vec3 = [side * 22, 46 + bob + flap, -6];
-    const tip: Vec3 = [side * 40, 40 + bob + flap * 1.5, -18];
+    const elbow: Vec3 = dead ? [side * 22, 27, -4] : [side * 22, 46 + bob + flap, -6];
+    const tip: Vec3 = dead ? [side * 40, 14, -14] : [side * 40, 40 + bob + flap * 1.5, -18];
     c.limb(root, elbow, 1.8, 1.3, scales);
     c.limb(elbow, tip, 1.3, 0.5, scales);
     const membrane = ramp([120, 44, 50]);
@@ -478,17 +481,19 @@ function drawDragon(c: VolumeCanvas, frame: CharacterFrame): void {
       solid(ramp([70, 30, 30])),
     );
   const bite = biteOffset(frame, 5);
-  // Cuello corto y grueso, en curva.
-  const neck: Vec3[] = [
-    [0, 27 + bob, 14],
-    [0, 34 + bob, 21],
-    add([0, 38 + bob, 26], scale(bite, 0.5)),
-  ];
+  // Cuello corto y grueso, en curva (muerto, estirado con la cabeza en el suelo).
+  const neck: Vec3[] = dead
+    ? [
+        [0, 27, 14],
+        [0, 23, 23],
+        [0, 18, 30],
+      ]
+    : [[0, 27 + bob, 14], [0, 34 + bob, 21], add([0, 38 + bob, 26], scale(bite, 0.5))];
   neck.slice(1).forEach((to, i) => {
     const from = neck[i] ?? to;
     c.limb(from, to, 7.5 - i * 1.4, 6 - i * 1, scales);
   });
-  const head: Vec3 = add([0, 40 + bob, 30], bite);
+  const head: Vec3 = dead ? [0, 18, 36] : add([0, 40 + bob, 30], bite);
   c.ellipsoid(head, axesAlong([0, -0.15, 1]), [5.4, 5, 7], scales);
   c.ellipsoid(add(head, [0, -2.4, 7]), axesAlong([0, -0.2, 1]), [3.8, 2.8, 5], scales);
   for (const side of [1, -1] as const) {
@@ -502,7 +507,7 @@ function drawDragon(c: VolumeCanvas, frame: CharacterFrame): void {
     c.decal(
       add(head, [side * 2.6, 1.2, 2.5]),
       normalize([side * 0.7, 0.2, 0.7]),
-      [255, 210, 60],
+      dead ? [60, 20, 18] : [255, 210, 60],
       2,
       1,
     );

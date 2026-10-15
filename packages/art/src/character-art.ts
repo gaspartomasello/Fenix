@@ -16,6 +16,7 @@ import {
   heldInLeftHand,
   humanoidRig,
   spriteCanvas,
+  type CanvasFactory,
   type CharacterFrame,
   type Rig,
 } from './humanoid-rig';
@@ -672,8 +673,12 @@ function drawBow(canvas: VolumeCanvas, rig: Rig): void {
 const BONE = ramp([226, 218, 196]);
 
 /** Esqueleto: huesos finos, costillas con huecos, calavera y una espada. */
-export function drawSkeletonFrame(direction: Direction, frame: CharacterFrame): PixelImage {
-  const canvas = spriteCanvas(CHARACTER_ART_WIDTH, CHARACTER_ART_HEIGHT, cameraFor(direction));
+export function drawSkeletonFrame(
+  direction: Direction,
+  frame: CharacterFrame,
+  canvasFor: CanvasFactory = spriteCanvas,
+): PixelImage {
+  const canvas = canvasFor(CHARACTER_ART_WIDTH, CHARACTER_ART_HEIGHT, cameraFor(direction));
   const rig = humanoidRig(frame, true);
   const bone = solid(BONE);
 

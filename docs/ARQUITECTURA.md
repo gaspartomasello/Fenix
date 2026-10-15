@@ -209,7 +209,19 @@ El botín de una criatura es otra ubicación de los objetos (`corpse`): queda de
 que es la misma criatura muerta. `Corpses` (capa de aplicación) recuerda qué cuerpo tiene abierto
 cada jugador: `openCorpse` lo abre si está a 2 tiles, `lootAll` pasa todo a la mochila y cada
 cambio (incluido arrastrar un objeto con `moveItem`) reenvía `corpse` a quienes lo miran. Con
-botín dura 90 s; vacío, 3 s. Al deshacerse se envía `corpseClosed` y lo que quedaba se pierde.
+botín dura 2 minutos; vacío (o ya revisado), 20 s. Al deshacerse se envía `corpseClosed` y lo
+que quedaba se pierde.
+
+El dibujo del cuerpo (`corpse-art.ts`) no es otro modelo: es el de la criatura viva en la pose
+`dead`, girado entero antes de proyectarlo. `PosedProjection` envuelve la cámara de siempre con
+una rotación y un corrimiento (y su inversa para la luz y las normales), así cada criatura nueva
+tiene su cuerpo sin dibujar nada aparte: alcanza con decir cómo cae en `POSES` (de espaldas, de
+costado, panza arriba o desplomada) y la altura de su centro. Lo que queda bajo el suelo no se
+pinta (`VolumeCanvas` acepta un filtro de puntos). Los dibujos de criaturas reciben el lienzo por
+una fábrica (`CanvasFactory`) para que el cuerpo use uno más ancho y bajo. Los espíritus
+invocados (vórtice y elementales de aire, fuego y agua) no dejan cuerpo: se desvanecen. En el
+cliente, al morir delante de uno se ven dos cuadros de la caída y el cuerpo queda en el piso,
+debajo de lo que está parado.
 
 ### Habilidades y magia
 

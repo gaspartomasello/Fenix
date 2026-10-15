@@ -7,14 +7,16 @@ import {
   MOUNTED_FEET_Y,
   MOUNTED_HEAD_Y,
   attackStyleFor,
+  corpseLayout,
   creatureLayout,
+  leavesCorpse,
   type CharacterFrame,
 } from '@fenix/art';
 import { Container, Graphics, Sprite, Text } from 'pixi.js';
 import type { Notoriety } from '@fenix/shared';
 import { COMBAT_TEXT_MS, type CombatText, type Entity } from '../core/entity';
 import { Fidgets, attackFrame, castFrame, stepFrame, type AttackStyle } from './animation';
-import { characterDepth } from './depth';
+import { characterDepth, corpseDepth } from './depth';
 import { CHARACTER_SCALE, tileToScreen } from './iso';
 import type { TextureCache } from './texture-cache';
 
@@ -36,6 +38,11 @@ const COMBAT_TEXT_COLORS: Readonly<Record<CombatText['kind'], number>> = {
   miss: 0xc8c8c8,
   heal: 0x7ee08a,
 };
+/** Cuadros de la caída al morir: cuánto se inclinó, hasta cuántos ms después de morir. */
+const FALL_STEPS: readonly (readonly [number, number])[] = [
+  [90, 0.3],
+  [180, 0.65],
+];
 /** Resolución de los textos: alta para que sigan nítidos con zoom. */
 const TEXT_RESOLUTION = Math.max(2, Math.ceil(window.devicePixelRatio * 2));
 
@@ -67,6 +74,12 @@ export class CharacterView {
   private shownMount: string | null = null;
   /** Ciclo de caminar o correr ya pedido de antemano (dirección, modo, aspecto). */
   private preparedCycle = '';
+  /** Cuándo se lo vio morir (para los cuadros de la caída). */
+  private diedAt: number | null = null;
+  /** Se lo vio vivo: si muere, se ve la caída (si apareció ya muerto, no). */
+  private seenAlive = false;
+  /** Dónde se lo toca, alrededor de los pies: media anchura, cuánto sube y cuánto baja. */
+  private _hitBox = { halfWidth: 16, up: 64, down: 6 };
 
   constructor(
     private readonly entity: Entity,
@@ -107,15 +120,39 @@ export class CharacterView {
     return this._spriteHeight;
   }
 
+  get hitBox(): { readonly halfWidth: number; readonly up: number; readonly down: number } {
+    return this._hitBox;
+  }
+
+  /** Criatura muerta que queda tirada en el piso (los espíritus se desvanecen). */
+  private get lyingCorpse(): boolean {
+    const body = this.entity.body;
+    return body !== 'human' && this.entity.dead && leavesCorpse(body);
+  }
+
   /**
    * Cada cuerpo dice dónde apoya y dónde termina: el dragón, las monturas y
    * los jinetes tienen un lienzo más grande que una persona a pie.
    */
   private syncLayout(): void {
     const mount = this.entity.mount;
-    const key = mount ?? '';
+    const lying = this.lyingCorpse;
+    const key = lying ? 'cuerpo' : (mount ?? '');
     if (key === this.shownMount) return;
     this.shownMount = key;
+    if (lying && this.entity.body !== 'human') {
+      // Tirado en el piso: lienzo ancho y bajo, sin sombra (ya está en el suelo).
+      const corpse = corpseLayout(this.entity.body);
+      this._spriteHeight = 22 * CHARACTER_SCALE;
+      this._hitBox = {
+        halfWidth: corpse.width * 0.32 * CHARACTER_SCALE,
+        up: corpse.groundY * 0.6 * CHARACTER_SCALE,
+        down: (corpse.height - corpse.groundY) * 0.6 * CHARACTER_SCALE,
+      };
+      this.shadow.clear();
+      this.sprite.anchor.set(corpse.groundX / corpse.width, corpse.groundY / corpse.height);
+      return;
+    }
     const layout =
       this.entity.body !== 'human'
         ? creatureLayout(this.entity.body)
@@ -128,6 +165,11 @@ export class CharacterView {
           : { height: CHARACTER_ART_HEIGHT, feetY: CHARACTER_FEET_Y, headY: CHARACTER_HEAD_Y };
     const big = layout.height > CHARACTER_ART_HEIGHT;
     this._spriteHeight = (layout.feetY - layout.headY) * CHARACTER_SCALE;
+    this._hitBox = {
+      halfWidth: 16 * (this._spriteHeight > 70 ? 2.5 : 1),
+      up: Math.max(64, this._spriteHeight),
+      down: 6,
+    };
     this.shadow
       .clear()
       .ellipse(0, 0, big ? 34 : 13, big ? 13 : 6)
@@ -182,23 +224,32 @@ export class CharacterView {
     const lunge = this.entity.lungeOffset(now);
     const screen = tileToScreen({ x: position.x + lunge.x, y: position.y + lunge.y });
     this.container.position.set(screen.x, screen.y);
-    this.container.zIndex = characterDepth(position);
+    if (!this.entity.dead) this.seenAlive = true;
+    else if (this.seenAlive) {
+      this.seenAlive = false;
+      this.diedAt = now;
+    }
+    const lying = this.lyingCorpse;
+    this.nameLabel.visible = !lying;
+    this.container.zIndex = lying ? corpseDepth(position) : characterDepth(position);
 
     const frame =
       this.entity.dead && this.entity.body !== 'human' ? 'idle' : this.currentFrame(now);
     this.syncLayout();
     // Un fantasma no va montado (al morir se cae de la montura).
     this.sprite.texture =
-      this.entity.body === 'human'
-        ? this.textures.character(
-            this.entity.appearance,
-            this.entity.direction,
-            frame,
-            this.entity.equipment,
-            this.entity.npc,
-            this.entity.dead ? null : this.entity.mount,
-          )
-        : this.textures.creature(this.entity.body, this.entity.direction, frame);
+      lying && this.entity.body !== 'human'
+        ? this.textures.corpse(this.entity.body, this.entity.direction, this.fallen(now))
+        : this.entity.body === 'human'
+          ? this.textures.character(
+              this.entity.appearance,
+              this.entity.direction,
+              frame,
+              this.entity.equipment,
+              this.entity.npc,
+              this.entity.dead ? null : this.entity.mount,
+            )
+          : this.textures.creature(this.entity.body, this.entity.direction, frame);
     this.applyDeathLook();
     this.prepareCycle();
 
@@ -261,7 +312,20 @@ export class CharacterView {
     this.nameLabel.style.fill = color;
   }
 
-  /** Fantasma (jugador muerto): translúcido y azulado. Criatura muerta: se desvanece. */
+  /**
+   * Cuánto cayó el cuerpo (0–1): al morir delante de uno se ven un par de
+   * cuadros de la caída; si ya estaba muerto al aparecer, está en el piso.
+   */
+  private fallen(now: number): number {
+    const elapsed = now - (this.diedAt ?? -Infinity);
+    for (const [until, fallen] of FALL_STEPS) if (elapsed < until) return fallen;
+    return 1;
+  }
+
+  /**
+   * Fantasma (jugador muerto): translúcido y azulado. Criatura muerta: queda
+   * el cuerpo tirado, un poco más apagado; los espíritus se desvanecen.
+   */
   private applyDeathLook(): void {
     if (!this.entity.dead) {
       this.sprite.alpha = 1;
@@ -271,6 +335,9 @@ export class CharacterView {
     if (this.entity.body === 'human') {
       this.sprite.alpha = 0.5;
       this.sprite.tint = 0xb8c8ff;
+    } else if (this.lyingCorpse) {
+      this.sprite.alpha = 1;
+      this.sprite.tint = 0xd4ccc4;
     } else {
       this.sprite.alpha = Math.max(0, this.sprite.alpha - 0.04);
       this.sprite.tint = 0x777777;

@@ -8,3 +8,4 @@ export * from './volume';
 export * from './monster-art';
 export * from './mount-art';
 export * from './coffin-art';
+export * from './corpse-art';

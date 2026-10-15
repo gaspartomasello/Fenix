@@ -32,6 +32,13 @@ export function pitch(v: Vec3, angle: number): Vec3 {
   return [v[0], v[1] * c - v[2] * s, v[1] * s + v[2] * c];
 }
 
+/** Gira un vector alrededor del eje Z (hacia adelante): con ángulo positivo, el lomo cae a la izquierda. */
+export function roll(v: Vec3, angle: number): Vec3 {
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  return [v[0] * c - v[1] * s, v[0] * s + v[1] * c, v[2]];
+}
+
 /** Gira un vector alrededor del eje Y (vertical). */
 export function yaw(v: Vec3, angle: number): Vec3 {
   const c = Math.cos(angle);
@@ -314,6 +321,8 @@ export class VolumeCanvas {
     readonly width: number,
     readonly height: number,
     readonly camera: Projection,
+    /** Si está, solo se pintan los puntos del modelo que acepta (por ejemplo, sobre el suelo). */
+    private readonly keep?: (p: Vec3) => boolean,
   ) {
     this.depth = new Float32Array(width * height).fill(-Infinity);
     this.colors = new Array<Rgb | null>(width * height).fill(null);
@@ -551,6 +560,7 @@ export class VolumeCanvas {
 
   private paint(x: number, y: number, z: number, modelNormal: Vec3, material: Material): void {
     const i = y * this.width + x;
+    if (this.keep && !this.keep(this.camera.unproject(x + 0.5, y + 0.5, z))) return;
     if (CLIPPING.has(material)) {
       // Puede dejar el pixel sin pintar (máscaras): se resuelve ya.
       const color = this.shade(x, y, z, modelNormal, material);

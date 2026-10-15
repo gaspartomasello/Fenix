@@ -1,6 +1,6 @@
 import type { CreatureKind, Direction } from '@fenix/shared';
 import { OUTLINE } from './character-art';
-import { spriteCanvas } from './humanoid-rig';
+import { spriteCanvas, type CanvasFactory } from './humanoid-rig';
 import {
   CHARACTER_ART_HEIGHT,
   CHARACTER_ART_WIDTH,
@@ -75,8 +75,9 @@ export function drawSummonFrame(
   kind: SummonKind,
   direction: Direction,
   frame: CharacterFrame,
+  canvasFor: CanvasFactory = spriteCanvas,
 ): PixelImage {
-  const canvas = spriteCanvas(
+  const canvas = canvasFor(
     CHARACTER_ART_WIDTH,
     CHARACTER_ART_HEIGHT,
     cameraFor(direction, ZOOM[kind]),

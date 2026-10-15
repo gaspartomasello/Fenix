@@ -77,8 +77,8 @@ para viajar a un pueblo o lugar con nombre (`/ir` solo muestra la lista).
   lado. **Escape**: dejar de atacar.
 - **Monturas**: en la caballeriza de Bautista se compran caballos (alazán, negro, tordillo y
   overo), una llama o un lagarto corredor. La montura te sigue; **doble clic sobre ella** para
-  montar y **doble clic sobre vos** (o `/desmontar`) para bajarte. Montado se anda al doble de
-  rápido y galopar no cansa.
+  montar y **doble clic sobre vos** (o `/desmontar`) para bajarte; en modo guerra el doble clic
+  no te baja. Montado se anda al doble de rápido y galopar no cansa.
 - **Doble clic sobre el cuerpo** de una criatura muerta (o un toque): revisarlo. El botín está
   adentro: se arrastra cada objeto a la mochila o se usa **Tomar todo**.
 - **L**: libro de hechizos, con una página por círculo. **1 a 8**: lanzar los hechizos de la página
@@ -198,3 +198,8 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
     caminos anchos y rectos (empedrados cerca de los pueblos), senderos a cada lugar y un
     **minimapa** que se abre y se cierra con la tecla M. Para probar, `/ir` lleva a un personaje
     de prueba a cualquier lugar.
+16. ✅ **Cuerpos muertos**: cada criatura queda tirada en el piso con su propio cuerpo, el
+    mismo modelo de cuando estaba viva: orcos, troles, esqueletos y liches de espaldas con los
+    brazos abiertos y el arma en el suelo, lobos, ratas y monturas de costado, la araña panza
+    arriba y el dragón desplomado con las alas caídas. Al morir se ve la caída, y el cuerpo se
+    revisa con doble clic. Las criaturas nuevas tienen su cuerpo sin dibujar nada aparte.
