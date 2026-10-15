@@ -6,12 +6,17 @@ import {
   type MobileTeleportedMessage,
   type MoveMode,
   type Position,
+  tileDistance,
 } from '@fenix/shared';
+import { freeSpotNear } from '../../domain/persistence/saved-character';
 import type { Player } from '../../domain/player';
 import type { World } from '../../domain/world';
 import type { ItemNotifications } from '../item-notifications';
 import type { MobileNotifications } from '../mobile-notifications';
 import type { Clock, Notifier } from '../ports';
+
+/** Hasta qué distancia la montura suelta acompaña un teletransporte. */
+const PET_TRAVEL_RANGE = 8;
 
 export interface MovePlayerInput {
   readonly playerId: EntityId;
@@ -36,7 +41,10 @@ export class MovePlayer {
     const before = this.idsNear(player);
     const groundBefore = new Set(this.notifications.groundSnapshotsNear(playerId).map((i) => i.id));
     // Sin energía no se puede correr: el paso cuenta como caminata (el cliente aplica la misma regla).
-    const effectiveMode = effectiveMoveMode(mode, player.combat.current.stamina);
+    // Montado corre la montura: no gasta la energía del jinete.
+    const effectiveMode = player.mount
+      ? mode
+      : effectiveMoveMode(mode, player.combat.current.stamina);
     const outcome = player.tryMove(this.world.map, direction, effectiveMode, this.clock.now());
     if (!outcome.ok) {
       this.notifier.send(playerId, {
@@ -49,7 +57,8 @@ export class MovePlayer {
     }
 
     this.notifier.send(playerId, { type: 'moveAck', seq, position: player.position });
-    if (effectiveMode === 'run' && player.registerRunStep()) this.mobiles.sendVitals(player);
+    if (effectiveMode === 'run' && !player.mount && player.registerRunStep())
+      this.mobiles.sendVitals(player);
     this.updateVisibility(player, before, {
       type: 'mobileMoved',
       id: player.id,
@@ -73,6 +82,7 @@ export class MovePlayer {
     const groundBefore = new Set(
       this.notifications.groundSnapshotsNear(player.id).map((i) => i.id),
     );
+    const from = player.position;
     player.teleport(position);
     const message = { type: 'mobileTeleported', id: player.id, position } as const;
     this.notifier.send(player.id, message);
@@ -82,6 +92,16 @@ export class MovePlayer {
       groundBefore,
       this.notifications.groundSnapshotsNear(player.id),
     );
+    this.bringPet(player, from);
+  }
+
+  /** La montura suelta que venía cerca viaja con su dueño (por ejemplo, al entrar a una cueva). */
+  private bringPet(player: Player, from: Position): void {
+    const pet = this.world.petOf(player.id);
+    if (!pet || tileDistance(pet.position, from) > PET_TRAVEL_RANGE) return;
+    this.mobiles.disappear(pet);
+    pet.position = freeSpotNear(this.world, player.position);
+    this.mobiles.appear(pet);
   }
 
   /**

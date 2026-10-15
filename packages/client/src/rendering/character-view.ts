@@ -2,6 +2,9 @@ import {
   CHARACTER_ART_HEIGHT,
   CHARACTER_FEET_Y,
   CHARACTER_HEAD_Y,
+  MOUNTED_ART_HEIGHT,
+  MOUNTED_FEET_Y,
+  MOUNTED_HEAD_Y,
   attackStyleFor,
   creatureLayout,
   type CharacterFrame,
@@ -56,26 +59,18 @@ export class CharacterView {
   private shownName = '';
   private readonly combatLabels = new Map<CombatText, Text>();
   private readonly fidgets = new Fidgets(performance.now());
-  /** Altura de la cabeza sobre los pies, en pantalla (depende del cuerpo). */
-  readonly spriteHeight: number;
+  /** Altura de la cabeza sobre los pies, en pantalla (depende del cuerpo y de si va montado). */
+  private _spriteHeight = 0;
+  private readonly shadow = new Graphics();
+  /** Montura con la que se armó el lienzo (al montar o desmontar cambia). */
+  private shownMount: string | null = null;
 
   constructor(
     private readonly entity: Entity,
     private readonly textures: TextureCache,
     private readonly isSelf: boolean,
+    private readonly ownPet = false,
   ) {
-    // El dragón tiene un lienzo más grande: cada cuerpo dice dónde apoya y dónde termina.
-    const layout =
-      entity.body === 'human'
-        ? { height: CHARACTER_ART_HEIGHT, feetY: CHARACTER_FEET_Y, headY: CHARACTER_HEAD_Y }
-        : creatureLayout(entity.body);
-    const big = layout.height > CHARACTER_ART_HEIGHT;
-    this.spriteHeight = (layout.feetY - layout.headY) * CHARACTER_SCALE;
-    const shadow = new Graphics()
-      .ellipse(0, 0, big ? 40 : 13, big ? 16 : 6)
-      .fill({ color: 0x000000, alpha: 0.28 });
-
-    this.sprite.anchor.set(0.5, layout.feetY / layout.height);
     this.sprite.scale.set(CHARACTER_SCALE);
     this.targetRing.visible = false;
 
@@ -92,20 +87,58 @@ export class CharacterView {
     });
     this.syncName();
     this.nameLabel.anchor.set(0.5, 1);
-    this.nameLabel.position.set(0, -this.spriteHeight - 8);
-    this.healthBar.position.set(-HEALTH_BAR_WIDTH / 2, -this.spriteHeight - 6);
-    this.overhead.position.set(0, -this.spriteHeight - 26);
-    this.combatTexts.position.set(0, -this.spriteHeight + 8);
+    this.syncLayout();
 
     this.container.addChild(
       this.targetRing,
-      shadow,
+      this.shadow,
       this.sprite,
       this.healthBar,
       this.nameLabel,
       this.overhead,
       this.combatTexts,
     );
+  }
+
+  get spriteHeight(): number {
+    return this._spriteHeight;
+  }
+
+  /**
+   * Cada cuerpo dice dónde apoya y dónde termina: el dragón, las monturas y
+   * los jinetes tienen un lienzo más grande que una persona a pie.
+   */
+  private syncLayout(): void {
+    const mount = this.entity.mount;
+    const key = mount ?? '';
+    if (key === this.shownMount) return;
+    this.shownMount = key;
+    const layout =
+      this.entity.body !== 'human'
+        ? creatureLayout(this.entity.body)
+        : mount
+          ? {
+              height: MOUNTED_ART_HEIGHT,
+              feetY: MOUNTED_FEET_Y,
+              headY: MOUNTED_HEAD_Y,
+            }
+          : { height: CHARACTER_ART_HEIGHT, feetY: CHARACTER_FEET_Y, headY: CHARACTER_HEAD_Y };
+    const big = layout.height > CHARACTER_ART_HEIGHT;
+    this._spriteHeight = (layout.feetY - layout.headY) * CHARACTER_SCALE;
+    this.shadow
+      .clear()
+      .ellipse(0, 0, big ? 34 : 13, big ? 13 : 6)
+      .fill({ color: 0x000000, alpha: 0.28 });
+    this.sprite.anchor.set(0.5, layout.feetY / layout.height);
+    this.nameLabel.position.set(0, -this._spriteHeight - 8);
+    this.healthBar.position.set(-HEALTH_BAR_WIDTH / 2, -this._spriteHeight - 6);
+    this.overhead.position.set(0, -this._spriteHeight - 26);
+    this.combatTexts.position.set(0, -this._spriteHeight + 8);
+  }
+
+  /** La montura suelta propia (se monta con doble clic, no se ataca). */
+  get isOwnPet(): boolean {
+    return this.ownPet;
   }
 
   /** Para saber si el puntero está sobre este personaje (coordenadas del mundo). */
@@ -117,8 +150,9 @@ export class CharacterView {
     return this.entity.id;
   }
 
+  /** Criatura viva que se puede atacar (la montura propia no). */
   get isAliveCreature(): boolean {
-    return this.entity.body !== 'human' && !this.entity.dead;
+    return this.entity.body !== 'human' && !this.entity.dead && !this.ownPet;
   }
 
   /** El cuerpo de una criatura muerta (se revisa con doble clic). */
@@ -149,6 +183,8 @@ export class CharacterView {
 
     const frame =
       this.entity.dead && this.entity.body !== 'human' ? 'idle' : this.currentFrame(now);
+    this.syncLayout();
+    // Un fantasma no va montado (al morir se cae de la montura).
     this.sprite.texture =
       this.entity.body === 'human'
         ? this.textures.character(
@@ -157,6 +193,7 @@ export class CharacterView {
             frame,
             this.entity.equipment,
             this.entity.npc,
+            this.entity.dead ? null : this.entity.mount,
           )
         : this.textures.creature(this.entity.body, this.entity.direction, frame);
     this.applyDeathLook();

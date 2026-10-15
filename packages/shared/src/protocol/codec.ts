@@ -3,6 +3,7 @@ import { PASSWORD_MAX_LENGTH } from '../domain/character/password';
 import { isEquipmentSlot } from '../domain/items/equipment';
 import { isItemKind } from '../domain/items/item-catalog';
 import { isSpellKey } from '../domain/magic/spell-catalog';
+import { isMountKind } from '../domain/mounts/mount-catalog';
 import { isChatChannel, isSocialCommand } from '../domain/social/groups';
 import { isDirection } from '../domain/geometry/direction';
 import { isMoveMode } from '../domain/rules/movement';
@@ -216,6 +217,18 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       if (data.to === 'cave' || data.to === 'lair')
         return { ok: true, message: { type: 'testTravel', to: data.to } };
       break;
+    case 'buyMount':
+      if (isId(data.vendorId) && isMountKind(data.mount))
+        return {
+          ok: true,
+          message: { type: 'buyMount', vendorId: data.vendorId, mount: data.mount },
+        };
+      break;
+    case 'mount':
+      if (isId(data.petId)) return { ok: true, message: { type: 'mount', petId: data.petId } };
+      break;
+    case 'dismount':
+      return { ok: true, message: { type: 'dismount' } };
     case 'openCorpse':
     case 'lootAll':
       if (isId(data.corpseId))
@@ -254,6 +267,7 @@ const SERVER_TYPES: ReadonlySet<ServerMessageType> = new Set<ServerMessageType>(
   'social',
   'corpse',
   'corpseClosed',
+  'mountChanged',
   'system',
 ]);
 

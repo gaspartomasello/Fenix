@@ -6,3 +6,4 @@ export * from './item-art';
 export * from './creature-art';
 export * from './volume';
 export * from './monster-art';
+export * from './mount-art';

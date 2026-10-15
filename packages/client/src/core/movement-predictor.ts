@@ -37,7 +37,7 @@ export class MovementPredictor {
     // servidor nos lleve: no se predicen pasos desde un lugar que vamos a dejar.
     if (this.pending.size > 0 && this.map.teleportAt(self.position)) return null;
 
-    const duration = moveDuration(mode);
+    const duration = moveDuration(mode, self.mount !== null);
     this.nextStepAt = now + duration;
     this.seq += 1;
     this.pending.add(this.seq);

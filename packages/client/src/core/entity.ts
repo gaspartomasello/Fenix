@@ -8,6 +8,7 @@ import {
   type EquipmentLook,
   type NpcRole,
   type MobileSnapshot,
+  type MountKind,
   type MoveMode,
   type Notoriety,
   type Position,
@@ -86,6 +87,9 @@ export class Entity {
   private _running = false;
   private _notoriety: Notoriety;
   private _guildTag: string | null;
+  private _mount: MountKind | null;
+  /** Criatura con dueño (invocación o montura suelta): de quién es. */
+  readonly ownerId: EntityId | null;
 
   constructor(snapshot: MobileSnapshot) {
     this.id = snapshot.id;
@@ -100,6 +104,17 @@ export class Entity {
     this._dead = snapshot.dead;
     this._notoriety = snapshot.notoriety;
     this._guildTag = snapshot.guildTag;
+    this._mount = snapshot.mount ?? null;
+    this.ownerId = snapshot.ownerId ?? null;
+  }
+
+  /** En qué va montado (null: a pie). */
+  get mount(): MountKind | null {
+    return this._mount;
+  }
+
+  setMount(mount: MountKind | null): void {
+    this._mount = mount;
   }
 
   /** Reputación: define el color del nombre. */

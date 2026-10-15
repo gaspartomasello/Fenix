@@ -21,6 +21,11 @@ import { LEASH_RANGE, WANDER_RANGE, type Creature } from './creature';
  * más cercano dentro de su rango de agresión.
  */
 export function updateTarget(creature: Creature, world: World): Mobile | null {
+  // Las monturas mansas no pelean: solo siguen a su dueño.
+  if (creature.isPet) {
+    creature.combat.targetId = null;
+    return null;
+  }
   if (creature.ownerId) return updateSummonTarget(creature, creature.ownerId, world);
   const current = creature.combat.targetId ? world.getMobile(creature.combat.targetId) : undefined;
   // Persigue a quien la atacó (persona o invocación) mientras no se aleje mucho de su lugar.

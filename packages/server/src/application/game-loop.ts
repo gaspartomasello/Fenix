@@ -26,6 +26,7 @@ import type { Mobile } from '../domain/mobile';
 import { Player } from '../domain/player';
 import type { World } from '../domain/world';
 import type { Corpses } from './corpses';
+import type { MountActions } from './use-cases/mount-actions';
 import type { ItemNotifications } from './item-notifications';
 import type { MobileNotifications } from './mobile-notifications';
 import type { IdGenerator, Notifier, RandomSource } from './ports';
@@ -54,6 +55,7 @@ export class GameLoop {
     /** Mueve a un jugador al instante, avisando a quienes lo ven. */
     private readonly teleport: (player: Player, position: Position) => void,
     private readonly corpses: Corpses,
+    private readonly mounts: MountActions,
   ) {
     this.shrines = world.map.statics.filter((s) => s.kind === 'shrine');
   }
@@ -394,6 +396,7 @@ export class GameLoop {
       victim.pendingBandage = null;
       this.mobiles.sendEffects(victim);
       victim.combat.targetId = null;
+      this.mounts.dismountOnDeath(victim);
       this.mobiles.broadcastHealth(victim);
       this.mobiles.sendVitals(victim);
       this.mobiles.sendTarget(victim);

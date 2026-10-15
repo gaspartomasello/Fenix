@@ -14,8 +14,14 @@ export function isMoveMode(value: unknown): value is MoveMode {
   return value === 'walk' || value === 'run';
 }
 
-export function moveDuration(mode: MoveMode): number {
-  return MOVE_DURATION_MS[mode];
+/** Montado, como en UO: al paso se va como corriendo a pie y al galope, al doble. */
+export const MOUNTED_MOVE_DURATION_MS = {
+  walk: 200,
+  run: 100,
+} as const;
+
+export function moveDuration(mode: MoveMode, mounted = false): number {
+  return (mounted ? MOUNTED_MOVE_DURATION_MS : MOVE_DURATION_MS)[mode];
 }
 
 /**

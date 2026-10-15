@@ -22,6 +22,7 @@ const ana: SavedCharacter = {
   reputation: { fame: 0, karma: 0, murders: 0 },
   guild: null,
   items: [{ kind: 'apple', amount: 3, location: { type: 'backpack', position: { x: 0, y: 0 } } }],
+  mount: null,
 };
 
 describe('JsonFileCharacterStore', () => {

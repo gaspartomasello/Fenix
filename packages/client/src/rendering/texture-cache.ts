@@ -18,6 +18,7 @@ import {
   type Direction,
   type EquipmentLook,
   type ItemKind,
+  type MountKind,
   type NpcRole,
   type StaticKind,
   type Terrain,
@@ -51,9 +52,11 @@ export class TextureCache {
     frame: CharacterFrame,
     equipment: EquipmentLook,
     role: NpcRole | null = null,
+    mount: MountKind | null = null,
   ): Texture {
     const worn = EQUIPMENT_SLOTS.map((slot) => equipment[slot] ?? '').join(',');
     const look = [
+      appearance.gender ?? '',
       appearance.clothHue,
       appearance.skinTone,
       appearance.hairHue,
@@ -61,9 +64,9 @@ export class TextureCache {
       appearance.facialHair ?? '',
       role ?? '',
     ].join(':');
-    const key = `c:${look}:${direction}:${frame}:${worn}`;
+    const key = `c:${look}:${direction}:${frame}:${worn}:${mount ?? ''}`;
     return this.getOrCreate(key, () =>
-      drawCharacterFrame(appearance, direction, frame, equipment, role),
+      drawCharacterFrame(appearance, direction, frame, equipment, role, mount),
     );
   }
 

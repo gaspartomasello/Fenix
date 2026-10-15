@@ -13,6 +13,8 @@ export type ChatInput =
   | { readonly kind: 'answer'; readonly accept: boolean }
   /** `/desconectar`: salir del juego (vuelve a la pantalla de ingreso). */
   | { readonly kind: 'logout' }
+  /** `/desmontar`: bajarse de la montura. */
+  | { readonly kind: 'dismount' }
   /** `/hora 22`: mover la hora del mundo (solo personajes de prueba). */
   | { readonly kind: 'hour'; readonly hour: number }
   /** `/cueva` y `/cueva fondo`: viajar a la mazmorra (solo personajes de prueba). */
@@ -31,6 +33,7 @@ export const CHAT_HELP = [
   '/reclutar nombre — invitar a alguien a tu gremio',
   '/dejargremio — dejar el gremio',
   '/desconectar — salir del juego (se guarda tu personaje)',
+  '/desmontar — bajarte de tu montura',
   '/hora 22 — cambiar la hora del mundo (solo personajes de prueba)',
   '/cueva o /cueva fondo — ir a la mazmorra (solo personajes de prueba)',
 ] as const;
@@ -70,6 +73,8 @@ export function parseChatInput(raw: string): ChatInput {
       return { kind: 'social', command: 'guild-leave' };
     case 'desconectar':
       return { kind: 'logout' };
+    case 'desmontar':
+      return { kind: 'dismount' };
     case 'hora': {
       const hour = Number(args.replace(',', '.'));
       return args && Number.isFinite(hour) && hour >= 0 && hour < 24

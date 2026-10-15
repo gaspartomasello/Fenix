@@ -7,6 +7,7 @@ import type { Attributes, Vitals } from '../domain/combat/vitals';
 import type { EffectSnapshot } from '../domain/magic/effects';
 import type { Body } from '../domain/creatures/creature-catalog';
 import type { NpcRole } from '../domain/economy/vendors';
+import type { MountKind } from '../domain/mounts/mount-catalog';
 import type { ChatChannel, SocialCommand } from '../domain/social/groups';
 import type { Notoriety } from '../domain/social/reputation';
 import type { SpellKey } from '../domain/magic/spell-catalog';
@@ -39,6 +40,10 @@ export interface MobileSnapshot {
   /** Reputación (color del nombre) y siglas del gremio, si tiene. */
   readonly notoriety: Notoriety;
   readonly guildTag: string | null;
+  /** Montado: en qué va. */
+  readonly mount?: MountKind | null;
+  /** Criatura con dueño (invocación o montura suelta): de quién es. */
+  readonly ownerId?: EntityId | null;
 }
 
 export interface ItemSnapshot {
@@ -178,6 +183,24 @@ export interface TestTravelRequest {
   readonly to: 'cave' | 'lair';
 }
 
+/** Comprar una montura en la caballeriza. */
+export interface BuyMountRequest {
+  readonly type: 'buyMount';
+  readonly vendorId: EntityId;
+  readonly mount: MountKind;
+}
+
+/** Subirse a la montura propia (doble clic sobre ella). */
+export interface MountRequest {
+  readonly type: 'mount';
+  readonly petId: EntityId;
+}
+
+/** Bajarse de la montura (doble clic sobre uno mismo, o `/desmontar`). */
+export interface DismountRequest {
+  readonly type: 'dismount';
+}
+
 /** Revisar el cuerpo de una criatura muerta (doble clic). */
 export interface OpenCorpseRequest {
   readonly type: 'openCorpse';
@@ -213,6 +236,9 @@ export type ClientMessage =
   | TestTravelRequest
   | OpenCorpseRequest
   | LootAllRequest
+  | BuyMountRequest
+  | MountRequest
+  | DismountRequest
   | SocialRequest;
 
 // ── Servidor → Cliente ────────────────────────────────────────────────
@@ -410,6 +436,13 @@ export interface SocialMessage {
   readonly notoriety: Notoriety;
 }
 
+/** Alguien se subió (o se bajó, con `mount` null) de una montura. */
+export interface MountChangedMessage {
+  readonly type: 'mountChanged';
+  readonly id: EntityId;
+  readonly mount: MountKind | null;
+}
+
 /** Lo que hay en un cuerpo que el jugador está revisando (se reenvía cuando cambia). */
 export interface CorpseMessage {
   readonly type: 'corpse';
@@ -456,6 +489,7 @@ export type ServerMessage =
   | SocialMessage
   | CorpseMessage
   | CorpseClosedMessage
+  | MountChangedMessage
   | SystemMessage;
 
 export type ServerMessageType = ServerMessage['type'];

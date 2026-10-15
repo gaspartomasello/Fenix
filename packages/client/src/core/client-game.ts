@@ -5,6 +5,7 @@ import {
   bodyMoveMs,
   directionBetween,
   effectiveMoveMode,
+  isMountKind,
   moveDuration,
   sanitizeChatText,
   type Attributes,
@@ -21,6 +22,7 @@ import {
   type GroundItemSnapshot,
   type ItemDestination,
   type ItemKind,
+  type MountKind,
   type MoveMode,
   type RegionData,
   type ServerMessage,
@@ -230,12 +232,12 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     if (!self || !this.predictor) return;
     // Paralizado no se puede mover (el servidor rechazaría el paso).
     if (this.hasEffect('paralyzed')) return;
-    // Sin energía no se puede correr: misma regla que aplica el servidor.
+    // Sin energía no se puede correr (salvo montado): misma regla que aplica el servidor.
     const stamina = this._vitals?.vitals.stamina ?? 1;
     const request = this.predictor.tryStep(
       self,
       direction,
-      effectiveMoveMode(mode, stamina),
+      self.mount ? mode : effectiveMoveMode(mode, stamina),
       this.clock(),
     );
     if (request) this.gateway.send(request);
@@ -264,6 +266,10 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         return;
       case 'logout':
         this.emit('logoutRequested', null);
+        return;
+      case 'dismount':
+        if (this.self?.mount) this.dismount();
+        else this.notify('No estás montado.');
         return;
       case 'hour':
         this.gateway.send({ type: 'setHour', hour: input.hour });
@@ -367,6 +373,25 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     this.gateway.send({ type: 'openCorpse', corpseId });
   }
 
+  /** Doble clic sobre la montura propia: subirse. */
+  mount(petId: EntityId): void {
+    if (this.self) this.gateway.send({ type: 'mount', petId });
+  }
+
+  dismount(): void {
+    if (this.self?.mount) this.gateway.send({ type: 'dismount' });
+  }
+
+  buyMount(vendorId: EntityId, mount: MountKind): void {
+    if (this.self) this.gateway.send({ type: 'buyMount', vendorId, mount });
+  }
+
+  /** ¿Es la montura suelta del jugador? */
+  isOwnPet(id: EntityId): boolean {
+    const entity = this.entities.get(id);
+    return entity !== undefined && entity.ownerId === this.selfIdValue && isMountKind(entity.body);
+  }
+
   lootAll(corpseId: EntityId): void {
     if (this.self) this.gateway.send({ type: 'lootAll', corpseId });
   }
@@ -440,7 +465,10 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       case 'mobileMoved': {
         const entity = this.entities.get(message.id);
         if (entity && message.id !== this.selfIdValue) {
-          const duration = bodyMoveMs(entity.body, moveDuration(message.mode));
+          const duration = bodyMoveMs(
+            entity.body,
+            moveDuration(message.mode, entity.mount !== null),
+          );
           entity.moveTo(message.position, message.direction, duration, now, message.mode);
         }
         break;
@@ -575,6 +603,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       }
       case 'playerEquipment':
         this.entities.get(message.id)?.setEquipment(message.equipment);
+        break;
+      case 'mountChanged':
+        this.entities.get(message.id)?.setMount(message.mount);
         break;
     }
   }

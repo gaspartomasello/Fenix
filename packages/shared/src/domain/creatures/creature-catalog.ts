@@ -1,6 +1,7 @@
 import type { ItemKind } from '../items/item-catalog';
 import type { Weapon } from '../combat/weapons';
 import type { SpellKey } from '../magic/spell-catalog';
+import { MOUNTS, MOUNT_KINDS, type MountKind } from '../mounts/mount-catalog';
 
 export const CREATURE_KINDS = [
   'rat',
@@ -20,6 +21,8 @@ export const CREATURE_KINDS = [
   'fire-elemental',
   'water-elemental',
   'daemon',
+  // Monturas mansas, sueltas siguiendo a su dueño
+  ...MOUNT_KINDS,
 ] as const;
 export type CreatureKind = (typeof CREATURE_KINDS)[number];
 
@@ -413,7 +416,32 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     moveMs: 360,
     humanoid: true,
   }),
+  ...mounts(),
 };
+
+/** Las monturas sueltas: mansas, no pelean, siguen a su dueño a paso de persona. */
+function mounts(): Record<MountKind, CreatureDefinition> {
+  const entries = MOUNT_KINDS.map((kind): [MountKind, CreatureDefinition] => [
+    kind,
+    {
+      kind,
+      name: MOUNTS[kind].name,
+      article: MOUNTS[kind].article,
+      maxHits: MOUNTS[kind].species === 'llama' ? 45 : 70,
+      strength: 60,
+      dexterity: 50,
+      armor: 6,
+      skill: 200,
+      weapon: { name: 'coces', minDamage: 1, maxDamage: 3, swingMs: 3000, skill: 'wrestling' },
+      moveMs: 200,
+      aggroRange: 0,
+      loot: [],
+      humanoid: false,
+      summoned: true,
+    },
+  ]);
+  return Object.fromEntries(entries) as Record<MountKind, CreatureDefinition>;
+}
 
 /** Criatura que solo existe invocada: pelea para su dueño y no deja botín. */
 function summon(

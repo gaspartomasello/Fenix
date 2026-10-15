@@ -1,4 +1,5 @@
-import type { CreatureKind, Direction } from '@fenix/shared';
+import { isMountKind, type CreatureKind, type Direction } from '@fenix/shared';
+import { drawMountFrame } from './mount-art';
 import {
   CHARACTER_ART_HEIGHT,
   CHARACTER_ART_WIDTH,
@@ -22,6 +23,7 @@ export function drawCreatureFrame(
   if (kind === 'skeleton') return drawSkeletonFrame(direction, frame);
   if (isSummonKind(kind)) return drawSummonFrame(kind, direction, frame);
   if (isMonsterKind(kind)) return drawMonsterFrame(kind, direction, frame);
+  if (isMountKind(kind)) return drawMountFrame(kind, direction, frame);
   const zoom = kind === 'rat' ? 1.6 : 1.25;
   const canvas = new VolumeCanvas(
     CHARACTER_ART_WIDTH,
