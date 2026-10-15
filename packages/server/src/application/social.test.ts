@@ -97,8 +97,9 @@ describe('combate entre jugadores', () => {
     const arena = createArena();
     const ana = arena.join('Ana');
     const bruno = arena.join('Bruno');
+    // Bruno llega muy herido: se defiende solo (defensa propia), pero no le alcanza.
+    arena.world.get(bruno)?.combat.takeDamage(60);
     arena.app.handle(ana, { type: 'attack', targetId: bruno });
-    // Con los puños tarda: los dos tienen la misma vida y Bruno no se defiende.
     arena.run(180_000);
     expect(arena.world.get(bruno)?.combat.isDead).toBe(true);
     expect(arena.world.get(ana)?.reputation.murders).toBe(1);

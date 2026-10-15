@@ -45,6 +45,8 @@ export interface MobileSnapshot {
   readonly mount?: MountKind | null;
   /** Criatura con dueño (invocación o montura suelta): de quién es. */
   readonly ownerId?: EntityId | null;
+  /** Jugador en modo guerra: se dibuja en guardia. */
+  readonly war?: boolean;
 }
 
 export interface ItemSnapshot {
@@ -221,6 +223,12 @@ export interface ReleasePetRequest {
   readonly type: 'releasePet';
 }
 
+/** Entrar o salir del modo guerra (Tab, o el botón Guerra). */
+export interface SetWarModeRequest {
+  readonly type: 'setWarMode';
+  readonly war: boolean;
+}
+
 /** Usar una habilidad a propósito (Esconderse, Mirar). */
 export interface UseSkillRequest {
   readonly type: 'useSkill';
@@ -267,6 +275,7 @@ export type ClientMessage =
   | DismountRequest
   | ReleasePetRequest
   | UseSkillRequest
+  | SetWarModeRequest
   | SocialRequest;
 
 // ── Servidor → Cliente ────────────────────────────────────────────────
@@ -471,6 +480,17 @@ export interface MountChangedMessage {
   readonly mount: MountKind | null;
 }
 
+/**
+ * Alguien entró o salió del modo guerra (para dibujarlo en guardia). Al
+ * propio jugador también le llega; `auto` cuando fue porque lo atacaron.
+ */
+export interface WarModeChangedMessage {
+  readonly type: 'warModeChanged';
+  readonly id: EntityId;
+  readonly war: boolean;
+  readonly auto?: boolean;
+}
+
 /** El jugador se escondió o lo descubrieron (solo a él: los demás dejan de verlo o lo ven aparecer). */
 export interface HiddenChangedMessage {
   readonly type: 'hiddenChanged';
@@ -495,6 +515,8 @@ export interface CorpseClosedMessage {
 export interface SystemMessage {
   readonly type: 'system';
   readonly text: string;
+  /** Avisos con su color, como en UO: subió una habilidad o un atributo. */
+  readonly tone?: 'skill' | 'stat';
 }
 
 export type ServerMessage =
@@ -525,6 +547,7 @@ export type ServerMessage =
   | CorpseClosedMessage
   | MountChangedMessage
   | HiddenChangedMessage
+  | WarModeChangedMessage
   | SystemMessage;
 
 export type ServerMessageType = ServerMessage['type'];

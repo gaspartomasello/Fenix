@@ -7,6 +7,7 @@ import type { World } from '../../domain/world';
 import type { MobileNotifications } from '../mobile-notifications';
 import type { Clock, Notifier } from '../ports';
 import type { SocialNotifications } from '../social-notifications';
+import type { WarMode } from '../war-mode';
 import { commitAggression } from './aggression';
 
 /** Elegir a quién atacar (el golpe lo da el ciclo del juego cuando está al alcance). */
@@ -17,6 +18,7 @@ export class Attack {
     private readonly mobiles: MobileNotifications,
     private readonly social: SocialNotifications,
     private readonly notifier: Notifier,
+    private readonly warMode: WarMode,
   ) {}
 
   execute(playerId: EntityId, targetId: EntityId): void {
@@ -46,8 +48,16 @@ export class Attack {
       commitAggression(player, target, this.clock.now(), this.notifier, this.social);
     }
 
+    // Atacar pone en modo guerra, como en UO.
+    this.warMode.set(player, true);
     player.combat.targetId = target.id;
     this.mobiles.sendTarget(player);
+  }
+
+  /** Entrar o salir del modo guerra (en paz se deja de atacar). */
+  setWarMode(playerId: EntityId, war: boolean): void {
+    const player = this.world.get(playerId);
+    if (player && !player.combat.isDead) this.warMode.set(player, war);
   }
 
   private petOwner(pet: Creature): Player | undefined {

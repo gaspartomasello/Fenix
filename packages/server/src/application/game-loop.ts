@@ -34,6 +34,7 @@ import type { World } from '../domain/world';
 import { EMPTY_CORPSE_MS, type Corpses } from './corpses';
 import type { Gates } from './gates';
 import type { Stealth } from './stealth';
+import type { WarMode } from './war-mode';
 import type { MountActions } from './use-cases/mount-actions';
 import type { ItemNotifications } from './item-notifications';
 import type { MobileNotifications } from './mobile-notifications';
@@ -66,6 +67,7 @@ export class GameLoop {
     private readonly mounts: MountActions,
     private readonly gates: Gates,
     private readonly stealth: Stealth,
+    private readonly warMode: WarMode,
   ) {
     this.shrines = world.map.statics.filter((s) => s.kind === 'shrine');
   }
@@ -121,6 +123,7 @@ export class GameLoop {
       this.notifier.send(player.id, {
         type: 'system',
         text: `Tu ${ATTRIBUTE_NAMES[key].toLowerCase()} subió a ${player.combat.baseAttributes[key]}.`,
+        tone: 'stat',
       });
     }
     this.mobiles.sendEffects(player);
@@ -188,6 +191,7 @@ export class GameLoop {
       if (!target || target.combat.isDead || this.world.isHidden(target)) {
         player.combat.targetId = null;
         this.mobiles.sendTarget(player);
+        this.warMode.nextAttacker(player);
       } else if (outOfAmmo(player, this.world)) {
         player.combat.targetId = null;
         this.mobiles.sendTarget(player);
@@ -418,6 +422,7 @@ export class GameLoop {
     }
     if (amount > 0 && target !== attacker) this.disrupt(target);
     if (killed) this.handleKill(attacker, target, now);
+    else if (target instanceof Player) this.warMode.defend(target, attacker);
   }
 
   /** Saca una invocación del mundo (se le terminó el tiempo, murió o se fue su dueño). */
@@ -467,6 +472,7 @@ export class GameLoop {
     if (result.itemChanges) this.items.publish(result.itemChanges, result.attacker.id);
     if (result.hit && !result.blocked && result.damage > 0) this.disrupt(result.target);
     if (result.killed) this.handleKill(result.attacker, result.target, now);
+    else if (target instanceof Player) this.warMode.defend(target, attacker);
   }
 
   /** Muerte de un jugador (queda fantasma) o de una criatura (botín y reaparición). */
@@ -511,6 +517,8 @@ export class GameLoop {
       if (killer.combat.targetId === creature.id) {
         killer.combat.targetId = null;
         this.mobiles.sendTarget(killer);
+        // Si otra criatura le sigue pegando, sigue con esa.
+        this.warMode.nextAttacker(killer);
       }
       const fame = CREATURE_FAME[creature.body] ?? 0;
       killer.reputation.award(fame, fame);

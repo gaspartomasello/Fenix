@@ -6,6 +6,7 @@ import { Corpses } from './corpses';
 import { MountActions } from './use-cases/mount-actions';
 import { Gates } from './gates';
 import { Stealth } from './stealth';
+import { WarMode } from './war-mode';
 import { GameLoop } from './game-loop';
 import { ItemNotifications } from './item-notifications';
 import { MobileNotifications } from './mobile-notifications';
@@ -138,7 +139,8 @@ export class GameApplication {
       this.mobiles,
       this.economy,
     );
-    this.attack = new Attack(world, clock, this.mobiles, this.social, notifier);
+    const warMode = new WarMode(world, this.mobiles, notifier);
+    this.attack = new Attack(world, clock, this.mobiles, this.social, notifier, warMode);
     this.castSpell = new CastSpell(
       world,
       clock,
@@ -162,6 +164,7 @@ export class GameApplication {
       this.mounts,
       gates,
       this.stealth,
+      warMode,
     );
   }
 
@@ -249,6 +252,9 @@ export class GameApplication {
         break;
       case 'useSkill':
         this.stealth.use(playerId, message.skill);
+        break;
+      case 'setWarMode':
+        this.attack.setWarMode(playerId, message.war);
         break;
       case 'gather':
         this.economy.gather(playerId, message.toolId, message.position);

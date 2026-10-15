@@ -86,6 +86,8 @@ export class Player implements Mobile {
    * Invisibilidad (null si se escondió solo).
    */
   hidden: { steps: number; until: number | null } | null = null;
+  /** Modo guerra: se dibuja en guardia y se defiende solo (no se guarda: entra en paz). */
+  warMode = false;
   private runSteps = 0;
   private _position: Position;
   private _direction: Direction;
@@ -175,6 +177,7 @@ export class Player implements Mobile {
       notoriety: this.reputation.notoriety,
       guildTag: null,
       mount: this.mount,
+      war: this.warMode,
     };
   }
 }

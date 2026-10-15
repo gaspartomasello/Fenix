@@ -4,6 +4,7 @@ import {
   CHARACTER_HEAD_Y,
   MOUNTED_ART_HEIGHT,
   WALK_FRAMES,
+  guardFrame,
   MOUNTED_FEET_Y,
   MOUNTED_HEAD_Y,
   attackStyleFor,
@@ -275,7 +276,10 @@ export class CharacterView {
     const entity = this.entity;
     if (entity.dead) return;
     const running = entity.running;
-    const frames = WALK_FRAMES.map((k): CharacterFrame => (running ? `run-${k}` : k));
+    const guard = !running && this.inGuard();
+    const frames = WALK_FRAMES.map((k): CharacterFrame =>
+      running ? `run-${k}` : guard ? `guard-${k}` : k,
+    );
     if (entity.body !== 'human') {
       const key = `${entity.direction}:${running}`;
       if (key === this.preparedCycle) return;
@@ -284,7 +288,7 @@ export class CharacterView {
       return;
     }
     const worn = Object.values(entity.equipment).join(',');
-    const key = `${entity.direction}:${running}:${entity.mount ?? ''}:${worn}`;
+    const key = `${entity.direction}:${running}:${guard}:${entity.mount ?? ''}:${worn}`;
     if (key === this.preparedCycle) return;
     this.preparedCycle = key;
     this.textures.prepareCharacter(
@@ -368,12 +372,24 @@ export class CharacterView {
     const entity = this.entity;
     const action = entity.actionAt(now);
     const progress = entity.stepProgress(now);
-    const idle = !action && progress === null && !entity.dead;
+    const guard = this.inGuard();
+    const idle = !action && progress === null && !entity.dead && !guard;
     const fidget = entity.isHumanoid ? this.fidgets.frame(now, idle) : null;
     if (action?.kind === 'attack') return attackFrame(this.attackStyle(), action.progress);
     if (action?.kind === 'cast') return castFrame(action.elapsed);
-    if (progress !== null) return stepFrame(entity.stepCount, progress, entity.running);
+    if (progress !== null) {
+      const step = stepFrame(entity.stepCount, progress, entity.running);
+      // Corriendo se corre normal; caminando, en guardia.
+      return guard ? guardFrame(step) : step;
+    }
+    if (guard) return 'guard';
     return fidget ?? 'idle';
+  }
+
+  /** En guardia: una persona viva, a pie y en modo guerra. */
+  private inGuard(): boolean {
+    const entity = this.entity;
+    return entity.war && entity.body === 'human' && !entity.dead && entity.mount === null;
   }
 
   /** Gesto del golpe: según el arma de la persona; el esqueleto tira tajos y las bestias muerden. */
