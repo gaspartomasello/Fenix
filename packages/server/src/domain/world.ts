@@ -2,6 +2,7 @@ import {
   DEFAULT_APPEARANCE,
   Direction,
   inViewRange,
+  VIEW_RANGE,
   type EntityId,
   type MobileSnapshot,
   type Position,
@@ -13,6 +14,7 @@ import type { Mobile } from './mobile';
 import { Npc } from './npcs/npc';
 import { Player, type PlayerProps } from './player';
 import { Guilds } from './social/guilds';
+import { SpatialIndex } from './spatial-index';
 import { Parties } from './social/parties';
 
 export const MAX_PLAYERS = 100;
@@ -25,10 +27,19 @@ export class World {
   readonly items = new Items();
   readonly parties = new Parties();
   readonly guilds = new Guilds();
+  /** Quién está dónde, por celdas: las consultas de cercanía no recorren todo el mundo. */
+  private readonly nearPlayers = new SpatialIndex<Player>();
+  private readonly nearCreatures = new SpatialIndex<Creature>();
+  private readonly nearNpcs = new SpatialIndex<Npc>();
 
   constructor(
     readonly map: TileMap,
     private readonly spawnPoint: Position,
+    /**
+     * Identidad del mapa (tamaño y semilla). Un personaje guardado en otro
+     * mundo no vuelve a su lugar (ese lugar ya no es el mismo): aparece en la capital.
+     */
+    readonly mapId = '',
   ) {
     if (!map.isWalkable(spawnPoint)) {
       throw new Error('El punto de aparición debe ser transitable');
@@ -64,6 +75,8 @@ export class World {
       direction: useSaved ? saved.direction : Direction.South,
     });
     this.players.set(player.id, player);
+    player.moved = () => this.nearPlayers.update(player);
+    this.nearPlayers.update(player);
     return player;
   }
 
@@ -71,17 +84,28 @@ export class World {
   remove(id: EntityId): Player | undefined {
     const player = this.players.get(id);
     this.players.delete(id);
+    if (player) {
+      player.moved = null;
+      this.nearPlayers.remove(player);
+    }
     this.items.removeOwnedBy(id);
     return player;
   }
 
   addCreature(creature: Creature): void {
     this.creatures.set(creature.id, creature);
+    creature.moved = () => this.nearCreatures.update(creature);
+    this.nearCreatures.update(creature);
   }
 
   /** Saca una criatura del mundo para siempre (una invocación que terminó). */
   removeCreature(id: EntityId): void {
+    const creature = this.creatures.get(id);
     this.creatures.delete(id);
+    if (creature) {
+      creature.moved = null;
+      this.nearCreatures.remove(creature);
+    }
   }
 
   /** Invocaciones de un jugador (sin contar su montura suelta). */
@@ -98,6 +122,7 @@ export class World {
 
   addNpc(npc: Npc): void {
     this.npcs.set(npc.id, npc);
+    this.nearNpcs.update(npc);
   }
 
   getNpc(id: EntityId): Npc | undefined {
@@ -121,10 +146,23 @@ export class World {
 
   /** Jugadores y criaturas (presentes) que ven la posición dada. */
   mobilesNear(position: Position, options: { except?: EntityId } = {}): Mobile[] {
-    const creatures = [...this.creatures.values()].filter((c) => !c.gone);
-    return [...this.players.values(), ...creatures, ...this.npcs.values()].filter(
-      (m) => m.id !== options.except && inViewRange(m.position, position),
-    );
+    const creatures = this.nearCreatures.near(position, VIEW_RANGE).filter((c) => !c.gone);
+    return [
+      ...this.nearPlayers.near(position, VIEW_RANGE),
+      ...creatures,
+      ...this.nearNpcs.near(position, VIEW_RANGE),
+    ].filter((m) => m.id !== options.except && inViewRange(m.position, position));
+  }
+
+  /** ¿Hay algún jugador a `range` tiles o menos? (para despertar a las criaturas) */
+  anyPlayerNear(position: Position, range: number): boolean {
+    return this.nearPlayers
+      .near(position, range)
+      .some(
+        (p) =>
+          Math.max(Math.abs(p.position.x - position.x), Math.abs(p.position.y - position.y)) <=
+          range,
+      );
   }
 
   /** Un jugador escondido: los demás no lo ven (ni las criaturas). */

@@ -3,6 +3,7 @@ export * from './domain/geometry/direction';
 export * from './domain/world/terrain';
 export * from './domain/world/statics';
 export * from './domain/world/tile-map';
+export * from './domain/world/map-codec';
 export * from './domain/rules/movement';
 export * from './domain/rules/chat';
 export * from './domain/rules/daylight';

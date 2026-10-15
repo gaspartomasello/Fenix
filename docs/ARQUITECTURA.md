@@ -329,6 +329,19 @@ devolver el golpe no es delito. El modo guerra no se guarda: se entra al juego e
 Las subidas de habilidad y de atributo llegan como `system` con `tone` (`skill` o `stat`) y el
 chat las pinta en celeste y en verde, como en UO.
 
+### Un mundo grande
+
+- **Índice espacial** (`SpatialIndex`, en `domain`): `World` sabe quién está en cada celda de 16 ×
+  16; jugadores y criaturas avisan al moverse (`moved`). `mobilesNear` y `anyPlayerNear` miran
+  solo las celdas cercanas, en vez de recorrer todo el mundo.
+- **Criaturas que duermen**: lejos de todo jugador (`AWAKE_RANGE`) una criatura no piensa ni
+  camina, como en UO; las invocaciones y monturas siempre siguen a su dueño.
+- **Mapa compacto** (`encodeMap` / `decodeMap`, en `@fenix/shared`): el mapa del mensaje de
+  bienvenida viaja como bytes en base64 (uno por tile de terreno, cinco por objeto fijo).
+- **Caminos**: el A\* busca primero en una ventana alrededor de los extremos.
+- **Cambio de mundo**: `World.mapId` (tamaño y semilla) se guarda con el personaje; si el mundo
+  cambió, el personaje aparece en la capital en vez de en su lugar viejo.
+
 ### Persistencia
 
 Un personaje se guarda como datos planos (`SavedCharacter`, en `domain/persistence`):

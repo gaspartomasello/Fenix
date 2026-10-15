@@ -3,6 +3,25 @@
 Cómo está armado el mundo abierto: biomas, terrenos, objetos del suelo y el plan para llevarlo a
 1000 × 1000. Todo el arte es procedural (`@fenix/art`), sin nada de UO.
 
+## Forma del mundo
+
+El continente mide **1000 × 1400** tiles (`MAP_SIZE` × `MAP_HEIGHT`) y es alargado de norte a sur,
+mezcla de América y Britannia:
+
+- **Norte**: una masa ancha y templada con bahías, golfos, un gran golfo interior al oeste y
+  lagos. Ahí están la capital (Puerto Ceniza), Roca Alta al pie de la cordillera y Junco Verde.
+  Más arriba, tundra y nieve.
+- **Istmo**: angosto y caluroso (selva y desierto).
+- **Sur**: otra masa con selva grande, desiertos, tierra roja y sabana, que se enfría hacia la
+  punta.
+- **Cordillera** a lo largo de la costa oeste, cortada por pasos.
+- **Mares abiertos** a los dos lados, con unas 25 islas (algunas grandes, para explorar y para
+  los barcos que vendrán) y agua poco profunda junto a las costas.
+
+Las costas se tuercen con ruido (nada queda redondo) y el clima depende de la latitud: frío
+arriba, templado donde está la capital, caluroso en el istmo y fresco en la punta sur. Un mapa
+cuadrado (los de prueba) usa la isla redonda de antes.
+
 ## Biomas
 
 El generador (`procedural-map.ts`) decide el bioma de cada tile por **elevación** (mar, costa,
@@ -64,10 +83,12 @@ Para recorrer el mapa con el personaje de prueba: `/ir 120 300` (coordenadas) o 
 
 ## Plan (por etapas)
 
-1. **Etapa 24 (esta):** arte de biomas, terrenos y vegetación; integrado al continente actual.
-2. **Etapa 25:** mundo de 1000 × 1000 con clima, islas (para los barcos), cordilleras, ríos,
-   caminos como los de UO y más distancia entre pueblos; mapa compacto por la red y migración de
-   los personajes guardados.
+1. **Etapa 24:** arte de biomas, terrenos y vegetación.
+2. **Etapa 25:** el continente de 1000 × 1400 (arriba), con islas, cordillera y caminos que
+   serpentean; mapa compacto por la red; criaturas que duermen lejos de los jugadores; índice
+   espacial; los personajes guardados en el mundo anterior aparecen en la capital.
 3. **Etapa 26:** ciudades: capital grande amurallada con castillo del líder y **puerto con muelle**;
    guarida de bandidos en una isla, sin guardias; pueblos con estilo propio (adobe, madera, piedra,
-   chozas) y pisos de damero o baldosas; gente del pueblo que camina y guardias.
+   chozas) y pisos de damero o baldosas; gente del pueblo que camina y guardias; más pueblos.
+4. Más adelante: **búsqueda de tesoros** (mapas, excavar, cofres con guardianes, en las islas) y
+   **barcos con combate naval** (combate entre jugadores en el mar).

@@ -19,7 +19,10 @@ function main(): void {
   // src/main.ts y dist/main.js están al mismo nivel: el cliente queda en ../../client/dist.
   const config = loadConfig(fileURLToPath(new URL('../../client/dist', import.meta.url)));
   const ids = new UuidGenerator();
-  const world = createWorld({ size: config.mapSize, seed: config.mapSeed }, ids);
+  const world = createWorld(
+    { size: config.mapSize, height: config.mapHeight, seed: config.mapSeed },
+    ids,
+  );
   const sessions = new SessionRegistry();
   const clock = new SystemClock();
   const characters = new JsonFileCharacterStore(join(config.dataDir, 'personajes.json'));

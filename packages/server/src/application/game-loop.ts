@@ -41,6 +41,9 @@ import type { MobileNotifications } from './mobile-notifications';
 import type { IdGenerator, Notifier, RandomSource } from './ports';
 import type { SocialNotifications } from './social-notifications';
 
+/** Más allá de esta distancia de todo jugador, las criaturas duermen. */
+export const AWAKE_RANGE = 32;
+
 /** Distancia al santuario para que un fantasma vuelva a la vida. */
 export const SHRINE_RANGE = 2;
 /** Vida con la que se resucita. */
@@ -349,6 +352,9 @@ export class GameLoop {
       return;
     }
 
+    // Lejos de todo jugador la criatura duerme (como en UO): no piensa ni camina.
+    // Las invocaciones y monturas siguen a su dueño siempre.
+    if (!creature.ownerId && !this.world.anyPlayerNear(creature.position, AWAKE_RANGE)) return;
     const target = updateTarget(creature, this.world);
     this.creatureAbilities(creature, target, now);
     if (creature.combat.isDead) return;

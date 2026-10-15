@@ -23,7 +23,9 @@ export class Creature implements Mobile {
   readonly name: string;
   readonly definition: CreatureDefinition;
   combat: Combatant;
-  position: Position;
+  private _position: Position;
+  /** Aviso de que cambió de lugar (el mundo lo reubica en su índice). */
+  moved: (() => void) | null = null;
   direction: Direction = Direction.South;
   nextMoveAt = 0;
   /** Cuándo deja de verse el cuerpo (null mientras vive). */
@@ -58,8 +60,17 @@ export class Creature implements Mobile {
     this.body = kind;
     this.definition = CREATURES[kind];
     this.name = this.definition.name;
-    this.position = home;
+    this._position = home;
     this.combat = this.freshCombatant();
+  }
+
+  get position(): Position {
+    return this._position;
+  }
+
+  set position(position: Position) {
+    this._position = position;
+    this.moved?.();
   }
 
   /** Vuelve a aparecer en su lugar, con la vida llena. */

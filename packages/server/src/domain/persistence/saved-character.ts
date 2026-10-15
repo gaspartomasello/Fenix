@@ -48,6 +48,8 @@ export interface SavedCharacter {
   readonly appearance: Appearance;
   readonly position: Position;
   readonly direction: Direction;
+  /** En qué mundo estaba (ver `World.mapId`); los viejos no lo tienen. */
+  readonly world?: string;
   readonly vitals: { readonly hits: number; readonly mana: number; readonly stamina: number };
   readonly dead: boolean;
   readonly skills: SkillValues;
@@ -81,6 +83,7 @@ export function captureCharacter(
     passwordHash,
     appearance: player.appearance,
     position: player.position,
+    world: world.mapId,
     direction: player.direction,
     vitals: { hits, mana, stamina },
     dead: player.combat.isDead,
@@ -208,6 +211,7 @@ export function parseSavedCharacter(value: unknown): SavedCharacter | null {
     appearance,
     position: { x: Math.round(position.x), y: Math.round(position.y) },
     direction,
+    ...(typeof value.world === 'string' ? { world: value.world } : {}),
     vitals: {
       hits: number(vitals, 'hits'),
       mana: number(vitals, 'mana'),
@@ -250,7 +254,10 @@ export function restoreCharacter(
       attributes: saved.attributes,
     },
     random,
-    { position: saved.position, direction: saved.direction },
+    // Si el mundo cambió desde que se guardó, el lugar guardado no sirve: a la capital.
+    (saved.world ?? '') === world.mapId
+      ? { position: saved.position, direction: saved.direction }
+      : undefined,
   );
   player.combat.restore(saved.vitals, saved.dead);
   player.reputation.restore(saved.reputation, now);

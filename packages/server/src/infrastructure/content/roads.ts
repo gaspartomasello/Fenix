@@ -15,6 +15,38 @@ export function cheapestPath(
   cost: (x: number, y: number) => number,
   turn = 0,
 ): Position[] | null {
+  // En un mapa grande se busca primero en una ventana alrededor de los dos
+  // extremos (mucha menos memoria); si no hay camino ahí, en el mapa entero.
+  const margin = 160;
+  const x0 = Math.max(0, Math.min(from.x, to.x) - margin);
+  const y0 = Math.max(0, Math.min(from.y, to.y) - margin);
+  const x1 = Math.min(width - 1, Math.max(from.x, to.x) + margin);
+  const y1 = Math.min(height - 1, Math.max(from.y, to.y) + margin);
+  const windowed = x0 > 0 || y0 > 0 || x1 < width - 1 || y1 < height - 1;
+  if (windowed) {
+    const w = x1 - x0 + 1;
+    const h = y1 - y0 + 1;
+    const path = search(
+      w,
+      h,
+      { x: from.x - x0, y: from.y - y0 },
+      { x: to.x - x0, y: to.y - y0 },
+      (x, y) => cost(x + x0, y + y0),
+      turn,
+    );
+    if (path) return path.map((p) => ({ x: p.x + x0, y: p.y + y0 }));
+  }
+  return search(width, height, from, to, cost, turn);
+}
+
+function search(
+  width: number,
+  height: number,
+  from: Position,
+  to: Position,
+  cost: (x: number, y: number) => number,
+  turn: number,
+): Position[] | null {
   // Cada estado es un tile más la dirección con la que se llegó (4 = ninguna, al salir).
   const total = width * height * 5;
   const best = new Float64Array(total).fill(Infinity);

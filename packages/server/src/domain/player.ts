@@ -124,6 +124,7 @@ export class Player implements Mobile {
       return { ok: false, reason: 'blocked' };
     }
     this._position = step(this._position, direction);
+    this.moved?.();
     this.nextMoveAt =
       Math.max(this.nextMoveAt, now - MOVE_IDLE_CREDIT_MS) +
       moveDuration(mode, this.mount !== null);
@@ -151,7 +152,11 @@ export class Player implements Mobile {
   /** Aparece en otro lugar al instante (teletransporte). */
   teleport(position: Position): void {
     this._position = position;
+    this.moved?.();
   }
+
+  /** Aviso de que cambió de lugar (el mundo lo reubica en su índice). */
+  moved: (() => void) | null = null;
 
   /** Cuenta un paso corriendo; cada RUN_STEPS_PER_STAMINA gasta un punto de energía. */
   registerRunStep(): boolean {
