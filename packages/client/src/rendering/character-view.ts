@@ -49,6 +49,8 @@ const TEXT_RESOLUTION = Math.max(2, Math.ceil(window.devicePixelRatio * 2));
 export interface CharacterViewState {
   /** Es el objetivo del jugador: se marca con un aro rojo. */
   readonly targeted: boolean;
+  /** Uno mismo escondido: se ve translúcido (los demás no lo ven). */
+  readonly hidden?: boolean;
 }
 
 /** Representación visual de un personaje o criatura: sombra, sprite, nombre, vida y textos. */
@@ -251,6 +253,7 @@ export class CharacterView {
             )
           : this.textures.creature(this.entity.body, this.entity.direction, frame);
     this.applyDeathLook();
+    if (state.hidden && !this.entity.dead) this.sprite.alpha = 0.4;
     this.prepareCycle();
 
     this.targetRing.visible = state.targeted && !this.entity.dead;

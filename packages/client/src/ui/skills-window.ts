@@ -6,6 +6,8 @@ import {
   SKILL_NAMES,
   SKILL_TOTAL_CAP,
   formatSkill,
+  isActiveSkill,
+  type ActiveSkill,
   type Attributes,
   type SkillValues,
 } from '@fenix/shared';
@@ -19,7 +21,7 @@ export class SkillsWindow {
   private readonly total: HTMLElement;
   private readonly attributes: HTMLElement;
 
-  constructor() {
+  constructor(private readonly onUse: (skill: ActiveSkill) => void = () => undefined) {
     this.window = new GameWindow('habilidades', 'Habilidades', { x: 16, y: 150 });
     this.attributes = el('p', { className: 'skills-attributes' });
     this.list = el('dl', { className: 'skills-list' });
@@ -48,11 +50,25 @@ export class SkillsWindow {
         el('dt', { className: 'skills-group', text: group.name }),
         ...group.skills.flatMap((key) => [
           el('dt', { text: SKILL_NAMES[key], attrs: { title: SKILL_DESCRIPTIONS[key] } }),
-          el('dd', { text: formatSkill(values[key]) }),
+          el('dd', {}, [
+            document.createTextNode(formatSkill(values[key])),
+            ...(isActiveSkill(key) ? [this.useButton(key)] : []),
+          ]),
         ]),
       ]),
     );
     const sum = SKILL_KEYS.reduce((acc, key) => acc + values[key], 0);
     this.total.textContent = `Total: ${formatSkill(sum)} de ${formatSkill(SKILL_TOTAL_CAP)}`;
+  }
+
+  /** Las que se usan a propósito tienen su botón. */
+  private useButton(skill: ActiveSkill): HTMLElement {
+    const button = el('button', {
+      className: 'button button--small button--quiet skills-use',
+      text: 'Usar',
+      attrs: { type: 'button', 'aria-label': `Usar ${SKILL_NAMES[skill]}` },
+    });
+    button.addEventListener('click', () => this.onUse(skill));
+    return button;
   }
 }

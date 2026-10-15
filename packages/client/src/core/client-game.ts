@@ -1,4 +1,5 @@
 import {
+  type ActiveSkill,
   CREATURES,
   SPELLS,
   TileMap,
@@ -81,6 +82,8 @@ export interface ClientGameEvents extends Record<string, unknown> {
   socialChanged: SocialState;
   /** Modo guerra: permite atacar a otras personas. */
   warModeChanged: boolean;
+  /** Uno mismo se escondió o lo descubrieron. */
+  hiddenChanged: boolean;
   /** El jugador pidió salir del juego (`/desconectar`). */
   logoutRequested: null;
   /**
@@ -138,6 +141,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   private _skills: SkillValues | null = null;
   private _social: SocialState | null = null;
   private _warMode = false;
+  private _hidden = false;
   private _effects: EffectsState | null = null;
   private _corpse: CorpseContents | null = null;
   private corpseRequested: EntityId | null = null;
@@ -187,6 +191,16 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
 
   get warMode(): boolean {
     return this._warMode;
+  }
+
+  /** Escondido: los demás no lo ven. */
+  get hidden(): boolean {
+    return this._hidden;
+  }
+
+  /** Usar una habilidad a propósito (Esconderse, Mirar). */
+  useSkill(skill: ActiveSkill): void {
+    if (this.self) this.gateway.send({ type: 'useSkill', skill });
   }
 
   get selfId(): EntityId | null {
@@ -280,6 +294,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       case 'dismount':
         if (this.self?.mount) this.dismount();
         else this.notify('No estás montado.');
+        return;
+      case 'useSkill':
+        this.useSkill(input.skill);
         return;
       case 'releasePet':
         // El servidor sabe si hay montura (suelta o montada) y responde.
@@ -647,6 +664,10 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         break;
       case 'mountChanged':
         this.entities.get(message.id)?.setMount(message.mount);
+        break;
+      case 'hiddenChanged':
+        this._hidden = message.hidden;
+        this.emit('hiddenChanged', message.hidden);
         break;
     }
   }

@@ -80,6 +80,12 @@ export class Player implements Mobile {
   nextActionAt = 0;
   /** En qué va montado (null: a pie). */
   mount: MountKind | null = null;
+  /**
+   * Escondido (Esconderse o Invisibilidad): nadie más lo ve. `steps`: pasos
+   * que puede dar sin descubrirse (Sigilo); `until`: cuándo se le acaba la
+   * Invisibilidad (null si se escondió solo).
+   */
+  hidden: { steps: number; until: number | null } | null = null;
   private runSteps = 0;
   private _position: Position;
   private _direction: Direction;

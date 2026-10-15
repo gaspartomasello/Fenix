@@ -1,5 +1,7 @@
 import {
+  ACTIVE_SKILLS,
   CIRCLE_NAMES,
+  SKILL_NAMES,
   SPELLS,
   SPELL_CIRCLES,
   spellsOfCircle,
@@ -175,6 +177,19 @@ export class HotbarBar {
       );
       return;
     }
+    if (slot.type === 'skill') {
+      button.classList.remove('hotbar-slot--missing');
+      button.replaceChildren(
+        el('span', { className: 'hotbar-spell hotbar-spell--skill' }, [
+          el('span', {
+            className: 'hotbar-spell-initials',
+            text: initials(SKILL_NAMES[slot.skill]),
+          }),
+        ]),
+        key,
+      );
+      return;
+    }
     const spell = SPELLS[slot.spell];
     const locked = (this.skills?.magery ?? 0) < spell.minSkill;
     button.classList.toggle('hotbar-slot--missing', locked);
@@ -238,6 +253,15 @@ export class HotbarBar {
         ),
       ];
     });
+    const skills = ACTIVE_SKILLS.map((skill) =>
+      option(
+        SKILL_NAMES[skill],
+        { type: 'skill', skill },
+        el('span', { className: 'hotbar-spell hotbar-spell--mini hotbar-spell--skill' }, [
+          el('span', { className: 'hotbar-spell-initials', text: initials(SKILL_NAMES[skill]) }),
+        ]),
+      ),
+    );
     const clear = el('button', {
       className: 'button button--small',
       text: 'Vaciar casillero',
@@ -254,6 +278,8 @@ export class HotbarBar {
         items.length > 0
           ? el('div', { className: 'hotbar-options' }, items)
           : el('p', { className: 'window-hint', text: 'No tenés objetos que se usen.' }),
+        el('h3', { className: 'hotbar-heading', text: 'Habilidades' }),
+        el('div', { className: 'hotbar-options' }, skills),
         ...(circles.length > 0
           ? circles
           : [el('p', { className: 'window-hint', text: 'Todavía no sabés lanzar hechizos.' })]),

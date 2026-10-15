@@ -145,8 +145,12 @@ export class MobileNotifications {
     );
   }
 
-  /** Jugadores (los únicos que reciben mensajes) que ven a este mobile. */
+  /**
+   * Jugadores (los únicos que reciben mensajes) que ven a este mobile. A uno
+   * escondido no lo ve nadie más que él mismo.
+   */
   watchers(mobile: Mobile): EntityId[] {
+    if (this.world.isHidden(mobile)) return [mobile.id];
     return this.world
       .mobilesNear(mobile.position)
       .filter((m): m is Player => m instanceof Player)

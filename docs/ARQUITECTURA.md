@@ -246,6 +246,14 @@ suelo (todos los ven con los objetos del suelo), los une, los cierra a los 30 s,
 manda al otro lado a quien pisa uno, igual que la entrada de la mazmorra. Lo `fixed` no se puede
 mover.
 
+El **sigilo** (`Stealth`, capa de aplicación; reglas en `skills/stealth.ts`): `Player.hidden`
+guarda los pasos que le quedan (Sigilo) y, con Invisibilidad, cuándo se acaba. A uno escondido no
+lo ve nadie: `MobileNotifications.watchers` devuelve solo a él mismo, `MovePlayer` no avisa sus
+pasos, `World.isHidden` lo saca de lo que ven los demás al entrar o moverse, y las criaturas no lo
+eligen ni lo siguen. Al esconderse, los demás reciben `mobileDisappeared`; al descubrirse,
+`mobileAppeared`; y él, `hiddenChanged`. Lo descubren: atacar, lanzar, hablar en voz alta, recibir
+un golpe o un hechizo de daño, correr o pasarse de pasos. `useSkill` usa Esconderse o Mirar.
+
 Algunos hechizos **caen más tarde** (`delayMs`): la Explosión gasta el maná al lanzarla y estalla
 2,5 s después, como en UO. `resolveCast` devuelve `delayed` en vez de aplicar el daño, el ciclo del
 juego lo guarda y `landDelayedSpell` lo aplica al vencer (con la tirada de Resistencia en ese

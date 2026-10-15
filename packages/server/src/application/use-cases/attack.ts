@@ -26,7 +26,7 @@ export class Attack {
 
     if (player.combat.isDead) return refuse('Los fantasmas no pueden pelear.');
     const target = this.world.getMobile(targetId);
-    if (!target || target.id === playerId) return;
+    if (!target || target.id === playerId || this.world.isHidden(target)) return;
     if (target instanceof Npc) return refuse(`No podés atacar a ${target.name}.`);
     if (target instanceof Creature && target.ownerId === playerId)
       return refuse(target.isPet ? 'Es tu montura.' : 'Es una criatura que invocaste vos.');

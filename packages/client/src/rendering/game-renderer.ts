@@ -174,7 +174,10 @@ export class GameRenderer {
 
     const targetId = this.game.targetId;
     for (const view of this.views.values())
-      view.update(now, { targeted: view.entityId === targetId });
+      view.update(now, {
+        targeted: view.entityId === targetId,
+        hidden: view.isSelf && this.game.hidden,
+      });
     const focus = self.renderPosition(now);
     const view = this.updateCamera(focus);
     this.terrain?.cull(view);

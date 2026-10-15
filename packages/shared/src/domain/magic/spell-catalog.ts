@@ -36,6 +36,8 @@ export const SPELL_KEYS = [
   'energy-bolt',
   'explosion',
   'mark',
+  'invisibility',
+  'reveal',
   // Séptimo círculo
   'flamestrike',
   'mana-vampire',
@@ -118,6 +120,10 @@ export type SpellEffect =
   | { readonly kind: 'protection' }
   | { readonly kind: 'night-sight' }
   /** Viajes con runas: grabar el lugar, ir hasta él o abrir un portal para todos. */
+  /** Esconde al objetivo un rato (como Esconderse). */
+  | { readonly kind: 'invisibility' }
+  /** Descubre a los escondidos alrededor de un lugar. */
+  | { readonly kind: 'reveal' }
   | { readonly kind: 'mark' }
   | { readonly kind: 'recall' }
   | { readonly kind: 'gate' }
@@ -483,6 +489,26 @@ const LIST: readonly SpellDefinition[] = [
     'rune',
     { kind: 'mark' },
     'Graba en una runa el lugar donde estás, para volver con Recordar o Portal.',
+  ),
+  spell(
+    'invisibility',
+    6,
+    'Invisibilidad',
+    'Velum Umbrae',
+    ['BM', 'NS'],
+    'beneficial',
+    { kind: 'invisibility' },
+    'Esconde a alguien (o a vos) un rato: nadie lo ve hasta que ataca, lanza o habla.',
+  ),
+  spell(
+    'reveal',
+    6,
+    'Revelar',
+    'Lux Veri',
+    ['BM', 'SA'],
+    'location',
+    { kind: 'reveal' },
+    'Descubre a los que están escondidos alrededor del lugar que elijas.',
   ),
 
   spell(

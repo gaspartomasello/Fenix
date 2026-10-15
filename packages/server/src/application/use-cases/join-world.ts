@@ -73,7 +73,9 @@ export class JoinWorld {
   announce(playerId: EntityId): void {
     const player = this.world.get(playerId);
     if (!player) return;
-    const nearby = this.world.mobilesNear(player.position, { except: playerId });
+    const nearby = this.world
+      .mobilesNear(player.position, { except: playerId })
+      .filter((m) => !this.world.isHidden(m));
     const nearbyPlayers = nearby.filter((m) => m instanceof Player);
 
     this.notifier.send(playerId, {
