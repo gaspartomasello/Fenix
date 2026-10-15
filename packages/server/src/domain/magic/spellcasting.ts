@@ -11,6 +11,7 @@ import {
   PROTECTION_ARMOR,
   resistChance,
   rollSpellPower,
+  spellDamageBonus,
   spellDurationMs,
   spellSuccessChance,
   summonDurationMs,
@@ -185,8 +186,9 @@ export interface DelayedSpell {
   readonly spell: SpellKey;
   readonly casterId: EntityId;
   readonly targetId: EntityId;
-  /** Magia del lanzador al lanzarlo (la potencia no cambia si sube después). */
+  /** Magia y bonus de daño del lanzador al lanzarlo (no cambian si suben después). */
   readonly magery: number;
+  readonly damageBonus: number;
   readonly landAt: number;
 }
 
@@ -221,6 +223,8 @@ export function resolveCast(
   player.pendingCast = null;
   const spell = SPELLS[pending.spell];
   const magery = player.skills.get('magery');
+  // Evaluar inteligencia agranda el daño (no las curas ni el maná).
+  const damageBonus = spellDamageBonus(player.skills.get('evaluating-intelligence'));
 
   // Resurrección va a un fantasma; todo lo demás, a alguien vivo.
   const wantsGhost = spell.effect.kind === 'resurrect';
@@ -258,6 +262,7 @@ export function resolveCast(
         casterId: player.id,
         targetId: target.id,
         magery,
+        damageBonus,
         landAt: now + spell.delayMs,
       },
     };
@@ -265,7 +270,7 @@ export function resolveCast(
 
   switch (effect.kind) {
     case 'damage': {
-      const rolled = rollSpellPower(spell, magery, random);
+      const rolled = Math.round(rollSpellPower(spell, magery, random) * damageBonus);
       const amount = resisted ? Math.max(1, Math.round(rolled / 2)) : rolled;
       const killed = target.combat.takeDamage(amount);
       // La criatura se da vuelta contra quien la atacó.
@@ -330,7 +335,7 @@ export function resolveCast(
         if (mobile instanceof Creature && mobile.ownerId === player.id) continue;
         if (mobile instanceof Player && pvpRefusal(player, mobile, world)) continue;
         const held = random() < resistChance(magicResistOf(mobile), spell.circle);
-        const rolled = rollSpellPower(spell, magery, random);
+        const rolled = Math.round(rollSpellPower(spell, magery, random) * damageBonus);
         const amount = held ? Math.max(1, Math.round(rolled / 2)) : rolled;
         const killed = mobile.combat.takeDamage(amount);
         if (!killed) provoke(mobile, player);
@@ -389,7 +394,7 @@ export function landDelayedSpell(
   const spell = SPELLS[delayed.spell];
   if (!target || target.combat.isDead || spell.effect.kind !== 'damage') return null;
   const resisted = random() < resistChance(magicResistOf(target), spell.circle);
-  const rolled = rollSpellPower(spell, delayed.magery, random);
+  const rolled = Math.round(rollSpellPower(spell, delayed.magery, random) * delayed.damageBonus);
   const amount = resisted ? Math.max(1, Math.round(rolled / 2)) : rolled;
   const killed = target.combat.takeDamage(amount);
   // La criatura se da vuelta contra quien la atacó.

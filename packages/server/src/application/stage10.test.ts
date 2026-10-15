@@ -272,6 +272,23 @@ describe('etapa 10: hechizos, efectos, vendas y oficios', () => {
       expect(f.player(bruno).combat.current.hits).toBeLessThan(hits - 40);
     });
 
+    it('Evaluar inteligencia agranda el daño de los hechizos (×1,5 al máximo)', () => {
+      const damageWith = (evalInt: number): number => {
+        const f = createField();
+        const ana = archmage(f, 'Ana');
+        f.player(ana).skills.set('evaluating-intelligence', evalInt);
+        const bruno = f.join('Bruno');
+        const hits = f.player(bruno).combat.current.hits;
+        f.app.handle(ana, { type: 'castSpell', spell: 'energy-bolt', targetId: bruno });
+        f.run(SPELLS['energy-bolt'].castMs + 100);
+        return hits - f.player(bruno).combat.current.hits;
+      };
+      const plain = damageWith(0);
+      const sharp = damageWith(1000);
+      expect(plain).toBeGreaterThan(0);
+      expect(sharp).toBe(Math.round(plain * 1.5));
+    });
+
     it('Invocar demonio trae un demonio que ataca al objetivo de su dueño y se va al terminar', () => {
       const f = createField();
       const ana = archmage(f, 'Ana');
