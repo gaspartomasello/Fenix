@@ -156,6 +156,8 @@ export function startCast(
 export type CastOutcome =
   | { kind: 'fizzled' }
   | { kind: 'lost-target' }
+  /** Salió, pero cae más tarde (Explosión): lo agenda el ciclo del juego. */
+  | { kind: 'delayed'; delayed: DelayedSpell }
   | {
       kind: 'success';
       target: Mobile;
@@ -177,6 +179,16 @@ export type CastOutcome =
       /** El objetivo volvió a la vida. */
       revived?: boolean;
     };
+
+/** Un hechizo lanzado que todavía no cayó. */
+export interface DelayedSpell {
+  readonly spell: SpellKey;
+  readonly casterId: EntityId;
+  readonly targetId: EntityId;
+  /** Magia del lanzador al lanzarlo (la potencia no cambia si sube después). */
+  readonly magery: number;
+  readonly landAt: number;
+}
 
 export interface AreaHit {
   readonly target: Mobile;
@@ -237,6 +249,19 @@ export function resolveCast(
   });
   const duration = (ms: number): number => (resisted ? Math.round(ms / 2) : ms);
   const effect = spell.effect;
+
+  if (effect.kind === 'damage' && spell.delayMs) {
+    return {
+      kind: 'delayed',
+      delayed: {
+        spell: pending.spell,
+        casterId: player.id,
+        targetId: target.id,
+        magery,
+        landAt: now + spell.delayMs,
+      },
+    };
+  }
 
   switch (effect.kind) {
     case 'damage': {
@@ -348,4 +373,26 @@ export function resolveCast(
 /** Un hechizo dañino hace que la criatura se dé vuelta contra quien lo lanzó. */
 function provoke(target: Mobile, caster: Player): void {
   if (target instanceof Creature && !target.combat.isDead) target.combat.targetId = caster.id;
+}
+
+/**
+ * Cae un hechizo demorado: si el objetivo sigue vivo (y en el mundo), recibe
+ * el daño, con su tirada de Resistencia mágica en ese momento. Cayó aunque se
+ * haya alejado: el hechizo ya estaba encima suyo.
+ */
+export function landDelayedSpell(
+  delayed: DelayedSpell,
+  world: World,
+  random: () => number,
+): Extract<CastOutcome, { kind: 'success' }> | null {
+  const target = world.getMobile(delayed.targetId);
+  const spell = SPELLS[delayed.spell];
+  if (!target || target.combat.isDead || spell.effect.kind !== 'damage') return null;
+  const resisted = random() < resistChance(magicResistOf(target), spell.circle);
+  const rolled = rollSpellPower(spell, delayed.magery, random);
+  const amount = resisted ? Math.max(1, Math.round(rolled / 2)) : rolled;
+  const killed = target.combat.takeDamage(amount);
+  // La criatura se da vuelta contra quien la atacó.
+  if (!killed && target instanceof Creature) target.combat.targetId = delayed.casterId;
+  return { kind: 'success', target, amount, killed, resisted, effectsChanged: [] };
 }

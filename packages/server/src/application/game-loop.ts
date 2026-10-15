@@ -9,6 +9,7 @@ import {
   tileDistance,
   wearsMetalArmor,
   type Position,
+  type SpellKey,
 } from '@fenix/shared';
 import { outOfAmmo, trySwing, type SwingResult } from '../domain/combat/combat';
 import { resolveBandage } from '../domain/healing/bandage';
@@ -21,7 +22,12 @@ import { commitAggression } from './use-cases/aggression';
 import { CORPSE_MS, Creature, RESPAWN_MS } from '../domain/creatures/creature';
 import { canMoveTo, chooseStep, updateTarget } from '../domain/creatures/creature-ai';
 import { rollLoot } from '../domain/creatures/loot';
-import { resolveCast } from '../domain/magic/spellcasting';
+import {
+  landDelayedSpell,
+  resolveCast,
+  type CastOutcome,
+  type DelayedSpell,
+} from '../domain/magic/spellcasting';
 import type { Mobile } from '../domain/mobile';
 import { Player } from '../domain/player';
 import type { World } from '../domain/world';
@@ -63,6 +69,24 @@ export class GameLoop {
   tick(now: number): void {
     for (const player of this.world.allPlayers()) this.tickPlayer(player, now);
     for (const creature of this.world.allCreatures()) this.tickCreature(creature, now);
+    this.landDelayedSpells(now);
+  }
+
+  /** Hechizos lanzados que todavía no cayeron (la Explosión). */
+  private delayedSpells: DelayedSpell[] = [];
+
+  private landDelayedSpells(now: number): void {
+    if (this.delayedSpells.length === 0) return;
+    const due = this.delayedSpells.filter((d) => now >= d.landAt);
+    if (due.length === 0) return;
+    this.delayedSpells = this.delayedSpells.filter((d) => now < d.landAt);
+    for (const delayed of due) {
+      // Si el lanzador se fue del mundo, el hechizo se pierde.
+      const caster = this.world.get(delayed.casterId);
+      if (!caster) continue;
+      const outcome = landDelayedSpell(delayed, this.world, this.roll);
+      if (outcome) this.castSucceeded(caster, delayed.spell, outcome, now);
+    }
   }
 
   private readonly roll = (): number => this.random.next();
@@ -201,50 +225,65 @@ export class GameLoop {
       case 'fizzled':
         this.notifier.send(player.id, { type: 'system', text: `${spell.name}: el hechizo falló.` });
         return;
-      case 'success': {
-        const { target, amount, killed, resisted, effectsChanged, moveTo, message } = outcome;
-        if (moveTo) this.teleport(player, moveTo);
-        if (outcome.summoned) this.mobiles.appear(outcome.summoned);
-        if (outcome.revived && target instanceof Player) {
-          this.mobiles.sendVitals(target);
+      case 'delayed':
+        // El maná ya se gastó; cae en un rato y mientras tanto se puede lanzar otro.
+        this.delayedSpells.push(outcome.delayed);
+        this.mobiles.sendVitals(player);
+        return;
+      case 'success':
+        this.castSucceeded(player, spellKey, outcome, now);
+    }
+  }
+
+  /** Lo que pasa cuando un hechizo cae: efecto a la vista, vida, avisos y muertes. */
+  private castSucceeded(
+    player: Player,
+    spellKey: SpellKey,
+    outcome: Extract<CastOutcome, { kind: 'success' }>,
+    now: number,
+  ): void {
+    const spell = SPELLS[spellKey];
+    const { target, amount, killed, resisted, effectsChanged, moveTo, message } = outcome;
+    if (moveTo) this.teleport(player, moveTo);
+    if (outcome.summoned) this.mobiles.appear(outcome.summoned);
+    if (outcome.revived && target instanceof Player) {
+      this.mobiles.sendVitals(target);
+      this.notifier.send(target.id, {
+        type: 'system',
+        text: `¡${player.name} te devolvió la vida!`,
+      });
+    }
+    for (const hit of outcome.areaHits ?? []) {
+      this.mobiles.spellEffect(player, hit.target, spellKey, hit.amount, hit.resisted);
+      this.mobiles.broadcastHealth(hit.target);
+      this.disrupt(hit.target);
+      if (hit.target instanceof Player) {
+        this.mobiles.sendVitals(hit.target);
+        commitAggression(player, hit.target, now, this.notifier, this.social);
+      }
+      if (hit.killed) this.handleKill(player, hit.target, now);
+    }
+    this.mobiles.spellEffect(player, target, spellKey, amount, resisted);
+    this.mobiles.broadcastHealth(target);
+    this.mobiles.sendVitals(player);
+    if (target instanceof Player && target !== player) this.mobiles.sendVitals(target);
+    for (const changed of effectsChanged)
+      if (changed instanceof Player) this.mobiles.sendEffects(changed);
+    if (outcome.itemChanges) this.items.publish(outcome.itemChanges, player.id);
+    if (message) this.notifier.send(player.id, { type: 'system', text: message });
+    if (spell.target === 'harmful') {
+      if (spell.effect.kind === 'damage' && amount > 0) this.disrupt(target);
+      if (target instanceof Player) {
+        if (resisted)
           this.notifier.send(target.id, {
             type: 'system',
-            text: `¡${player.name} te devolvió la vida!`,
+            text: 'Tu Resistencia mágica aguantó parte del hechizo.',
           });
-        }
-        for (const hit of outcome.areaHits ?? []) {
-          this.mobiles.spellEffect(player, hit.target, spellKey, hit.amount, hit.resisted);
-          this.mobiles.broadcastHealth(hit.target);
-          this.disrupt(hit.target);
-          if (hit.target instanceof Player) {
-            this.mobiles.sendVitals(hit.target);
-            commitAggression(player, hit.target, now, this.notifier, this.social);
-          }
-          if (hit.killed) this.handleKill(player, hit.target, now);
-        }
-        this.mobiles.spellEffect(player, target, spellKey, amount, resisted);
-        this.mobiles.broadcastHealth(target);
-        this.mobiles.sendVitals(player);
-        if (target instanceof Player && target !== player) this.mobiles.sendVitals(target);
-        for (const changed of effectsChanged)
-          if (changed instanceof Player) this.mobiles.sendEffects(changed);
-        if (outcome.itemChanges) this.items.publish(outcome.itemChanges, player.id);
-        if (message) this.notifier.send(player.id, { type: 'system', text: message });
-        if (spell.target === 'harmful') {
-          if (spell.effect.kind === 'damage' && amount > 0) this.disrupt(target);
-          if (target instanceof Player) {
-            if (resisted)
-              this.notifier.send(target.id, {
-                type: 'system',
-                text: 'Tu Resistencia mágica aguantó parte del hechizo.',
-              });
-            if (target.skills.tryGain('magic-resist', this.roll))
-              this.mobiles.skillGains([{ player: target, skill: 'magic-resist' }]);
-          }
-        }
-        if (killed) this.handleKill(player, target, now);
+        if (target.skills.tryGain('magic-resist', this.roll))
+          this.mobiles.skillGains([{ player: target, skill: 'magic-resist' }]);
       }
     }
+    if (killed) this.handleKill(player, target, now);
   }
 
   private tickCreature(creature: Creature, now: number): void {

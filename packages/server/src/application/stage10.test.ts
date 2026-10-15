@@ -1,5 +1,6 @@
 import {
   DEFAULT_APPEARANCE,
+  SPELLS,
   Terrain,
   TileMap,
   type EntityId,
@@ -242,6 +243,34 @@ describe('etapa 10: hechizos, efectos, vendas y oficios', () => {
       f.give(id, 'sulfurous-ash', 10);
       return id;
     };
+
+    it('la Explosión gasta el maná al lanzarla y cae después: combinada con la Columna de fuego, caen juntas', () => {
+      const f = createField();
+      const ana = archmage(f, 'Ana');
+      const bruno = f.join('Bruno');
+      const mana = f.player(ana).combat.current.mana;
+      const hits = f.player(bruno).combat.current.hits;
+      f.app.handle(ana, { type: 'castSpell', spell: 'explosion', targetId: bruno });
+      expect(f.player(ana).combat.current.mana).toBe(mana - SPELLS.explosion.mana);
+      // Terminó de lanzarla: todavía no estalló.
+      f.run(SPELLS.explosion.castMs);
+      expect(f.player(bruno).combat.current.hits).toBe(hits);
+      // Enseguida, la Columna de fuego: las dos caen casi al mismo tiempo.
+      f.app.handle(ana, { type: 'castSpell', spell: 'flamestrike', targetId: bruno });
+      const landed = new Map<string, number>();
+      for (let t = 0; t < 3000; t += 100) {
+        f.run(100);
+        for (const { message } of f.notifier.ofType('spellEffect'))
+          if (message.type === 'spellEffect' && !landed.has(message.spell))
+            landed.set(message.spell, t);
+      }
+      const explosion = landed.get('explosion');
+      const flamestrike = landed.get('flamestrike');
+      expect(explosion).toBeDefined();
+      expect(flamestrike).toBeDefined();
+      expect(Math.abs((explosion ?? 0) - (flamestrike ?? 0))).toBeLessThanOrEqual(300);
+      expect(f.player(bruno).combat.current.hits).toBeLessThan(hits - 40);
+    });
 
     it('Invocar demonio trae un demonio que ataca al objetivo de su dueño y se va al terminar', () => {
       const f = createField();

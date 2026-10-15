@@ -144,6 +144,12 @@ export interface SpellDefinition {
   readonly castMs: number;
   readonly effect: SpellEffect;
   readonly description: string;
+  /**
+   * Hechizos que tardan en caer después de lanzados (la Explosión, como en
+   * UO): el maná se gasta al lanzar y el efecto llega `delayMs` después. Mientras
+   * tanto se puede lanzar otro, y con buena mano caen los dos juntos.
+   */
+  readonly delayMs?: number;
 }
 
 type ReagentKey = 'BP' | 'BM' | 'GA' | 'GI' | 'MR' | 'NS' | 'SS' | 'SA';
@@ -158,6 +164,13 @@ const REAGENT: Readonly<Record<ReagentKey, BaseItemKind>> = {
   SA: 'sulfurous-ash',
 };
 
+/**
+ * Cuánto tarda en estallar la Explosión después de lanzada: un poco más que
+ * lo que tarda en lanzarse la Columna de fuego (2,25 s), así lanzándola
+ * enseguida caen las dos juntas.
+ */
+export const EXPLOSION_DELAY_MS = 2500;
+
 function spell(
   key: SpellKey,
   circle: SpellCircle,
@@ -167,8 +180,10 @@ function spell(
   target: SpellTarget,
   effect: SpellEffect,
   description: string,
+  extra: Pick<SpellDefinition, 'delayMs'> = {},
 ): SpellDefinition {
   return {
+    ...extra,
     key,
     name,
     circle,
@@ -439,7 +454,8 @@ const LIST: readonly SpellDefinition[] = [
     ['BM', 'MR'],
     'harmful',
     { kind: 'damage', power: [24, 34] },
-    'El aire estalla alrededor del objetivo.',
+    'El aire estalla alrededor del objetivo, un momento después de lanzarlo.',
+    { delayMs: EXPLOSION_DELAY_MS },
   ),
 
   spell(
