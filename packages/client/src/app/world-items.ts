@@ -1,4 +1,4 @@
-import { describeItem, withinReach, type ItemDestination } from '@fenix/shared';
+import { ITEMS, describeItem, withinReach, type ItemDestination } from '@fenix/shared';
 import type { ClientGame } from '../core/client-game';
 import type { GameRenderer } from '../rendering/game-renderer';
 import { destinationFor, type ItemActions } from '../ui/backpack-window';
@@ -36,7 +36,8 @@ export class WorldItems {
 
   /** ¿Hay un objeto bajo este punto del canvas? */
   hasItemAt(point: { x: number; y: number }): boolean {
-    return this.renderer.groundItemAt(point) !== null;
+    const item = this.renderer.groundItemAt(point);
+    return item !== null && !ITEMS[item.kind].fixed;
   }
 
   destroy(): void {
@@ -46,7 +47,8 @@ export class WorldItems {
   private onPointerDown(e: PointerEvent): void {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     const item = this.renderer.groundItemAt(this.local(e));
-    if (!item) return;
+    // Lo fijo (un portal) no se arrastra: se camina hacia él.
+    if (!item || ITEMS[item.kind].fixed) return;
     e.preventDefault();
     this.tooltip.hide();
     this.drag.begin(

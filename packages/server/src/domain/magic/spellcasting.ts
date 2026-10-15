@@ -23,6 +23,7 @@ import {
 } from '@fenix/shared';
 import { Creature } from '../creatures/creature';
 import { emptyChanges, type ItemChanges } from '../items/items';
+import { freeSpotNear } from '../persistence/saved-character';
 import type { Mobile } from '../mobile';
 import { Npc } from '../npcs/npc';
 import { Player } from '../player';
@@ -34,6 +35,8 @@ export interface CastRequest {
   readonly position?: Position;
   /** Pergamino del que se lee el hechizo (no hace falta libro ni reactivos). */
   readonly scrollId?: EntityId;
+  /** Runa de la mochila (Marcar, Recordar, Portal). */
+  readonly runeId?: EntityId;
 }
 
 export type StartCastResult =
@@ -95,6 +98,7 @@ export function startCast(
 
   let targetId = player.id;
   let position: Position | undefined;
+  let runeId: EntityId | undefined;
   let aggressionAgainst: Player | null = null;
   switch (spell.target) {
     case 'self':
@@ -126,6 +130,24 @@ export function startCast(
       targetId = target.id;
       break;
     }
+    case 'rune': {
+      const rune = request.runeId ? items.get(request.runeId) : undefined;
+      if (
+        !rune ||
+        rune.kind !== 'rune' ||
+        rune.location.type !== 'backpack' ||
+        rune.location.ownerId !== player.id
+      )
+        return fail('Elegí una runa de tu mochila.');
+      if (spell.effect.kind === 'mark') {
+        if (world.map.regionAt(player.position)?.dungeon)
+          return fail('La magia de este lugar no deja marcar runas.');
+      } else if (!rune.mark) {
+        return fail('Esa runa está en blanco: marcala primero con Marcar.');
+      }
+      runeId = rune.id;
+      break;
+    }
     case 'location': {
       if (!request.position) return fail('Elegí un lugar.');
       if (spell.effect.kind === 'summon' && world.summonsOf(player.id).length >= MAX_SUMMONS)
@@ -149,6 +171,7 @@ export function startCast(
     spell: spellKey,
     targetId,
     ...(position ? { position } : {}),
+    ...(runeId ? { runeId } : {}),
     resolveAt: now + spell.castMs,
   };
   return { ok: true, itemChanges: changes, aggressionAgainst };
@@ -177,6 +200,8 @@ export type CastOutcome =
       areaHits?: readonly AreaHit[];
       /** Criatura que apareció invocada. */
       summoned?: Creature;
+      /** Portal abierto: dónde aparece cada puerta (las crea el ciclo del juego). */
+      gate?: { from: Position; to: Position };
       /** El objetivo volvió a la vida. */
       revived?: boolean;
     };
@@ -321,6 +346,10 @@ export function resolveCast(
       provoke(target, player);
       return success({ amount: drained });
     }
+    case 'mark':
+    case 'recall':
+    case 'gate':
+      return travel(player, world, pending.runeId, effect.kind, success);
     case 'teleport': {
       const position = pending.position;
       if (!position || !world.map.isWalkable(position) || world.isOccupied(position, player.id))
@@ -400,4 +429,43 @@ export function landDelayedSpell(
   // La criatura se da vuelta contra quien la atacó.
   if (!killed && target instanceof Creature) target.combat.targetId = delayed.casterId;
   return { kind: 'success', target, amount, killed, resisted, effectsChanged: [] };
+}
+
+/**
+ * Viajes con runas. Marcar graba en la runa el lugar donde está el
+ * lanzador; Recordar lo lleva al lugar de la runa; Portal abre una puerta al
+ * lado suyo y otra en ese lugar, que cualquiera puede cruzar un rato.
+ */
+function travel(
+  player: Player,
+  world: World,
+  runeId: EntityId | undefined,
+  kind: 'mark' | 'recall' | 'gate',
+  success: (extra?: Partial<Extract<CastOutcome, { kind: 'success' }>>) => CastOutcome,
+): CastOutcome {
+  const rune = runeId ? world.items.get(runeId) : undefined;
+  const inBackpack =
+    rune?.location.type === 'backpack' &&
+    rune.location.ownerId === player.id &&
+    rune.kind === 'rune';
+  if (!rune || !inBackpack) return { kind: 'lost-target' };
+  if (kind === 'mark') {
+    const label = world.map.regionAt(player.position)?.name ?? 'Tierras salvajes';
+    rune.mark = { x: player.position.x, y: player.position.y, label };
+    const itemChanges = emptyChanges();
+    itemChanges.inventories.add(player.id);
+    return success({
+      itemChanges,
+      message: `Marcaste la runa: ${label} (${rune.mark.x}, ${rune.mark.y}).`,
+    });
+  }
+  if (!rune.mark) return { kind: 'lost-target' };
+  // Justo en el lugar marcado; si hay alguien parado ahí, al lado.
+  const marked = { x: rune.mark.x, y: rune.mark.y };
+  const destination =
+    world.map.isWalkable(marked) && !world.isOccupied(marked)
+      ? marked
+      : freeSpotNear(world, marked);
+  if (kind === 'recall') return success({ moveTo: destination });
+  return success({ gate: { from: freeSpotNear(world, player.position), to: destination } });
 }

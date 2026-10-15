@@ -149,6 +149,7 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       if (!isSpellKey(data.spell)) break;
       if (data.targetId !== undefined && !isId(data.targetId)) break;
       if (data.scrollId !== undefined && !isId(data.scrollId)) break;
+      if (data.runeId !== undefined && !isId(data.runeId)) break;
       const position = data.position === undefined ? undefined : asPosition(data.position);
       if (position === null) break;
       return {
@@ -159,6 +160,7 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
           ...(isId(data.targetId) ? { targetId: data.targetId } : {}),
           ...(position ? { position } : {}),
           ...(isId(data.scrollId) ? { scrollId: data.scrollId } : {}),
+          ...(isId(data.runeId) ? { runeId: data.runeId } : {}),
         },
       };
     }

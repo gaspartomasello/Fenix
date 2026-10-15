@@ -1,4 +1,5 @@
 import {
+  ITEMS,
   MAX_STACK,
   SKILL_KEYS,
   SKILL_MAX,
@@ -22,6 +23,7 @@ const TEST_SUPPLIES: readonly { kind: ItemKind; amount: number }[] = [
   { kind: 'nightshade', amount: 1000 },
   { kind: 'spiders-silk', amount: 1000 },
   { kind: 'sulfurous-ash', amount: 1000 },
+  { kind: 'rune', amount: 3 },
 ];
 
 /**
@@ -45,7 +47,8 @@ export function equipTestCharacter(player: Player, world: World, ids: () => Enti
     // El oro no entra en una sola pila: se reparte en pilas de hasta MAX_STACK.
     let missing = amount - world.items.countInBackpack(player.id, kind);
     while (missing > 0) {
-      const pile = Math.min(missing, MAX_STACK);
+      // Lo que no se apila (las runas) va de a uno.
+      const pile = ITEMS[kind].stackable ? Math.min(missing, MAX_STACK) : 1;
       if (!world.items.addToBackpack(player.id, kind, pile, ids, changes)) break;
       missing -= pile;
     }

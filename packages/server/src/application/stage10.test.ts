@@ -1,5 +1,7 @@
 import {
   DEFAULT_APPEARANCE,
+  Direction,
+  GATE_DURATION_MS,
   SPELLS,
   Terrain,
   TileMap,
@@ -287,6 +289,55 @@ describe('etapa 10: hechizos, efectos, vendas y oficios', () => {
       const sharp = damageWith(1000);
       expect(plain).toBeGreaterThan(0);
       expect(sharp).toBe(Math.round(plain * 1.5));
+    });
+
+    it('Marcar graba el lugar en la runa, Recordar lleva ahí y Portal abre una puerta para todos', () => {
+      const f = createField();
+      const ana = archmage(f, 'Ana');
+      f.give(ana, 'black-pearl', 10);
+      const rune = f.give(ana, 'rune');
+      const home = { ...f.player(ana).position };
+      const cast = (spell: 'mark' | 'recall' | 'gate-travel'): void => {
+        f.player(ana).combat.restoreMana(100);
+        f.app.handle(ana, { type: 'castSpell', spell, runeId: rune });
+        f.run(SPELLS[spell].castMs + 100);
+      };
+      // Sin marcar, Recordar no sirve.
+      f.app.handle(ana, { type: 'castSpell', spell: 'recall', runeId: rune });
+      expect(f.texts().at(-1)).toContain('está en blanco');
+
+      cast('mark');
+      expect(f.world.items.get(rune)?.mark).toMatchObject(home);
+      expect(f.texts().some((t) => t.startsWith('Marcaste la runa'))).toBe(true);
+      // Lejos (otro lado del campo), Recordar la trae de vuelta.
+      f.world.get(ana)?.teleport({ x: 9, y: 4 });
+      cast('recall');
+      expect(f.player(ana).position).toEqual(home);
+
+      // Portal: una puerta al lado y otra en el lugar marcado; pisarla lleva al otro lado.
+      f.world.get(ana)?.teleport({ x: 9, y: 4 });
+      cast('gate-travel');
+      const gates = f.world.items
+        .all()
+        .filter((i) => i.kind === 'moongate' && i.location.type === 'ground');
+      expect(gates).toHaveLength(2);
+      const bruno = f.join('Bruno');
+      const near = gates.find(
+        (g) => g.location.type === 'ground' && g.location.position.x !== home.x,
+      );
+      const at = near?.location.type === 'ground' ? near.location.position : null;
+      expect(at).not.toBeNull();
+      if (!at) return;
+      // Bruno se para al lado de la puerta y da un paso hacia ella.
+      f.world.get(bruno)?.teleport({ x: at.x - 1, y: at.y });
+      f.clock.advance(1000);
+      f.app.handle(bruno, { type: 'move', direction: Direction.East, mode: 'walk', seq: 1 });
+      expect(f.player(bruno).position).toEqual(home);
+      // Las puertas no se levantan y se cierran solas.
+      f.app.handle(bruno, { type: 'moveItem', itemId: near?.id ?? '', to: { type: 'backpack' } });
+      expect(f.texts().at(-1)).toBe('Eso no se puede mover.');
+      f.run(GATE_DURATION_MS + 200);
+      expect(f.world.items.all().filter((i) => i.kind === 'moongate')).toHaveLength(0);
     });
 
     it('Invocar demonio trae un demonio que ataca al objetivo de su dueño y se va al terminar', () => {

@@ -4,6 +4,7 @@ import type { WorldClock } from '../domain/world-clock';
 import type { World } from '../domain/world';
 import { Corpses } from './corpses';
 import { MountActions } from './use-cases/mount-actions';
+import { Gates } from './gates';
 import { GameLoop } from './game-loop';
 import { ItemNotifications } from './item-notifications';
 import { MobileNotifications } from './mobile-notifications';
@@ -103,7 +104,8 @@ export class GameApplication {
       testCharacters,
     );
     this.leaveWorld = new LeaveWorld(world, notifier);
-    this.movePlayer = new MovePlayer(world, clock, notifier, notifications, this.mobiles);
+    const gates = new Gates(world, ids, notifications);
+    this.movePlayer = new MovePlayer(world, clock, notifier, notifications, this.mobiles, gates);
     this.sendChat = new SendChat(world, notifier);
     this.economy = new EconomyActions(
       world,
@@ -147,6 +149,7 @@ export class GameApplication {
       (player, position) => this.movePlayer.teleport(player, position),
       this.corpses,
       this.mounts,
+      gates,
     );
   }
 
@@ -216,6 +219,7 @@ export class GameApplication {
           ...(message.targetId ? { targetId: message.targetId } : {}),
           ...(message.position ? { position: message.position } : {}),
           ...(message.scrollId ? { scrollId: message.scrollId } : {}),
+          ...(message.runeId ? { runeId: message.runeId } : {}),
         });
         break;
       case 'gather':

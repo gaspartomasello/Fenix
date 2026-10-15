@@ -109,6 +109,8 @@ export interface CastTarget {
   readonly targetId?: EntityId;
   readonly position?: Position;
   readonly scrollId?: EntityId;
+  /** Hechizos de viaje: la runa de la mochila. */
+  readonly runeId?: EntityId;
 }
 
 export interface Inventory {
@@ -358,6 +360,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       ...(target.targetId ? { targetId: target.targetId } : {}),
       ...(target.position ? { position: target.position } : {}),
       ...(target.scrollId ? { scrollId: target.scrollId } : {}),
+      ...(target.runeId ? { runeId: target.runeId } : {}),
     });
   }
 

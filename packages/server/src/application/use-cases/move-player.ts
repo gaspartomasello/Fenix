@@ -11,6 +11,7 @@ import {
 import { freeSpotNear } from '../../domain/persistence/saved-character';
 import type { Player } from '../../domain/player';
 import type { World } from '../../domain/world';
+import type { Gates } from '../gates';
 import type { ItemNotifications } from '../item-notifications';
 import type { MobileNotifications } from '../mobile-notifications';
 import type { Clock, Notifier } from '../ports';
@@ -32,6 +33,8 @@ export class MovePlayer {
     private readonly notifier: Notifier,
     private readonly notifications: ItemNotifications,
     private readonly mobiles: MobileNotifications,
+    /** Portales abiertos con el hechizo Portal. */
+    private readonly gates?: Gates,
   ) {}
 
   execute({ playerId, direction, mode, seq }: MovePlayerInput): void {
@@ -72,7 +75,9 @@ export class MovePlayer {
       this.notifications.groundSnapshotsNear(playerId),
     );
     // Entrada o salida de una mazmorra: al pisar el tile, aparece del otro lado.
-    const destination = this.world.map.teleportAt(player.position);
+    // Lo mismo al pisar un portal abierto con el hechizo.
+    const destination =
+      this.world.map.teleportAt(player.position) ?? this.gates?.destinationFrom(player.position);
     if (destination) this.teleport(player, destination);
   }
 

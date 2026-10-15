@@ -79,6 +79,7 @@ export const VENDORS: Readonly<Record<NpcRole, VendorDefinition>> = {
     greeting: 'Los reactivos más frescos de la isla.',
     sells: offers({
       spellbook: 50,
+      rune: 15,
       'black-pearl': 5,
       'blood-moss': 5,
       garlic: 3,

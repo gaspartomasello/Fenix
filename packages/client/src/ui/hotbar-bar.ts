@@ -28,6 +28,7 @@ const SPELL_TONE: Readonly<Record<SpellTarget, string>> = {
   beneficial: 'hotbar-spell--beneficial',
   self: 'hotbar-spell--self',
   location: 'hotbar-spell--location',
+  rune: 'hotbar-spell--location',
 };
 
 export interface HotbarCallbacks {

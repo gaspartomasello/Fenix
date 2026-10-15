@@ -503,6 +503,26 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
   'blank-scroll'(c) {
     scroll(c, null);
   },
+  // Runa: una piedra lisa con un signo tallado que brilla (violeta).
+  rune(c) {
+    const stone = ramp([150, 140, 160]);
+    c.ellipsoid([0, 1, 0], lying(0.35), [3.4, 1, 4.2], (s) => {
+      const glyph =
+        s.n[1] > 0.7 &&
+        (Math.abs(s.p[0] - s.p[2] * 0.35) < 0.45 || Math.abs(s.p[2] + s.p[0] * 0.5 - 0.6) < 0.4) &&
+        Math.hypot(s.p[0], s.p[2]) < 2.6;
+      return glyph ? [196, 140, 255] : tone(stone, s.light, noise(s.x, s.y) > 0.8 ? -1 : 0);
+    });
+  },
+  // Portal: un óvalo de luz azul parado, con remolinos.
+  moongate(c) {
+    c.ellipsoid([0, 10, 0], axesAlong([0, 0, 1]), [5.2, 10, 1.1], (s) => {
+      const r = Math.hypot(s.p[0] / 5.2, (s.p[1] - 10) / 10);
+      const swirl = Math.sin(Math.atan2(s.p[1] - 10, s.p[0]) * 3 + r * 9);
+      if (r > 0.86) return [210, 236, 255];
+      return tone(ramp([60, 130, 240]), 0.55 + 0.25 * swirl + 0.2 * (1 - r));
+    });
+  },
   'blood-moss'(c) {
     for (let i = 0; i < 8; i++) {
       const at: Vec3 = [(noise(i, 4) - 0.5) * 4.4, 1 + noise(i, 5) * 1.2, (noise(i, 6) - 0.5) * 4];

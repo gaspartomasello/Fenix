@@ -1,8 +1,9 @@
 import { COFFIN_HEIGHT, COFFIN_INTERIOR, COFFIN_WIDTH, drawCoffin } from '@fenix/art';
-import { CORPSE_AREA, ITEM_ICON_SIZE, describeItem } from '@fenix/shared';
+import { CORPSE_AREA, ITEM_ICON_SIZE } from '@fenix/shared';
 import { toCanvas } from '../platform/canvas';
 import type { CorpseContents } from '../core/client-game';
 import { destinationFor, type ItemActions } from './backpack-window';
+import { itemLabel } from './item-label';
 import { el } from './dom';
 import { liftElement, type DragController } from './drag-controller';
 import { GameWindow } from './game-window';
@@ -62,7 +63,7 @@ export class CorpseWindow {
     this.empty.hidden = corpse.items.length > 0;
     this.area.replaceChildren(
       ...corpse.items.map((item) => {
-        const label = describeItem(item.kind, item.amount);
+        const label = itemLabel(item);
         const icon = el(
           'button',
           { className: 'item-icon', attrs: { type: 'button', title: label, 'aria-label': label } },

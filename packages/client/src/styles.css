@@ -1781,3 +1781,13 @@ body {
     height: 132px;
   }
 }
+
+/* ── Etapa 20: viajes ─────────────────────────────────────────────── */
+
+.rune-list {
+  display: grid;
+  gap: 4px;
+  min-width: min(320px, 80vw);
+  max-height: min(50vh, 360px);
+  overflow-y: auto;
+}

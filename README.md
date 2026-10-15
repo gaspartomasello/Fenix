@@ -90,7 +90,8 @@ para viajar a un pueblo o lugar con nombre (`/ir` solo muestra la lista).
 - **L**: libro de hechizos, con una página por círculo. Con el libro abierto, **1 a 8** lanzan
   los hechizos de la página; **Atajo** pone un hechizo en la barra. Los de ataque van al objetivo de combate o piden tocar a alguien; los de ayuda piden
   tocar a alguien o a uno mismo, y Teletransporte un lugar. La **Explosión** estalla 2,5 s
-  después de lanzada: lanzando la Columna de fuego enseguida, caen las dos juntas. **K**:
+  después de lanzada: lanzando la Columna de fuego enseguida, caen las dos juntas. Marcar,
+  Recordar y Portal piden elegir una runa de la mochila. **K**:
   habilidades, por grupo.
 - **Doble clic sobre una venda** y tocar a alguien (o a uno mismo): vendarlo. Sobre un pergamino:
   lanzar su hechizo sin libro ni reactivos. Sobre una poción: tomarla (queda la botella).
@@ -230,3 +231,8 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
 19. ✅ **Evaluar inteligencia**: habilidad nueva de magia que agranda el daño de los hechizos
     (hasta +50 % al máximo), como Anatomía y Tácticas para los guerreros. La Explosión cae 2,5 s
     después de lanzada (para combinarla con la Columna de fuego) y Anatomía suma daño.
+20. ✅ **Viajes**: runas (se compran a la maga) y tres hechizos de UO. **Marcar** (6.º) graba en
+    la runa el lugar donde estás; **Recordar** (4.º) te lleva ahí; **Portal** (7.º) abre dos
+    puertas de luz azul, una al lado tuyo y otra en el lugar de la runa, que cualquiera puede
+    cruzar caminando durante 30 s. Al lanzarlos se elige la runa en una ventana, y cada runa dice
+    qué lugar guarda. No se pueden marcar runas en la mazmorra.

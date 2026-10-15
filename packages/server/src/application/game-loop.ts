@@ -32,6 +32,7 @@ import type { Mobile } from '../domain/mobile';
 import { Player } from '../domain/player';
 import type { World } from '../domain/world';
 import { EMPTY_CORPSE_MS, type Corpses } from './corpses';
+import type { Gates } from './gates';
 import type { MountActions } from './use-cases/mount-actions';
 import type { ItemNotifications } from './item-notifications';
 import type { MobileNotifications } from './mobile-notifications';
@@ -62,6 +63,7 @@ export class GameLoop {
     private readonly teleport: (player: Player, position: Position) => void,
     private readonly corpses: Corpses,
     private readonly mounts: MountActions,
+    private readonly gates: Gates,
   ) {
     this.shrines = world.map.statics.filter((s) => s.kind === 'shrine');
   }
@@ -70,6 +72,7 @@ export class GameLoop {
     for (const player of this.world.allPlayers()) this.tickPlayer(player, now);
     for (const creature of this.world.allCreatures()) this.tickCreature(creature, now);
     this.landDelayedSpells(now);
+    this.gates.tick(now);
   }
 
   /** Hechizos lanzados que todavía no cayeron (la Explosión). */
@@ -253,6 +256,7 @@ export class GameLoop {
     const spell = SPELLS[spellKey];
     const { target, amount, killed, resisted, effectsChanged, moveTo, message } = outcome;
     if (moveTo) this.teleport(player, moveTo);
+    if (outcome.gate) this.gates.open(outcome.gate.from, outcome.gate.to, now, player.id);
     if (outcome.summoned) this.mobiles.appear(outcome.summoned);
     if (outcome.revived && target instanceof Player) {
       this.mobiles.sendVitals(target);

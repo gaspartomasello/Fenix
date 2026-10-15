@@ -44,6 +44,8 @@ export interface PendingCast {
   readonly targetId: EntityId;
   /** A qué lugar va (teletransporte). */
   readonly position?: Position;
+  /** Con qué runa (viajes). */
+  readonly runeId?: EntityId;
   readonly resolveAt: number;
 }
 

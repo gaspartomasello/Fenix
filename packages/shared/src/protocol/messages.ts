@@ -50,6 +50,16 @@ export interface ItemSnapshot {
   readonly id: EntityId;
   readonly kind: ItemKind;
   readonly amount: number;
+  /** Runa marcada: el lugar que guarda. */
+  readonly mark?: RuneMark;
+}
+
+/** Lugar grabado en una runa con Marcar. */
+export interface RuneMark {
+  readonly x: number;
+  readonly y: number;
+  /** Zona donde se marcó ("Puerto Ceniza", "Tierras salvajes"). */
+  readonly label: string;
 }
 
 export interface GroundItemSnapshot extends ItemSnapshot {
@@ -140,6 +150,8 @@ export interface CastSpellRequest {
   readonly targetId?: EntityId;
   readonly position?: Position;
   readonly scrollId?: EntityId;
+  /** Hechizos de viaje: la runa de la mochila. */
+  readonly runeId?: EntityId;
 }
 
 /** Usar un objeto sobre alguien (por ejemplo, vendarlo). */
