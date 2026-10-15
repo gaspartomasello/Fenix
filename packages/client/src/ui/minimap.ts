@@ -12,7 +12,17 @@ const STORAGE_KEY = 'fenix.minimapa';
 /** Color de cada objeto fijo en el minimapa (los que no figuran no se dibujan). */
 function staticColor(kind: StaticKind): string | null {
   if (kind === 'mountain') return '#7d756b';
-  if (kind === 'rock' || kind === 'rubble' || kind === 'gravestone') return '#8d8a84';
+  if (
+    kind === 'rock' ||
+    kind === 'rubble' ||
+    kind === 'gravestone' ||
+    kind === 'boulder' ||
+    kind === 'mossy-rock'
+  )
+    return '#8d8a84';
+  if (kind === 'column' || kind === 'fallen-column') return '#d8d2c4';
+  if (kind === 'palm' || kind === 'acacia') return '#4f7a34';
+  if (kind === 'birch') return '#7c9a4a';
   if (kind.startsWith('wall') || kind === 'lighthouse') return '#c9c2b4';
   if (kind === 'tent') return '#c49a62';
   if (kind === 'lamp' || kind === 'campfire' || kind === 'brazier' || kind === 'shrine')

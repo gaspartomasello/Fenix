@@ -9,7 +9,21 @@ import { CHUNK_SIZE, variantFor } from './terrain-layer';
 
 /** Objetos que pueden tapar al personaje y se vuelven translúcidos. */
 const OCCLUDER_ALPHA = 0.4;
-const LOW_STATICS = new Set(['flowers', 'bush']);
+const LOW_STATICS = new Set([
+  'flowers',
+  'bush',
+  'tall-grass',
+  'weeds',
+  'fern',
+  'mushrooms',
+  'wildflowers',
+  'peyote',
+  'dry-shrub',
+  'pebbles',
+  'jungle-plant',
+  'tundra-shrub',
+  'fallen-column',
+]);
 
 /** Medidas del sprite en pantalla respecto de su punto de apoyo. */
 const SPRITE_LEFT = STATIC_GROUND.x * ART_SCALE;

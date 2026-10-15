@@ -3,6 +3,7 @@ import {
   CRAFT_RANGE,
   CRAFT_TOOLS,
   FISHING,
+  isWater,
   FISHING_RANGE,
   SKILL_NAMES,
   STATION_NAMES,
@@ -59,8 +60,7 @@ export function gather(
 
   let source: ResourceSource | undefined;
   if (tool.kind === FISHING.tool) {
-    if (world.map.terrainAt(position) !== FISHING.terrain)
-      return fail('Ahí no hay agua para pescar.');
+    if (!isWater(world.map.terrainAt(position))) return fail('Ahí no hay agua para pescar.');
     if (tileDistance(player.position, position) > FISHING_RANGE)
       return fail('El agua está muy lejos.');
     source = FISHING;

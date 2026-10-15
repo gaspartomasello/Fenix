@@ -3,6 +3,7 @@ import type { VolumeCanvas } from './volume';
 import {
   add,
   axesAlong,
+  solid,
   clipping,
   cross,
   noise,
@@ -387,7 +388,18 @@ function foliage(
 // ── Especies ────────────────────────────────────────────────────────
 
 export type TreeSpecies =
-  'oak' | 'pine' | 'snow-pine' | 'ceibo' | 'gomero' | 'willow' | 'poplar' | 'dead-tree';
+  | 'oak'
+  | 'pine'
+  | 'snow-pine'
+  | 'ceibo'
+  | 'gomero'
+  | 'willow'
+  | 'poplar'
+  | 'dead-tree'
+  | 'palm'
+  | 'jungle-tree'
+  | 'birch'
+  | 'acacia';
 
 /** Sombra en el suelo de cada especie (radios en pixeles de pantalla). */
 export const TREE_SHADOWS: Readonly<Record<TreeSpecies, readonly [number, number]>> = {
@@ -399,6 +411,10 @@ export const TREE_SHADOWS: Readonly<Record<TreeSpecies, readonly [number, number
   poplar: [15, 6],
   'dead-tree': [24, 10],
   'snow-pine': [26, 11],
+  palm: [26, 10],
+  'jungle-tree': [50, 20],
+  birch: [22, 9],
+  acacia: [46, 15],
 };
 
 export function drawTree(c: VolumeCanvas, species: TreeSpecies, variant: number): void {
@@ -934,6 +950,236 @@ function deadTree(c: VolumeCanvas, variant: number): void {
   c.decal(add(hole.p, scale(normalize([1, 0, 1]), hole.r)), [1, 0, 1], dark, 2, 3);
 }
 
+const PALM_BARK: Material = (s) =>
+  tone(ramp([150, 122, 86]), s.light, Math.floor(s.p[1] / 2.2) % 2 === 0 ? 0 : -1);
+const PALM_FROND = ramp([70, 132, 52]);
+const COCONUT = ramp([112, 82, 44]);
+
+/**
+ * Palmera: tronco fino anillado que se curva al subir y, arriba, un abanico de
+ * hojas largas que se arquean y caen, con cocos bajo la corona.
+ */
+function palm(c: VolumeCanvas, variant: number): void {
+  const t = startTree(c, 811, variant);
+  const s = t.size;
+  const lean = horizontal([t.rand() - 0.5, 0, t.rand() - 0.5]);
+  const trunk = grow(
+    t,
+    [0, 0, 0],
+    UP,
+    78 * s,
+    3.2 * s,
+    2.2 * s,
+    { wiggle: 0.02, pull: (_p, _d, k) => scale(lean, 0.05 * (1 - k)), segment: 6 },
+    PALM_BARK,
+  );
+  const top = along(trunk, 1).p;
+  const frond = leaves(
+    PALM_FROND,
+    { center: top, width: 30 * s, height: 12 * s },
+    variant * 3,
+    0.3,
+    0.8,
+  );
+  const fronds = 9;
+  for (let i = 0; i < fronds; i++) {
+    const azimuth = (i / fronds) * Math.PI * 2 + t.rand() * 0.4;
+    const out = [Math.cos(azimuth), 0, Math.sin(azimuth)] as const;
+    let p: Vec3 = top;
+    let d: Vec3 = normalize([out[0], 0.9 - t.rand() * 0.4, out[2]]);
+    const length = (26 + t.rand() * 8) * s;
+    const steps = 9;
+    for (let k = 1; k <= steps; k++) {
+      d = normalize(add(d, [0, -0.17, 0]));
+      const q = add(p, scale(d, length / steps));
+      const w = (3.4 - (k / steps) * 2.4) * s;
+      c.limb(p, q, 0.5, 0.35, solid(ramp([96, 120, 60])));
+      c.ellipsoid(q, axesAlong([d[0], d[1], d[2]]), [w * 0.9, 0.5, w], frond);
+      p = q;
+    }
+  }
+  for (let i = 0; i < 4; i++) {
+    const a = i * 1.7 + variant;
+    c.sphere(add(top, [Math.cos(a) * 2.4, -2.5, Math.sin(a) * 2.4]), 1.8 * s, solid(COCONUT, 0));
+  }
+}
+
+const JUNGLE_BARK = barkOf(ramp([118, 104, 82]), creases, 0.74);
+const JUNGLE_LEAF = ramp([34, 92, 40]);
+const LIANA = solid(ramp([70, 96, 44]));
+
+/**
+ * Árbol de selva (como una ceiba): tronco alto y recto con raíces tablares
+ * que se abren en la base, copa ancha en lo alto, en pisos, y lianas que
+ * cuelgan hasta el suelo.
+ */
+function jungleTree(c: VolumeCanvas, variant: number): void {
+  const t = startTree(c, 907, variant);
+  const s = t.size;
+  // Raíces tablares: aletas finas y altas.
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2 + t.rand() * 0.5;
+    const out: Vec3 = [Math.cos(a), 0, Math.sin(a)];
+    c.polygon(
+      [
+        [0, 16 * s, 0],
+        add(scale(out, 3), [0, 18 * s, 0]),
+        add(scale(out, 13 * s), [0, 0, 0]),
+        add(scale(out, 3), [0, 0, 0]),
+      ],
+      JUNGLE_BARK,
+    );
+  }
+  const trunk = grow(
+    t,
+    [0, 0, 0],
+    UP,
+    66 * s,
+    5.4 * s,
+    3.4 * s,
+    { wiggle: 0.04, segment: 8 },
+    JUNGLE_BARK,
+  );
+  const plan: Ramification = {
+    levels: 3,
+    fork: () => 2,
+    lateral: (_level, rand) => (rand() < 0.5 ? 1 : 0),
+    angle: (level) => [0, 0.9, 0.6, 0.6][level] ?? 0.6,
+    ratio: () => 0.62,
+    bend: () => ({ wiggle: 0.2, pull: (p) => add(scale(horizontal(p), 0.08), [0, 0.03, 0]) }),
+    twig: 0.6,
+  };
+  const tips: Tip[] = [];
+  let azimuth = t.rand() * Math.PI * 2;
+  for (let i = 0; i < 5; i++) {
+    azimuth += (Math.PI * 2) / 5 + (t.rand() - 0.5) * 0.5;
+    const from = along(trunk, 0.82 + t.rand() * 0.18);
+    ramify(
+      t,
+      plan,
+      from.p,
+      turn(UP, 1.15 + t.rand() * 0.2, azimuth),
+      22 * s,
+      2.8 * s,
+      1,
+      JUNGLE_BARK,
+      tips,
+    );
+  }
+  foliage(t, tips, JUNGLE_LEAF, 4.4 * s, { seed: variant * 17, flat: 0.55, perTip: 3 });
+  // Lianas que bajan desde la copa.
+  for (let i = 0; i < 6; i++) {
+    const tip = tips[Math.floor(t.rand() * tips.length)];
+    if (!tip) continue;
+    const bottom: Vec3 = [tip.p[0] * 0.9, 6 + t.rand() * 20, tip.p[2] * 0.9];
+    c.limb(tip.p, bottom, 0.45, 0.3, LIANA);
+  }
+}
+
+const BIRCH_BARK: Material = (s) => {
+  const mark = noise(Math.floor(s.p[1] / 2.5), Math.floor((s.p[0] + s.p[2]) / 2), 7);
+  return mark > 0.8 ? tone(ramp([60, 56, 52]), s.light) : tone(ramp([228, 224, 214]), s.light);
+};
+const BIRCH_LEAF = ramp([122, 160, 70]);
+
+/** Abedul: tronco blanco y fino con marcas negras, ramas finas y copa liviana y clara. */
+function birch(c: VolumeCanvas, variant: number): void {
+  const t = startTree(c, 1009, variant);
+  const s = t.size;
+  const trunk = grow(
+    t,
+    [0, 0, 0],
+    turn(UP, 0.06, t.rand() * Math.PI * 2),
+    84 * s,
+    3 * s,
+    1,
+    { wiggle: 0.06, segment: 6 },
+    BIRCH_BARK,
+  );
+  const plan: Ramification = {
+    levels: 3,
+    fork: () => 2,
+    lateral: (_l, rand) => (rand() < 0.5 ? 1 : 0),
+    angle: () => 0.5,
+    ratio: () => 0.6,
+    bend: () => ({ wiggle: 0.18, pull: () => [0, -0.02, 0] }),
+    twig: 0.3,
+  };
+  const tips: Tip[] = [];
+  for (let y = 0.35; y < 1; y += 0.12) {
+    const from = along(trunk, y);
+    ramify(
+      t,
+      plan,
+      from.p,
+      turn(UP, 0.7, t.rand() * Math.PI * 2),
+      14 * s * (1.2 - y * 0.6),
+      1.1 * s,
+      1,
+      BIRCH_BARK,
+      tips,
+    );
+  }
+  foliage(t, tips, BIRCH_LEAF, 3 * s, { seed: variant * 7, ragged: 0.5, perTip: 3 });
+}
+
+const ACACIA_BARK = barkOf(ramp([104, 82, 62]), furrows);
+const ACACIA_LEAF = ramp([96, 128, 54]);
+
+/**
+ * Acacia de sabana: tronco que se divide pronto en ramas largas e inclinadas
+ * y una copa plana como un paraguas, mucho más ancha que alta.
+ */
+function acacia(c: VolumeCanvas, variant: number): void {
+  const t = startTree(c, 1103, variant);
+  const s = t.size;
+  const crownY = 60 * s;
+  const trunk = grow(
+    t,
+    [0, 0, 0],
+    turn(UP, 0.12, t.rand() * 6),
+    26 * s,
+    3.4 * s,
+    2.6 * s,
+    { wiggle: 0.15 },
+    ACACIA_BARK,
+  );
+  const base = along(trunk, 1).p;
+  const crown: CrownShape = { center: [0, crownY, 0], width: 40 * s, height: 4 * s };
+  const leaf = leaves(ACACIA_LEAF, crown, variant * 5, 0.35, 1);
+  // Ramas largas que suben inclinadas hasta la altura de la copa y se abren.
+  let azimuth = t.rand() * Math.PI * 2;
+  const ends: Vec3[] = [];
+  for (let i = 0; i < 4; i++) {
+    azimuth += (Math.PI * 2) / 4 + (t.rand() - 0.5) * 0.6;
+    const reach = (16 + t.rand() * 10) * s;
+    const end: Vec3 = [Math.cos(azimuth) * reach, crownY - 2 * s, Math.sin(azimuth) * reach];
+    const mid: Vec3 = [end[0] * 0.45, base[1] + (end[1] - base[1]) * 0.6, end[2] * 0.45];
+    c.limb(base, mid, 2.2 * s, 1.6 * s, ACACIA_BARK);
+    c.limb(mid, end, 1.6 * s, 0.8 * s, ACACIA_BARK);
+    ends.push(end);
+    for (let k = 0; k < 2; k++) {
+      const a = azimuth + (k ? 0.7 : -0.7);
+      const twig: Vec3 = [end[0] + Math.cos(a) * 8 * s, crownY - 1, end[2] + Math.sin(a) * 8 * s];
+      c.limb(end, twig, 0.8 * s, 0.4 * s, ACACIA_BARK);
+      ends.push(twig);
+    }
+  }
+  // La copa: un techo plano y ancho de matas aplastadas.
+  for (const e of ends) {
+    for (let k = 0; k < 3; k++) {
+      const r = (7 + t.rand() * 4) * s;
+      const p: Vec3 = [
+        e[0] + (t.rand() - 0.5) * 8 * s,
+        crownY + 1 + t.rand() * 2,
+        e[2] + (t.rand() - 0.5) * 8 * s,
+      ];
+      c.ellipsoid(p, FLAT, [r, r * 0.22, r], leaf);
+    }
+  }
+  c.ellipsoid([0, crownY + 2, 0], FLAT, [16 * s, 2.4 * s, 16 * s], leaf);
+}
+
 const TREES: Readonly<Record<TreeSpecies, (c: VolumeCanvas, variant: number) => void>> = {
   oak,
   pine,
@@ -943,4 +1189,8 @@ const TREES: Readonly<Record<TreeSpecies, (c: VolumeCanvas, variant: number) => 
   poplar,
   'dead-tree': deadTree,
   'snow-pine': (c, variant) => pine(c, variant, true),
+  palm,
+  'jungle-tree': jungleTree,
+  birch,
+  acacia,
 };

@@ -3,10 +3,10 @@
   "name": "objetos",
   "tilewidth": 136,
   "tileheight": 168,
-  "tilecount": 39,
-  "columns": 39,
+  "tilecount": 57,
+  "columns": 57,
   "image": "objetos.png",
-  "imagewidth": 5304,
+  "imagewidth": 7752,
   "imageheight": 168,
   "tileoffset": {
     "x": -46,
@@ -400,6 +400,186 @@
           "name": "static",
           "type": "string",
           "value": "snow-pine"
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "palm"
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "jungle-tree"
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "birch"
+        }
+      ]
+    },
+    {
+      "id": 42,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "acacia"
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "tall-grass"
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "weeds"
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "fern"
+        }
+      ]
+    },
+    {
+      "id": 46,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "mushrooms"
+        }
+      ]
+    },
+    {
+      "id": 47,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "wildflowers"
+        }
+      ]
+    },
+    {
+      "id": 48,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "peyote"
+        }
+      ]
+    },
+    {
+      "id": 49,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "dry-shrub"
+        }
+      ]
+    },
+    {
+      "id": 50,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "pebbles"
+        }
+      ]
+    },
+    {
+      "id": 51,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "boulder"
+        }
+      ]
+    },
+    {
+      "id": 52,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "mossy-rock"
+        }
+      ]
+    },
+    {
+      "id": 53,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "jungle-plant"
+        }
+      ]
+    },
+    {
+      "id": 54,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "tundra-shrub"
+        }
+      ]
+    },
+    {
+      "id": 55,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "column"
+        }
+      ]
+    },
+    {
+      "id": 56,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "fallen-column"
         }
       ]
     }

@@ -711,6 +711,319 @@ const reeds: Model = (c, variant) => {
   }
 };
 
+// ── Plantas y piedras por bioma ─────────────────────────────────────
+
+/** Matas de hojas finas que se arquean (pastizal, yuyos): `colors` da el verde de cada mata. */
+function blades(
+  c: VolumeCanvas,
+  variant: number,
+  count: number,
+  spread: number,
+  height: [number, number],
+  colors: readonly Rgb[],
+  seed: number,
+): void {
+  for (let i = 0; i < count; i++) {
+    const x = (noise(i, variant, seed) - 0.5) * spread;
+    const z = (noise(i, variant, seed + 1) - 0.5) * spread;
+    const h = height[0] + noise(i, variant, seed + 2) * (height[1] - height[0]);
+    const bend = (noise(i, variant, seed + 3) - 0.5) * h * 0.7;
+    const color = colors[Math.floor(noise(i, variant, seed + 4) * colors.length)] ?? [90, 130, 60];
+    const mid: Vec3 = [x + bend * 0.4, h * 0.6, z + bend * 0.2];
+    const tip: Vec3 = [x + bend, h, z + bend * 0.5];
+    const material = solid(ramp(color));
+    c.limb([x, 0, z], mid, 0.6, 0.45, material);
+    c.limb(mid, tip, 0.45, 0.15, material);
+  }
+}
+
+/** Pastizal: pasto alto en mata, verde o pajizo según la variante. */
+const tallGrass: Model = (c, variant) => {
+  const palettes: Rgb[][] = [
+    [
+      [86, 132, 56],
+      [104, 148, 62],
+      [70, 112, 46],
+    ],
+    [
+      [168, 150, 86],
+      [190, 170, 100],
+      [140, 132, 70],
+    ],
+    [
+      [112, 140, 60],
+      [150, 156, 78],
+      [92, 124, 52],
+    ],
+  ];
+  blades(c, variant, 34, 26, [14, 28], palettes[variant] ?? palettes[0] ?? [], 61);
+};
+
+/** Yuyos: hierbas de hoja ancha, una espiga y alguna flor chica. */
+const weeds: Model = (c, variant) => {
+  const leaf = ramp([80, 126, 58]);
+  for (let i = 0; i < 7; i++) {
+    const a = noise(i, variant, 71) * Math.PI * 2;
+    const r = noise(i, variant, 72) * 9;
+    const base: Vec3 = [Math.cos(a) * r, 0, Math.sin(a) * r];
+    const tip: Vec3 = [
+      base[0] + Math.cos(a) * 5,
+      3 + noise(i, variant, 73) * 4,
+      base[2] + Math.sin(a) * 5,
+    ];
+    c.ellipsoid(
+      [(base[0] + tip[0]) / 2, tip[1] * 0.6, (base[2] + tip[2]) / 2],
+      axesAlong([Math.cos(a), 0.5, Math.sin(a)]),
+      [3.6, 0.5, 1.6],
+      solid(leaf, noise(i, variant, 74) > 0.5 ? 0 : -1),
+    );
+  }
+  blades(c, variant, 8, 14, [12, 20], [[98, 120, 58]], 75);
+  const flower: Rgb =
+    variant === 0 ? [236, 220, 90] : variant === 1 ? [240, 240, 236] : [190, 120, 210];
+  for (let i = 0; i < 3; i++)
+    c.sphere(
+      [(noise(i, variant, 76) - 0.5) * 12, 14 + i * 2, (noise(i, variant, 77) - 0.5) * 12],
+      1.6,
+      solid(ramp(flower), 1),
+    );
+};
+
+/** Helecho: frondas que salen del centro y se arquean, con folíolos. */
+const fern: Model = (c, variant) => {
+  const leaf = ramp(variant === 2 ? [60, 110, 50] : [72, 132, 58]);
+  for (let i = 0; i < 9; i++) {
+    const a = (i / 9) * Math.PI * 2 + variant;
+    const out: Vec3 = [Math.cos(a), 0, Math.sin(a)];
+    let p: Vec3 = [0, 1, 0];
+    let d: Vec3 = normalize3([out[0], 1.4, out[2]]);
+    for (let k = 0; k < 6; k++) {
+      d = normalize3([d[0], d[1] - 0.32, d[2]]);
+      const q: Vec3 = [p[0] + d[0] * 3.8, p[1] + d[1] * 3.8, p[2] + d[2] * 3.8];
+      c.limb(p, q, 0.35, 0.25, solid(leaf, -1));
+      c.ellipsoid(
+        q,
+        axesAlong([-d[2], 0.2, d[0]]),
+        [4.4 - k * 0.55, 0.5, 1.4],
+        solid(leaf, k % 2 === 0 ? 0 : 1),
+      );
+      p = q;
+    }
+  }
+};
+
+/** Hongos: un grupo de sombreritos sobre tallos claros (rojos con pintas, o pardos). */
+const mushrooms: Model = (c, variant) => {
+  const capColor: Rgb =
+    variant === 0 ? [196, 46, 40] : variant === 1 ? [150, 106, 66] : [216, 180, 120];
+  const stem = solid(ramp([226, 216, 196]));
+  for (let i = 0; i < 6; i++) {
+    const x = (noise(i, variant, 81) - 0.5) * 16;
+    const z = (noise(i, variant, 82) - 0.5) * 16;
+    const h = 3 + noise(i, variant, 83) * 5;
+    const r = 2.2 + noise(i, variant, 84) * 2.6;
+    c.limb([x, 0, z], [x, h, z], r * 0.4, r * 0.35, stem);
+    c.ellipsoid([x, h, z], UP, [r, r * 0.55, r], (s) => {
+      if (
+        variant === 0 &&
+        s.n[1] > 0.4 &&
+        noise(Math.floor(s.p[0] * 2), Math.floor(s.p[2] * 2), i) > 0.82
+      )
+        return [244, 240, 232];
+      return tone(ramp(capColor), s.light);
+    });
+  }
+};
+
+/** Florcitas: flores chiquitas y bajas, salpicadas en el pasto. */
+const wildflowers: Model = (c, variant) => {
+  const colors: Rgb[][] = [
+    [
+      [246, 246, 240],
+      [250, 220, 80],
+    ],
+    [
+      [176, 120, 230],
+      [120, 150, 240],
+    ],
+    [
+      [240, 120, 90],
+      [250, 200, 70],
+    ],
+  ];
+  const palette = colors[variant] ?? colors[0] ?? [];
+  const stem = solid(ramp([70, 120, 50]));
+  for (let i = 0; i < 18; i++) {
+    const x = (noise(i, variant, 91) - 0.5) * 24;
+    const z = (noise(i, variant, 92) - 0.5) * 24;
+    const h = 2.5 + noise(i, variant, 93) * 3.5;
+    c.limb([x, 0, z], [x, h, z], 0.3, 0.3, stem);
+    const color = palette[i % palette.length] ?? [255, 255, 255];
+    c.sphere([x, h + 0.6, z], 1.4, solid(ramp(color), 1));
+  }
+};
+
+/** Peyote: cactus redondos y bajos, con gajos y una flor rosada arriba. */
+const peyote: Model = (c, variant) => {
+  const green = ramp([108, 140, 112]);
+  const ribbed =
+    (cx: number, cz: number): Material =>
+    (s) => {
+      const rib = Math.floor((Math.atan2(s.p[2] - cz, s.p[0] - cx) + Math.PI) * 1.6);
+      return tone(green, s.light, rib % 2 === 0 ? 0 : -1);
+    };
+  const buttons = 2 + variant;
+  for (let i = 0; i < buttons; i++) {
+    const x = (noise(i, variant, 101) - 0.5) * 16;
+    const z = (noise(i, variant, 102) - 0.5) * 16;
+    const r = 4 + noise(i, variant, 103) * 2.4;
+    c.ellipsoid([x, r * 0.45, z], UP, [r, r * 0.6, r], ribbed(x, z));
+    if (i === 0 || noise(i, variant, 104) > 0.5)
+      c.sphere([x, r * 0.95, z], 1.6, solid(ramp([234, 150, 190]), 1));
+  }
+};
+
+/** Matorral seco: ramitas grises y torcidas con pocas hojas pardas. */
+const dryShrub: Model = (c, variant) => {
+  const twig = solid(ramp([138, 120, 98]));
+  for (let i = 0; i < 12; i++) {
+    const a = noise(i, variant, 111) * Math.PI * 2;
+    const h = 10 + noise(i, variant, 112) * 12;
+    const r = 6 + noise(i, variant, 113) * 9;
+    const mid: Vec3 = [Math.cos(a) * r * 0.5, h * 0.6, Math.sin(a) * r * 0.5];
+    const tip: Vec3 = [Math.cos(a + 0.4) * r, h, Math.sin(a + 0.4) * r];
+    c.limb([0, 0, 0], mid, 0.7, 0.45, twig);
+    c.limb(mid, tip, 0.45, 0.2, twig);
+    if (i % 3 === 0) c.sphere(tip, 1.2, solid(ramp([150, 128, 72])));
+  }
+};
+
+/** Piedritas sueltas en el suelo. */
+const pebbles: Model = (c, variant) => {
+  for (let i = 0; i < 9; i++) {
+    const x = (noise(i, variant, 121) - 0.5) * 22;
+    const z = (noise(i, variant, 122) - 0.5) * 22;
+    const r = 1.4 + noise(i, variant, 123) * 2.4;
+    c.ellipsoid(
+      [x, r * 0.4, z],
+      axesAlong([1, 0, noise(i, variant, 124) - 0.5]),
+      [r * 1.3, r * 0.7, r],
+      rocky(STONE, i + variant),
+    );
+  }
+};
+
+/** Peñasco: una roca grande que no se puede pasar (granito, arenisca o piedra oscura). */
+const boulder: Model = (c, variant) => {
+  const colors =
+    [ramp([150, 146, 140]), ramp([196, 150, 104]), ramp([104, 100, 98])][variant] ?? STONE;
+  const material = rocky(colors, variant * 17 + 3);
+  c.ellipsoid([0, 10, 0], axesAlong([1, 0.1, 0.5]), [15, 12, 12], material);
+  c.ellipsoid([-9, 6, 7], axesAlong([0.4, 0.2, 1]), [8, 7, 8], material);
+  c.ellipsoid([9, 4, -6], axesAlong([1, 0, 0.3]), [7, 5, 6], material);
+};
+
+/** Piedra con musgo: el musgo crece arriba y del lado de la sombra. */
+const mossyRock: Model = (c, variant) => {
+  const stone = rocky(STONE, variant * 13 + 5);
+  const moss = ramp([82, 128, 56]);
+  const material: Material = (s) => {
+    const top =
+      s.n[1] + noise(Math.floor(s.p[0] / 2), Math.floor(s.p[1] / 2), Math.floor(s.p[2] / 2)) * 0.5;
+    return top > 0.75 ? tone(moss, s.light) : stone(s);
+  };
+  c.ellipsoid([0, 6, 0], axesAlong([1, 0.15, 0.3 + variant * 0.2]), [11, 8, 9], material);
+  if (variant !== 2) c.ellipsoid([7, 3, 5], axesAlong([0.3, 0.1, 1]), [5, 4, 5], material);
+};
+
+/** Planta de selva: hojas enormes y anchas que se abren desde el suelo. */
+const junglePlant: Model = (c, variant) => {
+  const leaf = ramp(variant === 1 ? [40, 96, 46] : [54, 112, 50]);
+  const vein = ramp([120, 160, 84]);
+  const leaves = 7;
+  for (let i = 0; i < leaves; i++) {
+    const a = (i / leaves) * Math.PI * 2 + variant * 0.7;
+    // Hojas largas y paradas que se arquean hacia afuera (no platos vistos desde arriba).
+    const rise = 0.9 + noise(i, variant, 132) * 0.8;
+    const d = normalize3([Math.cos(a), rise, Math.sin(a)]);
+    const stemTop: Vec3 = [d[0] * 6, 7 + noise(i, variant, 131) * 7, d[2] * 6];
+    c.limb([0, 0, 0], stemTop, 0.6, 0.4, solid(ramp([70, 110, 46])));
+    const length = 18 + noise(i, variant, 133) * 8;
+    const center: Vec3 = [
+      stemTop[0] + d[0] * length * 0.55,
+      stemTop[1] + d[1] * length * 0.45,
+      stemTop[2] + d[2] * length * 0.55,
+    ];
+    c.ellipsoid(center, axesAlong([d[0], d[1], d[2]]), [length * 0.55, 0.6, 4], (s) => {
+      const across = Math.abs((s.p[0] - center[0]) * -d[2] + (s.p[2] - center[2]) * d[0]);
+      return across < 0.4 ? tone(vein, s.light) : tone(leaf, s.light);
+    });
+  }
+};
+
+/** Mata de tundra: arbusto bajo y apretado, rojizo y verde oscuro, con escarcha. */
+const tundraShrub: Model = (c, variant) => {
+  const colors = [ramp([126, 74, 58]), ramp([82, 96, 60]), ramp([150, 104, 60])];
+  for (let i = 0; i < 8; i++) {
+    const x = (noise(i, variant, 141) - 0.5) * 14;
+    const z = (noise(i, variant, 142) - 0.5) * 14;
+    const r = 2.4 + noise(i, variant, 143) * 2;
+    const color = colors[(i + variant) % colors.length] ?? colors[0] ?? STONE;
+    c.ellipsoid([x, r * 0.6, z], UP, [r, r * 0.7, r], (s) =>
+      s.n[1] > 0.8 && noise(Math.floor(s.p[0] * 2), Math.floor(s.p[2] * 2), i) > 0.7
+        ? [226, 232, 240]
+        : foliage(color, i + variant)(s),
+    );
+  }
+};
+
+const MARBLE = ramp([206, 200, 186]);
+
+/** Fuste de mármol con estrías verticales. */
+const fluted: Material = (s) => {
+  const flute = Math.floor((Math.atan2(s.p[2], s.p[0]) + Math.PI) * 2.4);
+  const worn = noise(Math.floor(s.p[0]), Math.floor(s.p[1] / 2), Math.floor(s.p[2])) > 0.86;
+  return tone(MARBLE, s.light, worn ? -1 : flute % 2 === 0 ? 0 : -1);
+};
+
+/** Columna antigua: basa, fuste estriado y capitel; las variantes están quebradas a distinta altura. */
+const column: Model = (c, variant) => {
+  const plain = rocky(MARBLE, 9);
+  c.box([0, 2, 0], UP, [9, 2, 9], plain);
+  c.box([0, 5, 0], UP, [7.5, 1.2, 7.5], plain);
+  const height = variant === 0 ? 70 : variant === 1 ? 42 : 24;
+  cylinder(c, [0, 6, 0], height, () => 5.2, fluted);
+  if (variant === 0) {
+    c.box([0, 6 + height + 1.5, 0], UP, [7, 1.5, 7], plain);
+    c.box([0, 6 + height + 4.5, 0], UP, [8.5, 1.5, 8.5], plain);
+  } else {
+    // Corte quebrado: un pedazo tirado al pie.
+    c.ellipsoid([10, 3, 6], axesAlong([1, 0.2, 0.5]), [6, 3, 4], fluted);
+  }
+};
+
+/** Columna caída: tambores del fuste tirados en el suelo, uno partido. */
+const fallenColumn: Model = (c, variant) => {
+  const along: Vec3 = variant === 1 ? [0.3, 0, 1] : [1, 0, 0.35];
+  const n = normalize3(along);
+  for (let i = 0; i < 3; i++) {
+    const at: Vec3 = [n[0] * (i - 1) * 13 + i * 1.5, 6, n[2] * (i - 1) * 13 - i];
+    c.limb(
+      [at[0] - n[0] * 5, at[1], at[2] - n[2] * 5],
+      [at[0] + n[0] * 5, at[1] - (i === 2 ? 1.5 : 0), at[2] + n[2] * 5],
+      6,
+      6,
+      fluted,
+    );
+  }
+  c.box([n[0] * -20, 3, n[2] * -20], UP, [6, 3, 6], rocky(MARBLE, 4));
+};
+
+function normalize3(v: Vec3): Vec3 {
+  const l = Math.hypot(v[0], v[1], v[2]) || 1;
+  return [v[0] / l, v[1] / l, v[2] / l];
+}
+
 /** Los árboles los dibuja `tree-art`, cada especie con su ramificación. */
 function tree(species: TreeSpecies): StaticSpec {
   return { model: (c, variant) => drawTree(c, species, variant), shadow: TREE_SHADOWS[species] };
@@ -756,4 +1069,22 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   rubble: { model: rubble },
   reeds: { model: reeds },
   'snow-pine': tree('snow-pine'),
+  palm: tree('palm'),
+  'jungle-tree': tree('jungle-tree'),
+  birch: tree('birch'),
+  acacia: tree('acacia'),
+  'tall-grass': { model: tallGrass },
+  weeds: { model: weeds },
+  fern: { model: fern },
+  mushrooms: { model: mushrooms },
+  wildflowers: { model: wildflowers },
+  peyote: { model: peyote, shadow: [9, 4] },
+  'dry-shrub': { model: dryShrub },
+  pebbles: { model: pebbles },
+  boulder: { model: boulder, shadow: [22, 9] },
+  'mossy-rock': { model: mossyRock, shadow: [14, 6] },
+  'jungle-plant': { model: junglePlant, shadow: [16, 7] },
+  'tundra-shrub': { model: tundraShrub },
+  column: { model: column, shadow: [12, 5] },
+  'fallen-column': { model: fallenColumn, shadow: [22, 8] },
 };
