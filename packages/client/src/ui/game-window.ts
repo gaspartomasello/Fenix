@@ -1,6 +1,7 @@
 import { el } from './dom';
 
-let topZ = 10;
+// Por encima de los botones de pantalla (joystick, Atacar: 55–60) y debajo de avisos y arrastre.
+let topZ = 100;
 
 /**
  * Ventana flotante con barra de título arrastrable y botón para cerrarla
@@ -53,6 +54,14 @@ export class GameWindow {
       signal: this.abort.signal,
     });
     bar.addEventListener('pointerdown', (e) => this.startMove(e), { signal: this.abort.signal });
+    // Al girar el celular o achicar la ventana del navegador, que no quede afuera.
+    window.addEventListener(
+      'resize',
+      () => {
+        if (this.visible) this.keepOnScreen();
+      },
+      { signal: this.abort.signal },
+    );
   }
 
   setTitle(title: string): void {

@@ -17,8 +17,14 @@ if (!scriptSrc) throw new Error('No se encontró el script del build');
 const script = (await readFile(join(dist, scriptSrc), 'utf8')).replaceAll('</script', '<\\/script');
 const style = styleHref ? await readFile(join(dist, styleHref), 'utf8') : '';
 
+// La misma etiqueta de pantalla que index.html: sin ella el celular arma la
+// página a 980 px de ancho y queda alejada (o acercada al girarlo).
+const viewport = html.match(/<meta\s+name="viewport"[^>]*>/s)?.[0];
+if (!viewport) throw new Error('No se encontró la etiqueta viewport en index.html');
+
 const page = `<title>Fenix</title>
 <meta name="description" content="Fenix — MMORPG web, modo solo" />
+${viewport.replace(/\s+/g, ' ')}
 <style>
 ${style}
 </style>

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ATTACK_RING_SIZE,
   HOTBAR_SIZE,
+  defaultAttackRing,
   addToHotbar,
   countInBackpack,
   defaultHotbar,
@@ -30,6 +32,19 @@ describe('barra de atajos', () => {
     });
     expect(slotLabel({ type: 'skill', skill: 'detect-hidden' })).toBe('Mirar');
     expect(saved).toHaveLength(HOTBAR_SIZE);
+  });
+
+  it('los atajos alrededor de Atacar se leen con su propio tamaño', () => {
+    const ring = defaultAttackRing();
+    expect(ring).toHaveLength(ATTACK_RING_SIZE);
+    expect(parseHotbar(null, ATTACK_RING_SIZE, defaultAttackRing)).toEqual(ring);
+    const saved = parseHotbar(
+      JSON.stringify([null, { type: 'spell', spell: 'heal' }]),
+      ATTACK_RING_SIZE,
+      defaultAttackRing,
+    );
+    expect(saved).toHaveLength(ATTACK_RING_SIZE);
+    expect(saved[1]).toEqual({ type: 'spell', spell: 'heal' });
   });
 
   it('un objeto se busca por tipo en la mochila y se cuentan todas sus pilas', () => {

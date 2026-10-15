@@ -40,6 +40,18 @@ export interface HotbarCallbacks {
   readonly onAssign: (index: number, slot: HotbarSlot) => void;
 }
 
+export interface HotbarOptions {
+  /** Cuántos casilleros (10 la barra de abajo). */
+  readonly size?: number;
+  /** Clase del contenedor (otra disposición, como alrededor de Atacar). */
+  readonly className?: string;
+  readonly label?: string;
+  /** Con teclas 1 a 0 (solo la barra principal). */
+  readonly keys?: boolean;
+  /** Nombre para recordar dónde quedó la ventana de elegir. */
+  readonly editorId?: string;
+}
+
 /**
  * Barra de atajos abajo al centro: vendas, pociones y hechizos a un toque.
  * Las teclas 1 a 0 usan cada casillero. Un casillero vacío (o el clic
@@ -57,13 +69,20 @@ export class HotbarBar {
   private skills: SkillValues | null = null;
   private editing: number | null = null;
 
-  constructor(private readonly callbacks: HotbarCallbacks) {
+  private readonly keys: boolean;
+
+  constructor(
+    private readonly callbacks: HotbarCallbacks,
+    options: HotbarOptions = {},
+  ) {
     const signal = this.abort.signal;
+    const size = options.size ?? HOTBAR_SIZE;
+    this.keys = options.keys ?? true;
     this.element = el('div', {
-      className: 'hotbar',
-      attrs: { role: 'toolbar', 'aria-label': 'Barra de atajos' },
+      className: options.className ?? 'hotbar',
+      attrs: { role: 'toolbar', 'aria-label': options.label ?? 'Barra de atajos' },
     });
-    for (let index = 0; index < HOTBAR_SIZE; index++) {
+    for (let index = 0; index < size; index++) {
       const button = el('button', { className: 'hotbar-slot', attrs: { type: 'button' } });
       let pressTimer: number | null = null;
       let longPressed = false;
@@ -107,13 +126,14 @@ export class HotbarBar {
       this.buttons.push(button);
       this.element.append(button);
     }
-    this.editor = new GameWindow('atajo', 'Atajo', { x: 320, y: 120 });
+    this.editor = new GameWindow(options.editorId ?? 'atajo', 'Atajo', { x: 320, y: 120 });
+    if (!this.keys) return;
     window.addEventListener(
       'keydown',
       (e) => {
         if (isTyping(e.target) || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
         const index = e.key === '0' ? 9 : Number(e.key) - 1;
-        if (!Number.isInteger(index) || index < 0 || index >= HOTBAR_SIZE) return;
+        if (!Number.isInteger(index) || index < 0 || index >= size) return;
         // Con el libro abierto, los números son de su página (lo maneja el libro).
         if (e.defaultPrevented) return;
         if (!this.slots[index]) return;
@@ -153,11 +173,15 @@ export class HotbarBar {
 
   private paint(button: HTMLButtonElement, index: number): void {
     const slot = this.slots[index] ?? null;
-    const key = el('kbd', { className: 'hotbar-key', text: hotbarKey(index) });
+    const key = this.keys
+      ? el('kbd', { className: 'hotbar-key', text: hotbarKey(index) })
+      : document.createTextNode('');
     button.classList.toggle('hotbar-slot--empty', !slot);
     const label = slotLabel(slot);
     button.title = slot
-      ? `${label} (tecla ${hotbarKey(index)}; clic derecho para cambiarlo)`
+      ? this.keys
+        ? `${label} (tecla ${hotbarKey(index)}; clic derecho para cambiarlo)`
+        : `${label} (mantené apretado para cambiarlo)`
       : 'Casillero vacío: tocá para elegir un atajo';
     button.setAttribute('aria-label', slot ? `Usar ${label}` : `Elegir atajo ${index + 1}`);
     if (!slot) {
@@ -209,7 +233,7 @@ export class HotbarBar {
   }
 
   private renderEditor(index: number): void {
-    this.editor.setTitle(`Atajo ${hotbarKey(index)}`);
+    this.editor.setTitle(this.keys ? `Atajo ${hotbarKey(index)}` : `Atajo ${index + 1} de Atacar`);
     const choose = (slot: HotbarSlot): void => {
       this.callbacks.onAssign(index, slot);
       this.editor.hide();
