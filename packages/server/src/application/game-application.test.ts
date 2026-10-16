@@ -161,6 +161,30 @@ describe('GameApplication', () => {
       expect(map.isDoorOpen(door)).toBe(false);
     });
 
+    it('las dos hojas de una puerta doble se abren y se cierran juntas', () => {
+      const map = new TileMap({
+        width: 4,
+        height: 4,
+        terrain: new Array<Terrain>(16).fill(G),
+        statics: [
+          { kind: 'door-y-l', x: 2, y: 1 },
+          { kind: 'door-y-r', x: 2, y: 2 },
+        ],
+      });
+      const house = createApp(map, { x: 1, y: 2 });
+      const ana = house.join('Ana');
+      house.notifier.clear();
+      house.app.handle(ana, { type: 'useDoor', position: { x: 2, y: 2 } });
+      expect(house.notifier.ofType('door').map((d) => (d.message as { position: unknown }).position)).toEqual([
+        { x: 2, y: 2 },
+        { x: 2, y: 1 },
+      ]);
+      expect(map.isDoorOpen({ x: 2, y: 1 })).toBe(true);
+      house.app.handle(ana, { type: 'useDoor', position: { x: 2, y: 1 } });
+      expect(map.isDoorOpen({ x: 2, y: 1 })).toBe(false);
+      expect(map.isDoorOpen({ x: 2, y: 2 })).toBe(false);
+    });
+
     it('al pisar un teletransporte (la boca de una cueva) aparece del otro lado', () => {
       const terrain = new Array<Terrain>(5 * 3).fill(G);
       const map = new TileMap({

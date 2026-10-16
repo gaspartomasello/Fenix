@@ -327,6 +327,20 @@ class Plan {
   }
 
   /**
+   * Una puerta doble de dos hojas: `at` y el tile siguiente a lo largo del
+   * eje. Se abren de par en par, con las bisagras en el marco de afuera.
+   */
+  doubleDoor(
+    at: Position,
+    along: 'x' | 'y',
+    style: 'door' | 'iron-door' | 'dungeon-door' | 'bone-door' = 'door',
+  ): void {
+    const next = along === 'x' ? { x: at.x + 1, y: at.y } : { x: at.x, y: at.y + 1 };
+    this.put(at.x, at.y, `${style}-${along}-l`);
+    this.put(next.x, next.y, `${style}-${along}-r`);
+  }
+
+  /**
    * Ventanas en las paredes de afuera de una casa (la del sur y la del este,
    * que se ven desde la calle), cada tres tiles y lejos de la puerta.
    */
@@ -756,8 +770,7 @@ function buildCastle(plan: Plan, style: Style, q: Rect, cityName: string, cx: nu
     { x: keep.x0, y: gateY },
     { x: keep.x0, y: gateY + 1 },
   ]);
-  plan.put(keep.x0, gateY, 'iron-door-y');
-  plan.put(keep.x0, gateY + 1, 'iron-door-y');
+  plan.doubleDoor({ x: keep.x0, y: gateY }, 'y', 'iron-door');
   plan.fill({ x0: walls.x0 + 2, y0: gateY, x1: keep.x0, y1: gateY + 1 }, Terrain.Flagstone);
   // Alfombra roja desde la puerta hasta el trono, entre candelabros y armaduras.
   for (let x = keep.x0 + 1; x <= keep.x1; x++) {
@@ -1163,8 +1176,7 @@ function buildStable(
   plan.fill(barn, Terrain.Dirt);
   const door = { x: barn.x1 + 1, y: barn.y0 + 3 };
   plan.enclose(barn, style.walls, [door, { x: door.x, y: door.y + 1 }]);
-  plan.door(door, 'y');
-  plan.door({ x: door.x, y: door.y + 1 }, 'y');
+  plan.doubleDoor(door, 'y');
   plan.windows(barn, style.walls, door);
   plan.ground(door.x, door.y, Terrain.Dirt);
   plan.ground(door.x, door.y + 1, Terrain.Dirt);

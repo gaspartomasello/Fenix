@@ -2046,6 +2046,14 @@ const BASALT_WINDOW = windowWall(
 /** Tipos de puerta: de madera (casas), de hierro (castillo y banco), de mazmorra y de huesos. */
 type DoorStyle = 'wood' | 'iron' | 'dungeon' | 'bone';
 
+/**
+ * Qué hoja es: una puerta sola, o la hoja de abajo (`l`, la de menor
+ * coordenada) o de arriba (`r`) de una puerta doble. Las dos hojas de una
+ * doble tienen la bisagra en el marco de afuera, no hay jamba en el medio y
+ * se abren de par en par.
+ */
+type DoorLeaf = 'single' | 'l' | 'r';
+
 const BONE_WHITE = ramp([226, 218, 196]);
 
 /**
@@ -2056,9 +2064,17 @@ const BONE_WHITE = ramp([226, 218, 196]);
  * - mazmorra: roble oscuro con flejes gruesos, clavos y una mirilla enrejada;
  * - huesos: fémures atados, con calaveras arriba y una calavera de argolla.
  */
-function door(c: VolumeCanvas, along: 0 | 2, open: boolean, style: DoorStyle = 'wood'): void {
+function door(
+  c: VolumeCanvas,
+  along: 0 | 2,
+  open: boolean,
+  style: DoorStyle = 'wood',
+  which: DoorLeaf = 'single',
+): void {
   const inset = 3;
   const stone = style === 'iron' || style === 'dungeon';
+  // Las jambas: en una doble, solo la del marco de afuera.
+  const jambs = which === 'l' ? [-H + 1.6] : which === 'r' ? [H - 1.6] : [-H + 1.6, H - 1.6];
   const frame: Material =
     style === 'bone'
       ? solid(BONE_WHITE)
@@ -2067,13 +2083,13 @@ function door(c: VolumeCanvas, along: 0 | 2, open: boolean, style: DoorStyle = '
         : planks(DARK_WOOD, 1, 3);
   if (style === 'bone') {
     // Jambas de fémures y un dintel de costillas.
-    for (const t of [-H + 1.6, H - 1.6]) {
+    for (const t of jambs) {
       c.limb(edge(along, t, 0, inset), edge(along, t, 44, inset), 1.6, 1.6, frame);
       c.sphere(edge(along, t, 44.5, inset), 2.4, frame);
     }
     c.limb(edge(along, -H + 1.6, 44, inset), edge(along, H - 1.6, 44, inset), 1.4, 1.4, frame);
   } else {
-    for (const t of [-H + 1.6, H - 1.6])
+    for (const t of jambs)
       c.box(edge(along, t, 22, inset), UP, edgeHalf(along, 1.6, 22, 3), frame);
     c.box(
       edge(along, 0, 44, inset),
@@ -2082,11 +2098,15 @@ function door(c: VolumeCanvas, along: 0 | 2, open: boolean, style: DoorStyle = '
       stone ? frame : planks(DARK_WOOD, along, 4),
     );
   }
-  const width = H - 3.2;
+  // Media hoja: la sola va de jamba a jamba; la de una doble, de su jamba al medio.
+  const width = which === 'single' ? H - 3.2 : H - 1.6;
+  // La bisagra y hacia dónde crece la hoja (la `r` tiene la bisagra del otro lado).
+  const hinge = which === 'r' ? H - 3.2 : -H + 3.2;
+  const grow = which === 'r' ? -1 : 1;
   // Un punto de la hoja: `u` desde la bisagra (0) hasta el otro canto (2·width), `y` de alto, `d` hacia afuera.
   const leaf = (u: number, y: number, d: number): Vec3 => {
-    if (!open) return edge(along, -width + u, y, inset + d);
-    const a = -width + 1.2 + d;
+    if (!open) return edge(along, hinge + grow * u, y, inset + d);
+    const a = hinge + grow * (1.2 + d);
     const depth = -H + inset + u;
     return along === 0 ? [a, y, depth] : [depth, y, a];
   };
@@ -2161,7 +2181,31 @@ function door(c: VolumeCanvas, along: 0 | 2, open: boolean, style: DoorStyle = '
   }
   if (open)
     // Se ve el piso del umbral.
-    c.box(edge(along, 0, 0.3, inset), UP, edgeHalf(along, width, 0.3, 3), solid(DARK_WOOD, -1));
+    c.box(edge(along, 0, 0.3, inset), UP, edgeHalf(along, H - 3.2, 0.3, 3), solid(DARK_WOOD, -1));
+}
+
+/** Las puertas de cada tipo: sola y las dos hojas de una doble, en los dos ejes, cerradas y abiertas. */
+function doorSpecs(): Record<string, StaticSpec> {
+  const styles: [string, DoorStyle][] = [
+    ['door', 'wood'],
+    ['iron-door', 'iron'],
+    ['dungeon-door', 'dungeon'],
+    ['bone-door', 'bone'],
+  ];
+  const specs: Record<string, StaticSpec> = {};
+  for (const [prefix, style] of styles)
+    for (const [axis, along] of [
+      ['x', 0],
+      ['y', 2],
+    ] as const)
+      for (const which of ['single', 'l', 'r'] as const)
+        for (const open of [false, true]) {
+          const leaf = which === 'single' ? '' : `-${which}`;
+          specs[`${prefix}-${axis}${leaf}${open ? '-open' : ''}`] = {
+            model: (c) => door(c, along, open, style, which),
+          };
+        }
+  return specs;
 }
 
 const LOG_WALL = wallSet(logWall, logPost);
@@ -2303,22 +2347,7 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   'plank-stack': { model: plankStack, shadow: [14, 6] },
   carpet: { model: carpet, flat: true },
   candelabra: { model: candelabra, shadow: [6, 3] },
-  'door-x': { model: (c) => door(c, 0, false) },
-  'door-y': { model: (c) => door(c, 2, false) },
-  'door-x-open': { model: (c) => door(c, 0, true) },
-  'door-y-open': { model: (c) => door(c, 2, true) },
-  'iron-door-x': { model: (c) => door(c, 0, false, 'iron') },
-  'iron-door-y': { model: (c) => door(c, 2, false, 'iron') },
-  'iron-door-x-open': { model: (c) => door(c, 0, true, 'iron') },
-  'iron-door-y-open': { model: (c) => door(c, 2, true, 'iron') },
-  'dungeon-door-x': { model: (c) => door(c, 0, false, 'dungeon') },
-  'dungeon-door-y': { model: (c) => door(c, 2, false, 'dungeon') },
-  'dungeon-door-x-open': { model: (c) => door(c, 0, true, 'dungeon') },
-  'dungeon-door-y-open': { model: (c) => door(c, 2, true, 'dungeon') },
-  'bone-door-x': { model: (c) => door(c, 0, false, 'bone') },
-  'bone-door-y': { model: (c) => door(c, 2, false, 'bone') },
-  'bone-door-x-open': { model: (c) => door(c, 0, true, 'bone') },
-  'bone-door-y-open': { model: (c) => door(c, 2, true, 'bone') },
+  ...(doorSpecs() as Record<Extract<StaticKind, `${string}door-${string}`>, StaticSpec>),
   'wall-window-x': { model: STONE_WINDOW.x },
   'wall-window-y': { model: STONE_WINDOW.y },
   'log-window-x': { model: LOG_WINDOW.x },
