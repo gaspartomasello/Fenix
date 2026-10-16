@@ -153,6 +153,37 @@ Plantas: pastizal (verde, pajizo o mezclado), yuyos, helecho, hongos, florcitas,
 seco, planta de hojas grandes y mata de tundra. Piedras: piedritas, peñasco (granito, arenisca o
 piedra oscura) y piedra con musgo. Ruinas: columna antigua (entera o quebrada) y columna caída.
 
+## Ciudades
+
+Las ciudades las arma el servidor (`city-builder.ts`), cada una con el estilo de su región. Todas
+tienen dos avenidas que se cruzan en una **plaza** con fuente (o fogata), santuario, puestos del
+mercado y faroles; **barrios** de cuadras con casas, y los negocios (taberna, banco, herrería y
+tienda de magia) en las cuadras más cerca de la plaza. Las salidas están al medio de cada lado,
+donde llegan los caminos.
+
+| Ciudad                      | Región          | Estilo                                                                |
+| --------------------------- | --------------- | --------------------------------------------------------------------- |
+| **Puerto Ceniza** (capital) | norte templado  | piedra, muralla con torres, **castillo** con salón del trono, mercado |
+| **Roca Alta**               | montaña         | cabañas de troncos, calles de ripio, empalizada                       |
+| **Junco Verde**             | pantano         | casas de tablas sobre pilotes, calles de pasarelas, cerca baja        |
+| **Puerto Brasa**            | isla del volcán | piedra negra con juntas rojas, braseros, muralla con torres           |
+| **Refugio de los Bandidos** | Malvina oeste   | carpas y fogatas dentro de una empalizada; **sin ley**                |
+
+- **Muralla:** las de piedra tienen almenas y torres redondas de techo rojo en las esquinas y a
+  los lados de cada puerta; las torres alumbran de noche.
+- **Castillo** (capital): muralla propia con cuatro torres, patio con pozo y estandartes, y la
+  torre del homenaje con piso de mármol, braseros y el **trono**.
+- **Afuera:** la caballeriza con su corral, huertas con un aljibe y el **cementerio**.
+- **Cementerio** (uno por ciudad): reja de hierro, tumbas en hileras, una cripta y árboles secos.
+  No protege: viven ahí **zombis** (lentos pero tercos, se curan solos), **necrófagos** (rápidos,
+  con garras que envenenan), **esqueletos** y un **espectro** (flota, lanza hechizos y resiste la
+  magia; no deja cuerpo).
+- **Refugio de los Bandidos:** zona sin protección, como las tierras salvajes: se puede pelear
+  entre jugadores. Tiene taberna (el contrabandista) y herrero, santuario y su fosa común.
+
+Los pueblos diseñados en Tiled (`docs/MAPAS.md`) siguen funcionando: un `TownPlan` acepta
+cualquier plano, generado o dibujado a mano.
+
 ## Lugares
 
 - **Torre Hueca** (pantano): torre del liche, con la tierra corrompida alrededor.
@@ -174,9 +205,10 @@ Para recorrer el mapa con el personaje de prueba: `/ir 120 300` (coordenadas) o 
    espacial; los personajes guardados en el mundo anterior aparecen en la capital.
 3. **Etapa 26:** mapa pulido: 1400 × 2000, agua celeste que se camina, transiciones graduales,
    lomas, caminos curvos, árboles nuevos y faro grande.
-4. **Etapa 27:** ciudades: capital grande amurallada con castillo del líder y **puerto con muelle**;
-   guarida de bandidos en una isla, sin guardias; pueblos con estilo propio (adobe, madera, piedra,
-   chozas) y pisos de damero o baldosas; gente del pueblo que camina y guardias; más pueblos.
-5. Más adelante: fauna según el terreno (pájaros, serpientes, escorpiones, cocodrilos, hombres
+4. **Etapa 30:** ciudades generadas con estilo por región, capital amurallada con castillo,
+   refugio de bandidos en una isla y un cementerio con no-muertos en cada ciudad.
+5. Pendiente de las ciudades: **puerto con muelle**, guardias, gente del pueblo que camina, un
+   pueblo de adobe en el desierto y más pueblos.
+6. Más adelante: fauna según el terreno (pájaros, serpientes, escorpiones, cocodrilos, hombres
    lagarto, camello como montura), **búsqueda de tesoros** (mapas, excavar, cofres con guardianes, en las islas) y
    **barcos con combate naval** (combate entre jugadores en el mar).

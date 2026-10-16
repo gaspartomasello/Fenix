@@ -6,6 +6,7 @@ import {
   type TiledTileset,
 } from '@fenix/content';
 import {
+  type CreatureKind,
   isItemKind,
   isNpcRole,
   type NpcRole,
@@ -53,6 +54,8 @@ export interface MapRegion {
     readonly position: Position;
     readonly name?: string;
   }[];
+  /** Criaturas que viven en el plano (los no-muertos del cementerio de una ciudad). */
+  readonly lairs?: readonly { readonly kind: CreatureKind; readonly position: Position }[];
 }
 
 const FLIP_FLAGS = 0xf0000000;

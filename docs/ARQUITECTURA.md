@@ -420,7 +420,7 @@ sienta al jinete con la pose de montar.
 Las cordilleras solo aparecen en algunas regiones y se les quitan los cordones de un tile (parecen
 cercos): quedan macizos, y el resto del continente es abierto, con bosques ralos.
 
-Encima se estampan los tres pueblos de Tiled (`TownPlan`: mapa, lugar y clima) y se trazan
+Encima se estampan las ciudades (`TownPlan`: plano, lugar y clima) y se trazan
 **caminos** entre ellos con A* (`roads.ts`): cada terreno tiene su costo (el agua y la montaña,
 mucho) y doblar también cuesta, así salen tramos largos y rectos que cruzan los ríos por lo más
 angosto con **puentes** de tablones. Son de tres tiles de ancho, con banquinas sin árboles, y van
@@ -434,6 +434,17 @@ paso de montaña) y la boca de la cueva al pie de una cordillera. Son zonas con 
 ve el nombre pero no protegen. Las criaturas sueltas salen de una densidad por bioma
 (`BIOME_CREATURES`) y cada lugar tiene sus habitantes; los alrededores de los pueblos quedan
 tranquilos. Con un mapa chico (menos de 200) queda solo la capital.
+
+`city-builder.ts` arma cada **ciudad** como un plano (`MapRegion`, el mismo que sale de un
+mapa de Tiled) sobre un lienzo de tiles: avenidas en cruz con la plaza, muralla con puertas al
+medio de cada lado (donde llegan los caminos), cuadras partidas por calles con una casa cada una
+(`Plan.enclose` pone las paredes en el borde de atrás de los tiles, como en los mapas de Tiled),
+los negocios con su gente cerca de la plaza, el castillo en la capital y, afuera, caballeriza,
+huertas y cementerio. Un `Style` por región elige paredes, pisos, calles, muralla y faroles. Las
+criaturas del cementerio salen en `MapRegion.lairs`; `procedural-map.ts` las corre al lugar del
+pueblo y `places.ts` las suma a las del continente. Cada zona protegida es lo de adentro de la
+muralla; el cementerio y el refugio de los bandidos son `wild` (no protegen). Los objetos de 2 × 2
+(torre, cripta, fuente) ocupan todos sus tiles.
 
 El **minimapa** (`ui/minimap.ts`) dibuja el mapa una vez a un pixel por tile y lo muestra girado
 como la vista isométrica, centrado en el jugador, con la gente cerca y los nombres de los

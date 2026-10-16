@@ -1,10 +1,11 @@
 # Diseñar mapas con Tiled
 
-Los pueblos están diseñados en [Tiled](https://www.mapeditor.org), un editor de mapas gratuito:
-**Puerto Ceniza** (la capital), **Roca Alta** (pueblo minero de piedra, entre montañas) y
-**Junco Verde** (aldea de madera junto a una laguna, en el pantano). El resto del continente
-(biomas, ríos, caminos, lugares) lo genera el servidor y los pueblos se estampan encima (ver
-`docs/ARQUITECTURA.md`, «Continente»).
+Las ciudades del juego hoy las genera el servidor (`city-builder.ts`, ver `docs/MUNDO.md`,
+«Ciudades»), pero un pueblo también se puede diseñar a mano en
+[Tiled](https://www.mapeditor.org), un editor de mapas gratuito: el cargador
+(`tiled-map-loader.ts`) lo traduce al mismo plano (`MapRegion`) y un `TownPlan` lo estampa en el
+continente igual que a uno generado. En `packages/content/maps` quedan los planos a mano de
+**Puerto Ceniza**, **Roca Alta** y **Junco Verde** de las primeras etapas, como ejemplo.
 
 ## Archivos
 
