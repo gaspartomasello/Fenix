@@ -1,4 +1,7 @@
 import {
+  DOORS,
+  STATICS,
+  TERRAINS,
   Terrain,
   type CreatureKind,
   type ItemKind,
@@ -10,6 +13,12 @@ import {
 } from '@fenix/shared';
 import { SeededRandom } from '../system/seeded-random';
 import type { MapRegion, PlacedItem } from './tiled-map-loader';
+
+/** Lo que es parte de una construcción: no se saca para abrir paso. */
+const STRUCTURE =
+  /wall|rampart|palisade|fence|tower|door|post|corner|window|mountain|crypt|fountain|ladder/;
+/** Paredes de casa (a lo largo de x o de y), donde se puede abrir una puerta. */
+const HOUSE_WALL = /^(wall|log-wall|plank-wall|basalt-wall)-(x|y)$/;
 
 /**
  * Ciudades generadas: cada una con su estilo según la región.
@@ -37,6 +46,8 @@ export interface CitySpec {
 /** Una ciudad armada: el plano, más las criaturas que viven en ella (el cementerio). */
 export interface City extends MapRegion {
   readonly lairs: readonly { readonly kind: CreatureKind; readonly position: Position }[];
+  /** Un tile libre de la plaza (desde donde se llega caminando a todo). */
+  readonly square: Position;
 }
 
 interface WallKit {
@@ -374,7 +385,107 @@ class Plan {
     if (this.inside(x, y)) this.decor.push({ x, y, kind });
   }
 
-  toCity(regions: RegionData[], spawn: Position | null): City {
+  /**
+   * Revisa que desde `from` se llegue caminando (con las puertas abiertas) a
+   * todo el suelo libre y que cada puerta tenga paso de los dos lados, y
+   * arregla lo que tape el paso: un mueble o adorno que cierra un rincón se
+   * saca; un cuarto cerrado por una pared de casa recibe una puerta; y un
+   * hueco chico que quedó encerrado (entre una torre y el río) se tapa.
+   */
+  repair(from: Position): void {
+    const { width } = this;
+    const walkable = (i: number): boolean => {
+      const x = i % width;
+      const y = Math.floor(i / width);
+      if (!this.inside(x, y) || this.covered.has(i)) return false;
+      if (!TERRAINS[this.terrain[i] ?? Terrain.Grass].walkable) return false;
+      const kind = this.statics.get(i);
+      return !kind || !STATICS[kind].blocking || DOORS[kind] !== undefined;
+    };
+    const removable = (i: number): boolean => {
+      const kind = this.statics.get(i);
+      return (
+        kind !== undefined &&
+        STATICS[kind].blocking &&
+        STATICS[kind].footprint === 1 &&
+        !STRUCTURE.test(kind)
+      );
+    };
+    const neighbors = (i: number): number[] => {
+      const x = i % width;
+      return [x > 0 ? i - 1 : -1, x < width - 1 ? i + 1 : -1, i - width, i + width].filter(
+        (n) => n >= 0 && n < this.terrain.length,
+      );
+    };
+    const flood = (start: number): Set<number> => {
+      const seen = new Set([start]);
+      const queue = [start];
+      for (let c = queue.pop(); c !== undefined; c = queue.pop())
+        for (const n of neighbors(c))
+          if (!seen.has(n) && walkable(n)) {
+            seen.add(n);
+            queue.push(n);
+          }
+      return seen;
+    };
+
+    // Delante y detrás de cada puerta, nada que tape.
+    for (const [i, kind] of this.statics) {
+      if (!DOORS[kind]) continue;
+      const across = /-x(-|$)/.test(kind) ? [i - width, i + width] : [i - 1, i + 1];
+      for (const n of across) if (removable(n)) this.statics.delete(n);
+    }
+
+    const start = from.y * width + from.x;
+    const given = new Set<number>();
+    for (let round = 0; round < 400; round++) {
+      const reached = flood(start);
+      let lost = -1;
+      for (let i = 0; i < this.terrain.length && lost < 0; i++)
+        if (!given.has(i) && !reached.has(i) && walkable(i)) lost = i;
+      if (lost < 0) return;
+      const pocket = flood(lost);
+      const touches = (i: number, set: Set<number>): boolean =>
+        neighbors(i).some((n) => set.has(n));
+      const edge = [...pocket].flatMap(neighbors).filter((n) => !pocket.has(n));
+      // Un mueble entre el rincón y el resto: se saca.
+      const furniture = edge.find((n) => removable(n) && touches(n, reached));
+      if (furniture !== undefined) {
+        this.statics.delete(furniture);
+        continue;
+      }
+      // Una pared de casa entre un cuarto y la calle: se le abre una puerta.
+      const wall = edge.find((n) => {
+        const kind = this.statics.get(n);
+        if (!kind || !HOUSE_WALL.test(kind)) return false;
+        const pair = kind.endsWith('-x') ? [n - width, n + width] : [n - 1, n + 1];
+        const [a = -1, b = -1] = pair;
+        return (pocket.has(a) && reached.has(b)) || (pocket.has(b) && reached.has(a));
+      });
+      if (wall !== undefined) {
+        const kind = this.statics.get(wall) ?? '';
+        this.statics.set(wall, kind.endsWith('-x') ? 'door-x' : 'door-y');
+        continue;
+      }
+      // Un mueble que lleva a otro mueble: se saca y se vuelve a mirar.
+      const inner = edge.find((n) => removable(n));
+      if (inner !== undefined) {
+        this.statics.delete(inner);
+        continue;
+      }
+      // Un hueco chico encerrado: junto al agua se hace agua; si no, una roca.
+      for (const i of pocket) {
+        given.add(i);
+        if (pocket.size > 12) continue;
+        const wet = neighbors(i).some((n) => this.terrain[n] === Terrain.Water);
+        if (wet) this.terrain[i] = Terrain.Water;
+        else this.statics.set(i, 'rock');
+      }
+    }
+  }
+
+  toCity(regions: RegionData[], spawn: Position | null, square: Position): City {
+    this.repair(square);
     const statics: StaticPlacement[] = [];
     for (const [i, kind] of this.statics)
       statics.push({ x: i % this.width, y: Math.floor(i / this.width), kind });
@@ -386,6 +497,7 @@ class Plan {
       statics,
       regions,
       spawn,
+      square,
       items: this.items,
       npcs: this.npcs,
       lairs: this.lairs,
@@ -485,19 +597,19 @@ export function buildCity(spec: CitySpec): City {
       { x0: inner.x0 + 1, y0: river.bottom + 3, x1: cx - 3, y1: cy - 3 },
       { x0: cx + 3, y0: river.bottom + 3, x1: inner.x1, y1: cy - 3 },
     );
-  // El castillo ocupa el barrio del noreste.
-  const castleQuadrant = style.castle ? quadrants[1] : undefined;
+  // El castillo ocupa el barrio del noreste, si entra con su salón del trono.
+  const northeast = quadrants[1];
+  const castleRect = northeast && { ...northeast, y1: Math.min(northeast.y1, plaza.y0 - 2) };
+  const castleQuadrant =
+    style.castle &&
+    castleRect &&
+    castleRect.x1 - castleRect.x0 >= 20 &&
+    castleRect.y1 - castleRect.y0 >= 13
+      ? northeast
+      : undefined;
   const regions: RegionData[] = [];
-  if (castleQuadrant)
-    regions.push(
-      buildCastle(
-        plan,
-        style,
-        { ...castleQuadrant, y1: Math.min(castleQuadrant.y1, plaza.y0 - 2) },
-        spec.name,
-        cx,
-      ),
-    );
+  if (castleQuadrant && castleRect)
+    regions.push(buildCastle(plan, style, castleRect, spec.name, cx));
   const lots = quadrants
     .filter((q) => q !== castleQuadrant)
     .flatMap((q) =>
@@ -613,7 +725,7 @@ export function buildCity(spec: CitySpec): City {
     height: innerH + 3,
     ...(style.lawless ? { wild: true } : {}),
   });
-  return plan.toCity(regions, spec.style === 'capital' || spec.starterItems ? spawn : null);
+  return plan.toCity(regions, spec.style === 'capital' || spec.starterItems ? spawn : null, spawn);
 }
 
 /** El río de la capital: filas de agua honda con muelles de piedra y puentes. */
@@ -735,7 +847,8 @@ function buildRing(
  * puerta mira a la avenida.
  */
 function buildCastle(plan: Plan, style: Style, q: Rect, cityName: string, cx: number): RegionData {
-  const walls: Rect = { x0: q.x0 + 1, y0: q.y0 + 1, x1: q.x1 - 2, y1: q.y1 - 2 };
+  // Pegado a la muralla de la ciudad al norte y al este (sin un pasillo encerrado entre las dos).
+  const walls: Rect = { x0: q.x0 + 1, y0: q.y0, x1: q.x1 - 1, y1: q.y1 - 2 };
   plan.claim({ x0: q.x0, y0: q.y0, x1: q.x1, y1: q.y1 });
   plan.fill(walls, Terrain.Flagstone);
   const gateY = Math.floor((walls.y0 + walls.y1) / 2);
