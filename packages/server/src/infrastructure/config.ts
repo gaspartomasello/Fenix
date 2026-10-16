@@ -35,8 +35,8 @@ export function loadConfig(defaultClientDist: string): ServerConfig {
     clientDist:
       process.env.CLIENT_DIST ?? (existsSync(defaultClientDist) ? defaultClientDist : null),
     mapSeed: intFromEnv('MAP_SEED', 1997),
-    mapSize: intFromEnv('MAP_SIZE', 1000),
-    mapHeight: intFromEnv('MAP_HEIGHT', 1400),
+    mapSize: intFromEnv('MAP_SIZE', 1400),
+    mapHeight: intFromEnv('MAP_HEIGHT', 2000),
     startHour: intFromEnv('START_HOUR', 8),
     dataDir: process.env.DATA_DIR ?? 'data',
     testCharacters: (process.env.TEST_CHARACTERS ?? '')

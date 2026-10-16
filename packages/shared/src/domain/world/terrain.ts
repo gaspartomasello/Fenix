@@ -32,6 +32,10 @@ export const Terrain = {
   Lava: 29,
   Ash: 30,
   Gravel: 31,
+  SnowyGrass: 32,
+  SandyGrass: 33,
+  Leaves: 34,
+  SparseGrass: 35,
 } as const;
 
 export type Terrain = (typeof Terrain)[keyof typeof Terrain];
@@ -244,7 +248,8 @@ export const TERRAINS: Readonly<Record<Terrain, TerrainDefinition>> = {
     id: Terrain.ShallowWater,
     key: 'shallow-water',
     name: 'agua poco profunda',
-    walkable: false,
+    // Se cruza a pie o a caballo (el agua profunda, no).
+    walkable: true,
     blendPriority: 0.1,
   },
   [Terrain.Salt]: {
@@ -275,9 +280,38 @@ export const TERRAINS: Readonly<Record<Terrain, TerrainDefinition>> = {
     walkable: true,
     blendPriority: 1.9,
   },
+  // Transiciones como las del Age of Empires: entre dos suelos hay uno mezclado.
+  [Terrain.SnowyGrass]: {
+    id: Terrain.SnowyGrass,
+    key: 'snowy-grass',
+    name: 'pasto nevado',
+    walkable: true,
+    blendPriority: 3.8,
+  },
+  [Terrain.SandyGrass]: {
+    id: Terrain.SandyGrass,
+    key: 'sandy-grass',
+    name: 'pasto con arena',
+    walkable: true,
+    blendPriority: 1.5,
+  },
+  [Terrain.Leaves]: {
+    id: Terrain.Leaves,
+    key: 'leaves',
+    name: 'hojarasca',
+    walkable: true,
+    blendPriority: 3.1,
+  },
+  [Terrain.SparseGrass]: {
+    id: Terrain.SparseGrass,
+    key: 'sparse-grass',
+    name: 'pasto ralo',
+    walkable: true,
+    blendPriority: 2.5,
+  },
 };
 
-/** Agua (de mar o de río, profunda o de orilla): no se camina; se pesca. */
+/** Agua (de mar o de río, profunda o de orilla): se pesca; la de orilla se cruza caminando. */
 export function isWater(terrain: Terrain | undefined): boolean {
   return terrain === Terrain.Water || terrain === Terrain.ShallowWater;
 }

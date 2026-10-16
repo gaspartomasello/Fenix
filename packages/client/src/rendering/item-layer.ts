@@ -2,7 +2,8 @@ import { ITEM_ART_SIZE } from '@fenix/art';
 import type { EntityId, GroundItemSnapshot } from '@fenix/shared';
 import { Sprite, type Container } from 'pixi.js';
 import { characterDepth, groundItemDepth } from './depth';
-import { CHARACTER_SCALE, tileToScreen, type ScreenPoint } from './iso';
+import type { Ground } from './ground';
+import { CHARACTER_SCALE, type ScreenPoint } from './iso';
 import type { TextureCache } from './texture-cache';
 
 /** Los objetos, como los personajes, tienen el doble de detalle y se muestran sin escalar. */
@@ -15,6 +16,7 @@ export class ItemLayer {
   constructor(
     private readonly textures: TextureCache,
     private readonly target: Container,
+    private readonly ground: Ground,
   ) {}
 
   apply(added: readonly GroundItemSnapshot[], removed: readonly EntityId[]): void {
@@ -22,7 +24,7 @@ export class ItemLayer {
     for (const item of added) {
       this.remove(item.id);
       const sprite = new Sprite(this.textures.item(item.kind, item.amount));
-      const screen = tileToScreen(item.position);
+      const screen = this.ground.toScreen(item.position);
       sprite.anchor.set(0.5);
       sprite.scale.set(CHARACTER_SCALE);
       sprite.position.set(screen.x, screen.y - 4);

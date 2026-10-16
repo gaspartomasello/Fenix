@@ -126,6 +126,15 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
     }
   }
   const shift = (p: Position): Position => ({ x: p.x + left, y: p.y });
+  // Las lomas del continente; la mazmorra y el mar de alrededor, planos.
+  const landHeights = islandData.heights;
+  const heights = landHeights
+    ? Array.from({ length: width * height }, (_, i) => {
+        const x = i % width;
+        const y = (i - x) / width;
+        return x < size && y < landHeight ? (landHeights[y * size + x] ?? 0) : 0;
+      })
+    : undefined;
 
   const entrance = continent.caveEntrance;
   // Afuera se aparece dos pasos delante de la boca, para no volver a entrar sin querer.
@@ -149,6 +158,7 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
       { ...shift(dungeon.ladder), to: outside },
     ],
     signs: islandData.signs ?? [],
+    ...(heights ? { heights } : {}),
   });
 
   return {

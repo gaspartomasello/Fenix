@@ -9,7 +9,7 @@ import {
   type StaticKind,
   type StaticPlacement,
 } from '@fenix/shared';
-import { cheapestPath } from './roads';
+import { cheapestPath, curvePath } from './roads';
 import type { MapRegion, PlacedItem } from './tiled-map-loader';
 
 export interface GeneratedWorld {
@@ -82,6 +82,47 @@ export interface Continent extends GeneratedWorld {
   readonly passes: readonly Position[];
 }
 
+/** Suelos naturales que se entreveran en los bordes (los pisos y el agua no). */
+const NATURAL: ReadonlySet<Terrain> = new Set<Terrain>([
+  Terrain.Grass,
+  Terrain.Dirt,
+  Terrain.Sand,
+  Terrain.Snow,
+  Terrain.Swamp,
+  Terrain.Tundra,
+  Terrain.Jungle,
+  Terrain.DryGrass,
+  Terrain.Meadow,
+  Terrain.Clay,
+  Terrain.Mud,
+  Terrain.Salt,
+  Terrain.Gravel,
+  Terrain.Leaves,
+  Terrain.SparseGrass,
+]);
+/** Suelos verdes: del lado de ellos aparece el suelo mezclado. */
+const GREENS: ReadonlySet<Terrain> = new Set<Terrain>([
+  Terrain.Grass,
+  Terrain.Meadow,
+  Terrain.DryGrass,
+  Terrain.Jungle,
+  Terrain.Leaves,
+  Terrain.Tundra,
+]);
+/** El suelo intermedio entre un verde y este vecino. */
+const MIXES: ReadonlyMap<Terrain, Terrain> = new Map<Terrain, Terrain>([
+  [Terrain.Snow, Terrain.SnowyGrass],
+  [Terrain.Sand, Terrain.SandyGrass],
+  [Terrain.Salt, Terrain.SandyGrass],
+  [Terrain.Dirt, Terrain.SparseGrass],
+  [Terrain.Clay, Terrain.SparseGrass],
+  [Terrain.Gravel, Terrain.SparseGrass],
+]);
+
+/** Escalones de altura más altos (las cumbres). Cada escalón sube dos pixeles en pantalla. */
+const MAX_LEVEL = 80;
+/** Escalones que puede subir una ladera de un tile al vecino. */
+const SLOPE = 4;
 /** Nivel del mar en el campo de elevación (0 a 1). */
 const SEA = 0.4;
 /** Lo que cuesta doblar al trazar un camino: tramos largos y rectos. */
@@ -158,7 +199,11 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
   // Matices del suelo: que los verdes no sean todos iguales.
   const greens = new ValueNoise(seed + 15, 6);
   const salts = new ValueNoise(seed + 16, Math.max(6, size / 14));
-  const roadWander = new ValueNoise(seed + 22, 9);
+  const wander = wanderField(seed, size);
+  // Bordes entre suelos: se deforman y se entreveran (transiciones graduales).
+  const blendX = new ValueNoise(seed + 25, 5);
+  const blendY = new ValueNoise(seed + 26, 5);
+  const shoreWidth = new ValueNoise(seed + 27, 11);
 
   // Un mapa más alto que ancho es un continente alargado de norte a sur (ver `ElongatedShape`).
   const elongated = height > width * 1.2 ? new ElongatedShape(width, height, seed) : null;
@@ -285,9 +330,13 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
       const biome = biomes[i];
       const p = patches.at(x, y);
       const g = greens.at(x, y);
-      if (biome === 'swamp' && puddles.at(x, y) > 0.7) terrain[i] = Terrain.Water;
+      if (biome === 'swamp' && puddles.at(x, y) > 0.7) terrain[i] = Terrain.ShallowWater;
       else if (biome === 'swamp' && puddles.at(x, y) > 0.6) terrain[i] = Terrain.Mud;
       else if ((biome === 'grassland' || biome === 'plains') && p > 0.9) terrain[i] = Terrain.Dirt;
+      else if ((biome === 'grassland' || biome === 'savanna') && p > 0.85)
+        terrain[i] = Terrain.SparseGrass;
+      else if (biome === 'forest' && forests.at(x, y) > 0.78 && g > 0.4)
+        terrain[i] = Terrain.Leaves;
       else if (biome === 'grassland' && g > 0.7) terrain[i] = Terrain.Meadow;
       else if ((biome === 'grassland' || biome === 'forest') && g < 0.22)
         terrain[i] = Terrain.DryGrass;
@@ -297,9 +346,60 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
       else if (biome === 'desert' && reds.at(x, y) > 0.6) terrain[i] = Terrain.Clay;
       else if (biome === 'desert' && salts.at(x, y) > 0.78) terrain[i] = Terrain.Salt;
       else if (biome === 'foothill' && p > 0.55) terrain[i] = Terrain.Gravel;
+      else if (biome === 'foothill' && p > 0.38) terrain[i] = Terrain.SparseGrass;
       else if (biome === 'savanna' && g > 0.72) terrain[i] = Terrain.Grass;
       else if (biome === 'tundra' && g > 0.74) terrain[i] = Terrain.Snow;
       else if (biome === 'snow' && g < 0.18) terrain[i] = Terrain.Tundra;
+    }
+  }
+
+  blendGrounds();
+
+  /**
+   * Transiciones como las del Age of Empires: el borde entre dos suelos se
+   * deforma y se entrevera unos tiles (manchas de uno dentro del otro) y,
+   * entre suelos muy distintos, aparece uno mezclado: pasto nevado entre el
+   * pasto y la nieve, pasto con arena junto a la arena, pasto ralo junto a la
+   * tierra.
+   */
+  function blendGrounds(): void {
+    const source = terrain.slice();
+    const natural = (i: number): boolean =>
+      biomes[i] !== 'ocean' && biomes[i] !== 'mountain' && NATURAL.has(source[i] ?? Terrain.Water);
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        const i = index(x, y);
+        if (!natural(i) || inTown(x, y, 2)) continue;
+        const jx = Math.round((blendX.at(x, y) - 0.5) * 7 + (hash(seed + 41, x, y) - 0.5) * 3.2);
+        const jy = Math.round((blendY.at(x, y) - 0.5) * 7 + (hash(seed + 42, x, y) - 0.5) * 3.2);
+        const sx = Math.max(0, Math.min(width - 1, x + jx));
+        const sy = Math.max(0, Math.min(height - 1, y + jy));
+        const j = index(sx, sy);
+        if (natural(j)) terrain[i] = source[j] ?? terrain[i] ?? Terrain.Grass;
+      }
+    }
+    const warped = terrain.slice();
+    for (let y = 2; y < height - 2; y++) {
+      for (let x = 2; x < width - 2; x++) {
+        const i = index(x, y);
+        const here = warped[i];
+        if (here === undefined || !GREENS.has(here) || inTown(x, y, 2)) continue;
+        let mid: Terrain | undefined;
+        let near = 3;
+        for (let dy = -2; dy <= 2; dy++)
+          for (let dx = -2; dx <= 2; dx++) {
+            const other = warped[index(x + dx, y + dy)];
+            const between = other === undefined ? undefined : MIXES.get(other);
+            const d = Math.max(Math.abs(dx), Math.abs(dy));
+            if (between !== undefined && d < near) {
+              mid = between;
+              near = d;
+            }
+          }
+        if (mid === undefined) continue;
+        // Pegado al otro suelo casi siempre; a dos tiles, a veces (borde desparejo).
+        if (near === 1 || hash(seed + 43, x, y) < 0.55) terrain[i] = mid;
+      }
     }
   }
 
@@ -332,8 +432,7 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     for (let step = 0; step < size * 4; step++) {
       const i = index(x, y);
       visited.add(i);
-      if ((elevation[i] ?? 0) < SEA || (terrain[i] === Terrain.Water && step > 0 && !river[i]))
-        return;
+      if ((elevation[i] ?? 0) < SEA || (isWater(terrain[i]) && step > 0 && !river[i])) return;
       setRiver(x, y);
       // Más abajo se ensancha.
       if (step > 25) setRiver(x + 1, y);
@@ -363,27 +462,90 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     if (x < 1 || y < 1 || x >= width - 1 || y >= height - 1 || inTown(x, y, 1)) return;
     const i = index(x, y);
     if (biomes[i] === 'mountain') return;
-    // En el frío, los ríos están congelados (se pueden cruzar).
-    terrain[i] = biomes[i] === 'snow' ? Terrain.Ice : Terrain.Water;
+    // Los ríos son de agua poco profunda (se vadean); en el frío están congelados.
+    terrain[i] = biomes[i] === 'snow' ? Terrain.Ice : Terrain.ShallowWater;
     river[i] = 1;
   }
 
-  // ── Orillas: el mar cerca de la costa es poco profundo (los barcos navegan más afuera) ──
-  const SHORE = 2;
+  // ── Orillas y lagos ──
+  // El mar junto a la costa es poco profundo (se camina, a pie o a caballo) en
+  // una franja de ancho desparejo; más afuera, el agua profunda (para barcos).
+  // Los lagos chicos son todos de agua poco profunda; los grandes tienen el
+  // centro hondo.
+  const fromLand = new Uint8Array(total).fill(255);
+  {
+    const queue: number[] = [];
+    for (let i = 0; i < total; i++)
+      if (biomes[i] !== 'ocean') {
+        fromLand[i] = 0;
+        queue.push(i);
+      }
+    for (let head = 0; head < queue.length; head++) {
+      const i = queue[head] ?? 0;
+      const d = fromLand[i] ?? 0;
+      if (d >= 6) continue;
+      const x = i % width;
+      const y = (i - x) / width;
+      for (const [nx, ny] of neighbors8(x, y)) {
+        const j = index(nx, ny);
+        if ((fromLand[j] ?? 0) > d + 1) {
+          fromLand[j] = d + 1;
+          queue.push(j);
+        }
+      }
+    }
+  }
+  const lakes = inlandWaters();
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const i = index(x, y);
       if (terrain[i] !== Terrain.Water || biomes[i] !== 'ocean') continue;
-      let near = false;
-      for (let dy = -SHORE; dy <= SHORE && !near; dy++)
-        for (let dx = -SHORE; dx <= SHORE && !near; dx++) {
-          const nx = x + dx;
-          const ny = y + dy;
-          if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-          if (biomes[index(nx, ny)] !== 'ocean') near = true;
-        }
-      if (near) terrain[i] = Terrain.ShallowWater;
+      const d = fromLand[i] ?? 255;
+      const lake = lakes[i] ?? 0;
+      const reach = lake === 1 ? 99 : lake === 2 ? 3 : 2 + Math.round(shoreWidth.at(x, y) * 3);
+      if (d <= reach) terrain[i] = Terrain.ShallowWater;
     }
+  }
+
+  /** Agua encerrada en tierra: 1 = lago chico (todo bajo), 2 = lago grande; 0 = mar. */
+  function inlandWaters(): Uint8Array {
+    const out = new Uint8Array(total);
+    const sea = new Uint8Array(total);
+    const queue: number[] = [];
+    for (let x = 0; x < width; x++) queue.push(index(x, 0), index(x, height - 1));
+    for (let y = 0; y < height; y++) queue.push(index(0, y), index(width - 1, y));
+    for (const i of queue) sea[i] = 1;
+    for (let head = 0; head < queue.length; head++) {
+      const i = queue[head] ?? 0;
+      const x = i % width;
+      const y = (i - x) / width;
+      for (const [nx, ny] of neighbors4(x, y)) {
+        const j = index(nx, ny);
+        if (sea[j] || biomes[j] !== 'ocean') continue;
+        sea[j] = 1;
+        queue.push(j);
+      }
+    }
+    const seen = new Uint8Array(total);
+    for (let start = 0; start < total; start++) {
+      if (sea[start] || seen[start] || biomes[start] !== 'ocean') continue;
+      const body: number[] = [start];
+      seen[start] = 1;
+      for (let head = 0; head < body.length; head++) {
+        const i = body[head] ?? 0;
+        const x = i % width;
+        const y = (i - x) / width;
+        for (const [nx, ny] of neighbors4(x, y)) {
+          const j = index(nx, ny);
+          if (seen[j] || sea[j] || biomes[j] !== 'ocean') continue;
+          seen[j] = 1;
+          body.push(j);
+        }
+      }
+      const kind = body.length < 1500 ? 1 : 2;
+      for (const i of body) out[i] = kind;
+    }
+    return out;
   }
 
   // ── Vegetación y rocas ──
@@ -480,8 +642,9 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     if (!from || !to) continue;
     const start = gate(from, to);
     const end = gate(to, from);
-    const path = cheapestPath(width, height, start, end, roadCost, elongated ? 2.5 : ROAD_TURN);
-    if (!path) continue;
+    const straight = cheapestPath(width, height, start, end, roadCost, elongated ? 2 : ROAD_TURN);
+    if (!straight) continue;
+    const path = elongated ? curvePath(straight, roadCost, seed + a * 31 + b) : straight;
     for (const p of path) carveRoad(p.x, p.y);
     posts.push([start, path, to.name], [end, [...path].reverse(), from.name]);
   }
@@ -502,17 +665,18 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
   function roadCost(x: number, y: number): number {
     const i = index(x, y);
     // Un poco de ruido en el costo: los caminos serpentean en vez de ir en escuadra.
-    const wander = elongated ? roadWander.at(x, y) * 1.6 : 0;
+    const meander = elongated ? wander(x, y) : 0;
     if (inTown(x, y)) return Infinity;
     if (roads.has(i)) return 0.3;
     const biome = biomes[i];
     if (biome === 'ocean') return Infinity;
-    if (isWater(terrain[i])) return river[i] ? 14 : 30;
+    if (terrain[i] === Terrain.ShallowWater) return river[i] ? 8 : 12;
+    if (isWater(terrain[i])) return 30;
     if (biome === 'mountain') return 70;
     if (biome === 'swamp') return 3;
-    if (biome === 'forest' || biome === 'foothill' || biome === 'snow') return 1.25 + wander;
-    if (biome === 'desert' || biome === 'beach') return 1.15 + wander;
-    return 1 + wander;
+    if (biome === 'forest' || biome === 'foothill' || biome === 'snow') return 1.25 + meander;
+    if (biome === 'desert' || biome === 'beach') return 1.15 + meander;
+    return 1 + meander;
   }
 
   /** Un camino de tres tiles de ancho, despejado a los costados. */
@@ -580,6 +744,65 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     }
   }
 
+  const heights = elevationLevels();
+
+  /**
+   * Lomas como las del Age of Empires: la altura de cada tile en escalones
+   * finos, según la elevación y unas colinas suaves. Entre un tile y el
+   * vecino la diferencia es chica (laderas, no paredones); el agua y la costa
+   * quedan abajo y los pueblos, planos.
+   */
+  function elevationLevels(): number[] {
+    const hills = new ValueNoise(seed + 28, Math.max(10, size / 22));
+    const knolls = new ValueNoise(seed + 30, 16);
+    const bumps = new ValueNoise(seed + 29, 7);
+    const level = new Int16Array(total);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const i = index(x, y);
+        const biome = biomes[i];
+        if (biome === 'ocean' || biome === 'beach' || isWater(terrain[i])) continue;
+        const rise =
+          ((elevation[i] ?? SEA) - SEA) * 30 +
+          smoothstep(0.35, 0.9, hills.at(x, y)) * 40 +
+          knolls.at(x, y) * 14 +
+          bumps.at(x, y) * 4 +
+          (biome === 'mountain' ? 16 : biome === 'foothill' ? 6 : 0) -
+          (biome === 'swamp' ? 16 : 0);
+        level[i] = Math.max(0, Math.min(MAX_LEVEL, Math.round(rise)));
+      }
+    }
+    // Los pueblos, planos: a la altura más baja de su terreno.
+    for (const t of towns) {
+      let low = MAX_LEVEL;
+      for (let y = t.y - 2; y < t.y + t.plan.map.height + 2; y++)
+        for (let x = t.x - 2; x < t.x + t.plan.map.width + 2; x++)
+          low = Math.min(low, level[index(x, y)] ?? 0);
+      for (let y = t.y - 2; y < t.y + t.plan.map.height + 2; y++)
+        for (let x = t.x - 2; x < t.x + t.plan.map.width + 2; x++) level[index(x, y)] = low;
+    }
+    // Laderas, no paredones: entre vecinos a lo sumo `SLOPE` escalones (se bajan los que sobran).
+    for (let pass = 0; pass < 2; pass++) {
+      for (let y = 0; y < height; y++)
+        for (let x = 0; x < width; x++) limit(x, y, [-1, -1], [0, -1], [1, -1], [-1, 0]);
+      for (let y = height - 1; y >= 0; y--)
+        for (let x = width - 1; x >= 0; x--) limit(x, y, [1, 1], [0, 1], [-1, 1], [1, 0]);
+    }
+    return Array.from(level);
+
+    function limit(x: number, y: number, ...steps: (readonly [number, number])[]): void {
+      const i = index(x, y);
+      let cap = level[i] ?? 0;
+      for (const [dx, dy] of steps) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+        cap = Math.min(cap, (level[index(nx, ny)] ?? 0) + SLOPE);
+      }
+      level[i] = cap;
+    }
+  }
+
   const map = new TileMap({
     width,
     height,
@@ -587,6 +810,7 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     statics: [...statics.values()],
     regions,
     signs,
+    heights,
   });
   return { map, spawnPoint, items, npcs, biomes, towns: placed, roads, passes };
 
@@ -714,14 +938,15 @@ function vegetation(
       return null;
     case 'savanna':
       if (wet && roll < 0.08) return 'palm';
-      if (roll < 0.012) return 'acacia';
+      if (roll < 0.012) return pick < 0.75 ? 'acacia' : 'baobab';
       if (roll < 0.07) return 'tall-grass';
       if (roll < 0.085) return 'dry-shrub';
       if (roll < 0.09) return choose(['boulder', 'rock']);
       return null;
     case 'jungle':
       // Selva cerrada: árboles altos, palmeras, helechos y plantas de hojas grandes.
-      if (roll < 0.16) return pick < 0.65 ? 'jungle-tree' : 'palm';
+      if (wet && roll < 0.12) return 'bamboo';
+      if (roll < 0.16) return pick < 0.6 ? 'jungle-tree' : pick < 0.9 ? 'palm' : 'bamboo';
       if (roll < 0.26) return 'jungle-plant';
       if (roll < 0.34) return 'fern';
       if (roll < 0.36) return 'mushrooms';
@@ -729,7 +954,7 @@ function vegetation(
       return null;
     case 'swamp':
       if (roll < 0.07) return 'reeds';
-      if (roll < 0.09) return 'willow';
+      if (roll < 0.09) return pick < 0.7 ? 'willow' : 'cypress';
       if (roll < 0.105) return 'dead-tree';
       if (roll < 0.12) return 'mushrooms';
       if (roll < 0.14) return 'fern';
@@ -758,11 +983,15 @@ function vegetation(
         if (roll < 0.2)
           return conifer > 0.55
             ? 'pine'
-            : pick < 0.05
-              ? 'dead-tree'
-              : pick < 0.14
-                ? 'birch'
-                : 'oak';
+            : conifer < 0.24
+              ? pick < 0.7
+                ? 'maple'
+                : 'oak'
+              : pick < 0.05
+                ? 'dead-tree'
+                : pick < 0.14
+                  ? 'birch'
+                  : 'oak';
         if (roll < 0.23) return 'bush';
         if (roll < 0.26) return 'fern';
         if (roll < 0.275) return 'mushrooms';
@@ -790,8 +1019,19 @@ function loneTree(pick: number): StaticKind {
   if (pick < 0.5) return 'oak';
   if (pick < 0.68) return 'gomero';
   if (pick < 0.82) return 'poplar';
-  if (pick < 0.94) return 'ceibo';
+  if (pick < 0.9) return 'ceibo';
+  if (pick < 0.95) return 'cypress';
   return 'dead-tree';
+}
+
+/**
+ * Costo extra para trazar caminos que serpentean: curvas chicas y curvas
+ * grandes, como si rodearan lomas y arboledas en vez de ir en línea recta.
+ */
+export function wanderField(seed: number, size: number): (x: number, y: number) => number {
+  const small = new ValueNoise(seed + 22, 9);
+  const large = new ValueNoise(seed + 24, Math.max(12, size / 30));
+  return (x, y) => small.at(x, y) * 1.2 + large.at(x, y) * 2.6;
 }
 
 export function hash(seed: number, x: number, y: number): number {

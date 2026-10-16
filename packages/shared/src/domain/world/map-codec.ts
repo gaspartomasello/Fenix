@@ -7,9 +7,11 @@ import type { TileMapData } from './tile-map';
  * objeto fijo cinco bytes (tipo, x, y), ambos en base64. Un mapa de
  * 1000 × 1400 pasa de varios megas de JSON a poco más de uno.
  */
-export interface CompactMapData extends Omit<TileMapData, 'terrain' | 'statics'> {
+export interface CompactMapData extends Omit<TileMapData, 'terrain' | 'statics' | 'heights'> {
   readonly terrain: string;
   readonly statics: string;
+  /** Alturas: un byte por tile (si el mapa tiene). */
+  readonly heights?: string;
 }
 
 export function encodeMap(data: TileMapData): CompactMapData {
@@ -24,7 +26,13 @@ export function encodeMap(data: TileMapData): CompactMapData {
     statics[at + 3] = s.y & 0xff;
     statics[at + 4] = s.y >> 8;
   });
-  return { ...data, terrain: toBase64(terrain), statics: toBase64(statics) };
+  const { heights, ...rest } = data;
+  return {
+    ...rest,
+    terrain: toBase64(terrain),
+    statics: toBase64(statics),
+    ...(heights ? { heights: toBase64(Uint8Array.from(heights)) } : {}),
+  };
 }
 
 export function decodeMap(data: CompactMapData): TileMapData {
@@ -39,7 +47,13 @@ export function decodeMap(data: CompactMapData): TileMapData {
       y: (bytes[at + 3] ?? 0) | ((bytes[at + 4] ?? 0) << 8),
     });
   }
-  return { ...data, terrain, statics };
+  const { heights, ...rest } = data;
+  return {
+    ...rest,
+    terrain,
+    statics,
+    ...(heights ? { heights: Array.from(fromBase64(heights)) } : {}),
+  };
 }
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';

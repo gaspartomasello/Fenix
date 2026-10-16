@@ -1,9 +1,10 @@
-import { STATIC_ART_HEIGHT, STATIC_ART_WIDTH, STATIC_GROUND } from '@fenix/art';
-import { STATICS, type StaticPlacement, type TileMap } from '@fenix/shared';
+import { staticFrame } from '@fenix/art';
+import { STATICS, type StaticKind, type StaticPlacement, type TileMap } from '@fenix/shared';
 import { Rectangle, Sprite, type Container } from 'pixi.js';
 import type { FractionalPosition } from '../core/entity';
 import { staticDepth } from './depth';
-import { ART_SCALE, TILE_HALF, depthOf, tileToScreen } from './iso';
+import type { Ground } from './ground';
+import { ART_SCALE, TILE_HALF, depthOf } from './iso';
 import type { TextureCache } from './texture-cache';
 import { CHUNK_SIZE, variantFor } from './terrain-layer';
 
@@ -26,10 +27,27 @@ const LOW_STATICS = new Set([
 ]);
 
 /** Medidas del sprite en pantalla respecto de su punto de apoyo. */
-const SPRITE_LEFT = STATIC_GROUND.x * ART_SCALE;
-const SPRITE_RIGHT = (STATIC_ART_WIDTH - STATIC_GROUND.x) * ART_SCALE;
-const SPRITE_TOP = STATIC_GROUND.y * ART_SCALE;
-const SPRITE_BOTTOM = (STATIC_ART_HEIGHT - STATIC_GROUND.y) * ART_SCALE;
+function extent(kind: StaticKind): { left: number; right: number; top: number; bottom: number } {
+  const frame = staticFrame(kind);
+  return {
+    left: frame.ground.x * ART_SCALE,
+    right: (frame.width - frame.ground.x) * ART_SCALE,
+    top: frame.ground.y * ART_SCALE,
+    bottom: (frame.height - frame.ground.y) * ART_SCALE,
+  };
+}
+
+/** Punto de apoyo: el centro de la base (un objeto de 2 × 2 se apoya entre sus cuatro tiles). */
+function footing(placement: StaticPlacement): FractionalPosition {
+  const half = (STATICS[placement.kind].footprint - 1) / 2;
+  return { x: placement.x + half, y: placement.y + half };
+}
+
+/** El tile de más adelante de la base: ahí se ordena el dibujo. */
+function front(placement: StaticPlacement): FractionalPosition {
+  const last = STATICS[placement.kind].footprint - 1;
+  return { x: placement.x + last, y: placement.y + last };
+}
 
 /** Caja del personaje en pantalla respecto de sus pies (para la transparencia). */
 const CHARACTER_BOX = { left: 16, right: 16, top: 64 };
@@ -52,6 +70,7 @@ export class StaticLayer {
     map: TileMap,
     private readonly textures: TextureCache,
     private readonly target: Container,
+    private readonly ground: Ground,
   ) {
     const byChunk = new Map<string, StaticPlacement[]>();
     for (const placement of map.statics) {
@@ -61,7 +80,7 @@ export class StaticLayer {
       list.push(placement);
     }
     for (const placements of byChunk.values()) {
-      this.chunks.push({ placements, bounds: boundsOf(placements), sprites: null });
+      this.chunks.push({ placements, bounds: boundsOf(placements, ground), sprites: null });
     }
   }
 
@@ -98,11 +117,12 @@ export class StaticLayer {
       const sprite = new Sprite(
         this.textures.static(placement.kind, variantFor(placement.x, placement.y)),
       );
-      const screen = tileToScreen(placement);
-      sprite.anchor.set(STATIC_GROUND.x / STATIC_ART_WIDTH, STATIC_GROUND.y / STATIC_ART_HEIGHT);
+      const screen = this.ground.toScreen(footing(placement));
+      const frame = staticFrame(placement.kind);
+      sprite.anchor.set(frame.ground.x / frame.width, frame.ground.y / frame.height);
       sprite.scale.set(ART_SCALE);
       sprite.position.set(screen.x, screen.y);
-      sprite.zIndex = staticDepth(placement);
+      sprite.zIndex = staticDepth(front(placement));
       this.target.addChild(sprite);
       return { sprite, placement };
     });
@@ -115,21 +135,22 @@ export class StaticLayer {
 
   /** Lo que está delante del personaje y se superpone con él se vuelve translúcido. */
   private fadeOccluders(focuses: readonly FractionalPosition[]): void {
-    const boxes = focuses.map((f) => ({ screen: tileToScreen(f), depth: depthOf(f) }));
+    const boxes = focuses.map((f) => ({ screen: this.ground.toScreen(f), depth: depthOf(f) }));
     for (const chunk of this.chunks) {
       if (!chunk.sprites) continue;
       for (const { sprite, placement } of chunk.sprites) {
         if (LOW_STATICS.has(placement.kind)) continue;
-        const depth = depthOf(placement);
-        const s = tileToScreen(placement);
+        const depth = depthOf(front(placement));
+        const s = this.ground.toScreen(footing(placement));
+        const e = extent(placement.kind);
         const hides = boxes.some(
           (box) =>
             depth > box.depth &&
             depth - box.depth <= 6 &&
-            s.x - SPRITE_LEFT < box.screen.x + CHARACTER_BOX.right &&
-            s.x + SPRITE_RIGHT > box.screen.x - CHARACTER_BOX.left &&
-            s.y - SPRITE_TOP < box.screen.y &&
-            s.y + SPRITE_BOTTOM > box.screen.y - CHARACTER_BOX.top,
+            s.x - e.left < box.screen.x + CHARACTER_BOX.right &&
+            s.x + e.right > box.screen.x - CHARACTER_BOX.left &&
+            s.y - e.top < box.screen.y &&
+            s.y + e.bottom > box.screen.y - CHARACTER_BOX.top,
         );
         sprite.alpha = hides ? OCCLUDER_ALPHA : 1;
       }
@@ -137,17 +158,18 @@ export class StaticLayer {
   }
 }
 
-function boundsOf(placements: readonly StaticPlacement[]): Rectangle {
+function boundsOf(placements: readonly StaticPlacement[], ground: Ground): Rectangle {
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
   for (const p of placements) {
-    const s = tileToScreen(p);
-    minX = Math.min(minX, s.x - SPRITE_LEFT);
-    maxX = Math.max(maxX, s.x + SPRITE_RIGHT);
-    minY = Math.min(minY, s.y - SPRITE_TOP);
-    maxY = Math.max(maxY, s.y + SPRITE_BOTTOM + TILE_HALF);
+    const s = ground.toScreen(footing(p));
+    const e = extent(p.kind);
+    minX = Math.min(minX, s.x - e.left);
+    maxX = Math.max(maxX, s.x + e.right);
+    minY = Math.min(minY, s.y - e.top);
+    maxY = Math.max(maxY, s.y + e.bottom + TILE_HALF);
   }
   return new Rectangle(minX, minY, maxX - minX, maxY - minY);
 }

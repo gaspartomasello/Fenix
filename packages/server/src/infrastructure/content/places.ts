@@ -10,8 +10,8 @@ import {
   type StaticPlacement,
 } from '@fenix/shared';
 import { SeededRandom } from '../system/seeded-random';
-import type { Biome, Continent } from './procedural-map';
-import { cheapestPath } from './roads';
+import { type Biome, type Continent, wanderField } from './procedural-map';
+import { cheapestPath, curvePath } from './roads';
 
 /** Un lugar con nombre en las tierras salvajes, con quienes viven ahí. */
 export interface Place {
@@ -154,18 +154,19 @@ const PLACES: readonly PlaceSpec[] = [
   {
     name: 'Faro del Cabo',
     biomes: ['beach', 'grassland', 'forest', 'meadow', 'plains'],
-    radius: 2,
+    radius: 4,
     from: 40,
     to: 160,
     coast: true,
     creatures: [],
     build(site) {
       const { x, y } = site.center;
-      for (let dy = -1; dy <= 1; dy++)
-        for (let dx = -1; dx <= 1; dx++) site.ground(x + dx, y + dy, Terrain.Stone);
+      // El faro ocupa 2 × 2 tiles, sobre una explanada de piedra.
+      for (let dy = -2; dy <= 3; dy++)
+        for (let dx = -2; dx <= 3; dx++) site.ground(x + dx, y + dy, Terrain.Stone);
       site.put(x, y, 'lighthouse');
-      site.put(x + 1, y + 1, 'barrel');
-      site.put(x - 1, y + 1, 'crate');
+      site.put(x + 3, y + 2, 'barrel');
+      site.put(x - 1, y + 3, 'crate');
     },
   },
   {
@@ -490,6 +491,7 @@ export function populateContinent(continent: Continent, seed: number): Populated
    * camino o un pueblo; dentro del lugar no se toca nada.
    */
   function trail(from: Position, inside?: RegionData, surface?: Terrain): void {
+    const meander = wanderField(seed + 50, Math.min(width, height));
     const target = continent.towns
       .map((t) => ({ x: t.x + Math.floor(t.width / 2), y: t.y + Math.floor(t.height / 2) }))
       .sort(
@@ -498,24 +500,19 @@ export function populateContinent(continent: Continent, seed: number): Populated
     if (!target) return;
     const within = (x: number, y: number, r: RegionData | undefined): boolean =>
       !!r && x >= r.x && y >= r.y && x < r.x + r.width && y < r.y + r.height;
-    const path = cheapestPath(
-      width,
-      height,
-      from,
-      target,
-      (x, y) => {
-        const i = index(x, y);
-        if (roads.has(i)) return 0.3;
-        const biome = continent.biomes[i];
-        if (biome === 'ocean') return Infinity;
-        if (statics.get(i)?.kind === 'mountain') return 40;
-        if (isWater(terrain[i])) return 12;
-        if (biome === 'swamp') return 2;
-        return 1;
-      },
-      4,
-    );
-    if (!path) return;
+    const cost = (x: number, y: number): number => {
+      const i = index(x, y);
+      if (roads.has(i)) return 0.3;
+      const biome = continent.biomes[i];
+      if (biome === 'ocean') return Infinity;
+      if (statics.get(i)?.kind === 'mountain') return 40;
+      if (isWater(terrain[i])) return 12;
+      if (biome === 'swamp') return 2 + meander(x, y);
+      return 1 + meander(x, y);
+    };
+    const straight = cheapestPath(width, height, from, target, cost, 2);
+    if (!straight) return;
+    const path = curvePath(straight, cost, seed + from.x * 7 + from.y, 12, 3);
     for (const p of path) {
       const i = index(p.x, p.y);
       if (roads.has(i) || continent.towns.some((t) => within(p.x, p.y, { ...t, name: t.name })))
@@ -548,6 +545,7 @@ export function populateContinent(continent: Continent, seed: number): Populated
     statics: [...statics.values()],
     regions,
     signs: map.signs.filter((s) => statics.get(index(s.x, s.y))?.kind === 'sign'),
+    ...(map.toData().heights ? { heights: map.toData().heights } : {}),
   });
   homes.push(...biomeCreatures(populated));
   return { ...continent, map: populated, places, caveEntrance, homes };
@@ -662,7 +660,7 @@ export function populateContinent(continent: Continent, seed: number): Populated
         for (let placed = 0, tries = 0; placed < count && tries < count * 40; tries++) {
           const p = positions[Math.floor(random.next() * positions.length)];
           if (!p || used.has(index(p.x, p.y)) || quiet(p)) continue;
-          if (!world.isWalkable(p) || world.regionAt(p)) continue;
+          if (!world.isWalkable(p) || world.regionAt(p) || isWater(world.terrainAt(p))) continue;
           used.add(index(p.x, p.y));
           out.push({ kind, home: p });
           placed++;

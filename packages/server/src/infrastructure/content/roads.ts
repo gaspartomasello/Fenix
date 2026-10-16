@@ -161,3 +161,83 @@ class MinHeap {
     this.keys[b] = key;
   }
 }
+
+/**
+ * Suaviza un camino trazado: lo recorre por puntos cada `spacing` tiles,
+ * corridos al costado un poco al azar (hasta `sway` tiles), y une esos puntos
+ * con una curva (Catmull-Rom). Así el camino serpentea en vez de ir en
+ * escuadras rectas. Si un tramo de la curva pisa algo prohibido o muy caro
+ * (`cost` ≥ `limit`: mar, montaña) ese tramo queda como estaba.
+ */
+export function curvePath(
+  path: readonly Position[],
+  cost: (x: number, y: number) => number,
+  seed: number,
+  spacing = 14,
+  sway = 4,
+  limit = 25,
+): Position[] {
+  if (path.length < spacing * 2) return [...path];
+  const keys: number[] = [];
+  for (let i = 0; i < path.length - spacing / 2; i += spacing) keys.push(i);
+  keys.push(path.length - 1);
+  const points = keys.map((k, n) => {
+    const p = path[k] ?? { x: 0, y: 0 };
+    if (n === 0 || n === keys.length - 1) return { x: p.x, y: p.y };
+    const before = path[Math.max(0, k - spacing)] ?? p;
+    const after = path[Math.min(path.length - 1, k + spacing)] ?? p;
+    const dx = after.x - before.x;
+    const dy = after.y - before.y;
+    const length = Math.hypot(dx, dy) || 1;
+    const offset = (mix(seed, p.x, p.y) - 0.5) * 2 * sway;
+    return { x: p.x - (dy / length) * offset, y: p.y + (dx / length) * offset };
+  });
+  const out: Position[] = [];
+  const append = (p: Position): void => {
+    const last = out[out.length - 1];
+    if (last && last.x === p.x && last.y === p.y) return;
+    // Siempre de a un paso en 4 direcciones: el camino no queda cortado en diagonal.
+    if (last) {
+      let { x, y } = last;
+      while (Math.abs(p.x - x) + Math.abs(p.y - y) > 1) {
+        if (Math.abs(p.x - x) >= Math.abs(p.y - y)) x += Math.sign(p.x - x);
+        else y += Math.sign(p.y - y);
+        out.push({ x, y });
+      }
+    }
+    out.push({ x: p.x, y: p.y });
+  };
+  for (let n = 0; n + 1 < points.length; n++) {
+    const p0 = points[Math.max(0, n - 1)] ?? { x: 0, y: 0 };
+    const p1 = points[n] ?? p0;
+    const p2 = points[n + 1] ?? p1;
+    const p3 = points[Math.min(points.length - 1, n + 2)] ?? p2;
+    const steps = Math.max(4, Math.ceil(Math.hypot(p2.x - p1.x, p2.y - p1.y) * 3));
+    const segment: Position[] = [];
+    for (let s = 0; s <= steps; s++) {
+      const t = s / steps;
+      segment.push({
+        x: Math.round(catmullRom(p0.x, p1.x, p2.x, p3.x, t)),
+        y: Math.round(catmullRom(p0.y, p1.y, p2.y, p3.y, t)),
+      });
+    }
+    const blocked = segment.some((p) => !(cost(p.x, p.y) < limit));
+    const piece = blocked ? path.slice(keys[n], (keys[n + 1] ?? path.length - 1) + 1) : segment;
+    for (const p of piece) append(p);
+  }
+  return out;
+}
+
+function catmullRom(a: number, b: number, c: number, d: number, t: number): number {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return (
+    0.5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (3 * b - a - 3 * c + d) * t3)
+  );
+}
+
+function mix(seed: number, x: number, y: number): number {
+  let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(seed + 3, 2246822519);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}

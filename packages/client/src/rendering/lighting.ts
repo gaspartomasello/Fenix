@@ -2,7 +2,8 @@ import { PixelImage } from '@fenix/art';
 import { daylight, type StaticPlacement } from '@fenix/shared';
 import { Container, Graphics, RenderTexture, Sprite, type Renderer } from 'pixi.js';
 import type { FractionalPosition } from '../core/entity';
-import { TILE_HALF, tileToScreen, type ScreenPoint } from './iso';
+import type { Ground } from './ground';
+import { TILE_HALF, type ScreenPoint } from './iso';
 import type { TextureCache } from './texture-cache';
 
 /** Luz de ambiente en plena noche: el mundo se ve azulado y oscuro, pero se distingue. */
@@ -50,7 +51,10 @@ export class Lighting {
   private readonly pool: Sprite[] = [];
   private target: RenderTexture;
 
-  constructor(private readonly textures: TextureCache) {
+  constructor(
+    private readonly textures: TextureCache,
+    private readonly ground: Ground,
+  ) {
     this.target = RenderTexture.create({ width: 1, height: 1, resolution: LIGHT_MAP_RESOLUTION });
     this.overlay = new Sprite(this.target);
     this.overlay.blendMode = 'multiply';
@@ -126,7 +130,7 @@ export class Lighting {
       this.pool[index] = sprite;
       this.scene.addChild(sprite);
     }
-    const screen = frame.toScreen(tileToScreen(at));
+    const screen = frame.toScreen(this.ground.toScreen(at));
     // Un paso de tile mide 22·√2 px en la pantalla; el halo llega hasta `radius` tiles.
     const size = radius * TILE_HALF * Math.SQRT2 * 2 * frame.zoom;
     sprite.visible = true;

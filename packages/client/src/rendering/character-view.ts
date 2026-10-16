@@ -18,7 +18,8 @@ import type { Notoriety } from '@fenix/shared';
 import { COMBAT_TEXT_MS, type CombatText, type Entity } from '../core/entity';
 import { Fidgets, attackFrame, castFrame, stepFrame, type AttackStyle } from './animation';
 import { characterDepth, corpseDepth } from './depth';
-import { CHARACTER_SCALE, tileToScreen } from './iso';
+import type { Ground } from './ground';
+import { CHARACTER_SCALE } from './iso';
 import type { TextureCache } from './texture-cache';
 
 const NAME_COLOR_SELF = 0xf6d36b;
@@ -88,6 +89,7 @@ export class CharacterView {
     private readonly entity: Entity,
     private readonly textures: TextureCache,
     readonly isSelf: boolean,
+    private readonly ground: Ground,
     private readonly ownPet = false,
   ) {
     this.sprite.scale.set(CHARACTER_SCALE);
@@ -225,7 +227,7 @@ export class CharacterView {
   update(now: number, state: CharacterViewState): void {
     const position = this.entity.renderPosition(now);
     const lunge = this.entity.lungeOffset(now);
-    const screen = tileToScreen({ x: position.x + lunge.x, y: position.y + lunge.y });
+    const screen = this.ground.toScreen({ x: position.x + lunge.x, y: position.y + lunge.y });
     this.container.position.set(screen.x, screen.y);
     if (!this.entity.dead) this.seenAlive = true;
     else if (this.seenAlive) {

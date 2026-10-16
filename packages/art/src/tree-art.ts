@@ -399,7 +399,11 @@ export type TreeSpecies =
   | 'palm'
   | 'jungle-tree'
   | 'birch'
-  | 'acacia';
+  | 'acacia'
+  | 'maple'
+  | 'cypress'
+  | 'baobab'
+  | 'bamboo';
 
 /** Sombra en el suelo de cada especie (radios en pixeles de pantalla). */
 export const TREE_SHADOWS: Readonly<Record<TreeSpecies, readonly [number, number]>> = {
@@ -415,6 +419,10 @@ export const TREE_SHADOWS: Readonly<Record<TreeSpecies, readonly [number, number
   'jungle-tree': [50, 20],
   birch: [22, 9],
   acacia: [46, 15],
+  maple: [40, 16],
+  cypress: [13, 6],
+  baobab: [36, 14],
+  bamboo: [22, 9],
 };
 
 export function drawTree(c: VolumeCanvas, species: TreeSpecies, variant: number): void {
@@ -1180,6 +1188,181 @@ function acacia(c: VolumeCanvas, variant: number): void {
   c.ellipsoid([0, crownY + 2, 0], FLAT, [16 * s, 2.4 * s, 16 * s], leaf);
 }
 
+const MAPLE_BARK = barkOf(ramp([110, 92, 74]), furrows);
+/** Arces de otoño: rojos, naranjas o dorados según la variante. */
+const MAPLE_LEAVES: readonly Ramp[] = [
+  ramp([186, 70, 36]),
+  ramp([206, 120, 40]),
+  ramp([196, 160, 52]),
+  ramp([160, 52, 40]),
+];
+
+/**
+ * Arce de otoño: como un roble más esbelto, con la copa redonda roja, naranja o
+ * dorada (da color a los bosques, como los del Age of Empires).
+ */
+function maple(c: VolumeCanvas, variant: number): void {
+  const t = startTree(c, 1201, variant);
+  const s = t.size;
+  roots(t, 4.4 * s, 4, 9 * s, MAPLE_BARK);
+  const trunk = grow(
+    t,
+    [0, 0, 0],
+    turn(UP, 0.05, t.rand() * Math.PI * 2),
+    36 * s,
+    4.4 * s,
+    3.2 * s,
+    { wiggle: 0.08, segment: 5 },
+    MAPLE_BARK,
+  );
+  const plan: Ramification = {
+    levels: 3,
+    fork: () => 2,
+    lateral: () => 1,
+    angle: (level) => [0, 0.45, 0.55, 0.6][level] ?? 0.6,
+    ratio: () => 0.66,
+    bend: () => ({ wiggle: 0.22, pull: (p) => add(scale(horizontal(p), 0.05), [0, 0.07, 0]) }),
+    twig: 0.4,
+  };
+  const tips: Tip[] = [];
+  let azimuth = t.rand() * Math.PI * 2;
+  for (let i = 0; i < 4; i++) {
+    azimuth += (Math.PI * 2) / 4 + (t.rand() - 0.5) * 0.6;
+    const from = along(trunk, i === 0 ? 1 : 0.7 + t.rand() * 0.3);
+    ramify(
+      t,
+      plan,
+      from.p,
+      turn(UP, 0.55 + t.rand() * 0.2, azimuth),
+      22 * s,
+      2.6 * s,
+      1,
+      MAPLE_BARK,
+      tips,
+    );
+  }
+  const colors = MAPLE_LEAVES[variant % MAPLE_LEAVES.length] ?? OAK_LEAF;
+  foliage(t, tips, colors, 4.4 * s, { seed: variant * 19, perTip: 4, ragged: 0.38 });
+}
+
+const CYPRESS_BARK = barkOf(ramp([100, 80, 64]), furrows);
+const CYPRESS_LEAF = ramp([38, 78, 44]);
+
+/** Ciprés: una llama verde oscura, alta y apretada, angosta abajo y en punta arriba. */
+function cypress(c: VolumeCanvas, variant: number): void {
+  const t = startTree(c, 1301, variant);
+  const s = t.size;
+  const height = 100 * s;
+  grow(t, [0, 0, 0], UP, 14 * s, 3 * s, 2.4 * s, { wiggle: 0.02 }, CYPRESS_BARK);
+  const crown: CrownShape = { center: [0, height * 0.52, 0], width: 11 * s, height: height * 0.48 };
+  const leaf = leaves(CYPRESS_LEAF, crown, variant * 11, 0.3, 0.9);
+  for (let y = 8 * s; y < height; y += 3 * s) {
+    const k = y / height;
+    // Perfil de llama: más ancho a un tercio de la altura, en punta arriba.
+    const r = (3 + 9 * Math.sin(Math.PI * Math.min(1, k * 1.15)) ** 0.7 * (1 - k * 0.55)) * s;
+    const off: Vec3 = [(t.rand() - 0.5) * 2 * s, y, (t.rand() - 0.5) * 2 * s];
+    c.ellipsoid(off, FLAT, [r, 3.4 * s, r], leaf);
+  }
+}
+
+const BAOBAB_BARK = barkOf(ramp([150, 128, 108]), creases, 0.76);
+const BAOBAB_LEAF = ramp([90, 124, 56]);
+
+/**
+ * Baobab de sabana: tronco enorme como una botella y, arriba, ramas cortas y
+ * retorcidas que parecen raíces, con poco follaje.
+ */
+function baobab(c: VolumeCanvas, variant: number): void {
+  const t = startTree(c, 1401, variant);
+  const s = t.size;
+  // Tronco botella: se ensancha a media altura.
+  const trunkTop = 40 * s;
+  for (let y = 0; y < trunkTop; y += 4 * s) {
+    const k = y / trunkTop;
+    const r0 = (9 + 3 * Math.sin(Math.PI * k * 0.8)) * s * (1 - k * 0.2);
+    const k1 = (y + 4 * s) / trunkTop;
+    const r1 = (9 + 3 * Math.sin(Math.PI * k1 * 0.8)) * s * (1 - k1 * 0.2);
+    c.limb([0, y, 0], [0, y + 4 * s, 0], r0, r1, BAOBAB_BARK);
+  }
+  const plan: Ramification = {
+    levels: 3,
+    fork: () => 2,
+    lateral: () => 1,
+    angle: () => 0.75,
+    ratio: () => 0.5,
+    bend: () => ({ wiggle: 0.35, pull: () => [0, 0.12, 0] }),
+    twig: 0.6,
+  };
+  const tips: Tip[] = [];
+  let azimuth = t.rand() * Math.PI * 2;
+  for (let i = 0; i < 6; i++) {
+    azimuth += (Math.PI * 2) / 6 + (t.rand() - 0.5) * 0.5;
+    const from: Vec3 = [Math.cos(azimuth) * 5 * s, trunkTop - 2, Math.sin(azimuth) * 5 * s];
+    ramify(
+      t,
+      plan,
+      from,
+      turn(UP, 1.15 + t.rand() * 0.2, azimuth),
+      15 * s,
+      2.8 * s,
+      1,
+      BAOBAB_BARK,
+      tips,
+    );
+  }
+  // Hojas solo en la copa, arriba: el tronco botella queda a la vista.
+  const high = tips.filter((tip) => tip.p[1] > trunkTop + 8 * s);
+  foliage(t, high, BAOBAB_LEAF, 3.2 * s, {
+    seed: variant * 23,
+    chance: 0.85,
+    perTip: 2,
+    flat: 0.5,
+  });
+}
+
+const BAMBOO_CANE: Material = (s) =>
+  tone(ramp([118, 156, 66]), s.light, Math.abs((s.p[1] % 9) - 0.5) < 0.6 ? -1 : 0);
+const BAMBOO_LEAF = ramp([88, 140, 58]);
+
+/** Bambú: una mata de cañas finas y anilladas que se arquean, con hojas finas en las puntas. */
+function bamboo(c: VolumeCanvas, variant: number): void {
+  const t = startTree(c, 1501, variant);
+  const s = t.size;
+  const tips: Tip[] = [];
+  const canes = 12 + (variant % 4);
+  const axes: Axis[] = [];
+  for (let i = 0; i < canes; i++) {
+    const a = t.rand() * Math.PI * 2;
+    const r = Math.sqrt(t.rand()) * 9 * s;
+    const base: Vec3 = [Math.cos(a) * r, 0, Math.sin(a) * r];
+    const lean = horizontal([Math.cos(a), 0, Math.sin(a)]);
+    const axis = grow(
+      t,
+      base,
+      normalize(add(UP, scale(lean, 0.12))),
+      (70 + t.rand() * 30) * s,
+      1.5 * s,
+      0.7 * s,
+      { wiggle: 0.02, pull: (_p, _d, k) => scale(lean, 0.035 * k), segment: 9 },
+      BAMBOO_CANE,
+    );
+    axes.push(axis);
+    for (const k of [0.45, 0.6, 0.72, 0.84, 0.94, 1]) {
+      const at = along(axis, k);
+      tips.push({ p: at.p, d: normalize(add(at.d, scale(lean, 0.8))) });
+    }
+  }
+  const crown = crownOf(tips);
+  const leaf = leaves(BAMBOO_LEAF, crown, variant * 29, 0.5, 0.8);
+  for (const tip of tips) {
+    for (let k = 0; k < 3; k++) {
+      const d = normalize(add(tip.d, [(t.rand() - 0.5) * 1.4, -0.3, (t.rand() - 0.5) * 1.4]));
+      const p = add(tip.p, scale(d, 4 * s));
+      c.ellipsoid(p, axesAlong(d), [1.8 * s, 0.6, 5.5 * s], leaf);
+    }
+  }
+}
+
 const TREES: Readonly<Record<TreeSpecies, (c: VolumeCanvas, variant: number) => void>> = {
   oak,
   pine,
@@ -1193,4 +1376,8 @@ const TREES: Readonly<Record<TreeSpecies, (c: VolumeCanvas, variant: number) => 
   'jungle-tree': jungleTree,
   birch,
   acacia,
+  maple,
+  cypress,
+  baobab,
+  bamboo,
 };

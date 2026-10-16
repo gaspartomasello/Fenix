@@ -22,7 +22,9 @@ function staticColor(kind: StaticKind): string | null {
     return '#8d8a84';
   if (kind === 'column' || kind === 'fallen-column') return '#d8d2c4';
   if (kind === 'palm' || kind === 'acacia') return '#4f7a34';
-  if (kind === 'birch') return '#7c9a4a';
+  if (kind === 'birch' || kind === 'bamboo') return '#7c9a4a';
+  if (kind === 'maple') return '#a8542c';
+  if (kind === 'baobab') return '#6a7a3c';
   if (kind.startsWith('wall') || kind === 'lighthouse') return '#c9c2b4';
   if (kind === 'tent') return '#c49a62';
   if (kind === 'lamp' || kind === 'campfire' || kind === 'brazier' || kind === 'shrine')

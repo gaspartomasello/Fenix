@@ -20,7 +20,7 @@ import {
 import { drawCreatureFrame } from './creature-art';
 import { creatureLayout } from './monster-art';
 import { ITEM_ART_SIZE, drawItem, itemVariant } from './item-art';
-import { STATIC_ART_HEIGHT, STATIC_ART_WIDTH, drawStatic } from './static-art';
+import { STATIC_ART_HEIGHT, STATIC_ART_WIDTH, drawStatic, staticFrame } from './static-art';
 import { TERRAIN_ART_SIZE, drawTerrainTile } from './terrain-art';
 
 const opaquePixels = (data: Uint8ClampedArray): number =>
@@ -41,9 +41,18 @@ describe('arte procedural (sin DOM)', () => {
   it('dibuja todos los objetos fijos', () => {
     for (const kind of STATIC_KINDS) {
       const image = drawStatic(kind, 0);
-      expect([image.width, image.height]).toEqual([STATIC_ART_WIDTH, STATIC_ART_HEIGHT]);
+      const frame = staticFrame(kind);
+      expect([image.width, image.height]).toEqual([frame.width, frame.height]);
       expect(opaquePixels(image.data)).toBeGreaterThan(10);
     }
+  });
+
+  it('el faro es grande: lienzo propio, más alto que el de siempre', () => {
+    expect(staticFrame('lighthouse').height).toBeGreaterThan(STATIC_ART_HEIGHT);
+    expect(staticFrame('oak')).toMatchObject({
+      width: STATIC_ART_WIDTH,
+      height: STATIC_ART_HEIGHT,
+    });
   });
 
   it('dibuja el ícono de cada objeto', () => {

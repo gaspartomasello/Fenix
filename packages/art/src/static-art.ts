@@ -35,32 +35,53 @@ const H = 22 * Math.SQRT2 * 0.5;
 
 type Model = (c: VolumeCanvas, variant: number) => void;
 
+/** Lienzo de un objeto fijo: medidas y dónde queda el punto de apoyo. */
+export interface StaticFrame {
+  readonly width: number;
+  readonly height: number;
+  readonly ground: { readonly x: number; readonly y: number };
+}
+
+const STANDARD_FRAME: StaticFrame = {
+  width: STATIC_ART_WIDTH,
+  height: STATIC_ART_HEIGHT,
+  ground: STATIC_GROUND,
+};
+
 interface StaticSpec {
   readonly model: Model;
   /** Radios de la sombra en el suelo (en pixeles de pantalla). */
   readonly shadow?: readonly [number, number];
+  /** Lienzo propio para los objetos grandes (el faro); si no, el de siempre. */
+  readonly frame?: StaticFrame;
+}
+
+/** El lienzo en que se dibuja un objeto fijo. */
+export function staticFrame(kind: StaticKind): StaticFrame {
+  return SPECS[kind].frame ?? STANDARD_FRAME;
 }
 
 /** Dibuja un objeto fijo. Las variantes cambian detalles (copa, flores, piedras…). */
 export function drawStatic(kind: StaticKind, variant: number): PixelImage {
   const spec = SPECS[kind];
+  const frame = staticFrame(kind);
   const canvas = new VolumeCanvas(
-    STATIC_ART_WIDTH,
-    STATIC_ART_HEIGHT,
-    new WorldProjection(STATIC_GROUND.x, STATIC_GROUND.y),
+    frame.width,
+    frame.height,
+    new WorldProjection(frame.ground.x, frame.ground.y),
   );
   spec.model(canvas, variant % STATIC_VARIANTS);
   const body = canvas.toImage(OUTLINE);
-  const image = new PixelImage(STATIC_ART_WIDTH, STATIC_ART_HEIGHT);
-  if (spec.shadow) softShadow(image, spec.shadow[0], spec.shadow[1]);
+  const image = new PixelImage(frame.width, frame.height);
+  if (spec.shadow) softShadow(image, frame, spec.shadow[0], spec.shadow[1]);
   image.draw(body, 0, 0);
   return image;
 }
 
 /** Sombra difusa en el suelo, corrida a la derecha (la luz viene de la izquierda). */
-function softShadow(image: PixelImage, rx: number, ry: number): void {
-  const cx = STATIC_GROUND.x + rx * 0.25;
-  const cy = STATIC_GROUND.y + ry * 0.2;
+function softShadow(image: PixelImage, frame: StaticFrame, rx: number, ry: number): void {
+  const cx = frame.ground.x + rx * 0.25;
+  const cy = frame.ground.y + ry * 0.2;
   for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) {
     for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
       const d = ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2;
@@ -649,31 +670,61 @@ const gravestone: Model = (c, variant) => {
   c.ellipsoid([5, 0.6, 5], axesAlong([1, 0, 1]), [10, 1.6, 5], solid(ramp([96, 78, 58])));
 };
 
-/** Faro: torre de piedra a franjas blancas y rojas, balcón y la linterna que alumbra. */
+/**
+ * Faro: una torre alta de piedra a franjas blancas y rojas, sobre una base de
+ * mampostería de 2 × 2 tiles con puerta; arriba, el balcón con baranda, la
+ * linterna que alumbra y el techo de hierro. Se ve desde lejos.
+ */
 const lighthouse: Model = (c) => {
-  const height = 96;
+  const height = 210;
+  const base = 2 * H * 0.92;
   const banded: Material = (s) => {
-    const band = Math.floor(s.p[1] / 16) % 2;
+    const band = Math.floor(s.p[1] / 26) % 2;
     const colors = band === 0 ? ramp([226, 222, 212]) : ramp([176, 60, 50]);
-    const course = Math.abs((s.p[1] % 4) - 2) > 1.7 ? -1 : 0;
+    const course = Math.abs((s.p[1] % 5) - 2.5) > 2.1 ? -1 : 0;
     return tone(colors, s.light, course);
   };
-  cylinder(c, [0, 0, 0], 8, () => 14, rocky(STONE, 2));
-  cylinder(c, [0, 8, 0], height, (t) => 11 - t * 4, banded);
-  c.ellipsoid([0, height + 9, 0], UP, [10, 1.6, 10], metal(IRON));
-  c.box([7.5, 14, 7.5], axesAlong([1, 0, 1]), [3, 5, 0.6], solid(ramp([70, 50, 34])));
-  cylinder(c, [0, height + 10, 0], 9, () => 5.5, glowing(ramp([255, 230, 140])));
-  for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2;
+  // Base cuadrada que ocupa los cuatro tiles, con zócalo y cornisa.
+  c.box([0, 9, 0], axesAlong([0, 0, 1]), [base, 9, base], masonry(0));
+  c.box([0, 19, 0], axesAlong([0, 0, 1]), [base * 0.96, 1.4, base * 0.96], rocky(STONE, 4));
+  cylinder(c, [0, 20, 0], 10, () => 24, rocky(STONE, 2));
+  // La torre se afina al subir.
+  cylinder(c, [0, 30, 0], height - 30, (t) => 21 - t * 8, banded);
+  // Puerta y ventanitas.
+  const wood = solid(ramp([70, 50, 34]));
+  c.box([base * 0.7, 8, base * 0.7], axesAlong([1, 0, 1]), [5, 8, 0.8], wood);
+  const glass = glowing(ramp([255, 220, 130]));
+  for (const k of [0.3, 0.5, 0.7]) {
+    const y = 30 + (height - 30) * k;
+    const r = 21 - k * 8;
+    c.box([r * 0.72, y, r * 0.72], axesAlong([1, 0, 1]), [1.6, 3, 0.4], glass);
+  }
+  // Balcón con baranda.
+  c.ellipsoid([0, height + 2, 0], UP, [17, 2.2, 17], metal(IRON));
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * Math.PI * 2;
     c.limb(
-      [Math.cos(a) * 5.8, height + 10, Math.sin(a) * 5.8],
-      [Math.cos(a) * 5.8, height + 19, Math.sin(a) * 5.8],
-      0.5,
-      0.5,
+      [Math.cos(a) * 15.5, height + 3, Math.sin(a) * 15.5],
+      [Math.cos(a) * 15.5, height + 9, Math.sin(a) * 15.5],
+      0.45,
+      0.45,
       metal(IRON),
     );
   }
-  cylinder(c, [0, height + 19, 0], 8, (t) => 7 * (1 - t) + 0.4, solid(ramp([60, 64, 70])));
+  // Linterna vidriada que brilla, con parantes.
+  cylinder(c, [0, height + 3, 0], 16, () => 9, glowing(ramp([255, 230, 140])));
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    c.limb(
+      [Math.cos(a) * 9.4, height + 3, Math.sin(a) * 9.4],
+      [Math.cos(a) * 9.4, height + 19, Math.sin(a) * 9.4],
+      0.6,
+      0.6,
+      metal(IRON),
+    );
+  }
+  cylinder(c, [0, height + 19, 0], 12, (t) => 11 * (1 - t) + 0.5, solid(ramp([60, 64, 70])));
+  c.sphere([0, height + 32, 0], 1.6, metal(IRON));
 };
 
 /** Escombros: bloques de piedra caídos de una construcción en ruinas. */
@@ -1065,7 +1116,11 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   tent: { model: tent, shadow: [26, 11] },
   campfire: { model: campfire, shadow: [10, 4] },
   gravestone: { model: gravestone, shadow: [10, 4] },
-  lighthouse: { model: lighthouse, shadow: [24, 10] },
+  lighthouse: {
+    model: lighthouse,
+    shadow: [56, 22],
+    frame: { width: 200, height: 290, ground: { x: 100, y: 262 } },
+  },
   rubble: { model: rubble },
   reeds: { model: reeds },
   'snow-pine': tree('snow-pine'),
@@ -1087,4 +1142,8 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   'tundra-shrub': { model: tundraShrub },
   column: { model: column, shadow: [12, 5] },
   'fallen-column': { model: fallenColumn, shadow: [22, 8] },
+  maple: tree('maple'),
+  cypress: tree('cypress'),
+  baobab: tree('baobab'),
+  bamboo: tree('bamboo'),
 };

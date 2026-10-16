@@ -45,6 +45,12 @@ export interface TileMapData {
   readonly regions: readonly RegionData[];
   readonly teleporters: readonly Teleporter[];
   readonly signs?: readonly SignData[];
+  /**
+   * Altura de cada tile en escalones (0 = nivel del mar), como las lomas del
+   * Age of Empires: solo se ve (todo se camina igual). Sin alturas, el mapa es
+   * plano.
+   */
+  readonly heights?: readonly number[];
 }
 
 /** Datos para construir un mapa; objetos y zonas son opcionales. */
@@ -60,6 +66,7 @@ export class TileMap {
   readonly teleporters: readonly Teleporter[];
   readonly signs: readonly SignData[];
   private readonly terrain: readonly Terrain[];
+  private readonly heights: readonly number[] | undefined;
   private readonly blocked: Uint8Array;
 
   constructor(data: TileMapInit) {
@@ -71,15 +78,20 @@ export class TileMap {
     this.width = data.width;
     this.height = data.height;
     this.terrain = data.terrain;
+    this.heights = data.heights?.length === data.width * data.height ? data.heights : undefined;
     this.statics = data.statics ?? [];
     this.regions = data.regions ?? [];
     this.teleporters = data.teleporters ?? [];
     this.signs = data.signs ?? [];
     this.blocked = new Uint8Array(data.width * data.height);
     for (const placed of this.statics) {
-      if (STATICS[placed.kind].blocking && this.contains(placed)) {
-        this.blocked[placed.y * this.width + placed.x] = 1;
-      }
+      const { blocking, footprint } = STATICS[placed.kind];
+      if (!blocking) continue;
+      for (let dy = 0; dy < footprint; dy++)
+        for (let dx = 0; dx < footprint; dx++) {
+          const tile = { x: placed.x + dx, y: placed.y + dy };
+          if (this.contains(tile)) this.blocked[tile.y * this.width + tile.x] = 1;
+        }
     }
   }
 
@@ -97,6 +109,14 @@ export class TileMap {
   terrainAt(position: Position): Terrain | undefined {
     if (!this.contains(position)) return undefined;
     return this.terrain[position.y * this.width + position.x];
+  }
+
+  /** Altura del tile en escalones; fuera del mapa, la del borde más cercano. */
+  heightAt(position: Position): number {
+    if (!this.heights) return 0;
+    const x = Math.max(0, Math.min(this.width - 1, Math.round(position.x)));
+    const y = Math.max(0, Math.min(this.height - 1, Math.round(position.y)));
+    return this.heights[y * this.width + x] ?? 0;
   }
 
   /** Transitable: terreno caminable y sin objetos que bloqueen. */
@@ -144,6 +164,7 @@ export class TileMap {
       regions: this.regions,
       teleporters: this.teleporters,
       signs: this.signs,
+      ...(this.heights ? { heights: this.heights } : {}),
     };
   }
 }
