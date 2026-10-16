@@ -15,6 +15,7 @@ import { SocialWindow } from '../ui/social-window';
 import { WorldTooltip } from '../ui/world-tooltip';
 import { WorldSigns } from './world-signs';
 import { Minimap } from '../ui/minimap';
+import { WorldMap } from '../ui/world-map';
 import { GhostBanner } from '../ui/ghost-banner';
 import { SkillsWindow } from '../ui/skills-window';
 import { SpellbookWindow } from '../ui/spellbook-window';
@@ -499,6 +500,7 @@ export class GameSession {
     ]);
     this.game.on('logoutRequested', () => this.logout());
     const minimap = new Minimap(this.game, () => buttons.refresh());
+    const worldMap = new WorldMap(this.game, () => buttons.refresh());
     const hudList: HudButton[] = [
       { label: 'Mochila', key: 'b', onPress: () => backpack.window.toggle() },
       { label: 'Personaje', key: 'c', onPress: () => equipment.window.toggle() },
@@ -506,11 +508,16 @@ export class GameSession {
       {
         label: 'Mapa',
         key: 'm',
+        // Cerrado → minimapa → mapa del mundo → cerrado.
         onPress: () => {
-          minimap.toggle();
+          if (worldMap.open) worldMap.show(false);
+          else if (minimap.open) {
+            minimap.show(false);
+            worldMap.show(true);
+          } else minimap.show(true);
           buttons.refresh();
         },
-        pressed: () => minimap.open,
+        pressed: () => minimap.open || worldMap.open,
       },
     ];
     const buttons = (this.hud = new HudButtons(hudList));
@@ -550,6 +557,7 @@ export class GameSession {
       buttons.element,
       tooltip.element,
       minimap.element,
+      worldMap.element,
     );
 
     const hotbar = this.setUpHotbar(actions, magic);

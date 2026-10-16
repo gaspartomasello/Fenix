@@ -114,6 +114,10 @@ piedra oscura) y piedra con musgo. Ruinas: columna antigua (entera o quebrada) y
 - **Cráter Humeante** (tierras secas): laguna de lava en un cráter de ceniza, con trolls y orcos.
 - La **boca de la Cueva del Lamento** tiene tierra corrupta alrededor.
 
+**Mapa:** la tecla M (o el botón Mapa) abre el minimapa; la segunda vez, el **mapa del mundo**
+entero con los nombres de pueblos y lugares y un punto que late donde está uno; la tercera, lo
+cierra.
+
 Para recorrer el mapa con el personaje de prueba: `/ir 120 300` (coordenadas) o `/ir Torre`.
 
 ## Plan (por etapas)
