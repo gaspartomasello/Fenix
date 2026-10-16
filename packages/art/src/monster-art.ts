@@ -3,6 +3,7 @@ import { OUTLINE } from './character-art';
 import { ART_DETAIL, spriteCanvas, type CanvasFactory } from './humanoid-rig';
 import { MOUNTED_ART_HEIGHT, MOUNTED_ART_WIDTH, MOUNTED_FEET_Y } from './mount-art';
 import { biteOffset, gait } from './creature-motion';
+import { faunaLayout, isFaunaArtKind } from './fauna-art';
 import { drawSkullHead } from './humanoid-head';
 import {
   CHARACTER_ART_HEIGHT,
@@ -38,7 +39,7 @@ import {
 /** Criaturas de la isla y la mazmorra (además de rata, lobo y esqueleto). */
 export type MonsterKind = Extract<
   CreatureKind,
-  'giant-spider' | 'orc' | 'troll' | 'skeleton-mage' | 'lich' | 'dragon'
+  'giant-spider' | 'orc' | 'troll' | 'skeleton-mage' | 'lich' | 'dragon' | 'lizardman'
 >;
 
 export function isMonsterKind(kind: CreatureKind): kind is MonsterKind {
@@ -48,7 +49,8 @@ export function isMonsterKind(kind: CreatureKind): kind is MonsterKind {
     kind === 'troll' ||
     kind === 'skeleton-mage' ||
     kind === 'lich' ||
-    kind === 'dragon'
+    kind === 'dragon' ||
+    kind === 'lizardman'
   );
 }
 
@@ -79,6 +81,7 @@ const MOUNT_LAYOUT: CreatureLayout = {
 
 export function creatureLayout(kind: CreatureKind): CreatureLayout {
   if (isMountKind(kind)) return MOUNT_LAYOUT;
+  if (isFaunaArtKind(kind)) return faunaLayout(kind);
   return kind === 'dragon' ? DRAGON_LAYOUT : COMMON;
 }
 
@@ -89,6 +92,7 @@ const ZOOM: Readonly<Record<MonsterKind, number>> = {
   'skeleton-mage': 1.1,
   lich: 1.18,
   dragon: 1.35,
+  lizardman: 1.1,
 };
 
 export function drawMonsterFrame(
@@ -118,6 +122,9 @@ export function drawMonsterFrame(
       break;
     case 'dragon':
       drawDragon(canvas, frame);
+      break;
+    case 'lizardman':
+      drawLizardman(canvas, humanoidRig(frame, true));
       break;
   }
   return canvas.toImage(OUTLINE);
@@ -305,6 +312,67 @@ function drawTroll(c: VolumeCanvas, rig: Rig): void {
     solid(ramp([80, 66, 52]), -1),
   );
   bruteHead(c, rig, flesh, 1.1, [255, 120, 40]);
+}
+
+// ── Hombre lagarto ──────────────────────────────────────────────────
+
+/**
+ * Hombre lagarto (de los pantanos, como en UO): escamas verdes con el
+ * vientre claro, cabeza de reptil con hocico largo y cresta, cola gruesa
+ * que arrastra, taparrabos de cuero y una lanza con punta de hueso.
+ */
+function drawLizardman(c: VolumeCanvas, rig: Rig): void {
+  const green = ramp([84, 120, 64]);
+  const scales: Material = (s) => {
+    const scute = noise(
+      Math.floor(s.p[0] * 1.3),
+      Math.floor(s.p[1] * 1.3),
+      Math.floor(s.p[2] * 1.3),
+    );
+    return tone(green, s.light, scute > 0.78 ? -1 : scute < 0.12 ? 1 : 0);
+  };
+  const flesh = brute(c, rig, green, 0.85, true);
+  // Vientre claro.
+  c.ellipsoid(
+    rig.chest.at([0, -0.6, 2.8]),
+    rig.chest.axes,
+    [4.2, 5.2, 2.2],
+    solid(ramp([200, 196, 140])),
+  );
+  // Cola gruesa que baja desde la cadera hasta el piso.
+  const base = rig.pelvis.at([0, -1, -3.2]);
+  const mid = rig.pelvis.at([0, -7, -9]);
+  const end = add(mid, [0, -mid[1] + 1, 0]);
+  c.limb(base, mid, 3.2, 2.2, scales);
+  c.limb(mid, add(end, scale(sub(mid, base), 0.6)), 2.2, 0.6, scales);
+  c.ellipsoid(
+    rig.pelvis.at([0, -2.5, 0]),
+    rig.pelvis.axes,
+    [5, 3, 3.8],
+    solid(ramp([96, 66, 40]), -1),
+  );
+  // Cabeza de reptil.
+  const head = rig.head;
+  c.limb(rig.neck, head.at([0, -2, 0.4]), 2.2, 2, flesh);
+  c.ellipsoid(head.at([0, 0.4, 0]), head.axes, [3, 3, 3.4], scales);
+  c.ellipsoid(head.at([0, -0.8, 4]), head.axes, [2.1, 1.6, 3.6], scales);
+  c.ellipsoid(head.at([0, -2, 3.4]), head.axes, [1.8, 0.8, 3.2], scales);
+  // Cresta.
+  for (let i = 0; i < 4; i++)
+    c.limb(
+      head.at([0, 2.4 - i * 0.4, 1 - i * 1.6]),
+      head.at([0, 4 - i * 0.5, -0.4 - i * 1.6]),
+      0.6,
+      0.15,
+      solid(ramp([170, 60, 40])),
+    );
+  for (const side of [1, -1] as const)
+    c.decal(head.at([side * 1.6, 1, 2.2]), head.dir([side * 0.5, 0.2, 1]), [230, 200, 40], 1, 1);
+  // Lanza con punta de hueso.
+  const { hand, weaponDir } = rig.arms[1];
+  const tip = add(hand, scale(weaponDir, 20));
+  c.limb(add(hand, scale(weaponDir, -6)), tip, 0.55, 0.55, solid(ramp([120, 86, 52])));
+  c.limb(tip, add(tip, scale(weaponDir, 3.4)), 0.9, 0.1, solid(ramp([226, 216, 190])));
 }
 
 // ── Mago esquelético y liche ────────────────────────────────────────

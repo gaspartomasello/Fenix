@@ -80,6 +80,8 @@ export function drawMount(canvas: VolumeCanvas, kind: MountKind, frame: Characte
       return drawQuadruped(canvas, LLAMA, LLAMA_COAT, frame);
     case 'runner':
       return drawRunner(canvas, frame);
+    case 'camel':
+      return drawQuadruped(canvas, CAMEL, CAMEL_COAT, frame);
   }
 }
 
@@ -178,7 +180,7 @@ function quadrupedGait(frame: CharacterFrame): GaitPose {
 
 // ── Cuadrúpedos: caballo y llama ────────────────────────────────────
 
-interface LegBuild {
+export interface LegBuild {
   /** Articulación de arriba (codo o babilla), del lado derecho. */
   readonly top: Vec3;
   /** Largo de antebrazo (o pierna), caña y cuartilla. */
@@ -191,21 +193,22 @@ interface LegBuild {
   readonly hind: boolean;
 }
 
-interface QuadrupedBuild {
+export interface QuadrupedBuild {
   readonly front: LegBuild;
   readonly hind: LegBuild;
   /** Alto del casco (o de la pezuña). */
   readonly hoof: number;
   /** Centro sobre el que cabecea el cuerpo. */
   readonly pivot: Vec3;
-  readonly saddle: { readonly y: number; readonly z: number; readonly girth: number };
+  /** Dónde va la montura (null: un animal salvaje, sin montura ni riendas). */
+  readonly saddle: { readonly y: number; readonly z: number; readonly girth: number } | null;
   readonly body: (part: BodyKit) => HeadAnchors;
   /** Patas finas que terminan en dos dedos acolchados (llama), o en casco. */
   readonly padded: boolean;
 }
 
 /** Coloración: pelaje, crin y patas (con medias blancas o no). */
-interface Coat {
+export interface Coat {
   readonly body: Material;
   readonly mane: Ramp;
   /** Material de cada pata (para las medias blancas). */
@@ -218,7 +221,7 @@ interface Coat {
 }
 
 /** Lo que necesita quien dibuja el cuerpo: el lienzo y cómo ubicar cada punto. */
-interface BodyKit {
+export interface BodyKit {
   readonly canvas: VolumeCanvas;
   readonly at: (p: Vec3) => Vec3;
   readonly axes: (forward: Vec3) => readonly [Vec3, Vec3, Vec3];
@@ -227,14 +230,14 @@ interface BodyKit {
 }
 
 /** Dónde quedan la cabeza y el cuello, para el freno y las riendas. */
-interface HeadAnchors {
+export interface HeadAnchors {
   /** Anillas del freno, a cada lado de la boca. */
   readonly bit: Readonly<Record<1 | -1, Vec3>>;
   /** Donde descansan las riendas sin jinete. */
   readonly withers: Vec3;
 }
 
-function drawQuadruped(
+export function drawQuadruped(
   canvas: VolumeCanvas,
   build: QuadrupedBuild,
   coat: Coat,
@@ -265,6 +268,7 @@ function drawQuadruped(
   const anchors = build.body({ canvas, at, axes, coat, gait });
 
   const saddle = build.saddle;
+  if (!saddle) return { seat: { y: 0, z: 0, girth: 0, bob: gait.bob }, tack: () => undefined };
   const seatPoint = at([0, saddle.y, saddle.z]);
   drawSaddle(canvas, at, axes, saddle, coat.blanket);
 
@@ -371,7 +375,7 @@ function drawSaddle(
   canvas: VolumeCanvas,
   at: (p: Vec3) => Vec3,
   axes: (forward: Vec3) => readonly [Vec3, Vec3, Vec3],
-  saddle: QuadrupedBuild['saddle'],
+  saddle: NonNullable<QuadrupedBuild['saddle']>,
   blanket: Ramp,
 ): void {
   const { y, z, girth } = saddle;
@@ -414,7 +418,7 @@ function drawSaddle(
 function drawStirrups(
   canvas: VolumeCanvas,
   at: (p: Vec3) => Vec3,
-  saddle: QuadrupedBuild['saddle'],
+  saddle: NonNullable<QuadrupedBuild['saddle']>,
   rider: Rig | null,
 ): void {
   const strap = solid(ramp([90, 56, 32]), -1);
@@ -750,6 +754,106 @@ function drawLlamaBody({ canvas, at, axes, coat, gait }: BodyKit): HeadAnchors {
     canvas.sphere(bit[side], 0.5, metal(ramp([170, 170, 176])));
   }
   return { bit, withers: at([0, 31, 8]) };
+}
+
+// ── Camello ─────────────────────────────────────────────────────────
+
+/**
+ * Camello: patas largas y huesudas con pies anchos, una joroba grande (la
+ * montura va sobre ella), cuello largo que baja y vuelve a subir en curva y
+ * cabeza alargada con labios caídos.
+ */
+const CAMEL: QuadrupedBuild = {
+  front: {
+    top: [3.8, 22, 11],
+    lengths: [10.5, 8.6, 2.2],
+    rest: [0.02, 0, 0.45],
+    thickness: [2.6, 1.2],
+    hind: false,
+  },
+  hind: {
+    top: [4.1, 23, -10],
+    lengths: [11, 9, 2.2],
+    rest: [-0.36, 0.1, 0.45],
+    thickness: [2.9, 1.2],
+    hind: true,
+  },
+  hoof: 1.6,
+  pivot: [0, 28, 0],
+  saddle: { y: 41, z: -0.5, girth: 8 },
+  padded: true,
+  body: drawCamelBody,
+};
+
+const CAMEL_HAIR = ramp([196, 160, 108]);
+const CAMEL_DARK = ramp([150, 116, 74]);
+
+const camelHair: Material = (s) => {
+  const tuft = noise(Math.floor(s.p[0] * 1.2), Math.floor(s.p[1] * 1.2), Math.floor(s.p[2] * 1.2));
+  // Más oscuro y lanudo en la joroba y el cuello.
+  const shaggy = s.p[1] > 34 || (s.p[2] > 10 && s.p[1] > 28);
+  return tone(shaggy ? CAMEL_DARK : CAMEL_HAIR, s.light, tuft > 0.8 ? 1 : tuft < 0.18 ? -1 : 0);
+};
+
+const CAMEL_COAT: Coat = {
+  body: camelHair,
+  mane: CAMEL_DARK,
+  blaze: false,
+  blanket: ramp([170, 60, 40]),
+  leg: () => (s) => tone(CAMEL_HAIR, s.light, s.p[1] < 12 ? -1 : 0),
+  hoof: () => ramp([96, 78, 60]),
+};
+
+function drawCamelBody({ canvas, at, axes, coat, gait }: BodyKit): HeadAnchors {
+  const along = axes([0, 0, 1]);
+  const body = coat.body;
+  canvas.ellipsoid(at([0, 29, 0]), along, [7, 7.4, 13.5], body);
+  canvas.ellipsoid(at([0, 29.5, 9]), along, [6.6, 7.6, 6.8], body);
+  canvas.ellipsoid(at([0, 30, -9]), along, [6.6, 6.8, 6.4], body);
+  // La joroba.
+  canvas.ellipsoid(at([0, 36.5, -0.5]), along, [5.4, 5.6, 7.4], body);
+  // Cuello que baja hacia adelante y sube en curva hasta la cabeza.
+  const neck: Vec3[] = [
+    [0, 31, 12.5],
+    [0, 29, 18.5],
+    [0, 31.5, 23],
+    [0, 38, 25],
+    [0, 43, 25.5],
+  ];
+  neck.slice(1).forEach((p, i) => {
+    const from = neck[i] ?? p;
+    canvas.limb(at(from), at(p), 4.4 - i * 0.55, 4 - i * 0.55, body);
+  });
+  const top = at([0, 43, 25.5]);
+  const h = normalize(pitch([0, -0.22, 1], gait.nod * 0.6 + gait.pitch));
+  const head = (t: number, offset: Vec3 = [0, 0, 0]): Vec3 => add(add(top, scale(h, t)), offset);
+  const face = solid(ramp([184, 148, 100]));
+  canvas.ellipsoid(head(1.4, [0, 0.8, 0]), axesAlong(h), [2.8, 2.9, 3.4], body);
+  canvas.limb(head(2.4), head(8.4), 2.2, 1.9, face);
+  // Labio de abajo caído.
+  canvas.ellipsoid(head(8.6, [0, -1, 0]), axesAlong(h), [1.9, 1.4, 1.7], face);
+  const dark = solid(ramp([30, 24, 22]));
+  for (const side of [1, -1] as const) {
+    canvas.sphere(head(2.4, [side * 2.3, 1.2, 0]), 0.7, dark);
+    canvas.sphere(head(9.4, [side * 0.8, 0.2, 0]), 0.4, dark);
+    // Orejas chicas y redondas.
+    canvas.ellipsoid(head(-0.4, [side * 2, 2.6, 0]), axesAlong([0, 1, 0]), [0.7, 1.1, 0.5], face);
+  }
+  // Cola fina con un mechón.
+  const tail = at([0, 31, -15]);
+  canvas.limb(tail, add(tail, [gait.tailSwing * 0.3, -6, -1.6]), 0.8, 0.5, body);
+  canvas.sphere(add(tail, [gait.tailSwing * 0.3, -6.4, -1.8]), 0.9, solid(CAMEL_DARK));
+  // Cabestro.
+  const strap = solid(ramp([170, 60, 40]));
+  const bit = { 1: head(6.6, [1.8, -0.4, 0]), [-1]: head(6.6, [-1.8, -0.4, 0]) } as Record<
+    1 | -1,
+    Vec3
+  >;
+  for (const side of [1, -1] as const) {
+    canvas.limb(head(1, [side * 2.6, 1.4, 0]), bit[side], 0.35, 0.35, strap);
+    canvas.sphere(bit[side], 0.5, metal(ramp([200, 170, 90])));
+  }
+  return { bit, withers: at([0, 34, 10]) };
 }
 
 // ── Lagarto corredor ────────────────────────────────────────────────
