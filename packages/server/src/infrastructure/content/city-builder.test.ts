@@ -1,4 +1,4 @@
-import { STATICS, TileMap, Terrain, type Position } from '@fenix/shared';
+import { SEATS, STATICS, TileMap, Terrain, type Position } from '@fenix/shared';
 import { describe, expect, it } from 'vitest';
 import { buildCity, type City, type CityStyle } from './city-builder';
 
@@ -56,7 +56,15 @@ describe('buildCity', () => {
     if (!spawn) return;
     const walk = reachable(map, spawn);
     expect(capital.npcs.map((n) => n.role).sort()).toEqual(
-      ['banker', 'blacksmith', 'innkeeper', 'mage', 'stablemaster'].sort(),
+      [
+        'banker',
+        'blacksmith',
+        'carpenter',
+        'innkeeper',
+        'mage',
+        'stablemaster',
+        'woodcutter',
+      ].sort(),
     );
     for (const npc of capital.npcs) {
       const near = [
@@ -108,6 +116,49 @@ describe('buildCity', () => {
       const town = city.regions.find((r) => r.name === 'X');
       expect(Boolean(town?.wild), style).toBe(style === 'bandit');
     }
+  });
+
+  it('un río hondo cruza la capital y se pasa por los puentes', () => {
+    const water = capital.terrain.filter((t) => t === Terrain.Water).length;
+    expect(water).toBeGreaterThan(capital.width * 3);
+    expect(capital.rivers?.map((r) => r.flow).sort()).toEqual(['in', 'out']);
+    // El castillo queda del otro lado del río: igual se llega caminando (por un puente).
+    const spawn = capital.spawn;
+    if (!spawn) return;
+    const walk = reachable(map, spawn);
+    const castle = capital.regions.find((r) => r.name.startsWith('Castillo'));
+    expect(castle).toBeDefined();
+    if (!castle) return;
+    const inside = [...walk].some((key) => {
+      const [x = 0, y = 0] = key.split(',').map(Number);
+      return map.regionAt({ x, y })?.name === castle.name;
+    });
+    expect(inside).toBe(true);
+  });
+
+  it('cada negocio tiene lo suyo y hay donde sentarse', () => {
+    const kinds = new Set(capital.statics.map((s) => s.kind));
+    for (const kind of [
+      'keg',
+      'counter',
+      'alchemy-table',
+      'bookshelf-x',
+      'cauldron',
+      'weapon-rack',
+      'workbench',
+      'hay-bale',
+      'hitching-post',
+      'water-trough',
+      'stump-axe',
+      'log-pile',
+      'bed',
+      'carpet',
+      'candelabra',
+    ])
+      expect(kinds.has(kind as never), kind).toBe(true);
+    const seats = capital.statics.filter((s) => SEATS[s.kind] !== undefined);
+    expect(seats.length).toBeGreaterThan(10);
+    for (const seat of seats) expect(map.seatAt(seat), seat.kind).toBeDefined();
   });
 
   it('las torres y la cripta ocupan 2 × 2 y no tapan a nadie', () => {

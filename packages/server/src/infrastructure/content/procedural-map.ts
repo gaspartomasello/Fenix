@@ -652,6 +652,57 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
       })),
     );
   }
+  // Los ríos que cruzan una ciudad siguen afuera: cuesta abajo hasta el mar
+  // desde donde salen, y cuesta arriba hasta una vertiente desde donde entran.
+  for (const { plan, x: ox, y: oy } of towns)
+    for (const mouth of plan.map.rivers ?? []) {
+      const outward = mouth.x === 0 ? -1 : 1;
+      flowFrom({ x: ox + mouth.x + outward, y: oy + mouth.y }, mouth.flow === 'in', outward);
+    }
+
+  function flowFrom(start: Position, uphill: boolean, outward: number): void {
+    let { x, y } = start;
+    const visited = new Set<number>();
+    const wet = (wx: number, wy: number): void => {
+      if (wx < 1 || wy < 1 || wx >= width - 1 || wy >= height - 1 || inTown(wx, wy)) return;
+      const i = index(wx, wy);
+      if (biomes[i] === 'mountain' || biomes[i] === 'ocean') return;
+      terrain[i] = biomes[i] === 'snow' ? Terrain.Ice : Terrain.ShallowWater;
+      river[i] = 1;
+      statics.delete(i);
+    };
+    for (let step = 0; step < size * 2; step++) {
+      const i = index(x, y);
+      visited.add(i);
+      if (!uphill && step > 2 && (biomes[i] === 'ocean' || (isWater(terrain[i]) && !river[i])))
+        return;
+      // Ancho como adentro de la ciudad al principio, después se angosta.
+      for (let d = 0; d < (step < 30 ? 4 : 2); d++) wet(x, y + d);
+      // Los primeros pasos se alejan derecho de la ciudad.
+      let next: Position | null = step < 6 ? { x: x + outward, y } : null;
+      if (!next) {
+        let best = uphill ? -Infinity : Infinity;
+        for (const [nx, ny] of neighbors4(x, y)) {
+          const ni = index(nx, ny);
+          if (visited.has(ni) || biomes[ni] === 'mountain' || inTown(nx, ny, 2)) continue;
+          const e = (elevation[ni] ?? 0) + hash(seed + 29, nx, ny) * 0.004;
+          if (uphill ? e > best : e < best) {
+            best = e;
+            next = { x: nx, y: ny };
+          }
+        }
+      }
+      // Cuesta arriba termina en una vertiente (una laguna chica) al pie de las lomas.
+      if (!next || (uphill && (step > 140 || biomes[i] === 'foothill'))) {
+        for (let dy = -2; dy <= 3; dy++)
+          for (let dx = -2; dx <= 2; dx++) if (dx * dx + dy * dy <= 6) wet(x + dx, y + dy);
+        return;
+      }
+      x = next.x;
+      y = next.y;
+    }
+  }
+
   // Los pueblos recortan las montañas de alrededor: no quedan picos sueltos.
   for (let pass = 0; pass < 3; pass++)
     for (const [i, s] of statics) {

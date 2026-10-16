@@ -54,6 +54,8 @@ interface StaticSpec {
   readonly shadow?: readonly [number, number];
   /** Lienzo propio para los objetos grandes (el faro); si no, el de siempre. */
   readonly frame?: StaticFrame;
+  /** Sin contorno: lo que va pegado al piso (una alfombra) se junta con el tile de al lado. */
+  readonly flat?: boolean;
 }
 
 /** El lienzo en que se dibuja un objeto fijo. */
@@ -71,7 +73,7 @@ export function drawStatic(kind: StaticKind, variant: number): PixelImage {
     new WorldProjection(frame.ground.x, frame.ground.y),
   );
   spec.model(canvas, variant % STATIC_VARIANTS);
-  const body = canvas.toImage(OUTLINE);
+  const body = canvas.toImage(spec.flat ? null : OUTLINE);
   const image = new PixelImage(frame.width, frame.height);
   if (spec.shadow) softShadow(image, frame, spec.shadow[0], spec.shadow[1]);
   image.draw(body, 0, 0);
@@ -1451,12 +1453,13 @@ const hayBale: Model = (c, variant) => {
 
 /** Paja suelta en el piso. */
 const hayPile: Model = (c, variant) => {
-  for (let i = 0; i < 6; i++) {
-    const a = i * 1.7 + variant;
+  c.ellipsoid([0, 2, 0], UP, [8, 3.4, 7], strawy);
+  for (let i = 0; i < 5; i++) {
+    const a = i * 1.3 + variant;
     c.ellipsoid(
-      [Math.cos(a) * 6, 1.2, Math.sin(a) * 6],
+      [Math.cos(a) * 6, 1, Math.sin(a) * 6],
       axesAlong([Math.cos(a), 0, Math.sin(a)]),
-      [5, 1.4, 3],
+      [4, 1.4, 2.6],
       strawy,
     );
   }
@@ -1838,34 +1841,38 @@ const hearth: Model = (c) => {
 /** Tonel acostado sobre un caballete, con canilla de bronce (la taberna). */
 const keg: Model = (c, variant) => {
   const f: Vec3 = variant === 1 ? [0, 0, 1] : [1, 0, 0];
-  for (const t of [-5, 5]) c.box(local(f, 0, 2.5, t), facing(f), [5.4, 2.5, 1], solid(DARK_WOOD));
-  const [a] = axesAlong(f);
-  const steps = 14;
+  for (const t of [-6, 6]) c.box(local(f, 0, 2.2, t), facing(f), [4.6, 2.2, 0.9], solid(DARK_WOOD));
+  const steps = 18;
   for (let i = 0; i <= steps; i++) {
-    const t = -8 + (16 * i) / steps;
-    const r = 6 + Math.sin((i / steps) * Math.PI) * 1.4;
-    const ring = i === 2 || i === steps - 2;
+    const t = -9 + (18 * i) / steps;
+    const r = 4.4 + Math.sin((i / steps) * Math.PI) * 1.1;
+    const ring = i === 3 || i === steps - 3;
+    const end = i === steps;
     c.ellipsoid(
-      local(f, 0, 11, t),
+      local(f, 0, 8.6, t),
       axesAlong(f),
-      [r, r, 0.8],
-      ring ? metal(IRON) : planks(FURNITURE, 1, 3),
+      [r, r, 0.7],
+      ring
+        ? metal(IRON)
+        : end
+          ? solid(ramp([170, 124, 76]))
+          : (s) =>
+              tone(FURNITURE, s.light, Math.floor(Math.atan2(s.p[1] - 8.6, 1) * 6) % 2 ? -1 : 0),
     );
   }
-  c.limb(local(f, 0, 9, 8.6), local(f, 0, 7.4, 10.6), 0.5, 0.4, metal(BRASS));
-  void a;
+  c.limb(local(f, 0, 7, 9.4), local(f, 0, 5.4, 11), 0.5, 0.4, metal(BRASS));
 };
 
 /** Alfombra roja con guarda dorada (en el salón del trono y en las casas ricas). */
-const carpet: Model = (c, variant) => {
-  const red =
-    [ramp([150, 36, 40]), ramp([40, 60, 120]), ramp([120, 80, 40])][variant % 3] ??
-    ramp([150, 36, 40]);
-  c.box([0, 0.3, 0], UP, [H, 0.3, H], (s) => {
-    const edgeBand = Math.max(Math.abs(s.p[0]), Math.abs(s.p[2])) > H - 2.2;
-    const motif = Math.abs(Math.abs(s.p[0]) - Math.abs(s.p[2])) < 0.8;
-    return tone(edgeBand || motif ? ramp([210, 170, 70]) : red, s.light);
-  });
+const carpet: Model = (c) => {
+  // Lisa y del mismo rojo en todos los tiles, así varias seguidas forman un camino.
+  c.box([0, 0.3, 0], UP, [H, 0.3, H], (s) =>
+    tone(
+      ramp([150, 36, 40]),
+      s.light,
+      noise(Math.floor(s.p[0] / 2), Math.floor(s.p[2] / 2)) > 0.85 ? -1 : 0,
+    ),
+  );
 };
 
 /** Candelabro de pie con cinco velas. */
@@ -2034,6 +2041,6 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   'bench-y': { model: (c) => bench(c, 2), shadow: [14, 5] },
   sawhorse: { model: sawhorse, shadow: [10, 4] },
   'plank-stack': { model: plankStack, shadow: [14, 6] },
-  carpet: { model: carpet },
+  carpet: { model: carpet, flat: true },
   candelabra: { model: candelabra, shadow: [6, 3] },
 };

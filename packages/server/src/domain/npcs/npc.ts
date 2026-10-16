@@ -67,6 +67,15 @@ const LOOKS: Readonly<Record<NpcRole, { appearance: Appearance; equipment: Equip
     },
     equipment: { rightHand: 'axe', legs: 'trousers', feet: 'boots', head: 'leather-cap' },
   },
+  carpenter: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      clothHue: CLOTH_HUES[5],
+      hairHue: 0x9a8a70,
+      facialHair: 'mustache',
+    },
+    equipment: { rightHand: 'saw', legs: 'trousers', feet: 'boots' },
+  },
 };
 
 /** Personaje del pueblo: no pelea, no se mueve y atiende a quien se acerca. */

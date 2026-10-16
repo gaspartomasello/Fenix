@@ -112,6 +112,7 @@ const OUTFITS: Readonly<Record<NpcRole, Outfit>> = {
   banker: 'vest',
   stablemaster: 'apron',
   woodcutter: 'woodcutter',
+  carpenter: 'apron',
 };
 
 /** Camisa a cuadros rojos y negros del leñador. */

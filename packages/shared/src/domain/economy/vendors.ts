@@ -9,6 +9,7 @@ export const NPC_ROLES = [
   'banker',
   'stablemaster',
   'woodcutter',
+  'carpenter',
 ] as const;
 export type NpcRole = (typeof NPC_ROLES)[number];
 
@@ -193,6 +194,13 @@ export const VENDORS: Readonly<Record<NpcRole, VendorDefinition>> = {
     greeting: 'Leña seca y tablas derechas. ¿Necesitás un hacha?',
     sells: offers({ axe: 70, logs: 4, boards: 6 }),
     buys: offers({ logs: 2, boards: 3 }),
+  },
+  carpenter: {
+    role: 'carpenter',
+    name: 'Anacleto el carpintero',
+    greeting: 'Si es de madera, lo hago. Tablas, escudos, lo que pidas.',
+    sells: offers({ saw: 25, boards: 6, 'wooden-shield': 60 }),
+    buys: offers({ logs: 2, boards: 4 }),
   },
 };
 

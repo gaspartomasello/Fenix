@@ -444,7 +444,14 @@ huertas y cementerio. Un `Style` por región elige paredes, pisos, calles, mural
 criaturas del cementerio salen en `MapRegion.lairs`; `procedural-map.ts` las corre al lugar del
 pueblo y `places.ts` las suma a las del continente. Cada zona protegida es lo de adentro de la
 muralla; el cementerio y el refugio de los bandidos son `wild` (no protegen). Los objetos de 2 × 2
-(torre, cripta, fuente) ocupan todos sus tiles.
+(torre, cripta, fuente) ocupan todos sus tiles. `furnishShop` y `furnishHome` amueblan cada casa
+sin tapar el paso de la puerta al centro; las bibliotecas y estantes se cuelgan de la pared con
+`Plan.onWall` (otro objeto en el mismo tile que la pared). El río de la capital marca en
+`MapRegion.rivers` por dónde entra y sale, y `procedural-map.ts` lo sigue afuera.
+
+**Asientos:** `SEATS` (shared) dice qué objetos son asiento y hacia dónde miran; `TileMap.seatAt`
+lo responde por tile. Sentarse es solo visual: el cliente dibuja el cuadro `sit` (pose propia
+de silla en `humanoid-rig`) cuando la persona está quieta, a pie y en paz sobre un asiento.
 
 El **minimapa** (`ui/minimap.ts`) dibuja el mapa una vez a un pixel por tile y lo muestra girado
 como la vista isométrica, centrado en el jugador, con la gente cerca y los nombres de los

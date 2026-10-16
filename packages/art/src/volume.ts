@@ -620,7 +620,7 @@ export class VolumeCanvas {
    * Pasa a imagen: marca con una línea oscura donde una pieza tapa a otra
    * (diferencia grande de profundidad) y agrega el contorno exterior.
    */
-  toImage(outline: Rgb): PixelImage {
+  toImage(outline: Rgb | null): PixelImage {
     this.resolve();
     const image = new PixelImage(this.width, this.height);
     for (let y = 0; y < this.height; y++) {
@@ -640,7 +640,7 @@ export class VolumeCanvas {
         image.set(x, y, covered ? shade(color, 0.62) : color);
       }
     }
-    image.outline(outline, 0.95);
+    if (outline) image.outline(outline, 0.95);
     return image;
   }
 }

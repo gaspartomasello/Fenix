@@ -86,7 +86,8 @@ function townPlans(width: number, height: number, seed: number): TownPlan[] {
         name: 'Puerto Ceniza',
         style: 'capital',
         seed: seed + 100,
-        size: big ? 'large' : 'medium',
+        // La capital grande (con el río) necesita un continente grande.
+        size: Math.min(width, height) >= 600 ? 'large' : 'medium',
         starterItems: true,
       }),
       at: elongated ? { x: 0.6, y: 0.27 } : { x: 0.5, y: 0.55 },
