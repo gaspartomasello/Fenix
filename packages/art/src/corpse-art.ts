@@ -56,6 +56,8 @@ const POSES: Readonly<Partial<Record<CreatureKind, CorpsePose>>> = {
   dragon: { fall: 'side', angle: 0.3, center: 22, rest: 9 },
   daemon: { fall: 'back', angle: BACK, center: 30, rest: 4.5 },
   lizardman: { fall: 'back', angle: BACK, center: 30, rest: 4 },
+  zombie: { fall: 'back', angle: BACK, center: 30, rest: 3 },
+  ghoul: { fall: 'back', angle: BACK, center: 28, rest: 3 },
   'earth-elemental': { fall: 'back', angle: BACK, center: 30, rest: 5 },
 };
 /** Las monturas (caballos, llamas, lagartos): de costado, con las patas estiradas. */

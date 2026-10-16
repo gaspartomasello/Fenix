@@ -17,7 +17,13 @@ const DIRECTIONS = [
 describe('cuerpos muertos', () => {
   it('toda criatura de carne o hueso deja cuerpo; los espíritus no', () => {
     for (const kind of CREATURE_KINDS) {
-      const spirit = ['energy-vortex', 'air-elemental', 'fire-elemental', 'water-elemental'];
+      const spirit = [
+        'energy-vortex',
+        'air-elemental',
+        'fire-elemental',
+        'water-elemental',
+        'wraith',
+      ];
       expect(leavesCorpse(kind), kind).toBe(!spirit.includes(kind));
     }
   });

@@ -1075,6 +1075,351 @@ function normalize3(v: Vec3): Vec3 {
   return [v[0] / l, v[1] / l, v[2] / l];
 }
 
+// ── Ciudades ────────────────────────────────────────────────────────
+
+/** Piedra en hiladas de cualquier color: bloques de `block` de largo y juntas de `mortar`. */
+function courses(colors: Ramp, mortar: Ramp, along: 0 | 2, height = 6, block = 10): Material {
+  return (s) => {
+    const course = Math.floor(s.p[1] / height);
+    const pos = s.p[along] + (course % 2) * (block / 2) + 100;
+    const inCourse = s.p[1] - course * height;
+    const side = Math.abs(s.n[along]) > 0.6 || s.n[1] > 0.6;
+    if (inCourse < 0.9 || (!side && pos % block < 0.9)) return tone(mortar, s.light);
+    const b = noise(Math.floor(pos / block), course, along + 7);
+    return tone(colors, s.light, b > 0.75 ? 1 : b < 0.2 ? -1 : 0);
+  };
+}
+
+/** Una pared sobre el borde de atrás del tile (como `wall`), dibujada por `face`. */
+type WallFace = (c: VolumeCanvas, along: 0 | 2) => void;
+
+/** Las cuatro piezas de una pared: a lo largo de x, de z, la esquina y el poste que cierra. */
+function wallSet(face: WallFace, post: Model): Record<'x' | 'y' | 'corner' | 'post', Model> {
+  return {
+    x: (c) => face(c, 0),
+    y: (c) => face(c, 2),
+    corner: (c, v) => {
+      face(c, 0);
+      face(c, 2);
+      post(c, v);
+    },
+    post,
+  };
+}
+
+/** Ubica un punto sobre el borde de atrás: `t` a lo largo, `y` de alto y `inset` hacia adentro. */
+const edge = (along: 0 | 2, t: number, y: number, inset: number): Vec3 =>
+  along === 0 ? [t, y, -H + inset] : [-H + inset, y, t];
+const edgeHalf = (along: 0 | 2, length: number, height: number, thick: number): Vec3 =>
+  along === 0 ? [length, height, thick] : [thick, height, length];
+
+/** Cabaña de troncos (pueblo de montaña): troncos apilados con las puntas que asoman. */
+const LOG = ramp([120, 82, 50]);
+const logWall: WallFace = (c, along) => {
+  const log: Material = (s) =>
+    tone(LOG, s.light, noise(Math.floor(s.p[along] / 3), Math.floor(s.p[1] / 5)) > 0.75 ? -1 : 0);
+  for (let i = 0; i < 8; i++) {
+    const y = 3 + i * 5.6;
+    c.limb(edge(along, -H - 1.5, y, 3), edge(along, H + 1.5, y, 3), 3, 3, log);
+  }
+  // Techito de tejuelas arriba.
+  c.box(
+    edge(along, 0, 46, 3),
+    UP,
+    edgeHalf(along, H + 2, 1.4, 5),
+    planks(ramp([84, 60, 40]), along, 3),
+  );
+};
+const logPost: Model = (c) => {
+  cylinder(c, [-H + 3, 0, -H + 3], 48, () => 3.6, bark);
+};
+
+/** Casa de tablas sobre pilotes de piedra (pueblo del pantano): tablas verticales y vigas. */
+const BOARD = ramp([156, 124, 82]);
+const plankWall: WallFace = (c, along) => {
+  c.box(edge(along, 0, 3, 2.6), UP, edgeHalf(along, H, 3, 3.2), rocky(ramp([110, 106, 96]), 3));
+  c.box(edge(along, 0, 26, 2.6), UP, edgeHalf(along, H, 20, 2.2), (s) => {
+    const t = s.p[along] + 100;
+    const seam = t % 4 < 0.7;
+    const weathered = noise(Math.floor(t / 4), Math.floor(s.p[1] / 9)) > 0.7;
+    return tone(BOARD, s.light, seam ? -1 : weathered ? 1 : 0);
+  });
+  // Vigas: una abajo, una arriba y una en cruz.
+  const beam = solid(ramp([90, 64, 42]));
+  for (const y of [7, 45]) c.box(edge(along, 0, y, 2.6), UP, edgeHalf(along, H, 1.3, 2.8), beam);
+  c.limb(edge(along, -H + 1, 8, 1), edge(along, H - 1, 44, 1), 0.9, 0.9, beam);
+};
+const plankPost: Model = (c) => {
+  c.box([-H + 3, 24, -H + 3], UP, [3, 24, 3], solid(ramp([90, 64, 42])));
+};
+
+/** Piedra negra con juntas rojizas (la ciudad del volcán). */
+const BASALT = ramp([66, 62, 66]);
+const BASALT_MORTAR = ramp([128, 62, 44]);
+const basaltWall: WallFace = (c, along) => {
+  c.box(
+    edge(along, 0, 24, 3),
+    UP,
+    edgeHalf(along, H, 24, 3),
+    courses(BASALT, BASALT_MORTAR, along, 7, 9),
+  );
+  c.box(edge(along, 0, 49.4, 3), UP, edgeHalf(along, H, 1.4, 3.8), solid(ramp([96, 50, 38])));
+};
+const basaltPost: Model = (c) => {
+  c.box([-H + 4, 25, -H + 4], UP, [4.6, 25, 4.6], courses(BASALT, BASALT_MORTAR, 0, 7, 9));
+  c.box([-H + 4, 51, -H + 4], UP, [5.4, 1.4, 5.4], solid(ramp([96, 50, 38])));
+};
+
+/** Muralla de la ciudad: alta y gruesa, con almenas y un camino de ronda. */
+const RAMPART = ramp([168, 160, 144]);
+const RAMPART_HEIGHT = 66;
+const rampart: WallFace = (c, along) => {
+  const stone = courses(RAMPART, ramp([110, 104, 94]), along, 8, 14);
+  c.box(
+    edge(along, 0, RAMPART_HEIGHT / 2, 6),
+    UP,
+    edgeHalf(along, H, RAMPART_HEIGHT / 2, 6),
+    stone,
+  );
+  // Zócalo más ancho abajo.
+  c.box(edge(along, 0, 4, 6), UP, edgeHalf(along, H, 4, 7.2), rocky(ramp([140, 132, 118]), 5));
+  // Almenas: dientes a los dos lados del camino de ronda.
+  for (let t = -H + 2.5; t <= H; t += 6.2)
+    for (const inset of [1.2, 10.8])
+      c.box(edge(along, t, RAMPART_HEIGHT + 3, inset), UP, edgeHalf(along, 2, 3, 1.2), stone);
+  // Saeteras.
+  const slit = solid(ramp([30, 26, 24]));
+  c.box(edge(along, 0, RAMPART_HEIGHT * 0.6, 12.2), UP, edgeHalf(along, 0.8, 5, 0.2), slit);
+};
+const rampartPost: Model = (c) => {
+  const stone = courses(RAMPART, ramp([110, 104, 94]), 0, 8, 14);
+  c.box([-H + 6, RAMPART_HEIGHT / 2 + 2, -H + 6], UP, [8, RAMPART_HEIGHT / 2 + 2, 8], stone);
+  for (const [x, z] of [
+    [-1, -1],
+    [1, -1],
+    [-1, 1],
+    [1, 1],
+  ] as const)
+    c.box([-H + 6 + x * 6, RAMPART_HEIGHT + 7, -H + 6 + z * 6], UP, [2, 3, 2], stone);
+};
+
+/**
+ * Torre redonda de la muralla (2 × 2 tiles): mampostería, saeteras, almenas,
+ * techo cónico de tejas rojas y un banderín en la punta. De noche, la ventana
+ * de arriba alumbra.
+ */
+const tower: Model = (c) => {
+  const height = 112;
+  const stone = (s: Parameters<Material>[0]) => courses(RAMPART, ramp([110, 104, 94]), 0, 8, 12)(s);
+  cylinder(c, [0, 0, 0], 8, () => 27, rocky(ramp([140, 132, 118]), 2));
+  cylinder(c, [0, 8, 0], height - 8, (t) => 25 - t * 2, stone);
+  // Cornisa y almenas.
+  cylinder(c, [0, height, 0], 3, () => 27, stone);
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    c.box(
+      [Math.cos(a) * 24.5, height + 7, Math.sin(a) * 24.5],
+      axesAlong([-Math.sin(a), 0, Math.cos(a)]),
+      [2.6, 4, 2.2],
+      stone,
+    );
+  }
+  // Techo cónico de tejas.
+  const tiles: Material = (s) =>
+    tone(ramp([156, 58, 44]), s.light, Math.floor(s.p[1] / 4) % 2 === 0 ? 0 : -1);
+  cylinder(c, [0, height + 4, 0], 46, (t) => 22 * (1 - t) + 0.6, tiles);
+  // Banderín.
+  c.limb([0, height + 48, 0], [0, height + 62, 0], 0.5, 0.5, metal(IRON));
+  c.box([0, height + 59, 4.5], UP, [0.3, 3, 4.5], solid(ramp([40, 70, 150])));
+  // Puerta, saeteras y la ventana que alumbra.
+  const dark = solid(ramp([34, 28, 26]));
+  c.box([18, 9, 18], axesAlong([1, 0, 1]), [5.5, 9, 0.8], solid(ramp([84, 58, 38])));
+  for (const y of [40, 70]) c.box([17, y, 17], axesAlong([1, 0, 1]), [0.9, 5, 0.6], dark);
+  c.box([17, 96, 17], axesAlong([1, 0, 1]), [2.2, 4, 0.6], glowing(ramp([255, 214, 120])));
+};
+
+/** Empalizada: troncos parados con la punta afilada (el refugio de los bandidos). */
+const palisade: WallFace = (c, along) => {
+  for (let t = -H + 1.6; t <= H; t += 3.3) {
+    const h = 30 + noise(Math.floor(t + 50), along) * 6;
+    c.limb(edge(along, t, 0, 2), edge(along, t, h, 2), 1.7, 1.7, bark);
+    c.limb(edge(along, t, h, 2), edge(along, t, h + 4, 2), 1.7, 0.2, solid(ramp([150, 118, 80])));
+  }
+  c.box(edge(along, 0, 20, 4.2), UP, edgeHalf(along, H, 1, 0.8), planks(WOOD, along, 3));
+};
+const palisadePost: Model = (c) => {
+  c.limb([-H + 2, 0, -H + 2], [-H + 2, 38, -H + 2], 2.6, 2.4, bark);
+  c.limb([-H + 2, 38, -H + 2], [-H + 2, 43, -H + 2], 2.4, 0.3, solid(ramp([150, 118, 80])));
+};
+
+/** Reja de hierro con puntas de lanza (alrededor del cementerio). */
+function ironFence(c: VolumeCanvas, along: 0 | 2): void {
+  const iron = metal(ramp([52, 52, 58]));
+  for (let t = -H + 1; t <= H; t += 2.6) {
+    c.limb(edge(along, t, 0, 1.4), edge(along, t, 22, 1.4), 0.45, 0.45, iron);
+    c.limb(edge(along, t, 22, 1.4), edge(along, t, 24.5, 1.4), 0.9, 0.1, iron);
+  }
+  for (const y of [5, 19]) c.box(edge(along, 0, y, 1.4), UP, edgeHalf(along, H, 0.6, 0.5), iron);
+  for (const t of [-H + 1, H - 1]) c.box(edge(along, t, 13, 1.4), UP, [1.4, 13, 1.4], solid(STONE));
+}
+
+/** Cripta (2 × 2): casita de piedra con columnas, techo a dos aguas, puerta de hierro y una cruz. */
+const crypt: Model = (c, variant) => {
+  const stone = rocky(ramp([148, 144, 138]), variant + 9);
+  const half = 2 * H * 0.8;
+  const facing = axesAlong([1, 0, 1]);
+  c.box([0, 2, 0], facing, [half + 2, 2, half + 2], rocky(ramp([128, 124, 118]), 2));
+  c.box(
+    [0, 20, 0],
+    facing,
+    [half, 16, half * 0.8],
+    courses(ramp([150, 146, 140]), ramp([110, 106, 100]), 0, 6, 9),
+  );
+  // Techo a dos aguas: dos losas que bajan desde la cumbrera, a lo ancho.
+  for (const side of [1, -1] as const) {
+    const out = side * half * 0.42;
+    c.box(
+      [out * Math.SQRT1_2, 39.5, -out * Math.SQRT1_2],
+      axesAlong([1, 0, 1], [side * 0.5 * Math.SQRT1_2, 1, -side * 0.5 * Math.SQRT1_2]),
+      [half * 0.6, 1.3, half * 0.95],
+      solid(ramp([96, 94, 92])),
+    );
+  }
+  // Columnas al frente y la puerta.
+  const front = (k: number, y: number): Vec3 => [
+    half * 0.8 * Math.SQRT1_2 + k * Math.SQRT1_2,
+    y,
+    half * 0.8 * Math.SQRT1_2 - k * Math.SQRT1_2,
+  ];
+  for (const k of [-11, 11]) c.limb(front(k, 4) as Vec3, front(k, 36) as Vec3, 2, 2, stone);
+  c.box(
+    [front(0, 0)[0] + 0.6, 13, front(0, 0)[2] + 0.6],
+    facing,
+    [6, 11, 0.6],
+    metal(ramp([60, 60, 66])),
+  );
+  // Cruz arriba.
+  c.box([0, 52, 0], facing, [0.9, 6, 0.9], stone);
+  c.box([0, 54, 0], facing, [4, 0.9, 0.9], stone);
+};
+
+/** Puesto del mercado: mostrador, cuatro postes y un toldo a rayas con mercadería. */
+const stall: Model = (c, variant) => {
+  const wood = planks(WOOD, 0, 3);
+  const facing = axesAlong([1, 0, 1]);
+  const stripes = [
+    [ramp([196, 54, 48]), ramp([232, 222, 200])],
+    [ramp([48, 92, 170]), ramp([232, 222, 200])],
+    [ramp([62, 136, 70]), ramp([226, 200, 90])],
+  ][variant % 3] as [Ramp, Ramp];
+  for (const [a, b] of [
+    [-1, -1],
+    [1, -1],
+    [-1, 1],
+    [1, 1],
+  ] as const) {
+    const x = (a * 12 + b * 6) * Math.SQRT1_2;
+    const z = (-a * 12 + b * 6) * Math.SQRT1_2;
+    c.limb([x, 0, z], [x, b > 0 ? 26 : 32, z], 0.9, 0.9, solid(WOOD, -1));
+  }
+  c.box([4, 7, 4], facing, [13, 7, 3.4], wood);
+  c.box([0, 30, 0], axesAlong([1, 0, 1], [-0.25, 1, -0.25]), [14, 0.8, 9], (s) =>
+    tone(Math.floor((s.p[0] - s.p[2] + 200) / 5) % 2 === 0 ? stripes[0] : stripes[1], s.light),
+  );
+  // Mercadería: frutas, panes o vasijas.
+  const goods = [ramp([210, 70, 50]), ramp([222, 170, 80]), ramp([120, 160, 70])];
+  for (let i = 0; i < 7; i++) {
+    const t = i - 3;
+    c.sphere(
+      [4 + t * 3 * Math.SQRT1_2, 15.6, 4 - t * 3 * Math.SQRT1_2],
+      1.8,
+      solid(goods[(i + variant) % 3] ?? WOOD),
+    );
+  }
+};
+
+/** Estandarte del reino: mástil con travesaño y un paño azul con borde dorado. */
+const banner: Model = (c, variant) => {
+  c.limb([-4, 0, -4], [-4, 64, -4], 0.9, 0.7, solid(ramp([90, 64, 42])));
+  c.sphere([-4, 65, -4], 1.4, metal(ramp([214, 172, 64])));
+  const along: Vec3 = [Math.SQRT1_2, 0, -Math.SQRT1_2];
+  c.limb(
+    [-4 - along[0] * 8, 60, -4 - along[2] * 8],
+    [-4 + along[0] * 8, 60, -4 + along[2] * 8],
+    0.6,
+    0.6,
+    solid(ramp([90, 64, 42])),
+  );
+  const cloth =
+    [ramp([40, 70, 150]), ramp([150, 36, 40]), ramp([50, 110, 60])][variant % 3] ??
+    ramp([40, 70, 150]);
+  const gold = ramp([214, 172, 64]);
+  c.box([-3.4, 47, -3.4], axesAlong([1, 0, 1]), [7.4, 13, 0.3], (s) => {
+    const edgeBand = s.p[1] < 35.5 || Math.abs((s.p[0] - s.p[2]) / Math.SQRT2) > 6.4;
+    const emblem = Math.hypot((s.p[0] - s.p[2]) / Math.SQRT2, s.p[1] - 49) < 3;
+    return tone(edgeBand || emblem ? gold : cloth, s.light);
+  });
+};
+
+/** Trono: respaldo alto, apoyabrazos, almohadón rojo y adornos de oro. */
+const throne: Model = (c) => {
+  const gold = metal(ramp([214, 172, 64]));
+  const wood = planks(ramp([110, 70, 40]), 1, 3);
+  const facing = axesAlong([1, 0, 1]);
+  c.box([0, 2, 0], facing, [12, 2, 12], solid(ramp([120, 40, 44])));
+  c.box([0, 9, 0], facing, [8, 5, 7], wood);
+  c.box([1.6, 14.6, 1.6], facing, [7, 1.4, 6], solid(ramp([170, 40, 48])));
+  c.box([-5.4, 26, -5.4], facing, [8, 18, 1.6], wood);
+  c.box([-4.6, 30, -4.6], facing, [5.6, 11, 0.4], solid(ramp([170, 40, 48])));
+  for (const side of [1, -1] as const) {
+    const x = side * 7.5 * Math.SQRT1_2;
+    c.box([x, 18, -x], facing, [1.2, 4, 6.4], wood);
+    c.sphere([x - 5.4 * Math.SQRT1_2, 44, -x - 5.4 * Math.SQRT1_2], 1.6, gold);
+  }
+  c.sphere([-5.4 * Math.SQRT1_2 * 2, 46, -5.4 * Math.SQRT1_2 * 2], 2, gold);
+};
+
+/** Fuente de la plaza (2 × 2): pileta redonda con agua, columna y taza que derrama. */
+const fountain: Model = (c) => {
+  const stone = rocky(ramp([176, 170, 160]), 6);
+  // Pileta: borde en anillo.
+  for (let i = 0; i < 40; i++) {
+    const a = (i / 40) * Math.PI * 2;
+    c.box(
+      [Math.cos(a) * 24, 4, Math.sin(a) * 24],
+      axesAlong([-Math.sin(a), 0, Math.cos(a)]),
+      [2.4, 4, 2.4],
+      stone,
+    );
+  }
+  const water: Material = (s) =>
+    tone(
+      ramp([70, 140, 200]),
+      0.7 + s.light * 0.3,
+      noise(Math.floor(s.p[0] / 3), Math.floor(s.p[2] / 3)) > 0.8 ? 1 : 0,
+    );
+  c.ellipsoid([0, 5, 0], UP, [22, 1, 22], water);
+  cylinder(c, [0, 4, 0], 18, (t) => 4 - t * 1.2, stone);
+  cylinder(c, [0, 22, 0], 3, (t) => 4 + t * 6, stone);
+  c.ellipsoid([0, 25, 0], UP, [9, 0.8, 9], water);
+  // Chorros que caen de la taza.
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + 0.4;
+    c.limb(
+      [Math.cos(a) * 9, 24, Math.sin(a) * 9],
+      [Math.cos(a) * 14, 6, Math.sin(a) * 14],
+      0.9,
+      1.3,
+      glowing(ramp([150, 200, 236])),
+    );
+  }
+};
+
+const LOG_WALL = wallSet(logWall, logPost);
+const PLANK_WALL = wallSet(plankWall, plankPost);
+const BASALT_WALL = wallSet(basaltWall, basaltPost);
+const RAMPART_WALL = wallSet(rampart, rampartPost);
+
 /** Los árboles los dibuja `tree-art`, cada especie con su ramificación. */
 function tree(species: TreeSpecies): StaticSpec {
   return { model: (c, variant) => drawTree(c, species, variant), shadow: TREE_SHADOWS[species] };
@@ -1146,4 +1491,35 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   cypress: tree('cypress'),
   baobab: tree('baobab'),
   bamboo: tree('bamboo'),
+  'log-wall-x': { model: LOG_WALL.x },
+  'log-wall-y': { model: LOG_WALL.y },
+  'log-wall-corner': { model: LOG_WALL.corner },
+  'log-wall-post': { model: LOG_WALL.post },
+  'plank-wall-x': { model: PLANK_WALL.x },
+  'plank-wall-y': { model: PLANK_WALL.y },
+  'plank-wall-corner': { model: PLANK_WALL.corner },
+  'plank-wall-post': { model: PLANK_WALL.post },
+  'basalt-wall-x': { model: BASALT_WALL.x },
+  'basalt-wall-y': { model: BASALT_WALL.y },
+  'basalt-wall-corner': { model: BASALT_WALL.corner },
+  'basalt-wall-post': { model: BASALT_WALL.post },
+  'rampart-x': { model: RAMPART_WALL.x },
+  'rampart-y': { model: RAMPART_WALL.y },
+  'rampart-corner': { model: RAMPART_WALL.corner },
+  'rampart-post': { model: RAMPART_WALL.post },
+  tower: {
+    model: tower,
+    shadow: [44, 18],
+    frame: { width: 168, height: 224, ground: { x: 84, y: 196 } },
+  },
+  'palisade-x': { model: (c) => palisade(c, 0) },
+  'palisade-y': { model: (c) => palisade(c, 2) },
+  'palisade-post': { model: palisadePost },
+  'iron-fence-x': { model: (c) => ironFence(c, 0) },
+  'iron-fence-y': { model: (c) => ironFence(c, 2) },
+  crypt: { model: crypt, shadow: [40, 16] },
+  stall: { model: stall, shadow: [18, 8] },
+  banner: { model: banner, shadow: [8, 3] },
+  throne: { model: throne, shadow: [14, 6] },
+  fountain: { model: fountain, shadow: [34, 14] },
 };
