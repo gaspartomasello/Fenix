@@ -127,6 +127,31 @@ export const STATIC_KINDS = [
   'plank-stack',
   'carpet',
   'candelabra',
+  // Puertas (cerradas y abiertas) y ventanas de cada estilo de pared
+  'door-x',
+  'door-y',
+  'door-x-open',
+  'door-y-open',
+  'iron-door-x',
+  'iron-door-y',
+  'iron-door-x-open',
+  'iron-door-y-open',
+  'dungeon-door-x',
+  'dungeon-door-y',
+  'dungeon-door-x-open',
+  'dungeon-door-y-open',
+  'bone-door-x',
+  'bone-door-y',
+  'bone-door-x-open',
+  'bone-door-y-open',
+  'wall-window-x',
+  'wall-window-y',
+  'log-window-x',
+  'log-window-y',
+  'plank-window-x',
+  'plank-window-y',
+  'basalt-window-x',
+  'basalt-window-y',
 ] as const;
 
 export type StaticKind = (typeof STATIC_KINDS)[number];
@@ -166,6 +191,24 @@ export const SEATS: Readonly<Partial<Record<StaticKind, Direction | 'any'>>> = {
   stool: 'any',
   throne: Direction.SouthEast,
 };
+
+/**
+ * Puertas, como en UO: en el mapa van cerradas (bloquean); con doble clic se
+ * abren y se ve la puerta abierta. El estado lo lleva el mapa (`TileMap.setDoorOpen`).
+ */
+export const DOORS: Readonly<Partial<Record<StaticKind, StaticKind>>> = {
+  'door-x': 'door-x-open',
+  'door-y': 'door-y-open',
+  'iron-door-x': 'iron-door-x-open',
+  'iron-door-y': 'iron-door-y-open',
+  'dungeon-door-x': 'dungeon-door-x-open',
+  'dungeon-door-y': 'dungeon-door-y-open',
+  'bone-door-x': 'bone-door-x-open',
+  'bone-door-y': 'bone-door-y-open',
+};
+
+/** A cuántos tiles hay que estar de una puerta para abrirla o cerrarla. */
+export const DOOR_RANGE = 1;
 
 export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   oak: define('oak', 'roble', true),
@@ -288,6 +331,30 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   'plank-stack': define('plank-stack', 'pila de tablas', true),
   carpet: define('carpet', 'alfombra', false),
   candelabra: define('candelabra', 'candelabro', true, 4),
+  'door-x': define('door-x', 'puerta', true),
+  'door-y': define('door-y', 'puerta', true),
+  'door-x-open': define('door-x-open', 'puerta abierta', false),
+  'door-y-open': define('door-y-open', 'puerta abierta', false),
+  'iron-door-x': define('iron-door-x', 'puerta de hierro', true),
+  'iron-door-y': define('iron-door-y', 'puerta de hierro', true),
+  'iron-door-x-open': define('iron-door-x-open', 'puerta de hierro abierta', false),
+  'iron-door-y-open': define('iron-door-y-open', 'puerta de hierro abierta', false),
+  'dungeon-door-x': define('dungeon-door-x', 'puerta de la mazmorra', true),
+  'dungeon-door-y': define('dungeon-door-y', 'puerta de la mazmorra', true),
+  'dungeon-door-x-open': define('dungeon-door-x-open', 'puerta de la mazmorra abierta', false),
+  'dungeon-door-y-open': define('dungeon-door-y-open', 'puerta de la mazmorra abierta', false),
+  'bone-door-x': define('bone-door-x', 'puerta de huesos', true),
+  'bone-door-y': define('bone-door-y', 'puerta de huesos', true),
+  'bone-door-x-open': define('bone-door-x-open', 'puerta de huesos abierta', false),
+  'bone-door-y-open': define('bone-door-y-open', 'puerta de huesos abierta', false),
+  'wall-window-x': define('wall-window-x', 'ventana', true, 2),
+  'wall-window-y': define('wall-window-y', 'ventana', true, 2),
+  'log-window-x': define('log-window-x', 'ventana', true, 2),
+  'log-window-y': define('log-window-y', 'ventana', true, 2),
+  'plank-window-x': define('plank-window-x', 'ventana', true, 2),
+  'plank-window-y': define('plank-window-y', 'ventana', true, 2),
+  'basalt-window-x': define('basalt-window-x', 'ventana', true, 2),
+  'basalt-window-y': define('basalt-window-y', 'ventana', true, 2),
 };
 
 export function isStaticKind(value: unknown): value is StaticKind {

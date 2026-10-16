@@ -449,6 +449,12 @@ sin tapar el paso de la puerta al centro; las bibliotecas y estantes se cuelgan 
 `Plan.onWall` (otro objeto en el mismo tile que la pared). El río de la capital marca en
 `MapRegion.rivers` por dónde entra y sale, y `procedural-map.ts` lo sigue afuera.
 
+**Puertas:** `DOORS` (shared) une cada puerta cerrada con su dibujo abierto. El estado es lo
+único del mapa que cambia: `TileMap.setDoorOpen` y `isWalkable` (una puerta abierta no bloquea).
+El servidor (`use-cases/doors.ts`) abre o cierra con `useDoor` si el jugador está al lado y avisa
+a todos con `door`; quien entra recibe las abiertas en `welcome.openDoors`. El cliente actualiza
+su mapa (la predicción de movimiento usa el mismo) y `StaticLayer.refreshDoor` cambia el dibujo.
+
 **Asientos:** `SEATS` (shared) dice qué objetos son asiento y hacia dónde miran; `TileMap.seatAt`
 lo responde por tile. Sentarse es solo visual: el cliente dibuja el cuadro `sit` (pose propia
 de silla en `humanoid-rig`) cuando la persona está quieta, a pie y en paz sobre un asiento.

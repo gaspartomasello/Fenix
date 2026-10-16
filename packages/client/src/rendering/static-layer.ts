@@ -1,5 +1,12 @@
 import { staticFrame } from '@fenix/art';
-import { STATICS, type StaticKind, type StaticPlacement, type TileMap } from '@fenix/shared';
+import {
+  DOORS,
+  STATICS,
+  type Position,
+  type StaticKind,
+  type StaticPlacement,
+  type TileMap,
+} from '@fenix/shared';
 import { Rectangle, Sprite, type Container } from 'pixi.js';
 import type { FractionalPosition } from '../core/entity';
 import { staticDepth } from './depth';
@@ -67,7 +74,7 @@ export class StaticLayer {
   private readonly chunks: Chunk[] = [];
 
   constructor(
-    map: TileMap,
+    private readonly map: TileMap,
     private readonly textures: TextureCache,
     private readonly target: Container,
     private readonly ground: Ground,
@@ -114,9 +121,7 @@ export class StaticLayer {
 
   private show(chunk: Chunk): void {
     chunk.sprites = chunk.placements.map((placement) => {
-      const sprite = new Sprite(
-        this.textures.static(placement.kind, variantFor(placement.x, placement.y)),
-      );
+      const sprite = new Sprite(this.textureOf(placement));
       const screen = this.ground.toScreen(footing(placement));
       const frame = staticFrame(placement.kind);
       sprite.anchor.set(frame.ground.x / frame.width, frame.ground.y / frame.height);
@@ -126,6 +131,20 @@ export class StaticLayer {
       this.target.addChild(sprite);
       return { sprite, placement };
     });
+  }
+
+  /** La textura de un objeto: las puertas abiertas se ven abiertas. */
+  private textureOf(placement: StaticPlacement) {
+    const open = this.map.isDoorOpen(placement) ? DOORS[placement.kind] : undefined;
+    return this.textures.static(open ?? placement.kind, variantFor(placement.x, placement.y));
+  }
+
+  /** Una puerta cambió: si se ve, se le cambia el dibujo. */
+  refreshDoor(position: Position): void {
+    for (const chunk of this.chunks)
+      for (const entry of chunk.sprites ?? [])
+        if (entry.placement.x === position.x && entry.placement.y === position.y)
+          entry.sprite.texture = this.textureOf(entry.placement);
   }
 
   private hide(chunk: Chunk): void {

@@ -3,10 +3,10 @@
   "name": "objetos",
   "tilewidth": 136,
   "tileheight": 168,
-  "tilecount": 120,
-  "columns": 120,
+  "tilecount": 144,
+  "columns": 144,
   "image": "objetos.png",
-  "imagewidth": 16320,
+  "imagewidth": 19584,
   "imageheight": 168,
   "tileoffset": {
     "x": -46,
@@ -1210,6 +1210,246 @@
           "name": "static",
           "type": "string",
           "value": "candelabra"
+        }
+      ]
+    },
+    {
+      "id": 120,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "door-x"
+        }
+      ]
+    },
+    {
+      "id": 121,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "door-y"
+        }
+      ]
+    },
+    {
+      "id": 122,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "door-x-open"
+        }
+      ]
+    },
+    {
+      "id": 123,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "door-y-open"
+        }
+      ]
+    },
+    {
+      "id": 124,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "iron-door-x"
+        }
+      ]
+    },
+    {
+      "id": 125,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "iron-door-y"
+        }
+      ]
+    },
+    {
+      "id": 126,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "iron-door-x-open"
+        }
+      ]
+    },
+    {
+      "id": 127,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "iron-door-y-open"
+        }
+      ]
+    },
+    {
+      "id": 128,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "dungeon-door-x"
+        }
+      ]
+    },
+    {
+      "id": 129,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "dungeon-door-y"
+        }
+      ]
+    },
+    {
+      "id": 130,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "dungeon-door-x-open"
+        }
+      ]
+    },
+    {
+      "id": 131,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "dungeon-door-y-open"
+        }
+      ]
+    },
+    {
+      "id": 132,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "bone-door-x"
+        }
+      ]
+    },
+    {
+      "id": 133,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "bone-door-y"
+        }
+      ]
+    },
+    {
+      "id": 134,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "bone-door-x-open"
+        }
+      ]
+    },
+    {
+      "id": 135,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "bone-door-y-open"
+        }
+      ]
+    },
+    {
+      "id": 136,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "wall-window-x"
+        }
+      ]
+    },
+    {
+      "id": 137,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "wall-window-y"
+        }
+      ]
+    },
+    {
+      "id": 138,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "log-window-x"
+        }
+      ]
+    },
+    {
+      "id": 139,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "log-window-y"
+        }
+      ]
+    },
+    {
+      "id": 140,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "plank-window-x"
+        }
+      ]
+    },
+    {
+      "id": 141,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "plank-window-y"
+        }
+      ]
+    },
+    {
+      "id": 142,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "basalt-window-x"
+        }
+      ]
+    },
+    {
+      "id": 143,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "basalt-window-y"
         }
       ]
     }

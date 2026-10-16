@@ -200,6 +200,15 @@ veces, hogar, biblioteca o alfombra. El **castillo** tiene el salón del trono c
 hasta el trono, candelabros, armaduras en fila, la biblioteca del rey y el tesoro; el comedor con
 la mesa larga y sus sillas, y la barraca de la guardia con camas y armeros.
 
+**Puertas y ventanas:** como en UO, las puertas se abren y se cierran con doble clic estando al
+lado (cerradas no dejan pasar, tampoco a las criaturas); no se puede cerrar una puerta con alguien
+parado en ella. Hay puertas de **madera** (casas, negocios, caballeriza, castillo), de **hierro**
+(el banco y el salón del trono), de **mazmorra** (roble oscuro con mirilla enrejada, en cada sala
+de la Cueva del Lamento) y de **huesos** (la guarida del fondo). Las casas tienen **ventanas** en
+las paredes de afuera según el estilo: góticas en la piedra (ojival con emplomado en rombos, doble
+ojiva con parteluz y óculo, medio punto con cuadrícula), cuadradas con cruz y postigos en los
+troncos y las tablas, y ojivas angostas de vidrio ámbar en la piedra negra. De noche alumbran.
+
 **Sentarse:** quieto sobre una silla, un banco, una banqueta o el trono, el personaje se sienta
 mirando hacia donde mira el asiento (piernas juntas, rodillas dobladas y las manos sobre las
 rodillas, distinto de ir montado). Al moverse, pelear o entrar en modo guerra se levanta.

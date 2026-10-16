@@ -97,6 +97,54 @@ export function generateDungeon({
   }
 
   // La escalera, en la pared de atrás de la primera sala.
+  // Puertas donde los pasillos entran a cada sala (de a dos: los pasillos son
+  // anchos); la guarida del fondo tiene puertas de huesos.
+  for (const room of placed) {
+    const bone = room.depth === placed.length - 1;
+    const sides: { tiles: Position[]; along: 'x' | 'y' }[] = [
+      {
+        tiles: span(room.x, room.x + room.width - 1).map((x) => ({ x, y: room.y - 1 })),
+        along: 'x',
+      },
+      {
+        tiles: span(room.x, room.x + room.width - 1).map((x) => ({ x, y: room.y + room.height })),
+        along: 'x',
+      },
+      {
+        tiles: span(room.y, room.y + room.height - 1).map((y) => ({ x: room.x - 1, y })),
+        along: 'y',
+      },
+      {
+        tiles: span(room.y, room.y + room.height - 1).map((y) => ({ x: room.x + room.width, y })),
+        along: 'y',
+      },
+    ];
+    for (const { tiles, along } of sides) {
+      let run: Position[] = [];
+      const flush = (): void => {
+        if (run.length >= 1 && run.length <= 3)
+          for (const t of run)
+            put(
+              bone
+                ? along === 'x'
+                  ? 'bone-door-x'
+                  : 'bone-door-y'
+                : along === 'x'
+                  ? 'dungeon-door-x'
+                  : 'dungeon-door-y',
+              t.x,
+              t.y,
+            );
+        run = [];
+      };
+      for (const t of tiles) {
+        if (floor(t.x, t.y) && !blocked.has(`${t.x},${t.y}`)) run.push(t);
+        else flush();
+      }
+      flush();
+    }
+  }
+
   const first = placed[0] as DungeonRoom;
   const ladder = { x: first.x + 1, y: first.y };
   put('ladder', ladder.x, ladder.y);
@@ -126,6 +174,10 @@ export function generateDungeon({
   }
 
   return { width, height, terrain, statics, rooms: placed, ladder, arrival };
+
+  function span(from: number, to: number): number[] {
+    return Array.from({ length: to - from + 1 }, (_, i) => from + i);
+  }
 
   /** Pasillo de dos tiles de ancho, en codo, con algún desvío. */
   function corridor(a: Position, b: Position): void {

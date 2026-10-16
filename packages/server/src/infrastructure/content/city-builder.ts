@@ -44,6 +44,9 @@ interface WallKit {
   readonly y: StaticKind;
   readonly corner: StaticKind;
   readonly post: StaticKind;
+  /** La misma pared con una ventana (las casas). */
+  readonly windowX?: StaticKind;
+  readonly windowY?: StaticKind;
 }
 
 interface Style {
@@ -63,24 +66,37 @@ interface Style {
   readonly river: boolean;
 }
 
-const STONE: WallKit = { x: 'wall-x', y: 'wall-y', corner: 'wall-corner', post: 'wall-post' };
+const STONE: WallKit = {
+  x: 'wall-x',
+  y: 'wall-y',
+  corner: 'wall-corner',
+  post: 'wall-post',
+  windowX: 'wall-window-x',
+  windowY: 'wall-window-y',
+};
 const LOGS: WallKit = {
   x: 'log-wall-x',
   y: 'log-wall-y',
   corner: 'log-wall-corner',
   post: 'log-wall-post',
+  windowX: 'log-window-x',
+  windowY: 'log-window-y',
 };
 const PLANKS: WallKit = {
   x: 'plank-wall-x',
   y: 'plank-wall-y',
   corner: 'plank-wall-corner',
   post: 'plank-wall-post',
+  windowX: 'plank-window-x',
+  windowY: 'plank-window-y',
 };
 const BASALT: WallKit = {
   x: 'basalt-wall-x',
   y: 'basalt-wall-y',
   corner: 'basalt-wall-corner',
   post: 'basalt-wall-post',
+  windowX: 'basalt-window-x',
+  windowY: 'basalt-window-y',
 };
 const RAMPART: WallKit = {
   x: 'rampart-x',
@@ -305,6 +321,26 @@ class Plan {
     wall(r.x1 + 1, r.y1 + 1, kit.post);
   }
 
+  /** Una puerta en el hueco de una pared: a lo largo de x (arriba o abajo) o de y (a los costados). */
+  door(at: Position, along: 'x' | 'y'): void {
+    this.put(at.x, at.y, along === 'x' ? 'door-x' : 'door-y');
+  }
+
+  /**
+   * Ventanas en las paredes de afuera de una casa (la del sur y la del este,
+   * que se ven desde la calle), cada tres tiles y lejos de la puerta.
+   */
+  windows(r: Rect, kit: WallKit, door: Position): void {
+    if (!kit.windowX || !kit.windowY) return;
+    const far = (x: number, y: number): boolean => Math.abs(x - door.x) + Math.abs(y - door.y) > 1;
+    for (let x = r.x0 + 1; x < r.x1; x += 3)
+      if (far(x, r.y1 + 1) && this.statics.get((r.y1 + 1) * this.width + x) === kit.x)
+        this.put(x, r.y1 + 1, kit.windowX);
+    for (let y = r.y0 + 1; y < r.y1; y += 3)
+      if (far(r.x1 + 1, y) && this.statics.get(y * this.width + r.x1 + 1) === kit.y)
+        this.put(r.x1 + 1, y, kit.windowY);
+  }
+
   /** Un objeto de 2 × 2 (torre, cripta, fuente): saca lo que haya debajo. */
   big(x: number, y: number, kind: StaticKind): void {
     for (const [dx, dy] of [
@@ -477,6 +513,11 @@ export function buildCity(spec: CitySpec): City {
     if (!room) break;
     shopRooms.push(room);
     const spot = furnishShop(plan, role, room, random);
+    // El banco tiene puerta de hierro.
+    if (role === 'banker' && plan.statics.get(room.door.y * plan.width + room.door.x) === 'door-x')
+      plan.put(room.door.x, room.door.y, 'iron-door-x');
+    if (role === 'banker' && plan.statics.get(room.door.y * plan.width + room.door.x) === 'door-y')
+      plan.put(room.door.x, room.door.y, 'iron-door-y');
     plan.npcs.push({ role, position: spot, ...named(spec, role) });
   }
   const homes = houses.filter((h) => !shopRooms.includes(h));
@@ -715,6 +756,8 @@ function buildCastle(plan: Plan, style: Style, q: Rect, cityName: string, cx: nu
     { x: keep.x0, y: gateY },
     { x: keep.x0, y: gateY + 1 },
   ]);
+  plan.put(keep.x0, gateY, 'iron-door-y');
+  plan.put(keep.x0, gateY + 1, 'iron-door-y');
   plan.fill({ x0: walls.x0 + 2, y0: gateY, x1: keep.x0, y1: gateY + 1 }, Terrain.Flagstone);
   // Alfombra roja desde la puerta hasta el trono, entre candelabros y armaduras.
   for (let x = keep.x0 + 1; x <= keep.x1; x++) {
@@ -747,6 +790,7 @@ function buildCastle(plan: Plan, style: Style, q: Rect, cityName: string, cx: nu
     const door = { x: Math.floor((hall.x0 + hall.x1) / 2), y: hall.y1 + 1 };
     plan.enclose(hall, STONE, [door]);
     plan.ground(door.x, door.y, Terrain.Wood);
+    plan.door(door, 'x');
     const tableY = Math.floor((hall.y0 + hall.y1) / 2) + 1;
     for (let x = hall.x0 + 2; x <= hall.x1 - 1; x++) {
       if (x === door.x) continue;
@@ -766,6 +810,7 @@ function buildCastle(plan: Plan, style: Style, q: Rect, cityName: string, cx: nu
     const door = { x: Math.floor((barracks.x0 + barracks.x1) / 2), y: barracks.y0 };
     plan.enclose(barracks, STONE, [door]);
     plan.ground(door.x, door.y, Terrain.Wood);
+    plan.door(door, 'x');
     for (let x = barracks.x0 + 1; x <= barracks.x1; x += 2) plan.put(x, barracks.y1, 'bed');
     plan.put(barracks.x0 + 1, barracks.y0 + 1, 'weapon-rack');
     plan.put(barracks.x0 + 3, barracks.y0 + 1, 'weapon-rack');
@@ -903,6 +948,8 @@ function building(
           : { x: mid.x, y: house.y0 + 1 };
   plan.enclose(house, style.walls, [door]);
   plan.ground(door.x, door.y, style.floor);
+  plan.door(door, side === 'n' || side === 's' ? 'x' : 'y');
+  plan.windows(house, style.walls, door);
   return {
     x0: house.x0 + 1,
     y0: house.y0 + 1,
@@ -1116,6 +1163,9 @@ function buildStable(
   plan.fill(barn, Terrain.Dirt);
   const door = { x: barn.x1 + 1, y: barn.y0 + 3 };
   plan.enclose(barn, style.walls, [door, { x: door.x, y: door.y + 1 }]);
+  plan.door(door, 'y');
+  plan.door({ x: door.x, y: door.y + 1 }, 'y');
+  plan.windows(barn, style.walls, door);
   plan.ground(door.x, door.y, Terrain.Dirt);
   plan.ground(door.x, door.y + 1, Terrain.Dirt);
   plan.npcs.push({
@@ -1164,6 +1214,8 @@ function buildWoodcutter(
   plan.fill(cabin, Terrain.Wood);
   const door = { x: cabin.x1 + 1, y: cabin.y0 + 2 };
   plan.enclose(cabin, LOGS, [door]);
+  plan.door(door, 'y');
+  plan.windows(cabin, LOGS, door);
   plan.ground(door.x, door.y, Terrain.Wood);
   plan.put(cabin.x0 + 1, cabin.y0 + 1, 'bed');
   plan.put(cabin.x0 + 1, cabin.y1, 'hearth');

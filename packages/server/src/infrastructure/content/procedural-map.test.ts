@@ -1,4 +1,4 @@
-import { STATICS, Terrain, type Position, type TileMap } from '@fenix/shared';
+import { DOORS, STATICS, Terrain, type Position, type TileMap } from '@fenix/shared';
 import { describe, expect, it } from 'vitest';
 import { generateIslandMap } from './procedural-map';
 import { buildWorld, createWorld } from './world-builder';
@@ -252,7 +252,14 @@ describe('mazmorra', () => {
 
   it('adentro se llega caminando a todas las criaturas y a la escalera de salida', () => {
     if (!inside) throw new Error('sin entrada');
+    // Las salas tienen puertas (de mazmorra, y de huesos en la guarida): abiertas se pasa.
+    const doors = map.statics.filter((s) => DOORS[s.kind] && map.regionAt(s)?.dungeon);
+    expect(doors.some((d) => d.kind.startsWith('dungeon-door'))).toBe(true);
+    expect(doors.some((d) => d.kind.startsWith('bone-door'))).toBe(true);
+    const closed = reachable(map, inside);
+    for (const d of doors) map.setDoorOpen(d, true);
     const cave = reachable(map, inside);
+    expect(cave.size).toBeGreaterThan(closed.size);
     for (const { home } of lairs) expect(cave.has(`${home.x},${home.y}`)).toBe(true);
     const ladder = map.teleporters.find((t) => map.regionAt(t)?.dungeon);
     expect(ladder && cave.has(`${ladder.x},${ladder.y}`)).toBe(true);
