@@ -656,7 +656,11 @@ const STYLES: Readonly<Record<Terrain, TerrainStyle>> = {
       // estratos inclinados, piedras claras sueltas y algo de liquen.
       const tone = fbm(u, v, seed, 4, 4);
       const ridge = 1 - Math.abs(2 * fbm(u, v, seed + 3, 3, 3) - 1);
-      let color = mix([64, 62, 60], [150, 146, 138], (tone - 0.5) * 1.5 + 0.5 + (ridge - 0.5) * 0.7);
+      let color = mix(
+        [64, 62, 60],
+        [150, 146, 138],
+        (tone - 0.5) * 1.5 + 0.5 + (ridge - 0.5) * 0.7,
+      );
       const strata = Math.sin((u * 0.6 + v) * 18 + fbm(u, v, seed + 5, 2, 2) * 5);
       if (strata > 0.82) color = mix(color, [176, 166, 148], 0.3);
       if (ridge < 0.14) color = mix(color, [44, 40, 38], 0.8);
