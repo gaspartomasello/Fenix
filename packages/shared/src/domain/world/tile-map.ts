@@ -1,5 +1,6 @@
 import type { Position } from '../geometry/position';
-import { STATICS, type StaticPlacement } from './statics';
+import type { Direction } from '../geometry/direction';
+import { SEATS, STATICS, type StaticPlacement } from './statics';
 import { TERRAINS, type Terrain } from './terrain';
 
 /** Zona con nombre (un pueblo, un bosque…). */
@@ -68,6 +69,8 @@ export class TileMap {
   private readonly terrain: readonly Terrain[];
   private readonly heights: readonly number[] | undefined;
   private readonly blocked: Uint8Array;
+  /** Asientos por tile (sillas, bancos, tronos). */
+  private readonly seats = new Map<number, Direction | 'any'>();
 
   constructor(data: TileMapInit) {
     if (data.terrain.length !== data.width * data.height) {
@@ -85,6 +88,8 @@ export class TileMap {
     this.signs = data.signs ?? [];
     this.blocked = new Uint8Array(data.width * data.height);
     for (const placed of this.statics) {
+      const seat = SEATS[placed.kind];
+      if (seat !== undefined) this.seats.set(placed.y * this.width + placed.x, seat);
       const { blocking, footprint } = STATICS[placed.kind];
       if (!blocking) continue;
       for (let dy = 0; dy < footprint; dy++)
@@ -117,6 +122,12 @@ export class TileMap {
     const x = Math.max(0, Math.min(this.width - 1, Math.round(position.x)));
     const y = Math.max(0, Math.min(this.height - 1, Math.round(position.y)));
     return this.heights[y * this.width + x] ?? 0;
+  }
+
+  /** El asiento del tile (hacia dónde mira quien se sienta), si hay uno. */
+  seatAt(position: Position): Direction | 'any' | undefined {
+    if (!this.contains(position)) return undefined;
+    return this.seats.get(position.y * this.width + position.x);
   }
 
   /** Transitable: terreno caminable y sin objetos que bloqueen. */

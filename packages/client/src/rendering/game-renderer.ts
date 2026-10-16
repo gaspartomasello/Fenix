@@ -180,6 +180,7 @@ export class GameRenderer {
       view.update(now, {
         targeted: view.entityId === targetId,
         hidden: view.isSelf && this.game.hidden,
+        seat: this.game.map?.seatAt(view.tile),
       });
     const focus = self.renderPosition(now);
     const view = this.updateCamera(focus);

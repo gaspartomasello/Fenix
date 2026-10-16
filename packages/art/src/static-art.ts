@@ -1415,6 +1415,488 @@ const fountain: Model = (c) => {
   }
 };
 
+// ── Interiores y oficios ────────────────────────────────────────────
+
+const STRAW = ramp([214, 184, 96]);
+const strawy: Material = (s) =>
+  tone(
+    STRAW,
+    s.light,
+    noise(Math.floor(s.p[0] * 2 + s.p[1]), Math.floor(s.p[2] * 2)) > 0.7 ? -1 : 0,
+  );
+const FURNITURE = ramp([128, 84, 48]);
+const DARK_WOOD = ramp([92, 58, 34]);
+const LINEN_WHITE = ramp([226, 220, 204]);
+const BRASS = ramp([206, 164, 72]);
+
+/** Ejes de un mueble que mira hacia `f` (en el plano). */
+const facing = (f: Vec3) => axesAlong(f);
+/** Un punto del mueble: `side` a lo ancho, `y` de alto y `fwd` hacia donde mira. */
+function local(f: Vec3, side: number, y: number, fwd: number): Vec3 {
+  const [a] = axesAlong(f);
+  return [a[0] * side + f[0] * fwd, y, a[2] * side + f[2] * fwd];
+}
+
+/** Fardo de paja atado con dos hilos (uno, o dos apilados). */
+const hayBale: Model = (c, variant) => {
+  const f: Vec3 = variant === 1 ? [0, 0, 1] : [1, 0, 0];
+  const bale = (y: number, shift: number) => {
+    c.box(local(f, shift, y + 5, 0), facing(f), [6, 5, 10], strawy);
+    for (const t of [-4.5, 4.5])
+      c.box(local(f, shift, y + 5, t), facing(f), [6.2, 5.2, 0.5], solid(ramp([150, 110, 60])));
+  };
+  bale(0, 0);
+  if (variant === 2) bale(10, 1);
+};
+
+/** Paja suelta en el piso. */
+const hayPile: Model = (c, variant) => {
+  for (let i = 0; i < 6; i++) {
+    const a = i * 1.7 + variant;
+    c.ellipsoid(
+      [Math.cos(a) * 6, 1.2, Math.sin(a) * 6],
+      axesAlong([Math.cos(a), 0, Math.sin(a)]),
+      [5, 1.4, 3],
+      strawy,
+    );
+  }
+};
+
+/** Palenque: dos postes con un travesaño donde se atan los caballos, con argollas. */
+const hitchingPost: Model = (c) => {
+  const f: Vec3 = [Math.SQRT1_2, 0, -Math.SQRT1_2];
+  const wood = planks(DARK_WOOD, 1, 3);
+  for (const t of [-11, 11]) c.box(local(f, 0, 9, t), facing(f), [1.4, 9, 1.4], wood);
+  c.box(local(f, 0, 16, 0), facing(f), [1.1, 1.1, 13], planks(DARK_WOOD, 2, 4));
+  for (const t of [-5, 5])
+    c.limb(local(f, 0.9, 15, t), local(f, 0.9, 12.6, t), 0.6, 0.6, metal(IRON));
+};
+
+/** Bebedero (fuentón): artesa de tablas con agua. */
+const waterTrough: Model = (c, variant) => {
+  const f: Vec3 = variant === 1 ? [0, 0, 1] : [1, 0, 0];
+  c.box(local(f, 0, 4, 0), facing(f), [5, 4, 12], planks(FURNITURE, 2, 3));
+  c.box(local(f, 0, 8.1, 0), facing(f), [4, 0.4, 11], (s) =>
+    tone(
+      ramp([80, 140, 190]),
+      0.75 + s.light * 0.25,
+      noise(Math.floor(s.p[0] / 2), Math.floor(s.p[2] / 2)) > 0.8 ? 1 : 0,
+    ),
+  );
+  for (const t of [-10, 10]) c.box(local(f, 0, 4, t), facing(f), [5.4, 4.4, 0.8], metal(IRON));
+};
+
+/** Tocón con un hacha clavada y astillas alrededor. */
+const stumpAxe: Model = (c, variant) => {
+  cylinder(c, [0, 0, 0], 11, (t) => 9.5 - t * 0.8, bark);
+  // Raíces que se abren al pie.
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + 0.4;
+    c.limb(
+      [Math.cos(a) * 7, 2, Math.sin(a) * 7],
+      [Math.cos(a) * 12, 0.5, Math.sin(a) * 12],
+      2.2,
+      0.8,
+      bark,
+    );
+  }
+  c.ellipsoid([0, 11, 0], UP, [8.8, 0.6, 8.8], (s) =>
+    tone(ramp([206, 166, 110]), s.light, Math.round(Math.hypot(s.p[0], s.p[2])) % 2 === 0 ? -1 : 0),
+  );
+  // El hacha: la hoja clavada arriba y el mango inclinado hacia afuera.
+  c.box([0.5, 12.6, 0.5], axesAlong([1, 0, 1]), [4.6, 2.8, 0.8], metal(ramp([150, 152, 160])));
+  c.limb([1.5, 13, 1.5], [7 + variant, 30, 6], 1.5, 1.3, solid(ramp([168, 118, 66])));
+  for (let i = 0; i < 6; i++) {
+    const a = i * 1.3 + variant;
+    c.box(
+      [Math.cos(a) * 14, 0.5, Math.sin(a) * 14],
+      axesAlong([Math.sin(a), 0, Math.cos(a)]),
+      [1.6, 0.5, 0.6],
+      solid(ramp([210, 170, 116])),
+    );
+  }
+};
+
+/** Pila de leños: troncos cortados apilados en pirámide, con la cara clara del corte. */
+const logPile: Model = (c, variant) => {
+  const f: Vec3 = variant === 1 ? [0, 0, 1] : [1, 0, 0];
+  const [a] = facing(f);
+  const rows = [4, 3, 2];
+  rows.forEach((n, row) => {
+    for (let i = 0; i < n; i++) {
+      const side = (i - (n - 1) / 2) * 6.2;
+      const y = 3 + row * 5.4;
+      const from = local(f, side, y, -10);
+      const to = local(f, side, y, 10);
+      c.limb(from, to, 3, 3, bark);
+      c.ellipsoid(to, facing(f), [2.8, 2.8, 0.4], (s) =>
+        tone(
+          ramp([206, 168, 112]),
+          s.light,
+          Math.round(Math.hypot(s.p[0] - to[0], s.p[1] - to[1]) * 1.4) % 2 === 0 ? -1 : 0,
+        ),
+      );
+    }
+  });
+  void a;
+};
+
+/** Banco de carpintero: tablero grueso, morsa, un serrucho y virutas. */
+const workbench: Model = (c) => {
+  const f: Vec3 = [Math.SQRT1_2, 0, Math.SQRT1_2];
+  const wood = planks(FURNITURE, 0, 4);
+  for (const [sx, fz] of [
+    [-11, -4],
+    [11, -4],
+    [-11, 4],
+    [11, 4],
+  ] as const)
+    c.box(local(f, sx, 6, fz), facing(f), [1.2, 6, 1.2], solid(DARK_WOOD));
+  c.box(local(f, 0, 13, 0), facing(f), [13, 1.4, 5.4], wood);
+  c.box(local(f, -12, 15, 3), facing(f), [1.6, 2, 2], metal(IRON));
+  // Serrucho apoyado y una tabla a medio cortar.
+  c.box(local(f, 3, 14.8, -1), facing(f), [6, 0.3, 1.8], metal(ramp([176, 178, 186])));
+  c.box(local(f, 9.4, 14.8, -1), facing(f), [1.6, 1, 1], solid(ramp([150, 104, 60])));
+  c.box(local(f, -3, 14.8, 2), facing(f), [6, 0.5, 2.4], planks(ramp([196, 156, 104]), 0, 3));
+  for (let i = 0; i < 4; i++)
+    c.sphere(local(f, -8 + i * 5, 0.5, 6), 0.9, solid(ramp([220, 186, 130])));
+};
+
+/** Caballete con un serrucho clavado en una tabla. */
+const sawhorse: Model = (c) => {
+  const f: Vec3 = [1, 0, 0];
+  for (const t of [-7, 7])
+    for (const side of [-1, 1])
+      c.limb(local(f, side * 3, 0, t), local(f, 0, 11, t), 0.8, 0.8, solid(DARK_WOOD));
+  c.box(local(f, 0, 11.6, 0), facing(f), [1.4, 1, 9], planks(FURNITURE, 2, 3));
+  c.box(local(f, 0, 13, 0), facing(f), [4, 0.6, 8], planks(ramp([196, 156, 104]), 2, 3));
+  c.box(
+    local(f, 0, 17, 2),
+    axesAlong([0, 0, 1], [0, 0.2, 1]),
+    [0.2, 4, 3],
+    metal(ramp([176, 178, 186])),
+  );
+};
+
+/** Pila de tablas cortadas. */
+const plankStack: Model = (c, variant) => {
+  const f: Vec3 = variant === 1 ? [0, 0, 1] : [1, 0, 0];
+  for (let i = 0; i < 6; i++)
+    c.box(
+      local(f, (i % 2) * 0.8, 1 + i * 2, 0),
+      facing(f),
+      [5, 0.9, 12],
+      planks(ramp([186, 144, 92]), 2, 4),
+    );
+};
+
+/** Mesa de alquimia: frascos de colores, un alambique, un libro abierto y una vela. */
+const alchemyTable: Model = (c) => {
+  const f: Vec3 = [Math.SQRT1_2, 0, Math.SQRT1_2];
+  for (const [sx, fz] of [
+    [-10, -4],
+    [10, -4],
+    [-10, 4],
+    [10, 4],
+  ] as const)
+    c.box(local(f, sx, 6, fz), facing(f), [1, 6, 1], solid(DARK_WOOD));
+  c.box(local(f, 0, 12.6, 0), facing(f), [12, 0.9, 5.6], planks(DARK_WOOD, 0, 4));
+  const glass =
+    (colors: Ramp): Material =>
+    (s) =>
+      tone(colors, 0.65 + s.light * 0.35, s.light > 0.85 ? 1 : 0);
+  // Alambique: bola de vidrio, cuello largo y un frasco que recibe.
+  c.sphere(local(f, -6, 16.6, 0), 3.4, glass(ramp([150, 210, 120])));
+  c.limb(local(f, -6, 19.6, 0), local(f, -1, 21, -1), 0.6, 0.4, glass(ramp([200, 220, 230])));
+  c.limb(local(f, -1, 21, -1), local(f, 1.5, 15.5, -1), 0.4, 0.4, glass(ramp([200, 220, 230])));
+  const colors = [
+    ramp([200, 50, 60]),
+    ramp([70, 110, 210]),
+    ramp([220, 190, 60]),
+    ramp([150, 70, 190]),
+  ];
+  colors.forEach((col, i) => {
+    const at = local(f, 2 + i * 2.6, 14.6, 2.6 - (i % 2) * 3);
+    c.sphere(at, 1.4, glass(col));
+    c.limb(add3(at, [0, 1.2, 0]), add3(at, [0, 2.8, 0]), 0.4, 0.35, glass(col));
+  });
+  // Libro abierto y vela.
+  c.box(local(f, 6, 13.8, -3), facing(f), [3, 0.4, 2.2], solid(LINEN_WHITE));
+  c.box(local(f, 6, 13.5, -3), facing(f), [3.2, 0.3, 2.4], solid(ramp([120, 40, 40])));
+  c.limb(local(f, 10, 13.5, 2), local(f, 10, 17, 2), 0.6, 0.6, solid(LINEN_WHITE));
+  c.sphere(local(f, 10, 17.8, 2), 0.7, glowing(ramp([255, 210, 100])));
+};
+
+/** Biblioteca contra la pared: estantes llenos de lomos de colores. */
+function bookshelf(c: VolumeCanvas, along: 0 | 2, potions: boolean): void {
+  const wood = planks(DARK_WOOD, 1, 4);
+  c.box(edge(along, 0, 21, 3.4), UP, edgeHalf(along, H - 1, 21, 3), wood);
+  const spines = [
+    ramp([150, 40, 40]),
+    ramp([40, 80, 140]),
+    ramp([60, 110, 60]),
+    ramp([140, 110, 50]),
+    ramp([90, 50, 110]),
+  ];
+  for (const y of [5, 15, 25, 35]) {
+    if (potions) {
+      for (let t = -H + 3; t < H - 2; t += 3.4) {
+        const col = spines[Math.floor(noise(Math.floor(t + 30), y) * spines.length)] ?? spines[0];
+        if (!col) continue;
+        const at = edge(along, t, y + 2.2, 6.6);
+        c.sphere(at, 1.5, (s) => tone(col, 0.6 + s.light * 0.4, s.light > 0.85 ? 1 : 0));
+        c.limb(add3(at, [0, 1.3, 0]), add3(at, [0, 3, 0]), 0.45, 0.4, solid(col));
+      }
+    } else {
+      c.box(edge(along, 0, y + 3.6, 5.6), UP, edgeHalf(along, H - 2.4, 3.6, 1.2), (s) => {
+        const t = Math.floor((s.p[along] + 100) / 1.6);
+        const col = spines[Math.floor(noise(t, y) * spines.length)] ?? spines[0] ?? FURNITURE;
+        return tone(col, s.light, t % 5 === 0 ? -1 : 0);
+      });
+    }
+    c.box(edge(along, 0, y - 0.6, 5), UP, edgeHalf(along, H - 1.4, 0.6, 2.4), solid(DARK_WOOD, -1));
+  }
+}
+
+/** Caldero de hierro sobre tres patas, con un brebaje verde que burbujea y brasas abajo. */
+const cauldron: Model = (c) => {
+  for (let i = 0; i < 3; i++) {
+    const a = (i / 3) * Math.PI * 2;
+    c.limb(
+      [Math.cos(a) * 6, 0, Math.sin(a) * 6],
+      [Math.cos(a) * 4, 6, Math.sin(a) * 4],
+      0.7,
+      0.7,
+      metal(IRON),
+    );
+  }
+  c.ellipsoid([0, 1.4, 0], UP, [4, 1.2, 4], glowing(ramp([255, 120, 40])));
+  cylinder(
+    c,
+    [0, 4, 0],
+    9,
+    (t) => 6 + Math.sin(t * Math.PI) * 2.4,
+    (s) => tone(ramp([62, 60, 66]), s.light, Math.abs(s.p[1] - 11.5) < 0.8 ? 1 : 0),
+  );
+  c.ellipsoid([0, 12.6, 0], UP, [6.4, 0.6, 6.4], glowing(ramp([110, 220, 90])));
+  for (const [x, z] of [
+    [-2, 1],
+    [2, -2],
+    [1, 2.6],
+  ] as const)
+    c.sphere([x, 13.2, z], 0.9, glowing(ramp([170, 255, 140])));
+};
+
+/** Mesa de madera; algunas con jarra, pan o una vela. */
+const table: Model = (c, variant) => {
+  const f: Vec3 = [1, 0, 0];
+  for (const [sx, fz] of [
+    [-6, -9],
+    [6, -9],
+    [-6, 9],
+    [6, 9],
+  ] as const)
+    c.box(local(f, sx, 6, fz), facing(f), [1, 6, 1], solid(DARK_WOOD));
+  c.box(local(f, 0, 12.6, 0), facing(f), [8, 1, 11], planks(FURNITURE, 2, 4));
+  if (variant === 0) {
+    cylinder(c, local(f, 2, 13.6, 3), 3.4, () => 1.3, solid(ramp([180, 140, 90])));
+    c.ellipsoid(local(f, -2, 14.4, -4), facing(f), [2, 1, 3], solid(ramp([200, 150, 80])));
+  } else if (variant === 1) {
+    c.limb(local(f, 0, 13.6, 0), local(f, 0, 17, 0), 0.6, 0.6, solid(LINEN_WHITE));
+    c.sphere(local(f, 0, 17.8, 0), 0.7, glowing(ramp([255, 210, 100])));
+    c.ellipsoid(local(f, 2, 13.8, 5), facing(f), [2.4, 0.4, 2.4], metal(ramp([170, 170, 176])));
+  }
+};
+
+/** Silla con respaldo, mirando hacia `f`. */
+function chair(c: VolumeCanvas, f: Vec3): void {
+  const wood = solid(FURNITURE);
+  for (const [sx, fz] of [
+    [-3.6, -3.6],
+    [3.6, -3.6],
+    [-3.6, 3.6],
+    [3.6, 3.6],
+  ] as const)
+    c.box(local(f, sx, 4.5, fz), facing(f), [0.7, 4.5, 0.7], solid(DARK_WOOD));
+  c.box(local(f, 0, 9.6, 0), facing(f), [4.4, 0.8, 4.4], planks(FURNITURE, 0, 3));
+  for (const sx of [-3.6, 3.6]) c.box(local(f, sx, 16, -3.8), facing(f), [0.7, 7, 0.7], wood);
+  c.box(local(f, 0, 21.5, -3.8), facing(f), [4.2, 1.4, 0.6], wood);
+  c.box(local(f, 0, 16.5, -3.8), facing(f), [4, 0.6, 0.5], wood);
+}
+
+/** Banco largo sin respaldo, a lo largo de x (0) o z (2). */
+function bench(c: VolumeCanvas, along: 0 | 2): void {
+  const f: Vec3 = along === 0 ? [0, 0, 1] : [1, 0, 0];
+  for (const t of [-10, 10]) c.box(local(f, t, 4, 0), facing(f), [1, 4, 3.4], solid(DARK_WOOD));
+  c.box(local(f, 0, 8.6, 0), facing(f), [13, 0.9, 4], planks(FURNITURE, along, 4));
+}
+
+/** Banqueta redonda de tres patas. */
+const stool: Model = (c) => {
+  for (let i = 0; i < 3; i++) {
+    const a = (i / 3) * Math.PI * 2 + 0.3;
+    c.limb(
+      [Math.cos(a) * 3.4, 0, Math.sin(a) * 3.4],
+      [Math.cos(a) * 2.4, 8.6, Math.sin(a) * 2.4],
+      0.6,
+      0.6,
+      solid(DARK_WOOD),
+    );
+  }
+  cylinder(c, [0, 8.4, 0], 1.2, () => 4.2, planks(FURNITURE, 1, 3));
+};
+
+/** Mostrador: mueble alto con tapa más oscura (se arman filas de varios). */
+const counter: Model = (c, variant) => {
+  const f: Vec3 = variant === 1 ? [0, 0, 1] : [1, 0, 0];
+  c.box(local(f, 0, 7, 0), facing(f), [6, 7, H], planks(FURNITURE, 1, 3));
+  c.box(local(f, 0, 14.6, 0), facing(f), [7, 0.9, H + 0.6], planks(DARK_WOOD, 2, 4));
+  if (variant === 2) {
+    // Balanza de bronce.
+    c.limb(local(f, 0, 15.4, 0), local(f, 0, 21, 0), 0.4, 0.4, metal(BRASS));
+    c.limb(local(f, 0, 21, -4), local(f, 0, 21, 4), 0.3, 0.3, metal(BRASS));
+    for (const t of [-4, 4]) c.ellipsoid(local(f, 0, 17.5, t), UP, [1.8, 0.4, 1.8], metal(BRASS));
+  }
+};
+
+/** Cofre con tapa redondeada, flejes de hierro y cerradura de bronce. */
+const chest: Model = (c, variant) => {
+  const f: Vec3 = variant === 1 ? [0, 0, 1] : [Math.SQRT1_2, 0, Math.SQRT1_2];
+  const wood = planks(variant === 2 ? ramp([110, 40, 40]) : FURNITURE, 0, 3);
+  c.box(local(f, 0, 4.5, 0), facing(f), [8, 4.5, 5], wood);
+  c.ellipsoid(local(f, 0, 9, 0), axesAlong(axesAlong(f)[0]), [8, 3, 5], wood);
+  for (const sx of [-5, 5]) c.box(local(f, sx, 6.5, 0), facing(f), [0.7, 6.5, 5.3], metal(IRON));
+  c.box(local(f, 0, 7.5, 5.2), facing(f), [1.2, 1.4, 0.4], metal(BRASS));
+};
+
+/** Armero: bastidor con lanzas, espadas y un escudo. */
+const weaponRack: Model = (c) => {
+  const f: Vec3 = [Math.SQRT1_2, 0, Math.SQRT1_2];
+  const wood = solid(DARK_WOOD);
+  for (const sx of [-10, 10]) c.box(local(f, sx, 14, -2), facing(f), [1, 14, 1], wood);
+  for (const y of [6, 22]) c.box(local(f, 0, y, -2), facing(f), [10, 0.8, 1], wood);
+  const steel = metal(ramp([176, 178, 186]));
+  for (const sx of [-7, -3.5]) {
+    c.limb(local(f, sx, 1, -1), local(f, sx + 1, 34, -2.6), 0.5, 0.5, solid(ramp([140, 100, 60])));
+    c.limb(local(f, sx + 1, 34, -2.6), local(f, sx + 1.2, 38, -2.8), 0.9, 0.1, steel);
+  }
+  for (const sx of [1, 4]) {
+    c.box(local(f, sx, 14, -0.6), facing(f), [0.5, 9, 0.2], steel);
+    c.box(local(f, sx, 23.5, -0.6), facing(f), [2, 0.5, 0.5], metal(BRASS));
+    c.limb(local(f, sx, 24, -0.6), local(f, sx, 27, -0.6), 0.5, 0.5, solid(ramp([90, 50, 30])));
+  }
+  c.ellipsoid(local(f, 7.6, 14, 0), axesAlong(f), [4, 5, 0.8], (s) =>
+    tone(ramp([150, 40, 40]), s.light, Math.hypot(s.p[1] - 14, 0) < 1.4 ? 1 : 0),
+  );
+};
+
+/** Maniquí con cota de malla y yelmo. */
+const armorStand: Model = (c) => {
+  c.ellipsoid([0, 0.8, 0], UP, [5, 0.8, 5], solid(DARK_WOOD));
+  c.limb([0, 1, 0], [0, 26, 0], 0.9, 0.9, solid(DARK_WOOD));
+  c.limb([-6, 25, 0], [6, 25, 0], 0.7, 0.7, solid(DARK_WOOD));
+  const mail: Material = (s) =>
+    tone(
+      ramp([150, 152, 160]),
+      s.light,
+      (Math.floor(s.p[0] * 2) + Math.floor(s.p[1] * 2)) % 2 === 0 ? 0 : -1,
+    );
+  c.ellipsoid([0, 20, 0], UP, [6, 7.5, 3.6], mail);
+  c.ellipsoid([0, 12.6, 0], UP, [5.4, 2.6, 3.4], mail);
+  c.sphere([0, 30.5, 0], 3.6, metal(ramp([160, 162, 170])));
+  c.box([0, 30, 3.3], axesAlong([0, 0, 1]), [2.6, 0.4, 0.4], solid(ramp([30, 30, 34])));
+};
+
+/** Cama: armazón de madera, colchón, frazada y almohada. */
+const bed: Model = (c, variant) => {
+  const f: Vec3 = variant === 1 ? [1, 0, 0] : [0, 0, 1];
+  c.box(local(f, 0, 3.4, 0), facing(f), [7, 3.4, 13], planks(FURNITURE, 2, 4));
+  c.box(local(f, 0, 9, -13), facing(f), [7.4, 9, 1], planks(DARK_WOOD, 0, 3));
+  c.box(local(f, 0, 7.6, 0), facing(f), [6.4, 1.6, 12.4], solid(LINEN_WHITE));
+  const blanket =
+    [ramp([150, 40, 44]), ramp([50, 80, 140]), ramp([70, 110, 60])][variant % 3] ??
+    ramp([150, 40, 44]);
+  c.box(local(f, 0, 9.4, 3.4), facing(f), [6.8, 0.6, 9], (s) =>
+    tone(blanket, s.light, Math.floor((s.p[0] + s.p[2] + 99) / 3) % 2 === 0 ? 0 : -1),
+  );
+  c.ellipsoid(local(f, 0, 10.2, -9.6), facing(f), [4.4, 1.6, 2.2], solid(LINEN_WHITE, 1));
+};
+
+/** Hogar: chimenea de piedra con el fuego encendido y leños. */
+const hearth: Model = (c) => {
+  const f: Vec3 = [Math.SQRT1_2, 0, Math.SQRT1_2];
+  const stone = rocky(ramp([140, 128, 116]), 7);
+  for (const sx of [-9, 9]) c.box(local(f, sx, 11, 0), facing(f), [3, 11, 5], stone);
+  c.box(local(f, 0, 23.5, 0), facing(f), [12.4, 2.4, 6], stone);
+  c.box(local(f, 0, 38, -1.5), facing(f), [6, 13, 3.6], stone);
+  c.box(local(f, 0, 10, -3.8), facing(f), [6.2, 10, 1], solid(ramp([30, 24, 22])));
+  c.limb(local(f, -4, 2, 0), local(f, 4, 2, 1), 1.4, 1.4, bark);
+  c.ellipsoid(local(f, 0, 5, 0), UP, [4, 3, 3], glowing(ramp([255, 130, 40])));
+  c.limb(local(f, 0, 5, 0), local(f, 0.5, 13, -0.5), 2.6, 0.3, glowing(ramp([255, 200, 90])));
+};
+
+/** Tonel acostado sobre un caballete, con canilla de bronce (la taberna). */
+const keg: Model = (c, variant) => {
+  const f: Vec3 = variant === 1 ? [0, 0, 1] : [1, 0, 0];
+  for (const t of [-5, 5]) c.box(local(f, 0, 2.5, t), facing(f), [5.4, 2.5, 1], solid(DARK_WOOD));
+  const [a] = axesAlong(f);
+  const steps = 14;
+  for (let i = 0; i <= steps; i++) {
+    const t = -8 + (16 * i) / steps;
+    const r = 6 + Math.sin((i / steps) * Math.PI) * 1.4;
+    const ring = i === 2 || i === steps - 2;
+    c.ellipsoid(
+      local(f, 0, 11, t),
+      axesAlong(f),
+      [r, r, 0.8],
+      ring ? metal(IRON) : planks(FURNITURE, 1, 3),
+    );
+  }
+  c.limb(local(f, 0, 9, 8.6), local(f, 0, 7.4, 10.6), 0.5, 0.4, metal(BRASS));
+  void a;
+};
+
+/** Alfombra roja con guarda dorada (en el salón del trono y en las casas ricas). */
+const carpet: Model = (c, variant) => {
+  const red =
+    [ramp([150, 36, 40]), ramp([40, 60, 120]), ramp([120, 80, 40])][variant % 3] ??
+    ramp([150, 36, 40]);
+  c.box([0, 0.3, 0], UP, [H, 0.3, H], (s) => {
+    const edgeBand = Math.max(Math.abs(s.p[0]), Math.abs(s.p[2])) > H - 2.2;
+    const motif = Math.abs(Math.abs(s.p[0]) - Math.abs(s.p[2])) < 0.8;
+    return tone(edgeBand || motif ? ramp([210, 170, 70]) : red, s.light);
+  });
+};
+
+/** Candelabro de pie con cinco velas. */
+const candelabra: Model = (c) => {
+  const brass = metal(BRASS);
+  c.ellipsoid([0, 1, 0], UP, [5, 1.2, 5], brass);
+  c.limb([0, 1, 0], [0, 26, 0], 1, 0.8, brass);
+  const across: Vec3 = [Math.SQRT1_2, 0, -Math.SQRT1_2];
+  for (const k of [-2, -1, 0, 1, 2]) {
+    const base: Vec3 = [
+      across[0] * k * 3.4,
+      26 + (k === 0 ? 3 : Math.abs(k) === 1 ? 1 : 0),
+      across[2] * k * 3.4,
+    ];
+    c.limb([0, 24, 0], base, 0.6, 0.6, brass);
+    c.ellipsoid(base, UP, [1.4, 0.5, 1.4], brass);
+    c.limb(base, [base[0], base[1] + 5, base[2]], 0.9, 0.9, solid(LINEN_WHITE));
+    c.limb(
+      [base[0], base[1] + 5.4, base[2]],
+      [base[0], base[1] + 8, base[2]],
+      1,
+      0.2,
+      glowing(ramp([255, 214, 110])),
+    );
+  }
+};
+
+function add3(a: Vec3, b: Vec3): Vec3 {
+  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+}
+
 const LOG_WALL = wallSet(logWall, logPost);
 const PLANK_WALL = wallSet(plankWall, plankPost);
 const BASALT_WALL = wallSet(basaltWall, basaltPost);
@@ -1522,4 +2004,36 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   banner: { model: banner, shadow: [8, 3] },
   throne: { model: throne, shadow: [14, 6] },
   fountain: { model: fountain, shadow: [34, 14] },
+  'hay-bale': { model: hayBale, shadow: [14, 6] },
+  'hay-pile': { model: hayPile },
+  'hitching-post': { model: hitchingPost, shadow: [14, 5] },
+  'water-trough': { model: waterTrough, shadow: [14, 6] },
+  'stump-axe': { model: stumpAxe, shadow: [10, 4] },
+  'log-pile': { model: logPile, shadow: [16, 7] },
+  workbench: { model: workbench, shadow: [16, 7] },
+  'alchemy-table': { model: alchemyTable, shadow: [16, 7] },
+  'bookshelf-x': { model: (c) => bookshelf(c, 0, false) },
+  'bookshelf-y': { model: (c) => bookshelf(c, 2, false) },
+  'potion-shelf-x': { model: (c) => bookshelf(c, 0, true) },
+  'potion-shelf-y': { model: (c) => bookshelf(c, 2, true) },
+  cauldron: { model: cauldron, shadow: [10, 4] },
+  table: { model: table, shadow: [14, 6] },
+  stool: { model: stool, shadow: [6, 3] },
+  counter: { model: counter, shadow: [12, 5] },
+  chest: { model: chest, shadow: [11, 5] },
+  'weapon-rack': { model: weaponRack, shadow: [14, 5] },
+  'armor-stand': { model: armorStand, shadow: [8, 3] },
+  bed: { model: bed, shadow: [16, 7] },
+  hearth: { model: hearth, shadow: [16, 6] },
+  keg: { model: keg, shadow: [11, 5] },
+  'chair-n': { model: (c) => chair(c, [0, 0, -1]), shadow: [7, 3] },
+  'chair-e': { model: (c) => chair(c, [1, 0, 0]), shadow: [7, 3] },
+  'chair-s': { model: (c) => chair(c, [0, 0, 1]), shadow: [7, 3] },
+  'chair-w': { model: (c) => chair(c, [-1, 0, 0]), shadow: [7, 3] },
+  'bench-x': { model: (c) => bench(c, 0), shadow: [14, 5] },
+  'bench-y': { model: (c) => bench(c, 2), shadow: [14, 5] },
+  sawhorse: { model: sawhorse, shadow: [10, 4] },
+  'plank-stack': { model: plankStack, shadow: [14, 6] },
+  carpet: { model: carpet },
+  candelabra: { model: candelabra, shadow: [6, 3] },
 };

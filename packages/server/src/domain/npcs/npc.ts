@@ -57,6 +57,16 @@ const LOOKS: Readonly<Record<NpcRole, { appearance: Appearance; equipment: Equip
     },
     equipment: { torso: 'leather-armor', legs: 'leather-leggings', feet: 'boots' },
   },
+  woodcutter: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      clothHue: CLOTH_HUES[3],
+      skinTone: 0xd8a070,
+      hairHue: 0x6b3a1e,
+      facialHair: 'beard',
+    },
+    equipment: { rightHand: 'axe', legs: 'trousers', feet: 'boots', head: 'leather-cap' },
+  },
 };
 
 /** Personaje del pueblo: no pelea, no se mueve y atiende a quien se acerca. */
