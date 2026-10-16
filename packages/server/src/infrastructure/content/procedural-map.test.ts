@@ -14,7 +14,7 @@ describe('generateIslandMap', () => {
   });
 
   it('crecen varias especies de árboles', () => {
-    const { map } = generateIslandMap({ width: 128, height: 128, seed: 42 });
+    const { map } = generateIslandMap({ width: 192, height: 192, seed: 42 });
     const kinds = new Set(map.statics.map((s) => s.kind));
     for (const kind of ['oak', 'pine', 'willow', 'gomero'] as const)
       expect(kinds.has(kind), kind).toBe(true);
