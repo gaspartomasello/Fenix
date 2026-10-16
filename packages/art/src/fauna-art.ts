@@ -17,6 +17,8 @@ import {
   type Coat,
   type HeadAnchors,
   type QuadrupedBuild,
+  ELEPHANT_COAT,
+  WILD_ELEPHANT,
 } from './mount-art';
 import type { PixelImage, Rgb } from './pixel-art';
 import {
@@ -58,7 +60,10 @@ export interface FaunaLayout {
 
 const SMALL = { width: 48, height: 48, feetY: 42 };
 const BEAST = { width: 88, height: 80, feetY: 72 };
+/** Los grandes (osos grandes, gorila, morsa, cocodrilo) no se achican al tile: sobresalen. */
+const BIG = { width: 120, height: 104, feetY: 92 };
 const HOOVED = { width: MOUNTED_ART_WIDTH, height: MOUNTED_ART_HEIGHT, feetY: MOUNTED_FEET_Y };
+const ELEPHANT_ART = { width: 208, height: 208, feetY: 176 };
 
 const LAYOUTS: Readonly<Record<FaunaArtKind, FaunaLayout>> = {
   rabbit: { ...SMALL, headY: 26, zoom: 1.9 },
@@ -70,28 +75,29 @@ const LAYOUTS: Readonly<Record<FaunaArtKind, FaunaLayout>> = {
   'king-cobra': { ...SMALL, headY: 12, zoom: 1.6 },
   scorpion: { ...SMALL, headY: 18, zoom: 1.6 },
   hind: { ...HOOVED, headY: HOOVED.feetY - 50, zoom: 1 },
-  'great-hart': { ...HOOVED, headY: HOOVED.feetY - 64, zoom: 1 },
+  'great-hart': { ...HOOVED, headY: HOOVED.feetY - 72, zoom: 1.12 },
   goat: { ...HOOVED, headY: HOOVED.feetY - 34, zoom: 1 },
   'mountain-goat': { ...HOOVED, headY: HOOVED.feetY - 40, zoom: 1 },
   sheep: { ...HOOVED, headY: HOOVED.feetY - 32, zoom: 1 },
-  cow: { ...HOOVED, headY: HOOVED.feetY - 44, zoom: 1 },
-  bull: { ...HOOVED, headY: HOOVED.feetY - 48, zoom: 1 },
+  cow: { ...HOOVED, headY: HOOVED.feetY - 49, zoom: 1.12 },
+  bull: { ...HOOVED, headY: HOOVED.feetY - 59, zoom: 1.22 },
   boar: { ...HOOVED, headY: HOOVED.feetY - 26, zoom: 1 },
   'black-bear': { ...BEAST, headY: 36, zoom: 1.25 },
-  'brown-bear': { ...BEAST, headY: 36, zoom: 1.25 },
-  grizzly: { ...BEAST, headY: 28, zoom: 1.35 },
-  'polar-bear': { ...BEAST, headY: 30, zoom: 1.35 },
+  'brown-bear': { ...BIG, headY: 52, zoom: 1.4 },
+  grizzly: { ...BIG, headY: 41, zoom: 1.55 },
+  'polar-bear': { ...BIG, headY: 44, zoom: 1.55 },
   cougar: { ...BEAST, headY: 40, zoom: 1.25 },
   panther: { ...BEAST, headY: 40, zoom: 1.25 },
   jaguar: { ...BEAST, headY: 40, zoom: 1.25 },
   'snow-leopard': { ...BEAST, headY: 42, zoom: 1.2 },
   'white-wolf': { ...BEAST, headY: 40, zoom: 1.25 },
-  gorilla: { ...BEAST, headY: 34, zoom: 1.25 },
-  walrus: { ...BEAST, headY: 44, zoom: 1.25 },
+  gorilla: { ...BIG, headY: 48, zoom: 1.45 },
+  walrus: { ...BIG, headY: 59, zoom: 1.45 },
   python: { ...BEAST, headY: 50, zoom: 1.25 },
   'king-scorpion': { ...BEAST, headY: 40, zoom: 1.35 },
   alligator: { ...BEAST, headY: 54, zoom: 1.25 },
-  crocodile: { ...BEAST, headY: 54, zoom: 1.3 },
+  crocodile: { ...BIG, headY: 71, zoom: 1.5 },
+  'wild-elephant': { ...ELEPHANT_ART, headY: 64, zoom: 1.12 },
 };
 
 export function isFaunaArtKind(kind: string): kind is FaunaArtKind {
@@ -1284,6 +1290,7 @@ const DRAW: Readonly<Record<FaunaArtKind, (c: VolumeCanvas, frame: CharacterFram
   bullfrog: drawFrog,
   walrus: drawWalrus,
   gorilla: drawGorilla,
+  'wild-elephant': (c, f) => void drawQuadruped(c, WILD_ELEPHANT, ELEPHANT_COAT, f),
   'black-bear': (c, f) => drawBear(c, f, BLACK_BEAR),
   'brown-bear': (c, f) => drawBear(c, f, BROWN_BEAR),
   grizzly: (c, f) => drawBear(c, f, GRIZZLY),

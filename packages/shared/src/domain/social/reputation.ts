@@ -49,6 +49,7 @@ export const CREATURE_FAME: Readonly<Record<string, number>> = {
   bullfrog: 10,
   walrus: 5,
   gorilla: 15,
+  'wild-elephant': 60,
   'black-bear': 15,
   'brown-bear': 15,
   grizzly: 35,

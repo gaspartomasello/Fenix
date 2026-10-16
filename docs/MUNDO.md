@@ -94,28 +94,34 @@ la mitad). Los monstruos fuertes y los jefes quedan para las mazmorras.
 
 - **Presas** (huyen apenas las tocan): conejo, cierva, ciervo, oveja, cuervo, golondrina.
 - **Mansos** (no atacan, pero se defienden): cabra, cabra montés, vaca, toro, jabalí, águila, rana
-  toro, morsa, gorila.
+  toro, morsa, gorila, elefante salvaje.
 - **Fieras** (atacan a quien se acerca): oso negro, oso pardo, oso grizzly, oso polar, puma,
   pantera, jaguar, leopardo de las nieves, lobo blanco, serpiente, cobra real y escorpiones (con
   veneno), pitón, caimán, cocodrilo y el hombre lagarto (con lanza).
 
-| Bioma             | Qué vive                                                                      |
-| ----------------- | ----------------------------------------------------------------------------- |
-| Pradera           | conejos, ciervas, jabalíes, golondrinas, cuervos y algún lobo                 |
-| Bosque            | ciervas y ciervos, jabalíes, osos negros y pardos, cuervos, lobos, algún puma |
-| Prado             | conejos, golondrinas, ciervas, ovejas y cabras                                |
-| Llanura           | conejos, vacas, toros, ovejas, golondrinas y algún águila                     |
-| Pantano           | ranas toro, caimanes, serpientes, hombres lagarto, arañas y cuervos           |
-| Desierto          | escorpiones, serpientes, cobras reales y algún escorpión rey                  |
-| Tierra roja       | escorpiones (también el rey), serpientes, pumas y esqueletos                  |
-| Nieve             | lobos blancos, osos polares, leopardos de las nieves, morsas y trolls         |
-| Tundra            | lobos blancos, ciervas y ciervos, osos pardos, leopardos, morsas y águilas    |
-| Pie de montaña    | cabras monteses, águilas, osos grizzly, pumas, trolls y orcos                 |
-| Selva             | jaguares, panteras, gorilas, pitones, serpientes, cobras y cocodrilos         |
-| Sabana            | ciervas, jabalíes, toros, pumas, águilas, serpientes y escorpiones            |
-| Tierras de Ceniza | orcos, trolls y magos esqueleto                                               |
+| Bioma             | Qué vive                                                                        |
+| ----------------- | ------------------------------------------------------------------------------- |
+| Pradera           | conejos, ciervas, jabalíes, golondrinas, cuervos y algún lobo                   |
+| Bosque            | ciervas y ciervos, jabalíes, osos negros y pardos, cuervos, lobos, algún puma   |
+| Prado             | conejos, golondrinas, ciervas, ovejas y cabras                                  |
+| Llanura           | conejos, vacas, toros, ovejas, golondrinas y algún águila                       |
+| Pantano           | ranas toro, caimanes, serpientes, hombres lagarto, arañas y cuervos             |
+| Desierto          | escorpiones, serpientes, cobras reales y algún escorpión rey                    |
+| Tierra roja       | escorpiones (también el rey), serpientes, pumas y esqueletos                    |
+| Nieve             | lobos blancos, osos polares, leopardos de las nieves, morsas y trolls           |
+| Tundra            | lobos blancos, ciervas y ciervos, osos pardos, leopardos, morsas y águilas      |
+| Pie de montaña    | cabras monteses, águilas, osos grizzly, pumas, trolls y orcos                   |
+| Selva             | jaguares, panteras, gorilas, pitones, serpientes, cobras, cocodrilos, elefantes |
+| Sabana            | ciervas, jabalíes, toros, elefantes, pumas, águilas, serpientes y escorpiones   |
+| Tierras de Ceniza | orcos, trolls y magos esqueleto                                                 |
 
-El **camello** se compra en la caballeriza, como el caballo y la llama.
+El **camello** se compra en la caballeriza, como el caballo y la llama. El **elefante** es la
+montura especial: cuesta 6000 monedas, aguanta mucho más y pega con los colmillos. No galopa
+(apura el paso) y es bastante más grande que un caballo.
+
+Los animales no se achican al tile: cada uno tiene su tamaño. El conejo es chiquito, los osos
+grandes y el gorila sobresalen, el toro es más grande que la vaca y el elefante (montura o
+salvaje) ocupa casi el doble de alto que un caballo.
 
 ## Terrenos
 

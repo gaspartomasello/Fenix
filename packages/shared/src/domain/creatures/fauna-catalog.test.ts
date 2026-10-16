@@ -39,4 +39,16 @@ describe('fauna', () => {
     expect(isMountKind('camel')).toBe(true);
     expect(MOUNTS.camel.name).toBe('camello');
   });
+
+  it('el elefante es una montura especial: la más cara y la más fuerte', () => {
+    expect(isMountKind('elephant')).toBe(true);
+    const others = Object.values(MOUNTS).filter((m) => m.kind !== 'elephant');
+    expect(MOUNTS.elephant.price).toBeGreaterThan(Math.max(...others.map((m) => m.price)));
+    expect(CREATURES.elephant.maxHits).toBeGreaterThan(
+      Math.max(...others.map((m) => CREATURES[m.kind].maxHits)),
+    );
+    // El salvaje no busca pelea, pero se defiende.
+    expect(CREATURES['wild-elephant'].aggroRange).toBe(0);
+    expect(CREATURES['wild-elephant'].abilities?.fleeAt).toBeUndefined();
+  });
 });

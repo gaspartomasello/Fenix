@@ -379,6 +379,10 @@ los de pezuñas con el esqueleto de las monturas (sin montura), los de zarpas co
 con medidas, orejas, cola y pelaje propios (rosetas del jaguar y del leopardo), y los demás con
 modelos propios (pájaros, serpientes, escorpiones, cocodrilos, rana, morsa, gorila). El hombre
 lagarto, que anda en dos patas, está con los monstruos. `places.ts` reparte la fauna por bioma.
+Cada animal tiene su lienzo y su escala (`faunaLayout`), así no todos miden lo mismo: los
+grandes sobresalen del tile. Las monturas también: `mountLayout(kind)` da el lienzo de cada una
+(el elefante usa uno mucho más grande que el del caballo) y el cliente lo usa para anclar el
+dibujo, el nombre, la vida y el tamaño de la sombra.
 
 ### Monturas
 

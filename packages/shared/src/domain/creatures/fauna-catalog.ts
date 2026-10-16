@@ -23,6 +23,7 @@ export const FAUNA_KINDS = [
   'bullfrog',
   'walrus',
   'gorilla',
+  'wild-elephant',
   // Fieras
   'black-bear',
   'brown-bear',
@@ -259,6 +260,20 @@ const BEASTS: Readonly<Record<FaunaKind, Beast>> = {
     moveMs: 380,
     temper: 'passive',
     loot: pelt(3, 3),
+  },
+  'wild-elephant': {
+    name: 'elefante salvaje',
+    article: 'un',
+    hits: 150,
+    dexterity: 30,
+    armor: 14,
+    skill: 600,
+    damage: [9, 18],
+    attack: 'colmillos',
+    swingMs: 3000,
+    moveMs: 460,
+    temper: 'passive',
+    loot: pelt(8, 10),
   },
   'black-bear': {
     name: 'oso negro',

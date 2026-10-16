@@ -38,6 +38,7 @@ const HUMANOID_LAYOUT: CorpseLayout = { width: 96, height: 64, groundX: 48, grou
 const BEAST_LAYOUT: CorpseLayout = { width: 80, height: 56, groundX: 40, groundY: 36 };
 const MOUNT_LAYOUT: CorpseLayout = { width: 136, height: 88, groundX: 68, groundY: 54 };
 const DRAGON_LAYOUT: CorpseLayout = { width: 168, height: 112, groundX: 84, groundY: 68 };
+const ELEPHANT_LAYOUT: CorpseLayout = { width: 240, height: 150, groundX: 120, groundY: 92 };
 
 const BACK = Math.PI / 2;
 const SIDE = Math.PI / 2;
@@ -60,7 +61,12 @@ const POSES: Readonly<Partial<Record<CreatureKind, CorpsePose>>> = {
 /** Las monturas (caballos, llamas, lagartos): de costado, con las patas estiradas. */
 const MOUNT_POSE: CorpsePose = { fall: 'side', angle: SIDE, center: 26, rest: 6 };
 
+/** El elefante (montura o salvaje) cae de costado como un caballo, pero es mucho más grande. */
+const ELEPHANT_POSE: CorpsePose = { fall: 'side', angle: SIDE, center: 56, rest: 17 };
+const isElephant = (kind: CreatureKind): boolean => kind === 'elephant' || kind === 'wild-elephant';
+
 function poseOf(kind: CreatureKind): CorpsePose | null {
+  if (isElephant(kind)) return ELEPHANT_POSE;
   if (isMountKind(kind)) return MOUNT_POSE;
   if (isFaunaArtKind(kind)) return faunaCorpse(kind).pose;
   return POSES[kind] ?? null;
@@ -97,6 +103,7 @@ export function leavesCorpse(kind: CreatureKind): boolean {
 }
 
 export function corpseLayout(kind: CreatureKind): CorpseLayout {
+  if (isElephant(kind)) return ELEPHANT_LAYOUT;
   if (isMountKind(kind)) return MOUNT_LAYOUT;
   if (isFaunaArtKind(kind)) return faunaCorpse(kind).layout;
   if (kind === 'dragon') return DRAGON_LAYOUT;

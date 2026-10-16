@@ -42,8 +42,32 @@ export const MOUNTED_FEET_Y = 118;
 export const MOUNTED_HEAD_Y = 30;
 const MOUNTED_FRAME = { width: MOUNTED_ART_WIDTH, feetY: MOUNTED_FEET_Y };
 
-export function mountedCamera(direction: Direction) {
-  return cameraFor(direction, PERSON_ZOOM, MOUNTED_FRAME);
+/** Lienzo de una montura (sola o con su jinete) y dónde apoya los pies. */
+export interface MountLayout {
+  readonly width: number;
+  readonly height: number;
+  readonly feetY: number;
+  /** Fila aproximada de la cabeza del jinete (para el nombre y la vida). */
+  readonly headY: number;
+  /** Fila de la parte de arriba de la montura sola. */
+  readonly topY: number;
+}
+
+const STANDARD_LAYOUT: MountLayout = {
+  ...MOUNTED_FRAME,
+  height: MOUNTED_ART_HEIGHT,
+  headY: MOUNTED_HEAD_Y,
+  topY: MOUNTED_FEET_Y - 66,
+};
+/** El elefante no entra en el lienzo de un caballo: sobresale bastante del tile. */
+const ELEPHANT_LAYOUT: MountLayout = { width: 208, height: 208, feetY: 176, headY: 36, topY: 64 };
+
+export function mountLayout(kind: MountKind): MountLayout {
+  return MOUNTS[kind].species === 'elephant' ? ELEPHANT_LAYOUT : STANDARD_LAYOUT;
+}
+
+export function mountedCamera(direction: Direction, kind?: MountKind) {
+  return cameraFor(direction, PERSON_ZOOM, kind ? mountLayout(kind) : MOUNTED_FRAME);
 }
 
 /** Lo que el jinete necesita de su montura. */
@@ -61,7 +85,8 @@ export function drawMountFrame(
   frame: CharacterFrame,
   canvasFor: CanvasFactory = spriteCanvas,
 ): PixelImage {
-  const canvas = canvasFor(MOUNTED_ART_WIDTH, MOUNTED_ART_HEIGHT, mountedCamera(direction));
+  const layout = mountLayout(kind);
+  const canvas = canvasFor(layout.width, layout.height, mountedCamera(direction, kind));
   drawMount(canvas, kind, frame).tack(canvas, null);
   return canvas.toImage(OUTLINE);
 }
@@ -82,6 +107,8 @@ export function drawMount(canvas: VolumeCanvas, kind: MountKind, frame: Characte
       return drawRunner(canvas, frame);
     case 'camel':
       return drawQuadruped(canvas, CAMEL, CAMEL_COAT, frame);
+    case 'elephant':
+      return drawQuadruped(canvas, ELEPHANT, ELEPHANT_COAT, frame);
   }
 }
 
@@ -130,11 +157,14 @@ function legAt(phase: number, support: number, amplitude: number, lift: number):
  * como los caballos de verdad. Las acciones del jinete (golpes, hechizos)
  * se hacen con la montura parada.
  */
-function quadrupedGait(frame: CharacterFrame): GaitPose {
+function quadrupedGait(frame: CharacterFrame, heavy = false): GaitPose {
   const cycle = cyclePhase(frame);
-  if (cycle && !cycle.running) {
+  // Los animales pesados (el elefante) no galopan: apuran el paso, con trancos más largos.
+  if (cycle && (!cycle.running || heavy)) {
     const t = cycle.phase;
-    const at = (offset: number, amplitude: number) => legAt(t + offset, 0.62, amplitude, 1);
+    const stride = cycle.running ? 1.3 : 1;
+    const at = (offset: number, amplitude: number) =>
+      legAt(t + offset, 0.62, amplitude * stride, 1);
     return {
       legs: { lh: at(0, 0.32), lf: at(0.25, 0.34), rh: at(0.5, 0.32), rf: at(0.75, 0.34) },
       pitch: 0,
@@ -205,6 +235,10 @@ export interface QuadrupedBuild {
   readonly body: (part: BodyKit) => HeadAnchors;
   /** Patas finas que terminan en dos dedos acolchados (llama), o en casco. */
   readonly padded: boolean;
+  /** Patas como columnas, sin rodillas ni menudillos marcados (elefante). */
+  readonly pillar?: boolean;
+  /** Animal pesado: no galopa. */
+  readonly heavy?: boolean;
 }
 
 /** Coloración: pelaje, crin y patas (con medias blancas o no). */
@@ -243,7 +277,7 @@ export function drawQuadruped(
   coat: Coat,
   frame: CharacterFrame,
 ): MountPose {
-  const gait = quadrupedGait(frame);
+  const gait = quadrupedGait(frame, build.heavy);
   // El cuerpo cabecea sobre su centro; las patas cuelgan de él.
   const tilt = (p: Vec3): Vec3 => add(build.pivot, pitch(sub(p, build.pivot), gait.pitch));
 
@@ -340,6 +374,10 @@ function drawLeg(
 ): void {
   const [upper, cannon] = leg.thickness;
   const skin = coat.leg(id);
+  if (build.pillar) {
+    drawPillar(canvas, leg, j, skin, coat.hoof(id));
+    return;
+  }
   // El músculo de arriba se funde con el cuerpo.
   canvas.limb(add(j.top, [0, 5, leg.hind ? 1.5 : 0.6]), j.top, upper * 1.05, upper, coat.body);
   canvas.limb(j.top, j.mid, upper, cannon * 1.25, skin);
@@ -368,6 +406,38 @@ function drawLeg(
   canvas.limb(j.coronet, j.sole, cannon * 1.15, cannon * 1.45, (s) =>
     tone(hoof, s.light, s.p[1] < j.sole[1] + 0.6 ? -1 : 0),
   );
+}
+
+/**
+ * Pata de columna: gruesa de arriba abajo, con la rodilla apenas marcada,
+ * el pie redondo y ancho, y uñas claras adelante.
+ */
+function drawPillar(
+  canvas: VolumeCanvas,
+  leg: LegBuild,
+  j: LegJoints,
+  skin: Material,
+  nails: Ramp,
+): void {
+  const [upper, lower] = leg.thickness;
+  canvas.limb(add(j.top, [0, 7, 0]), j.top, upper * 1.1, upper, skin);
+  canvas.limb(j.top, j.mid, upper, lower * 1.05, skin);
+  canvas.sphere(j.mid, lower * 1.08, skin);
+  canvas.limb(j.mid, j.coronet, lower * 1.05, lower, skin);
+  canvas.limb(j.coronet, j.sole, lower, lower * 1.12, (s) =>
+    tone(ELEPHANT_DARK, s.light, s.p[1] < j.sole[1] + 0.8 ? -1 : 0),
+  );
+  // Uñas: tres o cuatro medialunas claras al frente del pie.
+  for (const toe of [-0.55, -0.18, 0.18, 0.55]) {
+    const angle = toe * 1.4;
+    const at = add(j.sole, [Math.sin(angle) * lower * 1.1, 1.3, Math.cos(angle) * lower * 1.1]);
+    canvas.ellipsoid(
+      at,
+      axesAlong([Math.sin(angle), 0, Math.cos(angle)]),
+      [1.3, 1, 0.6],
+      solid(nails),
+    );
+  }
 }
 
 /** Mantilla, montura con borrén adelante y atrás, y cincha bajo la panza. */
@@ -854,6 +924,174 @@ function drawCamelBody({ canvas, at, axes, coat, gait }: BodyKit): HeadAnchors {
     canvas.sphere(bit[side], 0.5, metal(ramp([200, 170, 90])));
   }
   return { bit, withers: at([0, 34, 10]) };
+}
+
+// ── Elefante ────────────────────────────────────────────────────────
+
+/**
+ * Elefante: patas como columnas con pies anchos y uñas, lomo alto y
+ * redondeado, cabeza grande con la frente en dos bultos, orejas grandes,
+ * trompa larga que se balancea con el paso y colmillos. La montura va sobre
+ * una gualdrapa roja con borde dorado, bien arriba del lomo.
+ */
+export const ELEPHANT: QuadrupedBuild = {
+  front: {
+    top: [10.3, 48, 22],
+    lengths: [21.6, 19.2, 2.9],
+    rest: [0, 0, 0.05],
+    thickness: [9.6, 7.8],
+    hind: false,
+  },
+  hind: {
+    top: [10.8, 49, -22],
+    lengths: [21.6, 19.2, 2.9],
+    rest: [-0.08, 0.08, 0.05],
+    thickness: [9.9, 7.8],
+    hind: true,
+  },
+  hoof: 3.6,
+  pivot: [0, 60, 0],
+  saddle: { y: 86.5, z: 0, girth: 10.5 },
+  padded: false,
+  pillar: true,
+  heavy: true,
+  body: elephantBody(true),
+};
+
+/** El elefante salvaje: el mismo animal, sin gualdrapa ni montura. */
+export const WILD_ELEPHANT: QuadrupedBuild = {
+  ...ELEPHANT,
+  saddle: null,
+  body: elephantBody(false),
+};
+
+const ELEPHANT_SKIN = ramp([138, 132, 128]);
+const ELEPHANT_DARK = ramp([108, 102, 100]);
+const IVORY = ramp([234, 224, 196]);
+
+/** Piel gruesa y arrugada: surcos finos y manchas más oscuras. */
+const elephantSkin: Material = (s) => {
+  const fold = Math.sin(s.p[1] * 1.7 + noise(Math.floor(s.p[0]), Math.floor(s.p[2])) * 2) > 0.8;
+  const blotch = noise(Math.floor(s.p[0] / 3), Math.floor(s.p[1] / 3), Math.floor(s.p[2] / 3));
+  return tone(blotch > 0.7 ? ELEPHANT_DARK : ELEPHANT_SKIN, s.light, fold ? -1 : 0);
+};
+
+export const ELEPHANT_COAT: Coat = {
+  body: elephantSkin,
+  mane: ELEPHANT_DARK,
+  blaze: false,
+  blanket: ramp([168, 36, 40]),
+  // Los pies tienen uñas claras adelante.
+  leg: () => elephantSkin,
+  hoof: () => ramp([186, 176, 160]),
+};
+
+function elephantBody(tame: boolean): (kit: BodyKit) => HeadAnchors {
+  return (kit) => drawElephantBody(kit, tame);
+}
+
+function drawElephantBody({ canvas, at, axes, coat, gait }: BodyKit, tame: boolean): HeadAnchors {
+  const along = axes([0, 0, 1]);
+  const body = coat.body;
+  // Tronco enorme y largo: pecho, panza que cuelga y grupa caída.
+  canvas.ellipsoid(at([0, 64, 0]), along, [16.8, 18, 32], body);
+  canvas.ellipsoid(at([0, 66, 18]), along, [16.2, 17.4, 15.6], body);
+  canvas.ellipsoid(at([0, 61, -20]), along, [15.6, 16.8, 15.6], body);
+  canvas.ellipsoid(at([0, 51, 1]), along, [15, 12.5, 24], body);
+  // Lomo alto en la cruz.
+  canvas.ellipsoid(at([0, 77, 8]), axes([0, 0.15, 1]), [10.8, 7.2, 18], body);
+  for (const side of [1, -1] as const) {
+    // Paletas y muslos.
+    canvas.ellipsoid(at([side * 10.8, 58, 21]), axes([0, 1, 0.1]), [6.5, 12, 8.9], body);
+    canvas.ellipsoid(at([side * 11, 58, -22]), axes([0, 1, -0.1]), [6.7, 12, 9.4], body);
+  }
+
+  // Cabeza grande, casi sin cuello, con la frente en dos bultos.
+  const skull = at([0, 76, 40]);
+  canvas.ellipsoid(at([0, 68.4, 33]), along, [12, 13.2, 8.9], body);
+  canvas.ellipsoid(skull, axes([0, 0.3, 1]), [10.8, 12.5, 10.3], body);
+  for (const side of [1, -1] as const) canvas.sphere(add(skull, [side * 4.3, 8.4, 1.7]), 6.5, body);
+  // Ojos chicos.
+  const dark = solid(ramp([26, 22, 20]));
+  for (const side of [1, -1] as const) canvas.sphere(add(skull, [side * 8.6, 0.7, 5.3]), 1.2, dark);
+
+  // Orejas grandes y chatas, pegadas a los costados de la cabeza; aletean con el paso.
+  const flap = gait.tailSwing * 0.08;
+  for (const side of [1, -1] as const) {
+    const root = add(skull, [side * 8.9, 1.2, -3.6]);
+    canvas.ellipsoid(
+      add(root, [side * 2.4, -3.6, -5.3]),
+      axesAlong([side * (0.15 + flap), -0.1, -1]),
+      [1.7, 12.5, 9.8],
+      (s) => tone(s.n[0] * side > 0 ? ELEPHANT_SKIN : ELEPHANT_DARK, s.light, -1),
+    );
+  }
+
+  // Colmillos: salen de la boca, bajan y se curvan hacia arriba.
+  for (const side of [1, -1] as const) {
+    const root = add(skull, [side * 5, -9.6, 6.5]);
+    const bend = add(root, [side * 1.8, -6.7, 7.2]);
+    const tip = add(bend, [side * 0.4, 2.6, 6]);
+    canvas.limb(root, bend, 1.9, 1.4, metal(IVORY));
+    canvas.limb(bend, tip, 1.4, 0.6, metal(IVORY));
+  }
+
+  // Trompa: gruesa en la base, anillada, cuelga y se balancea; la punta se curva hacia adelante.
+  const sway = gait.tailSwing * 0.8 + gait.nod * 12;
+  const trunk: Vec3[] = [
+    add(skull, [0, -4.8, 9.1]),
+    add(skull, [sway * 0.15, -14.4, 12.7]),
+    add(skull, [sway * 0.45, -26.4, 13.7]),
+    add(skull, [sway * 0.8, -38.4, 13.2]),
+    add(skull, [sway, -48, 15.6]),
+    add(skull, [sway * 1.05, -50.4, 19.2]),
+  ];
+  const ringed: Material = (s) =>
+    tone(ELEPHANT_SKIN, s.light, Math.sin(s.p[1] * 2.6) > 0.6 ? -1 : 0);
+  trunk.slice(1).forEach((p, i) => {
+    const from = trunk[i] ?? p;
+    canvas.limb(from, p, 5.3 - i * 0.78, 5.3 - (i + 1) * 0.78, ringed);
+  });
+
+  // Cola fina con un mechón negro.
+  const tail = at([0, 70, -36]);
+  const end = add(tail, [gait.tailSwing * 0.6, -20, -3.6]);
+  canvas.limb(tail, end, 1.4, 0.8, body);
+  canvas.limb(end, add(end, [0, -3.6, 0]), 1.3, 0.4, solid(ramp([40, 36, 34])));
+
+  const withers = at([0, 85, 13]);
+  const bit = { 1: add(skull, [7.9, 4.3, 2.9]), [-1]: add(skull, [-7.9, 4.3, 2.9]) } as Record<
+    1 | -1,
+    Vec3
+  >;
+  if (!tame) return { bit, withers };
+
+  // Gualdrapa: tela roja que cae por los costados, con borde dorado y borlas.
+  const cloth = ramp([168, 36, 40]);
+  const gold = metal(ramp([214, 172, 64]));
+  canvas.ellipsoid(at([0, 81, 0]), along, [18.5, 5.5, 14.4], (s) =>
+    tone(cloth, s.light, noise(Math.floor(s.p[0]), Math.floor(s.p[2])) > 0.9 ? 1 : 0),
+  );
+  for (const side of [1, -1] as const) {
+    canvas.box(at([side * 17, 70, 0]), axes([0, 0, 1]), [0.8, 10.8, 13.8], (s) =>
+      tone(cloth, s.light, -1),
+    );
+    canvas.box(at([side * 17.4, 58.3, 0]), axes([0, 0, 1]), [0.8, 1.2, 14], gold);
+    for (const z of [-10.8, 0, 10.8]) canvas.sphere(at([side * 17.5, 55.7, z]), 1.3, gold);
+  }
+
+  // Las riendas van a una cabezada con anillas a los costados de la frente.
+  for (const side of [1, -1] as const) {
+    canvas.limb(
+      add(skull, [side * 6.7, 9.6, -1.4]),
+      bit[side],
+      0.7,
+      0.7,
+      solid(ramp([90, 56, 32])),
+    );
+    canvas.sphere(bit[side], 0.9, gold);
+  }
+  return { bit, withers };
 }
 
 // ── Lagarto corredor ────────────────────────────────────────────────

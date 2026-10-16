@@ -1,7 +1,7 @@
 import { isMountKind, type CreatureKind, type Direction } from '@fenix/shared';
 import { OUTLINE } from './character-art';
 import { ART_DETAIL, spriteCanvas, type CanvasFactory } from './humanoid-rig';
-import { MOUNTED_ART_HEIGHT, MOUNTED_ART_WIDTH, MOUNTED_FEET_Y } from './mount-art';
+import { mountLayout } from './mount-art';
 import { biteOffset, gait } from './creature-motion';
 import { faunaLayout, isFaunaArtKind } from './fauna-art';
 import { drawSkullHead } from './humanoid-head';
@@ -71,16 +71,12 @@ const COMMON: CreatureLayout = {
 };
 const DRAGON_LAYOUT: CreatureLayout = { width: 128, height: 112, feetY: 104, headY: 18 };
 
-/** Las monturas sueltas usan el lienzo de los jinetes. */
-const MOUNT_LAYOUT: CreatureLayout = {
-  width: MOUNTED_ART_WIDTH,
-  height: MOUNTED_ART_HEIGHT,
-  feetY: MOUNTED_FEET_Y,
-  headY: MOUNTED_FEET_Y - 66,
-};
-
 export function creatureLayout(kind: CreatureKind): CreatureLayout {
-  if (isMountKind(kind)) return MOUNT_LAYOUT;
+  if (isMountKind(kind)) {
+    // Las monturas sueltas usan el lienzo de los jinetes.
+    const layout = mountLayout(kind);
+    return { ...layout, headY: layout.topY };
+  }
   if (isFaunaArtKind(kind)) return faunaLayout(kind);
   return kind === 'dragon' ? DRAGON_LAYOUT : COMMON;
 }

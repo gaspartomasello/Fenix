@@ -95,6 +95,29 @@ describe('arte procedural (sin DOM)', () => {
     }
   });
 
+  it('no todos miden lo mismo: el elefante sobresale del lienzo de un caballo', () => {
+    /** Alto del dibujo (filas con algún pixel visible). */
+    const drawnHeight = (kind: 'elephant' | 'horse-chestnut' | 'rabbit' | 'grizzly'): number => {
+      const image = drawCreatureFrame(kind, Direction.East, 'idle');
+      let top = image.height;
+      let bottom = 0;
+      for (let y = 0; y < image.height; y++)
+        for (let x = 0; x < image.width; x++)
+          if ((image.data[(y * image.width + x) * 4 + 3] ?? 0) > 0) {
+            top = Math.min(top, y);
+            bottom = Math.max(bottom, y);
+          }
+      return bottom - top;
+    };
+    const horse = drawnHeight('horse-chestnut');
+    expect(drawnHeight('elephant')).toBeGreaterThan(horse * 1.4);
+    expect(drawnHeight('grizzly')).toBeLessThan(horse);
+    expect(drawnHeight('rabbit')).toBeLessThan(drawnHeight('grizzly'));
+    expect(creatureLayout('elephant').width).toBeGreaterThan(
+      creatureLayout('horse-chestnut').width,
+    );
+  });
+
   it('es determinístico', () => {
     expect(drawStatic('oak', 1).data).toEqual(drawStatic('oak', 1).data);
     expect(drawTerrainTile(Terrain.Grass, 2).data).toEqual(drawTerrainTile(Terrain.Grass, 2).data);

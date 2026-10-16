@@ -434,6 +434,13 @@ function mounts(): Record<MountKind, CreatureDefinition> {
     llama: { name: 'coces', minDamage: 2, maxDamage: 6, swingMs: 2400, skill: 'wrestling' },
     runner: { name: 'mordida', minDamage: 5, maxDamage: 11, swingMs: 2400, skill: 'wrestling' },
     camel: { name: 'coces', minDamage: 3, maxDamage: 8, swingMs: 2500, skill: 'wrestling' },
+    elephant: {
+      name: 'colmillos',
+      minDamage: 7,
+      maxDamage: 15,
+      swingMs: 3000,
+      skill: 'wrestling',
+    },
   } as const satisfies Record<string, Weapon>;
   const entries = MOUNT_KINDS.map((kind): [MountKind, CreatureDefinition] => [
     kind,
@@ -441,10 +448,10 @@ function mounts(): Record<MountKind, CreatureDefinition> {
       kind,
       name: MOUNTS[kind].name,
       article: MOUNTS[kind].article,
-      maxHits: { horse: 70, llama: 45, runner: 80, camel: 75 }[MOUNTS[kind].species],
+      maxHits: { horse: 70, llama: 45, runner: 80, camel: 75, elephant: 170 }[MOUNTS[kind].species],
       strength: 60,
       dexterity: 50,
-      armor: MOUNTS[kind].species === 'runner' ? 12 : 6,
+      armor: { runner: 12, elephant: 16 }[MOUNTS[kind].species as string] ?? 6,
       skill: 450,
       weapon: fight[MOUNTS[kind].species],
       moveMs: 200,
