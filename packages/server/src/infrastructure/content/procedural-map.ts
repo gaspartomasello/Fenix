@@ -40,7 +40,9 @@ export type Biome =
   | 'savanna'
   | 'badlands'
   | 'meadow'
-  | 'plains';
+  | 'plains'
+  /** Las Tierras de Ceniza: valle negro de la isla grande, amurallado por montañas. */
+  | 'wasteland';
 
 /** Clima que se le pide al terreno alrededor de un pueblo. */
 export type TownClimate = 'temperate' | 'mountain' | 'swamp';
@@ -265,6 +267,10 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
       else if (cold < 0.38 && wet < (elongated ? 0.6 : 0.52)) biome = 'savanna';
       else if (wet > 0.66 && e < SEA + 0.2 + townInfluence(x, y, 'swamp') * 0.35) biome = 'swamp';
       else biome = temperate(x, y);
+      // Las Tierras de Ceniza mandan sobre el clima: anillo de montañas, valle negro y volcán.
+      const ash = elongated?.ashlandPart(x, y);
+      if (ash === 'wall' || ash === 'cone') biome = 'mountain';
+      else if (ash) biome = 'wasteland';
       biomes[i] = biome;
     }
   }
@@ -290,7 +296,8 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     for (let x = 1; x < width - 1; x++) {
       const i = index(x, y);
       const biome = biomes[i];
-      if (biome === 'mountain' || biome === 'ocean' || biome === 'beach') continue;
+      if (biome === 'mountain' || biome === 'ocean' || biome === 'beach' || biome === 'wasteland')
+        continue;
       if (neighbors8(x, y).some(([nx, ny]) => biomes[index(nx, ny)] === 'mountain'))
         biomes[i] = 'foothill';
     }
@@ -350,6 +357,10 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
       else if (biome === 'savanna' && g > 0.72) terrain[i] = Terrain.Grass;
       else if (biome === 'tundra' && g > 0.74) terrain[i] = Terrain.Snow;
       else if (biome === 'snow' && g < 0.18) terrain[i] = Terrain.Tundra;
+      else if (biome === 'wasteland' && elongated?.ashlandPart(x, y) === 'crater')
+        terrain[i] = Terrain.Lava;
+      else if (biome === 'wasteland' && p > 0.7) terrain[i] = Terrain.Corrupted;
+      else if (biome === 'wasteland' && g < 0.2) terrain[i] = Terrain.Gravel;
     }
   }
 
@@ -581,6 +592,28 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
 
   // ── Pueblos ──
   const regions: RegionData[] = [];
+  if (elongated) {
+    // Las Tierras de Ceniza y su volcán tienen nombre (el volcán primero: es más chico).
+    const { x, y, r, volcano } = elongated.ashland;
+    regions.push(
+      {
+        name: 'Monte del Fuego',
+        x: volcano.x - 16,
+        y: volcano.y - 16,
+        width: 33,
+        height: 33,
+        wild: true,
+      },
+      {
+        name: 'Tierras de Ceniza',
+        x: Math.round(x - r),
+        y: Math.round(y - r * 1.2),
+        width: Math.round(r * 2),
+        height: Math.round(r * 2.4),
+        wild: true,
+      },
+    );
+  }
   const items: PlacedItem[] = [];
   const npcs: { role: NpcRole; position: Position; name?: string }[] = [];
   let spawnPoint: Position = { x: Math.floor(width / 2), y: Math.floor(height / 2) };
@@ -636,10 +669,34 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
   const links: [number, number][] = [];
   for (let a = 0; a < placed.length; a++)
     for (let b = a + 1; b < placed.length; b++) links.push([a, b]);
+  // Cada tierra (el continente, cada isla) con su número: los caminos no cruzan el mar.
+  const landmass = new Int32Array(total).fill(-1);
+  {
+    let next = 0;
+    for (let start = 0; start < total; start++) {
+      if (landmass[start] !== -1 || biomes[start] === 'ocean') continue;
+      const queue = [start];
+      landmass[start] = next;
+      for (let head = 0; head < queue.length; head++) {
+        const i = queue[head] ?? 0;
+        const x = i % width;
+        for (const [nx, ny] of neighbors4(x, (i - x) / width)) {
+          const j = index(nx, ny);
+          if (landmass[j] !== -1 || biomes[j] === 'ocean') continue;
+          landmass[j] = next;
+          queue.push(j);
+        }
+      }
+      next++;
+    }
+  }
   for (const [a, b] of links) {
     const from = placed[a];
     const to = placed[b];
     if (!from || !to) continue;
+    const centerOf = (t: PlacedTown): number =>
+      landmass[index(t.x + Math.floor(t.width / 2), t.y + Math.floor(t.height / 2))] ?? -1;
+    if (centerOf(from) !== centerOf(to)) continue;
     const start = gate(from, to);
     const end = gate(to, from);
     const straight = cheapestPath(width, height, start, end, roadCost, elongated ? 2 : ROAD_TURN);
@@ -768,7 +825,8 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
           knolls.at(x, y) * 14 +
           bumps.at(x, y) * 4 +
           (biome === 'mountain' ? 16 : biome === 'foothill' ? 6 : 0) -
-          (biome === 'swamp' ? 16 : 0);
+          (biome === 'swamp' ? 16 : 0) +
+          (elongated?.volcanoLift(x, y) ?? 0);
         level[i] = Math.max(0, Math.min(MAX_LEVEL, Math.round(rise)));
       }
     }
@@ -862,6 +920,8 @@ function terrainOf(biome: Biome): Terrain {
       return Terrain.Clay;
     case 'meadow':
       return Terrain.Meadow;
+    case 'wasteland':
+      return Terrain.Ash;
     default:
       return Terrain.Grass;
   }
@@ -958,6 +1018,14 @@ function vegetation(
       if (roll < 0.105) return 'dead-tree';
       if (roll < 0.12) return 'mushrooms';
       if (roll < 0.14) return 'fern';
+      return null;
+    case 'wasteland':
+      // Valle negro: árboles muertos, peñascos y huesos; casi nada vivo.
+      if (ground === Terrain.Lava) return null;
+      if (roll < 0.01) return 'dead-tree';
+      if (roll < 0.024) return choose(['boulder', 'rock']);
+      if (roll < 0.03) return 'bones';
+      if (roll < 0.036) return 'pebbles';
       return null;
     case 'plains':
       // Llanura abierta: sin árboles (lugar para casas), solo pasto, yuyos y florcitas.
@@ -1065,23 +1133,44 @@ const smooth = (t: number): number => t * t * (3 - 2 * t);
 const smoothstep = (a: number, b: number, t: number): number =>
   smooth(Math.max(0, Math.min(1, (t - a) / (b - a))));
 
-/** Ancho del continente (medio, en fracción del ancho del mapa) según la latitud (0 = norte). */
-const HALF_WIDTH: readonly (readonly [number, number])[] = [
-  [0, 0.04],
-  [0.03, 0.16],
-  [0.08, 0.32],
-  [0.2, 0.38],
-  [0.34, 0.33],
-  [0.42, 0.2],
-  [0.47, 0.07],
-  [0.53, 0.04],
-  [0.58, 0.06],
-  [0.63, 0.26],
-  [0.72, 0.3],
-  [0.82, 0.22],
-  [0.9, 0.12],
-  [0.96, 0.05],
-  [1, 0],
+/** Costa oeste del continente (fracción del ancho) según la latitud (0 = norte, 1 = sur). */
+const WEST_COAST: readonly (readonly [number, number])[] = [
+  [0, 0.4],
+  [0.03, 0.3],
+  [0.08, 0.19],
+  [0.2, 0.13],
+  [0.35, 0.15],
+  [0.5, 0.13],
+  [0.62, 0.16],
+  [0.75, 0.2],
+  [0.85, 0.26],
+  [0.93, 0.33],
+  [0.98, 0.37],
+  [1, 0.4],
+];
+
+/**
+ * Costa este: entre las latitudes 0,4 y 0,64 se mete hacia adentro y forma
+ * una gran bahía abierta al mar del este (el continente sigue entero).
+ */
+const EAST_COAST: readonly (readonly [number, number])[] = [
+  [0, 0.42],
+  [0.03, 0.52],
+  [0.08, 0.62],
+  [0.2, 0.68],
+  [0.3, 0.66],
+  [0.36, 0.6],
+  [0.42, 0.47],
+  [0.47, 0.37],
+  [0.52, 0.33],
+  [0.57, 0.37],
+  [0.62, 0.47],
+  [0.68, 0.57],
+  [0.76, 0.6],
+  [0.84, 0.55],
+  [0.9, 0.48],
+  [0.96, 0.43],
+  [1, 0.41],
 ];
 
 /** Frío según la latitud: helado arriba, templado (la capital), caluroso en el istmo y el sur, fresco en la punta. */
@@ -1107,13 +1196,39 @@ function interpolate(keys: readonly (readonly [number, number])[], t: number): n
   return keys[keys.length - 1]?.[1] ?? 0;
 }
 
+/** Dónde va la ciudad de la isla grande (fracción del mapa), frente a la entrada de las Tierras de Ceniza. */
+export const ISLAND_CITY: Position = { x: 0.79, y: 0.55 };
+
+/** Un lóbulo de isla: una elipse girada, en tiles. */
+interface Lobe {
+  readonly x: number;
+  readonly y: number;
+  readonly rx: number;
+  readonly ry: number;
+  readonly angle: number;
+}
+
+/** Una isla: uno o varios lóbulos y cuánto se recorta su costa (bahías, cabos). */
+interface IslandShape {
+  readonly lobes: readonly Lobe[];
+  readonly ragged: number;
+}
+
+/** Qué parte de la región de ceniza (el "Mordor" de la isla grande) ocupa un tile. */
+export type AshlandPart = 'wall' | 'inside' | 'cone' | 'crater';
+
 /**
- * Continente alargado de norte a sur, mezcla de América y Britannia: una
- * masa ancha y templada al norte (con bahías, golfos y lagos), un istmo
- * angosto y caluroso, otra masa al sur que se enfría hacia la punta, una
- * cordillera a lo largo de la costa oeste (con pasos) y islas sueltas en
- * los mares, para explorar y, más adelante, navegar. Las costas se tuercen
- * con ruido para que nada quede redondo ni parejo.
+ * Continente de norte a sur, mezcla de América y Britannia: entero (sin
+ * estrecho), con una gran bahía en la costa este, una cordillera a lo largo
+ * de la costa oeste (con pasos) y costas torcidas con ruido. En el mar:
+ * - una isla grande al este de la bahía, con una ciudad y las Tierras de
+ *   Ceniza: un valle negro amurallado por montañas, con una sola entrada y un
+ *   volcán en el medio;
+ * - dos islas de costa muy recortada al sudeste, frente a la punta sur (como
+ *   las Malvinas);
+ * - una isla larga al noreste, otra angosta al oeste y otras chicas de formas
+ *   variadas (alargadas, de dos lóbulos), para explorar y, más adelante,
+ *   navegar.
  */
 class ElongatedShape {
   private readonly warpX: ValueNoise;
@@ -1121,7 +1236,11 @@ class ElongatedShape {
   private readonly fineX: ValueNoise;
   private readonly gulfs: ValueNoise;
   private readonly gaps: ValueNoise;
-  private readonly islands: { x: number; y: number; r: number }[] = [];
+  private readonly coast: ValueNoise;
+  private readonly coastFine: ValueNoise;
+  private readonly islands: IslandShape[] = [];
+  /** Centro y radio del anillo de montañas de las Tierras de Ceniza, y el volcán. */
+  readonly ashland: { x: number; y: number; r: number; volcano: Position };
 
   constructor(
     private readonly width: number,
@@ -1134,55 +1253,119 @@ class ElongatedShape {
     this.fineX = new ValueNoise(seed + 21, Math.max(4, size / 28));
     this.gulfs = new ValueNoise(seed + 19, Math.max(8, size / 9));
     this.gaps = new ValueNoise(seed + 20, Math.max(6, size / 16));
-    // Islas: unas grandes (para pueblos y guaridas) y muchas chicas, en el mar abierto.
-    const wanted = Math.round(size / 40);
-    for (let tries = 0; this.islands.length < wanted && tries < wanted * 80; tries++) {
-      const x = Math.round((0.03 + hash(seed + 31, tries, 1) * 0.94) * width);
-      const y = Math.round((0.03 + hash(seed + 31, tries, 2) * 0.94) * height);
-      const big = this.islands.length < 4;
-      const r =
-        size *
-        (big
-          ? 0.04 + hash(seed + 31, tries, 3) * 0.025
-          : 0.006 + hash(seed + 31, tries, 3) * 0.018);
-      if (this.edge(x, y) < r / width + 0.03) continue;
-      if (this.islands.some((o) => Math.hypot(o.x - x, o.y - y) < o.r + r + 14)) continue;
-      this.islands.push({ x, y, r });
+    this.coast = new ValueNoise(seed + 32, Math.max(8, size / 90));
+    this.coastFine = new ValueNoise(seed + 33, 5);
+    const W = width;
+    const H = height;
+    const lobe = (x: number, y: number, rx: number, ry: number, angle = 0): Lobe => ({
+      x: x * W,
+      y: y * H,
+      rx: rx * W,
+      ry: ry * H,
+      angle,
+    });
+    // La isla grande: alargada, con un brazo al norte y otro al sur.
+    this.islands.push({
+      lobes: [
+        lobe(0.845, 0.57, 0.085, 0.13, 0.15),
+        lobe(0.8, 0.47, 0.05, 0.055, -0.4),
+        lobe(0.88, 0.68, 0.06, 0.05, 0.6),
+      ],
+      ragged: 0.14,
+    });
+    // Dos islas frente a la punta sur, separadas por un canal angosto, de costa muy recortada.
+    this.islands.push({
+      lobes: [lobe(0.675, 0.875, 0.037, 0.03, 0.5), lobe(0.66, 0.895, 0.022, 0.013, -0.3)],
+      ragged: 0.34,
+    });
+    this.islands.push({
+      lobes: [lobe(0.76, 0.865, 0.04, 0.028, -0.3), lobe(0.775, 0.888, 0.028, 0.015, 0.8)],
+      ragged: 0.34,
+    });
+    // Una isla larga al noreste y otra angosta al oeste.
+    this.islands.push({ lobes: [lobe(0.86, 0.17, 0.025, 0.09, 0.35)], ragged: 0.12 });
+    this.islands.push({ lobes: [lobe(0.05, 0.55, 0.014, 0.055, -0.15)], ragged: 0.15 });
+    // Otras chicas, de formas variadas, en el mar abierto.
+    const wanted = this.islands.length + Math.round(size / 110);
+    for (let tries = 0; this.islands.length < wanted && tries < 2000; tries++) {
+      const r = (k: number): number => hash(seed + 31, tries, k);
+      const x = (0.03 + r(1) * 0.94) * W;
+      const y = (0.03 + r(2) * 0.94) * H;
+      const radius = size * (0.008 + r(3) * 0.022);
+      const stretch = 1 + r(4) * 2.4;
+      const angle = r(5) * Math.PI;
+      if (this.edge(x, y) < (radius * stretch) / W + 0.03) continue;
+      if (
+        this.islands.some((o) =>
+          o.lobes.some(
+            (l) => Math.hypot(l.x - x, l.y - y) < Math.max(l.rx, l.ry) + radius * stretch + 20,
+          ),
+        )
+      )
+        continue;
+      const lobes: Lobe[] = [{ x, y, rx: radius, ry: radius * stretch, angle }];
+      if (r(6) < 0.5) {
+        // Dos lóbulos: una isla con cintura.
+        const along = radius * stretch * 0.9;
+        lobes.push({
+          x: x + Math.sin(angle) * along,
+          y: y + Math.cos(angle) * along,
+          rx: radius * 0.8,
+          ry: radius * (0.8 + r(7)),
+          angle: angle + 0.8,
+        });
+      }
+      this.islands.push({ lobes, ragged: 0.12 + r(8) * 0.15 });
     }
-  }
-
-  /** Medio ancho del continente a la latitud `v`: deja mares abiertos a los costados. */
-  private half(v: number): number {
-    return interpolate(HALF_WIDTH, Math.max(0, Math.min(1, v))) * 0.8;
-  }
-
-  private spine(v: number): number {
-    const isthmus = v > 0.44 && v < 0.64 ? 0.09 * Math.sin(((v - 0.44) / 0.2) * Math.PI) : 0;
-    return 0.5 + 0.06 * Math.sin(v * Math.PI * 2.4 + 0.6) + isthmus;
+    this.ashland = {
+      x: 0.868 * W,
+      y: 0.6 * H,
+      r: 0.054 * W,
+      volcano: { x: 0.875 * W, y: 0.598 * H },
+    };
   }
 
   /** Distancia horizontal (fracción del ancho) al borde del continente; positiva afuera. */
   private edge(x: number, y: number): number {
     const u =
-      x / this.width + (this.warpX.at(x, y) - 0.5) * 0.22 + (this.fineX.at(x, y) - 0.5) * 0.06;
-    const v = y / this.height + (this.warpY.at(x, y) - 0.5) * 0.05;
-    return Math.abs(u - this.spine(v)) - this.half(v);
+      x / this.width + (this.warpX.at(x, y) - 0.5) * 0.18 + (this.fineX.at(x, y) - 0.5) * 0.05;
+    const v = Math.max(0, Math.min(1, y / this.height + (this.warpY.at(x, y) - 0.5) * 0.04));
+    return Math.max(interpolate(WEST_COAST, v) - u, u - interpolate(EAST_COAST, v));
   }
 
   /** Cuánto suma (o resta) a la elevación: tierra adentro, mar afuera, golfos e islas. */
   land(x: number, y: number): number {
     const d = this.edge(x, y);
     let value = -smoothstep(-0.03, 0.05, d) * 0.62;
-    // Golfos y bahías que se meten desde la costa.
-    if (d > -0.12) value -= smoothstep(0.7, 0.86, this.gulfs.at(x, y)) * 0.4;
+    // Golfos y bahías chicas que se meten desde la costa.
+    if (d > -0.1) value -= smoothstep(0.72, 0.88, this.gulfs.at(x, y)) * 0.4;
     for (const island of this.islands) {
-      const dx = x - island.x;
-      const dy = y - island.y;
-      if (Math.abs(dx) > island.r * 1.6 || Math.abs(dy) > island.r * 1.6) continue;
-      const k = 1 - Math.hypot(dx, dy) / (island.r * (0.8 + this.warpX.at(x, y) * 0.5));
-      if (k > 0) value = Math.max(value, -0.62 + k * 0.85);
+      const k = this.inIsland(island, x, y);
+      // Tierra firme hasta cerca del borde del lóbulo (no solo en el centro).
+      if (k > 0) value = Math.max(value, -0.62 + k * 1.6);
     }
     return value;
+  }
+
+  /** Qué tan adentro de la isla está el tile (0 = afuera, 1 = en el centro). */
+  private inIsland(island: IslandShape, x: number, y: number): number {
+    let best = 0;
+    for (const l of island.lobes) {
+      const reach = Math.max(l.rx, l.ry) * 1.5;
+      if (Math.abs(x - l.x) > reach || Math.abs(y - l.y) > reach) continue;
+      const dx = x - l.x;
+      const dy = y - l.y;
+      const c = Math.cos(l.angle);
+      const s = Math.sin(l.angle);
+      const u = (dx * c - dy * s) / l.rx;
+      const v = (dx * s + dy * c) / l.ry;
+      const dist =
+        Math.hypot(u, v) * (0.85 + this.warpX.at(x, y) * 0.3) +
+        (this.coast.at(x, y) - 0.5) * island.ragged * 2 +
+        (this.coastFine.at(x, y) - 0.5) * island.ragged * 0.5;
+      best = Math.max(best, 1 - dist);
+    }
+    return best;
   }
 
   cold(y: number): number {
@@ -1192,12 +1375,48 @@ class ElongatedShape {
   /** La cordillera del oeste (0 a 1), con pasos donde se corta. */
   cordillera(x: number, y: number): number {
     const v = y / this.height;
-    const half = this.half(v);
-    if (half < 0.1) return 0;
+    const west = interpolate(WEST_COAST, v);
+    const east = interpolate(EAST_COAST, v);
+    const wide = east - west;
+    if (wide < 0.2) return 0;
     const u = x / this.width + (this.warpX.at(x, y) - 0.5) * 0.08;
-    const west = this.spine(v) - half * 0.76;
-    const band = 1 - Math.abs(u - west) / (half * 0.14);
+    const line = west + wide * 0.12;
+    const band = 1 - Math.abs(u - line) / (wide * 0.07);
     if (band <= 0 || this.gaps.at(x, y) < 0.34) return 0;
     return band;
+  }
+
+  /**
+   * Las Tierras de Ceniza: un anillo de montañas (con una sola entrada, del
+   * lado de la ciudad), el valle negro adentro y el volcán con su cráter de lava.
+   */
+  ashlandPart(x: number, y: number): AshlandPart | null {
+    const { x: cx, y: cy, r, volcano } = this.ashland;
+    const dx = x - cx;
+    const dy = y - cy;
+    if (Math.abs(dx) > r * 1.4 || Math.abs(dy) > r * 1.6) return null;
+    const cone = Math.hypot(x - volcano.x, y - volcano.y);
+    if (cone < 5) return 'crater';
+    if (cone < 16) return 'cone';
+    // Un anillo torcido y de grosor desparejo, no un círculo perfecto.
+    const d =
+      Math.hypot(dx, dy * 0.82) * (0.8 + this.coast.at(x * 1.7, y * 1.7) * 0.4) +
+      (this.warpY.at(x, y) - 0.5) * r * 0.2;
+    if (Math.abs(d - r) < 7 + this.coastFine.at(x, y) * 5) {
+      // La entrada: un paso hacia el oeste, donde está la ciudad.
+      const angle = Math.atan2(dy, dx);
+      const gate = Math.abs(Math.atan2(Math.sin(angle - Math.PI), Math.cos(angle - Math.PI)));
+      return gate < 0.1 ? 'inside' : 'wall';
+    }
+    return d < r ? 'inside' : null;
+  }
+
+  /** Cuánto sube el volcán (en escalones de altura). */
+  volcanoLift(x: number, y: number): number {
+    const { volcano } = this.ashland;
+    const d = Math.hypot(x - volcano.x, y - volcano.y);
+    if (d >= 22) return 0;
+    if (d < 5) return 30;
+    return Math.round(46 * (1 - (d - 5) / 17));
   }
 }

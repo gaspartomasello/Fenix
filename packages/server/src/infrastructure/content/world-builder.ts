@@ -13,8 +13,20 @@ import { World } from '../../domain/world';
 import { SeededRandom } from '../system/seeded-random';
 import { generateDungeon, type DungeonRoom } from './dungeon-map';
 import { populateContinent, type Place } from './places';
-import { generateIslandMap, type GeneratedWorld, type TownPlan } from './procedural-map';
+import {
+  ISLAND_CITY,
+  generateIslandMap,
+  type GeneratedWorld,
+  type TownPlan,
+} from './procedural-map';
+import type { MapRegion } from './tiled-map-loader';
 import { loadTiledMap } from './tiled-map-loader';
+
+/**
+ * Versión de la forma del mundo: si cambia, los personajes guardados en el
+ * mundo anterior aparecen en la capital (su posición vieja ya no sirve).
+ */
+const WORLD_VERSION = 2;
 
 export interface WorldBuildOptions {
   /** Ancho del continente (y alto, si no se da `height`). */
@@ -87,8 +99,27 @@ function townPlans(width: number, height: number): TownPlan[] {
         climate: 'swamp',
       },
     );
+    // La ciudad de la isla grande, frente a la entrada de las Tierras de Ceniza.
+    if (elongated)
+      plans.push({
+        map: renamed(load('roca-alta'), 'Puerto Brasa'),
+        at: ISLAND_CITY,
+        climate: 'temperate',
+      });
   }
   return plans;
+}
+
+/**
+ * Un pueblo de Tiled con otro nombre (y su gente con nombres genéricos), para
+ * usar el mismo plano en otro lugar hasta que tenga uno propio.
+ */
+function renamed(map: MapRegion, name: string): MapRegion {
+  return {
+    ...map,
+    regions: map.regions.map((r, i) => (i === 0 ? { ...r, name } : r)),
+    npcs: map.npcs.map(({ role, position }) => ({ role, position })),
+  };
 }
 
 /** Arma el mapa completo: continente con pueblos y lugares, y la mazmorra al este. */
@@ -180,7 +211,11 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
 /** Crea el mundo listo para jugar, con los objetos sueltos del mapa en el suelo. */
 export function createWorld(options: WorldBuildOptions, ids: IdGenerator): World {
   const { map, spawnPoint, items, npcs, lairs, wildlife } = buildWorld(options);
-  const world = new World(map, spawnPoint, `${map.width}x${map.height}@${options.seed}`);
+  const world = new World(
+    map,
+    spawnPoint,
+    `${map.width}x${map.height}@${options.seed}#${WORLD_VERSION}`,
+  );
   for (const { role, position, name } of npcs)
     world.addNpc(new Npc(ids.next(), role, position, name));
   for (const { kind, amount, position } of items) {
