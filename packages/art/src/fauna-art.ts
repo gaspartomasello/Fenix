@@ -260,53 +260,144 @@ function drawPawed(c: VolumeCanvas, frame: CharacterFrame, b: PawBuild): void {
   }
 }
 
-const BLACK_BEAR: PawBuild = {
-  coat: fur(ramp([46, 40, 40]), ramp([70, 60, 56]), 30),
-  paw: ramp([30, 26, 26]),
-  back: 12,
-  length: 9,
-  girth: 5,
-  depth: 5,
-  leg: 2.2,
-  stride: 2,
-  head: 3.4,
-  snout: [2.2, 1.6],
-  neck: [1.5, 4.4],
-  ears: 'round',
-  tail: 'stub',
-  eyes: [20, 16, 14],
-  nose: [12, 10, 10],
+// ── Osos ────────────────────────────────────────────────────────────
+
+interface BearBuild {
+  readonly coat: Ramp;
+  readonly belly: Ramp;
+  /** Hocico (el oso negro lo tiene más claro). */
+  readonly muzzle: Ramp;
+  readonly paw: Ramp;
+  /** Tamaño (1 = oso negro). */
+  readonly size: number;
+  /** Joroba de los hombros (la del grizzly es grande). */
+  readonly hump: number;
+  /** Cabeza más larga y cuello más largo (oso polar). */
+  readonly long?: boolean;
+}
+
+/**
+ * Oso: cuerpo macizo con los hombros altos y el lomo que baja hacia el anca,
+ * patas gruesas como columnas con zarpas anchas y uñas claras, cuello corto
+ * y cabeza grande y baja, con hocico marcado, nariz negra y orejas redondas.
+ * Camina pesado: las patas en diagonal y el cuerpo que se mece.
+ */
+function drawBear(c: VolumeCanvas, frame: CharacterFrame, b: BearBuild): void {
+  const k = b.size;
+  const step = gait(frame, 2.2 * k);
+  const sway = step.lift * 0.6;
+  const coat = fur(b.coat, b.belly, 15 * k);
+  const paw = solid(b.paw);
+  const claw = solid(ramp([214, 206, 186]));
+
+  // Patas: muslo grueso que se afina poco, zarpa ancha y chata con uñas.
+  const legs: [number, number, number][] = [
+    [1, 5 * k, step.pairA],
+    [-1, 5 * k, step.pairB],
+    [1, -5.6 * k, step.pairB],
+    [-1, -5.6 * k, step.pairA],
+  ];
+  for (const [side, z, swing] of legs) {
+    const front = z > 0;
+    const x = side * 3.1 * k;
+    const top: Vec3 = [x, (front ? 10.5 : 10) * k + sway, z];
+    const knee: Vec3 = [
+      x * 1.02,
+      5.2 * k + sway * 0.4,
+      z + swing * 0.45 + (front ? 0.4 : -0.6) * k,
+    ];
+    const foot: Vec3 = [x, 1.3 * k, z + swing];
+    c.limb(top, knee, 2.7 * k, 2.2 * k, coat);
+    c.limb(knee, foot, 2.2 * k, 1.9 * k, coat);
+    c.ellipsoid(
+      add(foot, [0, -0.3 * k, 0.6 * k]),
+      axesAlong([0, 0, 1]),
+      [2 * k, 1.1 * k, 2.5 * k],
+      paw,
+    );
+    for (const toe of [-0.9, 0, 0.9])
+      c.sphere(add(foot, [toe * k, -0.6 * k, 2.9 * k]), 0.3 * k, claw);
+  }
+
+  // Cuerpo: tronco, hombros altos con la joroba, anca más baja y redonda.
+  const y = sway;
+  c.ellipsoid([0, 11 * k + y, -0.4 * k], axesAlong([0, -0.06, 1]), [4.9 * k, 5.2 * k, 9 * k], coat);
+  c.sphere([0, 12.4 * k + y, 4.4 * k], 5.4 * k, coat);
+  c.sphere([0, 11.2 * k + y, -5.6 * k], 4.9 * k, coat);
+  c.sphere([0, 14.6 * k + y, 3.4 * k], b.hump * k, coat);
+  c.sphere([0, 12 * k + y, -9.6 * k], 1.1 * k, coat);
+
+  // Cuello corto y grueso; la cabeza va baja, a la altura de los hombros.
+  const reach = b.long ? 1.35 : 1;
+  const head: Vec3 = add([0, 12.2 * k + y, (9 + 1.8 * reach) * k], biteOffset(frame, 2.6 * k));
+  c.limb([0, 13 * k + y, 6 * k], head, 4 * k, 3.4 * k, coat);
+  c.sphere(head, 3.5 * k, coat);
+  // Frente ancha y hocico largo, más claro.
+  const snout = add(head, [0, -0.9 * k, 3.2 * k * reach]);
+  c.ellipsoid(
+    snout,
+    axesAlong([0, -0.12, 1]),
+    [1.8 * k, 1.6 * k, 2.6 * k * reach],
+    solid(b.muzzle),
+  );
+  c.ellipsoid(
+    add(snout, [0, 0.3 * k, 2.3 * k * reach]),
+    axesAlong([0, 0, 1]),
+    [1 * k, 0.75 * k, 0.6 * k],
+    solid(ramp([18, 16, 16])),
+  );
+  c.decal(add(snout, [0, -1.2 * k, 1.8 * k]), [0, -0.4, 1], [60, 30, 30], 2, 1);
+  for (const side of [1, -1] as const) {
+    // Orejas redondas y chicas, arriba a los costados.
+    c.ellipsoid(
+      add(head, [side * 2.3 * k, 2.7 * k, -0.6 * k]),
+      axesAlong([0, 0, 1]),
+      [1.15 * k, 1.15 * k, 0.6 * k],
+      (s) => (s.n[2] > 0.4 ? tone(b.paw, s.light) : tone(b.coat, s.light)),
+    );
+    c.decal(
+      add(head, [side * 1.4 * k, 1 * k, 3 * k]),
+      normalize([side * 0.4, 0.2, 1]),
+      [16, 12, 10],
+    );
+  }
+}
+
+const BLACK_BEAR: BearBuild = {
+  coat: ramp([44, 40, 42]),
+  belly: ramp([58, 52, 52]),
+  muzzle: ramp([150, 118, 84]),
+  paw: ramp([28, 24, 24]),
+  size: 1,
+  hump: 2.6,
 };
 
-const BROWN_BEAR: PawBuild = {
-  ...BLACK_BEAR,
-  coat: fur(ramp([120, 84, 52]), ramp([150, 110, 74]), 30),
-  paw: ramp([62, 44, 30]),
+const BROWN_BEAR: BearBuild = {
+  coat: ramp([116, 80, 50]),
+  belly: ramp([140, 102, 68]),
+  muzzle: ramp([150, 112, 76]),
+  paw: ramp([60, 42, 30]),
+  size: 1.05,
+  hump: 3,
 };
 
-const GRIZZLY: PawBuild = {
-  ...BLACK_BEAR,
-  coat: fur(ramp([132, 100, 68]), ramp([176, 148, 112]), 15),
-  paw: ramp([70, 52, 36]),
-  back: 14,
-  length: 10.5,
-  girth: 5.8,
-  depth: 6,
-  leg: 2.6,
-  head: 3.9,
-  snout: [2.6, 1.8],
-  hump: 3.6,
+const GRIZZLY: BearBuild = {
+  coat: ramp([128, 96, 64]),
+  belly: ramp([170, 140, 104]),
+  muzzle: ramp([176, 146, 110]),
+  paw: ramp([66, 50, 36]),
+  size: 1.22,
+  hump: 4.2,
 };
 
-const POLAR_BEAR: PawBuild = {
-  ...GRIZZLY,
-  coat: fur(ramp([236, 232, 220]), ramp([214, 210, 196]), 30),
-  paw: ramp([200, 196, 184]),
-  hump: 2,
-  head: 3.5,
-  snout: [3, 1.6],
-  neck: [1.2, 5.4],
-  eyes: [16, 14, 14],
+const POLAR_BEAR: BearBuild = {
+  coat: ramp([236, 232, 218]),
+  belly: ramp([216, 210, 194]),
+  muzzle: ramp([226, 222, 206]),
+  paw: ramp([190, 186, 172]),
+  size: 1.2,
+  hump: 2.2,
+  long: true,
 };
 
 const CAT: PawBuild = {
@@ -1193,10 +1284,10 @@ const DRAW: Readonly<Record<FaunaArtKind, (c: VolumeCanvas, frame: CharacterFram
   bullfrog: drawFrog,
   walrus: drawWalrus,
   gorilla: drawGorilla,
-  'black-bear': (c, f) => drawPawed(c, f, BLACK_BEAR),
-  'brown-bear': (c, f) => drawPawed(c, f, BROWN_BEAR),
-  grizzly: (c, f) => drawPawed(c, f, GRIZZLY),
-  'polar-bear': (c, f) => drawPawed(c, f, POLAR_BEAR),
+  'black-bear': (c, f) => drawBear(c, f, BLACK_BEAR),
+  'brown-bear': (c, f) => drawBear(c, f, BROWN_BEAR),
+  grizzly: (c, f) => drawBear(c, f, GRIZZLY),
+  'polar-bear': (c, f) => drawBear(c, f, POLAR_BEAR),
   cougar: (c, f) => drawPawed(c, f, COUGAR),
   panther: (c, f) => drawPawed(c, f, PANTHER),
   jaguar: (c, f) => drawPawed(c, f, JAGUAR),
