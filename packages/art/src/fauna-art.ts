@@ -24,6 +24,7 @@ import type { PixelImage, Rgb } from './pixel-art';
 import {
   add,
   axesAlong,
+  metal,
   noise,
   normalize,
   pitch,
@@ -703,46 +704,107 @@ const SHEEP: QuadrupedBuild = {
   body: sheepBody,
 };
 
+/**
+ * Vacas y toros: tronco largo y hondo con el lomo recto, caderas que se
+ * marcan atrás, cuello grueso con papada, cabeza grande que cuelga hacia
+ * adelante con el hocico ancho, orejas de costado y cuernos. El toro es más
+ * macizo, con morrillo sobre la cruz, cuernos abiertos y argolla en la nariz;
+ * la vaca tiene ubre.
+ */
 function cattleBody(bull: boolean): QuadrupedBuild['body'] {
   return ({ canvas, at, axes, coat, gait }: BodyKit): HeadAnchors => {
     const along = axes([0, 0, 1]);
     const k = bull ? 1.08 : 1;
-    canvas.ellipsoid(at([0, 21 * k, 0]), along, [6.6 * k, 6.8 * k, 12.5 * k], coat.body);
-    canvas.ellipsoid(at([0, 21.5 * k, 8 * k]), along, [6.4 * k, 7.2 * k, 6 * k], coat.body);
-    canvas.ellipsoid(at([0, 21.5 * k, -8.5 * k]), along, [6.6 * k, 6.6 * k, 5.6 * k], coat.body);
-    if (bull) canvas.sphere(at([0, 26.5, 7]), 5, coat.body);
-    const top = at([0, 22.5 * k, 15 * k]);
-    canvas.limb(at([0, 22 * k, 11 * k]), top, 4.6 * k, 3.6 * k, coat.body);
-    const h = normalize(pitch([0, -0.5, 1], gait.nod * 0.6 + gait.pitch));
-    const head = headAlong(top, h);
-    canvas.ellipsoid(head(1.2, [0, 0.6, 0]), axesAlong(h), [3 * k, 3 * k, 3.4 * k], coat.body);
-    canvas.limb(head(2.6), head(6.4), 2.6 * k, 2.4 * k, coat.body);
-    canvas.ellipsoid(
-      head(6.6, [0, -0.3, 0]),
-      axesAlong(h),
-      [2.6 * k, 2.2 * k, 1.4],
-      solid(ramp([196, 150, 140])),
-    );
-    const horn = solid(ramp([226, 214, 186]));
+    const p = (x: number, y: number, z: number): Vec3 => at([x * k, y * k, z * k]);
+    const body = coat.body;
+    // Tronco: costillar, pecho, grupa y panza honda; lomo recto encima.
+    canvas.ellipsoid(p(0, 21, 0), along, [7 * k, 7.4 * k, 12.5 * k], body);
+    canvas.ellipsoid(p(0, 21, 8.5), along, [6.6 * k, 7.6 * k, 6 * k], body);
+    canvas.ellipsoid(p(0, 22, -9), along, [6.8 * k, 7 * k, 6 * k], body);
+    canvas.ellipsoid(p(0, 17.5, 0.5), along, [6.4 * k, 4.8 * k, 9.5 * k], body);
+    canvas.ellipsoid(p(0, 26.6, -0.5), along, [4.8 * k, 1.8 * k, 11.5 * k], body);
     for (const side of [1, -1] as const) {
-      canvas.sphere(head(2.2, [side * 2.6 * k, 1.4, 0]), 0.6, solid(ramp([20, 16, 14])));
-      canvas.ellipsoid(
-        head(0.2, [side * 3.4 * k, 1.4, 0]),
-        axesAlong([side, 0, -0.2]),
-        [0.6, 1, 2],
-        coat.body,
-      );
-      const root = head(0.2, [side * 2 * k, 2.6, 0]);
-      const reach = bull ? 4.6 : 2.6;
-      const tip = add(root, [side * reach, bull ? 2.6 : 2, bull ? 1.6 : 0.4]);
-      canvas.limb(root, tip, 0.9, 0.3, horn);
+      // Caderas (los huesos de la grupa) y paletas.
+      canvas.sphere(p(side * 4.4, 26.2, -8.6), 2.2 * k, body);
+      canvas.ellipsoid(p(side * 4.6, 20, 9.5), axes([0, 1, 0.15]), [2.6 * k, 5 * k, 3.6 * k], body);
     }
-    // Cola con borla.
-    const tail = at([0, 25 * k, -14 * k]);
-    canvas.limb(tail, add(tail, [gait.tailSwing * 0.3, -11, -1]), 0.6, 0.5, coat.body);
-    canvas.sphere(add(tail, [gait.tailSwing * 0.3, -11.6, -1.2]), 1, solid(ramp([40, 32, 28])));
-    // Ubre (vaca).
-    if (!bull) canvas.sphere(at([0, 14, -6]), 2.2, solid(ramp([222, 170, 160])));
+    if (bull) {
+      // Morrillo: la giba de músculo sobre la cruz y el cuello.
+      canvas.ellipsoid(p(0, 27.5, 9), axes([0, 0.35, 1]), [5.2, 4.4, 7], body);
+    }
+
+    // Cuello grueso, casi horizontal, con la papada colgando abajo.
+    const poll = p(0, bull ? 24 : 24.5, 17.5);
+    canvas.limb(p(0, 23, 10), poll, (bull ? 6.4 : 5.2) * k, (bull ? 4.6 : 3.8) * k, body);
+    canvas.ellipsoid(
+      p(0, 17, 13.5),
+      axes([0, -0.5, 1]),
+      [1.6 * k, (bull ? 4.4 : 3.4) * k, 3.6 * k],
+      body,
+    );
+
+    // Cabeza larga que baja hacia adelante.
+    const h = normalize(pitch([0, -0.62, 1], gait.nod * 0.6 + gait.pitch));
+    const head = headAlong(poll, h);
+    const hx = axesAlong(h);
+    // La cabeza del toro es más ancha y pesada.
+    if (bull) canvas.ellipsoid(head(2.2, [0, 0.8, 0]), hx, [4.2, 3.8, 3.8], body);
+    canvas.ellipsoid(head(1.6, [0, 0.4, 0]), hx, [3.5 * k, 3.4 * k, 3.4 * k], body);
+    canvas.limb(head(2.6), head(7.8), 3 * k, 2.6 * k, body);
+    canvas.ellipsoid(head(4.6, [0, -1.7, 0]), hx, [2.6 * k, 1.6 * k, 3.4 * k], body);
+    // Hocico ancho y húmedo, con los ollares.
+    const nose = bull ? ramp([70, 52, 50]) : ramp([214, 160, 152]);
+    canvas.ellipsoid(head(8.7, [0, -0.2, 0]), hx, [3 * k, 2.4 * k, 1.8 * k], solid(nose));
+    const dark = solid(ramp([24, 18, 16]));
+    for (const side of [1, -1] as const) {
+      canvas.sphere(head(10.2, [side * 1.2 * k, 0.2, 0]), 0.5 * k, dark);
+      // Ojos a los costados.
+      canvas.sphere(head(2.6, [side * 3.2 * k, 1, 0]), 0.75, (s) =>
+        s.light > 0.9 ? [220, 220, 220] : [22, 18, 16],
+      );
+      // Orejas que salen de costado, chatas.
+      canvas.ellipsoid(
+        head(0.8, [side * 4 * k, 0.4, 0]),
+        axesAlong([side, -0.25, -0.35]),
+        [1.4 * k, 0.6 * k, 2.4 * k],
+        (s) => (s.n[1] < 0 ? tone(ramp([214, 160, 152]), s.light, -1) : body(s)),
+      );
+      // Cuernos: en la vaca, cortos y hacia arriba; en el toro, abiertos y hacia adelante.
+      const horn = solid(ramp([232, 222, 196]));
+      const root = head(0.4, [side * 2.6 * k, 2.6, 0]);
+      const mid = add(root, bull ? [side * 5, 0.4, 0.4] : [side * 1.8, 0.8, 0]);
+      const tip = add(mid, bull ? [side * 1, 2.6, 3.2] : [side * 0.4, 1.8, 0.6]);
+      canvas.limb(root, mid, bull ? 1.7 : 0.9, bull ? 1.2 : 0.6, horn);
+      canvas.limb(mid, tip, bull ? 1.2 : 0.6, 0.3, solid(ramp([70, 60, 50])));
+    }
+    if (bull) {
+      // Argolla en la nariz.
+      canvas.limb(
+        head(9.6, [-0.9, -1.4, 0]),
+        head(9.6, [0.9, -1.4, 0]),
+        0.35,
+        0.35,
+        metal(ramp([214, 172, 64])),
+      );
+    }
+
+    // Cola larga pegada a la grupa, con borla.
+    const tail = p(0, 27, -14.5);
+    const end = add(tail, [gait.tailSwing * 0.4, -13 * k, -1.6]);
+    canvas.limb(tail, end, 0.7, 0.5, body);
+    canvas.ellipsoid(
+      add(end, [0, -1.2, 0]),
+      axesAlong([0, 1, 0]),
+      [1, 1.8, 1],
+      solid(ramp([40, 32, 28])),
+    );
+    if (!bull) {
+      // Ubre con cuatro pezones.
+      const udder = solid(ramp([226, 172, 164]));
+      canvas.ellipsoid(p(0, 13.6, -6), along, [2.8, 2.2, 3], udder);
+      for (const x of [-1.1, 1.1])
+        for (const z of [-7, -5]) canvas.limb(p(x, 12.4, z), p(x, 10.8, z), 0.4, 0.3, udder);
+    }
     return noAnchors(at);
   };
 }
@@ -750,17 +812,17 @@ function cattleBody(bull: boolean): QuadrupedBuild['body'] {
 function cattleLegs(k: number): Pick<QuadrupedBuild, 'front' | 'hind'> {
   return {
     front: {
-      top: [4 * k, 16 * k, 9 * k],
-      lengths: [7 * k, 5.4 * k, 1.8 * k],
-      rest: [0.02, 0, 0.35],
-      thickness: [2.8 * k, 1.3 * k],
+      top: [4.4 * k, 15 * k, 9 * k],
+      lengths: [6.6 * k, 5.2 * k, 1.6 * k],
+      rest: [0.02, 0, 0.3],
+      thickness: [3.1 * k, 1.55 * k],
       hind: false,
     },
     hind: {
-      top: [4.2 * k, 17 * k, -9 * k],
-      lengths: [7.6 * k, 5.6 * k, 1.8 * k],
-      rest: [-0.36, 0.1, 0.35],
-      thickness: [3.2 * k, 1.3 * k],
+      top: [4.6 * k, 16 * k, -9.5 * k],
+      lengths: [7.2 * k, 5.4 * k, 1.6 * k],
+      rest: [-0.22, 0.12, 0.3],
+      thickness: [3.5 * k, 1.55 * k],
       hind: true,
     },
   };
@@ -789,6 +851,12 @@ function smoothNoise(x: number, y: number, z: number): number {
 const holstein: Material = (s) => {
   const blot = smoothNoise(s.p[0] / 5, s.p[1] / 4.5, s.p[2] / 5.5) > 0.56;
   return tone(blot ? ramp([40, 36, 36]) : ramp([232, 228, 220]), s.light);
+};
+
+/** Toro: cuero oscuro y corto, con brillo sobre los músculos y el hocico más claro. */
+const bullHide: Material = (s) => {
+  const shade = smoothNoise(s.p[0] / 6, s.p[1] / 6, s.p[2] / 6) > 0.62 ? -1 : 0;
+  return tone(ramp([66, 44, 34]), s.light, s.light > 0.86 ? 1 : shade);
 };
 
 const COW: QuadrupedBuild = {
@@ -1244,16 +1312,7 @@ const DRAW: Readonly<Record<FaunaArtKind, (c: VolumeCanvas, frame: CharacterFram
   cow: (c, f) =>
     void drawQuadruped(c, COW, hoovedCoat(holstein, ramp([232, 228, 220]), ramp([50, 40, 34])), f),
   bull: (c, f) =>
-    void drawQuadruped(
-      c,
-      BULL,
-      hoovedCoat(
-        fur(ramp([60, 40, 32]), ramp([80, 56, 44]), 99),
-        ramp([54, 36, 30]),
-        ramp([30, 24, 20]),
-      ),
-      f,
-    ),
+    void drawQuadruped(c, BULL, hoovedCoat(bullHide, ramp([50, 34, 28]), ramp([30, 24, 20])), f),
   boar: (c, f) =>
     void drawQuadruped(
       c,
