@@ -9,7 +9,10 @@ export interface StatusInfo {
   readonly visible: number;
 }
 
-/** Barra superior con el personaje, la posición y la gente conectada. */
+/**
+ * Barra superior con el personaje, la posición y la gente conectada; a la
+ * derecha van los botones del juego (Mochila, Personaje, Mapa…).
+ */
 export class StatusBar {
   readonly element: HTMLElement;
   private readonly text: HTMLElement;
@@ -17,13 +20,12 @@ export class StatusBar {
 
   constructor() {
     this.text = el('span');
-    this.element = el('div', { className: 'status-bar panel' }, [
-      this.text,
-      el('span', {
-        className: 'status-help',
-        text: 'Flechas/WASD, clic derecho o tocá para moverte · Shift: correr · Rueda del mouse: acercar o alejar',
-      }),
-    ]);
+    this.element = el('div', { className: 'status-bar panel' }, [this.text]);
+  }
+
+  /** Pone los botones del juego en la barra, a la derecha. */
+  dock(buttons: HTMLElement): void {
+    this.element.append(buttons);
   }
 
   update({ name, region, time, x, y, visible }: StatusInfo): void {

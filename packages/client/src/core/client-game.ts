@@ -310,6 +310,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       case 'travel':
         this.gateway.send({ type: 'testTravel', to: input.to });
         return;
+      case 'invulnerable':
+        this.gateway.send({ type: 'toggleInvulnerable' });
+        return;
       case 'goto': {
         if (input.place) {
           this.gateway.send({ type: 'testTravel', to: 'place', place: input.place });

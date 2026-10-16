@@ -216,7 +216,7 @@ export class World {
       // Una invocación se ve con el color de su dueño; las salvajes, rojas.
       notoriety:
         mobile instanceof Creature && mobile.ownerId
-          ? (this.players.get(mobile.ownerId)?.reputation.notoriety ?? 'innocent')
+          ? (this.players.get(mobile.ownerId)?.notoriety ?? 'innocent')
           : 'murderer',
       guildTag: null,
       ownerId: mobile instanceof Creature ? mobile.ownerId : null,

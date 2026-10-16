@@ -108,7 +108,10 @@ export function trySwing(
     defense,
     random,
   );
-  const killed = outcome.hit && !outcome.blocked ? target.combat.takeDamage(outcome.damage) : false;
+  // A un invulnerable los golpes no le entran (se ven como parados).
+  const immune = target.combat.invulnerable;
+  const killed =
+    outcome.hit && !outcome.blocked && !immune ? target.combat.takeDamage(outcome.damage) : false;
 
   const gains: SkillGain[] = [];
   if (attacker instanceof Player) {
@@ -134,8 +137,8 @@ export function trySwing(
     attacker,
     target,
     hit: outcome.hit,
-    blocked: outcome.blocked,
-    damage: outcome.damage,
+    blocked: outcome.blocked || immune,
+    damage: immune ? 0 : outcome.damage,
     killed,
     gains,
     ranged: range > MELEE_RANGE,

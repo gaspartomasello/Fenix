@@ -200,6 +200,14 @@ export type TestTravelRequest =
   | { readonly type: 'testTravel'; readonly to: 'cave' | 'lair' }
   | { readonly type: 'testTravel'; readonly to: 'place'; readonly place: string };
 
+/**
+ * Activar o desactivar la invulnerabilidad (solo personajes de prueba): el
+ * nombre se ve amarillo, como un administrador del juego, y nada le hace daño.
+ */
+export interface ToggleInvulnerableRequest {
+  readonly type: 'toggleInvulnerable';
+}
+
 /** Comprar una montura en la caballeriza. */
 export interface BuyMountRequest {
   readonly type: 'buyMount';
@@ -268,6 +276,7 @@ export type ClientMessage =
   | CraftRequest
   | SetHourRequest
   | TestTravelRequest
+  | ToggleInvulnerableRequest
   | OpenCorpseRequest
   | LootAllRequest
   | BuyMountRequest

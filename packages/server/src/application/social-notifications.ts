@@ -41,7 +41,7 @@ export class SocialNotifications {
       fame: reputation.fame,
       karma: reputation.karma,
       murders: reputation.murders,
-      notoriety: reputation.notoriety,
+      notoriety: player.notoriety,
     });
   }
 

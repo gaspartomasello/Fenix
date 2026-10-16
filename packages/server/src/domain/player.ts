@@ -18,6 +18,7 @@ import {
   type EntityId,
   type MoveMode,
   type MobileSnapshot,
+  type Notoriety,
   type MountKind,
   type Position,
   type SkillValues,
@@ -88,6 +89,11 @@ export class Player implements Mobile {
   hidden: { steps: number; until: number | null } | null = null;
   /** Modo guerra: se dibuja en guardia y se defiende solo (no se guarda: entra en paz). */
   warMode = false;
+
+  /** Cómo lo ven los demás: invulnerable (amarillo) o según su reputación. */
+  get notoriety(): Notoriety {
+    return this.combat.invulnerable ? 'invulnerable' : this.reputation.notoriety;
+  }
   private runSteps = 0;
   private _position: Position;
   private _direction: Direction;
@@ -179,7 +185,7 @@ export class Player implements Mobile {
       health: this.combat.health,
       dead: this.combat.isDead,
       npc: null,
-      notoriety: this.reputation.notoriety,
+      notoriety: this.notoriety,
       guildTag: null,
       mount: this.mount,
       war: this.warMode,
