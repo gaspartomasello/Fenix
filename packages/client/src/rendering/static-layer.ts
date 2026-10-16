@@ -1,4 +1,4 @@
-import { staticFrame } from '@fenix/art';
+import { INVISIBLE_STATICS, staticFrame } from '@fenix/art';
 import {
   DOORS,
   STATICS,
@@ -82,6 +82,7 @@ export class StaticLayer {
   ) {
     const byChunk = new Map<string, StaticPlacement[]>();
     for (const placement of map.statics) {
+      if (INVISIBLE_STATICS.has(placement.kind)) continue;
       const key = `${Math.floor(placement.x / CHUNK_SIZE)},${Math.floor(placement.y / CHUNK_SIZE)}`;
       let list = byChunk.get(key);
       if (!list) byChunk.set(key, (list = []));

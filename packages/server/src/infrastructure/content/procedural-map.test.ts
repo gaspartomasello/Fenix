@@ -145,7 +145,8 @@ describe('buildWorld: el continente', () => {
   });
 
   it('las montañas forman macizos, sin cordones finos', () => {
-    const mountains = map.statics.filter((s) => s.kind === 'mountain');
+    // Los riscos son parte de la montaña.
+    const mountains = map.statics.filter((s) => s.kind === 'mountain' || s.kind.startsWith('crag'));
     const at = new Set(mountains.map((s) => `${s.x},${s.y}`));
     for (const m of mountains) {
       let around = 0;
@@ -359,3 +360,44 @@ function median(values: readonly number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
   return sorted[Math.floor(sorted.length / 2)] ?? 0;
 }
+
+describe('montañas', () => {
+  const world = buildWorld({ size: 700, height: 900, seed: 1997 });
+  const { map, spawnPoint, wildlife } = world;
+
+  it('la montaña es ladera de roca alta, con riscos sueltos y alguna mina adentro', () => {
+    const mountains = map.statics.filter((s) => s.kind === 'mountain');
+    expect(mountains.length).toBeGreaterThan(0);
+    for (const m of mountains.slice(0, 200)) expect(map.terrainAt(m)).toBe(Terrain.Mountain);
+    expect(map.statics.some((s) => s.kind.startsWith('crag'))).toBe(true);
+    const mine = map.regions.find((r) => r.name.startsWith('Mina'));
+    expect(mine).toBeDefined();
+    if (!mine) return;
+    // Se llega caminando a la mina desde la capital, y adentro hay roca para picar.
+    const seen = reachable(map, spawnPoint);
+    let inside = false;
+    for (let y = mine.y; y < mine.y + mine.height; y++)
+      for (let x = mine.x; x < mine.x + mine.width; x++)
+        if (map.terrainAt({ x, y }) === Terrain.Cave && seen.has(`${x},${y}`)) inside = true;
+    expect(inside).toBe(true);
+  });
+
+  it('ninguna criatura queda encerrada entre montañas (solo las de las islas no se alcanzan a pie)', () => {
+    for (const s of map.statics) if (DOORS[s.kind]) map.setDoorOpen(s, true);
+    const seen = reachable(map, spawnPoint);
+    for (const { home } of wildlife) {
+      if (seen.has(`${home.x},${home.y}`)) continue;
+      const island = reachable(map, home);
+      const coast = [...island].some((key) => {
+        const [x = 0, y = 0] = key.split(',').map(Number);
+        return [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ].some(([dx = 0, dy = 0]) => map.terrainAt({ x: x + dx, y: y + dy }) === Terrain.Water);
+      });
+      expect(coast, `${home.x},${home.y}`).toBe(true);
+    }
+  });
+});

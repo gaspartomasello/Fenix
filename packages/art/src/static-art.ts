@@ -26,6 +26,9 @@ export const STATIC_ART_HEIGHT = 168;
 export const STATIC_GROUND = { x: 68, y: 146 } as const;
 export const STATIC_VARIANTS = 3;
 
+/** Objetos que marcan algo en el mapa pero no se dibujan (la montaña la dibuja el terreno). */
+export const INVISIBLE_STATICS: ReadonlySet<StaticKind> = new Set<StaticKind>(['mountain']);
+
 const OUTLINE: Rgb = [27, 19, 14];
 
 /**
@@ -546,29 +549,63 @@ const stalagmite: Model = (c, variant) => {
 
 // ── Lugares del mundo ───────────────────────────────────────────────
 
-/** Montaña: una mole de roca con riscos angulosos; juntas forman cordilleras. */
-const mountain: Model = (c, variant) => {
-  const face = rocky(ramp([124, 116, 104]), variant * 11 + 4);
-  const dark = rocky(ramp([98, 92, 84]), variant * 11 + 5);
-  // La base llena el tile y se derrama sobre los vecinos, así no quedan huecos.
-  c.ellipsoid([0, 6, 0], UP, [H * 1.5, 12, H * 1.5], dark);
-  // Riscos: lajas de roca inclinadas, de distinto alto, que se apoyan unas en otras.
-  for (let i = 0; i < 7; i++) {
-    const x = (noise(i, variant, 61) - 0.5) * 26;
-    const z = (noise(i, variant, 62) - 0.5) * 26;
-    const height = 18 + noise(i, variant, 63) * 30 + (i === 0 ? 22 : 0);
-    const turn = noise(i, variant, 64) * Math.PI;
-    const tilt = (noise(i, variant, 65) - 0.5) * 0.5;
-    const axes = axesAlong([Math.cos(turn), 0, Math.sin(turn)], [tilt, 1, tilt * 0.5]);
-    c.box(
-      [x, height / 2, z],
-      axes,
-      [7 + noise(i, variant, 66) * 4, height / 2, 5],
-      i % 2 ? face : dark,
-    );
-    c.ellipsoid([x, height, z], axes, [5, 4, 4], face);
-  }
-};
+/**
+ * La montaña es terreno elevado (la ladera de roca la dibuja el terreno): el
+ * objeto que la marca no se ve. Encima van riscos sueltos, cada uno distinto.
+ */
+const mountain: Model = () => {};
+
+/** Roca de los riscos: gris pardo con vetas, más clara arriba. */
+function cragRock(seed: number): Material {
+  const base = ramp([126, 116, 104]);
+  return (s) => {
+    const vein =
+      Math.sin(s.p[1] * 0.5 + noise(Math.floor(s.p[0] / 3), Math.floor(s.p[2] / 3), seed) * 4) >
+      0.86;
+    const moss =
+      s.n[1] > 0.6 && noise(Math.floor(s.p[0] / 2), Math.floor(s.p[2] / 2), seed + 1) > 0.72;
+    if (moss) return tone(ramp([106, 116, 74]), s.light);
+    return tone(base, s.light, vein ? -1 : s.p[1] > 40 ? 1 : 0);
+  };
+}
+
+/**
+ * Un risco: lajas de roca apiladas e inclinadas alrededor de un centro, de
+ * alturas distintas (`shape` cambia cuántas, qué tan altas y qué tan
+ * abiertas: un peñón, una aguja o un peñasco ancho y bajo).
+ */
+function crag(shape: { count: number; tall: number; spread: number; width: number }): Model {
+  return (c, variant) => {
+    const rock = cragRock(variant * 7 + shape.count);
+    const dark = rocky(ramp([96, 88, 80]), variant * 11 + 5);
+    c.ellipsoid([0, 3, 0], UP, [H * 0.9 * shape.spread, 6, H * 0.9 * shape.spread], dark);
+    for (let i = 0; i < shape.count; i++) {
+      const seed = i * 13 + variant * 101 + shape.count * 7;
+      const angle = noise(seed, 1, 61) * Math.PI * 2;
+      const reach = i === 0 ? 0 : (4 + noise(seed, 2, 62) * 9) * shape.spread;
+      const x = Math.cos(angle) * reach;
+      const z = Math.sin(angle) * reach;
+      const height = shape.tall * (i === 0 ? 1 : 0.35 + noise(seed, 3, 63) * 0.5);
+      const turn = noise(seed, 4, 64) * Math.PI;
+      const lean = (noise(seed, 5, 65) - 0.5) * 0.6 - x / 40;
+      const axes = axesAlong(
+        [Math.cos(turn), 0, Math.sin(turn)],
+        [lean, 1, (noise(seed, 6, 66) - 0.5) * 0.5],
+      );
+      const w = shape.width * (0.7 + noise(seed, 7, 67) * 0.6);
+      // Una laja: ancha abajo y afinada arriba (dos bloques y una punta).
+      c.box([x, height * 0.3, z], axes, [w, height * 0.3, w * 0.75], i % 2 ? rock : dark);
+      c.box([x, height * 0.72, z], axes, [w * 0.7, height * 0.18, w * 0.55], rock);
+      c.ellipsoid([x, height * 0.9, z], axes, [w * 0.5, height * 0.12, w * 0.45], rock);
+    }
+    // Piedras sueltas al pie.
+    for (let k = 0; k < 3; k++) {
+      const a = noise(k, variant, 71) * Math.PI * 2;
+      const r = H * 0.8 * shape.spread;
+      c.ellipsoid([Math.cos(a) * r, 1.5, Math.sin(a) * r], UP, [2.4, 1.8, 2], dark);
+    }
+  };
+}
 
 /** Cactus columnar con dos brazos, costillas a lo largo y espinas. */
 const cactus: Model = (c, variant) => {
@@ -2089,8 +2126,7 @@ function door(
     }
     c.limb(edge(along, -H + 1.6, 44, inset), edge(along, H - 1.6, 44, inset), 1.4, 1.4, frame);
   } else {
-    for (const t of jambs)
-      c.box(edge(along, t, 22, inset), UP, edgeHalf(along, 1.6, 22, 3), frame);
+    for (const t of jambs) c.box(edge(along, t, 22, inset), UP, edgeHalf(along, 1.6, 22, 3), frame);
     c.box(
       edge(along, 0, 44, inset),
       UP,
@@ -2249,7 +2285,10 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   willow: tree('willow'),
   poplar: tree('poplar'),
   'dead-tree': tree('dead-tree'),
-  mountain: { model: mountain, shadow: [30, 13] },
+  mountain: { model: mountain },
+  crag: { model: crag({ count: 6, tall: 50, spread: 1.1, width: 11 }), shadow: [24, 11] },
+  'crag-spire': { model: crag({ count: 4, tall: 76, spread: 0.8, width: 9 }), shadow: [18, 9] },
+  'crag-ledge': { model: crag({ count: 8, tall: 30, spread: 1.35, width: 12 }), shadow: [28, 12] },
   cactus: { model: cactus, shadow: [10, 4] },
   tent: { model: tent, shadow: [26, 11] },
   campfire: { model: campfire, shadow: [10, 4] },

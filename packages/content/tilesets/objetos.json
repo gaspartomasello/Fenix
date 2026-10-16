@@ -3,10 +3,10 @@
   "name": "objetos",
   "tilewidth": 136,
   "tileheight": 168,
-  "tilecount": 144,
-  "columns": 144,
+  "tilecount": 179,
+  "columns": 179,
   "image": "objetos.png",
-  "imagewidth": 19584,
+  "imagewidth": 24344,
   "imageheight": 168,
   "tileoffset": {
     "x": -46,
@@ -329,7 +329,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "cactus"
+          "value": "crag"
         }
       ]
     },
@@ -339,7 +339,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "tent"
+          "value": "crag-spire"
         }
       ]
     },
@@ -349,7 +349,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "campfire"
+          "value": "crag-ledge"
         }
       ]
     },
@@ -359,7 +359,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "gravestone"
+          "value": "cactus"
         }
       ]
     },
@@ -369,7 +369,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "lighthouse"
+          "value": "tent"
         }
       ]
     },
@@ -379,7 +379,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "rubble"
+          "value": "campfire"
         }
       ]
     },
@@ -389,7 +389,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "reeds"
+          "value": "gravestone"
         }
       ]
     },
@@ -399,7 +399,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "snow-pine"
+          "value": "lighthouse"
         }
       ]
     },
@@ -409,7 +409,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "palm"
+          "value": "rubble"
         }
       ]
     },
@@ -419,7 +419,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "jungle-tree"
+          "value": "reeds"
         }
       ]
     },
@@ -429,7 +429,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "birch"
+          "value": "snow-pine"
         }
       ]
     },
@@ -439,7 +439,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "acacia"
+          "value": "palm"
         }
       ]
     },
@@ -449,7 +449,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "tall-grass"
+          "value": "jungle-tree"
         }
       ]
     },
@@ -459,7 +459,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "weeds"
+          "value": "birch"
         }
       ]
     },
@@ -469,7 +469,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "fern"
+          "value": "acacia"
         }
       ]
     },
@@ -479,7 +479,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "mushrooms"
+          "value": "tall-grass"
         }
       ]
     },
@@ -489,7 +489,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "wildflowers"
+          "value": "weeds"
         }
       ]
     },
@@ -499,7 +499,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "peyote"
+          "value": "fern"
         }
       ]
     },
@@ -509,7 +509,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "dry-shrub"
+          "value": "mushrooms"
         }
       ]
     },
@@ -519,7 +519,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "pebbles"
+          "value": "wildflowers"
         }
       ]
     },
@@ -529,7 +529,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "boulder"
+          "value": "peyote"
         }
       ]
     },
@@ -539,7 +539,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "mossy-rock"
+          "value": "dry-shrub"
         }
       ]
     },
@@ -549,7 +549,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "jungle-plant"
+          "value": "pebbles"
         }
       ]
     },
@@ -559,7 +559,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "tundra-shrub"
+          "value": "boulder"
         }
       ]
     },
@@ -569,7 +569,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "column"
+          "value": "mossy-rock"
         }
       ]
     },
@@ -579,7 +579,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "fallen-column"
+          "value": "jungle-plant"
         }
       ]
     },
@@ -589,7 +589,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "maple"
+          "value": "tundra-shrub"
         }
       ]
     },
@@ -599,7 +599,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "cypress"
+          "value": "column"
         }
       ]
     },
@@ -609,7 +609,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "baobab"
+          "value": "fallen-column"
         }
       ]
     },
@@ -619,7 +619,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "bamboo"
+          "value": "maple"
         }
       ]
     },
@@ -629,7 +629,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "log-wall-x"
+          "value": "cypress"
         }
       ]
     },
@@ -639,7 +639,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "log-wall-y"
+          "value": "baobab"
         }
       ]
     },
@@ -649,7 +649,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "log-wall-corner"
+          "value": "bamboo"
         }
       ]
     },
@@ -659,7 +659,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "log-wall-post"
+          "value": "log-wall-x"
         }
       ]
     },
@@ -669,7 +669,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "plank-wall-x"
+          "value": "log-wall-y"
         }
       ]
     },
@@ -679,7 +679,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "plank-wall-y"
+          "value": "log-wall-corner"
         }
       ]
     },
@@ -689,7 +689,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "plank-wall-corner"
+          "value": "log-wall-post"
         }
       ]
     },
@@ -699,7 +699,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "plank-wall-post"
+          "value": "plank-wall-x"
         }
       ]
     },
@@ -709,7 +709,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "basalt-wall-x"
+          "value": "plank-wall-y"
         }
       ]
     },
@@ -719,7 +719,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "basalt-wall-y"
+          "value": "plank-wall-corner"
         }
       ]
     },
@@ -729,7 +729,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "basalt-wall-corner"
+          "value": "plank-wall-post"
         }
       ]
     },
@@ -739,7 +739,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "basalt-wall-post"
+          "value": "basalt-wall-x"
         }
       ]
     },
@@ -749,7 +749,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "rampart-x"
+          "value": "basalt-wall-y"
         }
       ]
     },
@@ -759,7 +759,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "rampart-y"
+          "value": "basalt-wall-corner"
         }
       ]
     },
@@ -769,7 +769,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "rampart-corner"
+          "value": "basalt-wall-post"
         }
       ]
     },
@@ -779,7 +779,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "rampart-post"
+          "value": "rampart-x"
         }
       ]
     },
@@ -789,7 +789,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "tower"
+          "value": "rampart-y"
         }
       ]
     },
@@ -799,7 +799,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "palisade-x"
+          "value": "rampart-corner"
         }
       ]
     },
@@ -809,7 +809,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "palisade-y"
+          "value": "rampart-post"
         }
       ]
     },
@@ -819,7 +819,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "palisade-post"
+          "value": "tower"
         }
       ]
     },
@@ -829,7 +829,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "iron-fence-x"
+          "value": "palisade-x"
         }
       ]
     },
@@ -839,7 +839,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "iron-fence-y"
+          "value": "palisade-y"
         }
       ]
     },
@@ -849,7 +849,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "crypt"
+          "value": "palisade-post"
         }
       ]
     },
@@ -859,7 +859,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "stall"
+          "value": "iron-fence-x"
         }
       ]
     },
@@ -869,7 +869,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "banner"
+          "value": "iron-fence-y"
         }
       ]
     },
@@ -879,7 +879,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "throne"
+          "value": "crypt"
         }
       ]
     },
@@ -889,7 +889,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "fountain"
+          "value": "stall"
         }
       ]
     },
@@ -899,7 +899,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "hay-bale"
+          "value": "banner"
         }
       ]
     },
@@ -909,7 +909,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "hay-pile"
+          "value": "throne"
         }
       ]
     },
@@ -919,7 +919,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "hitching-post"
+          "value": "fountain"
         }
       ]
     },
@@ -929,7 +929,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "water-trough"
+          "value": "hay-bale"
         }
       ]
     },
@@ -939,7 +939,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "stump-axe"
+          "value": "hay-pile"
         }
       ]
     },
@@ -949,7 +949,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "log-pile"
+          "value": "hitching-post"
         }
       ]
     },
@@ -959,7 +959,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "workbench"
+          "value": "water-trough"
         }
       ]
     },
@@ -969,7 +969,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "alchemy-table"
+          "value": "stump-axe"
         }
       ]
     },
@@ -979,7 +979,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "bookshelf-x"
+          "value": "log-pile"
         }
       ]
     },
@@ -989,7 +989,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "bookshelf-y"
+          "value": "workbench"
         }
       ]
     },
@@ -999,7 +999,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "potion-shelf-x"
+          "value": "alchemy-table"
         }
       ]
     },
@@ -1009,7 +1009,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "potion-shelf-y"
+          "value": "bookshelf-x"
         }
       ]
     },
@@ -1019,7 +1019,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "cauldron"
+          "value": "bookshelf-y"
         }
       ]
     },
@@ -1029,7 +1029,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "table"
+          "value": "potion-shelf-x"
         }
       ]
     },
@@ -1039,7 +1039,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "stool"
+          "value": "potion-shelf-y"
         }
       ]
     },
@@ -1049,7 +1049,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "counter"
+          "value": "cauldron"
         }
       ]
     },
@@ -1059,7 +1059,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "chest"
+          "value": "table"
         }
       ]
     },
@@ -1069,7 +1069,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "weapon-rack"
+          "value": "stool"
         }
       ]
     },
@@ -1079,7 +1079,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "armor-stand"
+          "value": "counter"
         }
       ]
     },
@@ -1089,7 +1089,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "bed"
+          "value": "chest"
         }
       ]
     },
@@ -1099,7 +1099,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "hearth"
+          "value": "weapon-rack"
         }
       ]
     },
@@ -1109,7 +1109,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "keg"
+          "value": "armor-stand"
         }
       ]
     },
@@ -1119,7 +1119,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "chair-n"
+          "value": "bed"
         }
       ]
     },
@@ -1129,7 +1129,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "chair-e"
+          "value": "hearth"
         }
       ]
     },
@@ -1139,7 +1139,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "chair-s"
+          "value": "keg"
         }
       ]
     },
@@ -1149,7 +1149,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "chair-w"
+          "value": "chair-n"
         }
       ]
     },
@@ -1159,7 +1159,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "bench-x"
+          "value": "chair-e"
         }
       ]
     },
@@ -1169,7 +1169,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "bench-y"
+          "value": "chair-s"
         }
       ]
     },
@@ -1179,7 +1179,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "sawhorse"
+          "value": "chair-w"
         }
       ]
     },
@@ -1189,7 +1189,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "plank-stack"
+          "value": "bench-x"
         }
       ]
     },
@@ -1199,7 +1199,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "carpet"
+          "value": "bench-y"
         }
       ]
     },
@@ -1209,7 +1209,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "candelabra"
+          "value": "sawhorse"
         }
       ]
     },
@@ -1219,7 +1219,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "door-x"
+          "value": "plank-stack"
         }
       ]
     },
@@ -1229,7 +1229,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "door-y"
+          "value": "carpet"
         }
       ]
     },
@@ -1239,7 +1239,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "door-x-open"
+          "value": "candelabra"
         }
       ]
     },
@@ -1249,7 +1249,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "door-y-open"
+          "value": "door-x"
         }
       ]
     },
@@ -1259,7 +1259,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "iron-door-x"
+          "value": "door-y"
         }
       ]
     },
@@ -1269,7 +1269,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "iron-door-y"
+          "value": "door-x-open"
         }
       ]
     },
@@ -1279,7 +1279,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "iron-door-x-open"
+          "value": "door-y-open"
         }
       ]
     },
@@ -1289,7 +1289,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "iron-door-y-open"
+          "value": "iron-door-x"
         }
       ]
     },
@@ -1299,7 +1299,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "dungeon-door-x"
+          "value": "iron-door-y"
         }
       ]
     },
@@ -1309,7 +1309,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "dungeon-door-y"
+          "value": "iron-door-x-open"
         }
       ]
     },
@@ -1319,7 +1319,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "dungeon-door-x-open"
+          "value": "iron-door-y-open"
         }
       ]
     },
@@ -1329,7 +1329,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "dungeon-door-y-open"
+          "value": "dungeon-door-x"
         }
       ]
     },
@@ -1339,7 +1339,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "bone-door-x"
+          "value": "dungeon-door-y"
         }
       ]
     },
@@ -1349,7 +1349,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "bone-door-y"
+          "value": "dungeon-door-x-open"
         }
       ]
     },
@@ -1359,7 +1359,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "bone-door-x-open"
+          "value": "dungeon-door-y-open"
         }
       ]
     },
@@ -1369,7 +1369,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "bone-door-y-open"
+          "value": "bone-door-x"
         }
       ]
     },
@@ -1379,7 +1379,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "wall-window-x"
+          "value": "bone-door-y"
         }
       ]
     },
@@ -1389,7 +1389,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "wall-window-y"
+          "value": "bone-door-x-open"
         }
       ]
     },
@@ -1399,7 +1399,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "log-window-x"
+          "value": "bone-door-y-open"
         }
       ]
     },
@@ -1409,7 +1409,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "log-window-y"
+          "value": "door-x-l"
         }
       ]
     },
@@ -1419,7 +1419,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "plank-window-x"
+          "value": "door-x-l-open"
         }
       ]
     },
@@ -1429,7 +1429,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "plank-window-y"
+          "value": "door-x-r"
         }
       ]
     },
@@ -1439,12 +1439,362 @@
         {
           "name": "static",
           "type": "string",
-          "value": "basalt-window-x"
+          "value": "door-x-r-open"
         }
       ]
     },
     {
       "id": 143,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "door-y-l"
+        }
+      ]
+    },
+    {
+      "id": 144,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "door-y-l-open"
+        }
+      ]
+    },
+    {
+      "id": 145,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "door-y-r"
+        }
+      ]
+    },
+    {
+      "id": 146,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "door-y-r-open"
+        }
+      ]
+    },
+    {
+      "id": 147,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "iron-door-x-l"
+        }
+      ]
+    },
+    {
+      "id": 148,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "iron-door-x-l-open"
+        }
+      ]
+    },
+    {
+      "id": 149,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "iron-door-x-r"
+        }
+      ]
+    },
+    {
+      "id": 150,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "iron-door-x-r-open"
+        }
+      ]
+    },
+    {
+      "id": 151,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "iron-door-y-l"
+        }
+      ]
+    },
+    {
+      "id": 152,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "iron-door-y-l-open"
+        }
+      ]
+    },
+    {
+      "id": 153,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "iron-door-y-r"
+        }
+      ]
+    },
+    {
+      "id": 154,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "iron-door-y-r-open"
+        }
+      ]
+    },
+    {
+      "id": 155,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "dungeon-door-x-l"
+        }
+      ]
+    },
+    {
+      "id": 156,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "dungeon-door-x-l-open"
+        }
+      ]
+    },
+    {
+      "id": 157,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "dungeon-door-x-r"
+        }
+      ]
+    },
+    {
+      "id": 158,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "dungeon-door-x-r-open"
+        }
+      ]
+    },
+    {
+      "id": 159,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "dungeon-door-y-l"
+        }
+      ]
+    },
+    {
+      "id": 160,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "dungeon-door-y-l-open"
+        }
+      ]
+    },
+    {
+      "id": 161,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "dungeon-door-y-r"
+        }
+      ]
+    },
+    {
+      "id": 162,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "dungeon-door-y-r-open"
+        }
+      ]
+    },
+    {
+      "id": 163,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "bone-door-x-l"
+        }
+      ]
+    },
+    {
+      "id": 164,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "bone-door-x-l-open"
+        }
+      ]
+    },
+    {
+      "id": 165,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "bone-door-x-r"
+        }
+      ]
+    },
+    {
+      "id": 166,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "bone-door-x-r-open"
+        }
+      ]
+    },
+    {
+      "id": 167,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "bone-door-y-l"
+        }
+      ]
+    },
+    {
+      "id": 168,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "bone-door-y-l-open"
+        }
+      ]
+    },
+    {
+      "id": 169,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "bone-door-y-r"
+        }
+      ]
+    },
+    {
+      "id": 170,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "bone-door-y-r-open"
+        }
+      ]
+    },
+    {
+      "id": 171,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "wall-window-x"
+        }
+      ]
+    },
+    {
+      "id": 172,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "wall-window-y"
+        }
+      ]
+    },
+    {
+      "id": 173,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "log-window-x"
+        }
+      ]
+    },
+    {
+      "id": 174,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "log-window-y"
+        }
+      ]
+    },
+    {
+      "id": 175,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "plank-window-x"
+        }
+      ]
+    },
+    {
+      "id": 176,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "plank-window-y"
+        }
+      ]
+    },
+    {
+      "id": 177,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "basalt-window-x"
+        }
+      ]
+    },
+    {
+      "id": 178,
       "properties": [
         {
           "name": "static",

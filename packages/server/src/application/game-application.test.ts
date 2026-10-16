@@ -175,7 +175,9 @@ describe('GameApplication', () => {
       const ana = house.join('Ana');
       house.notifier.clear();
       house.app.handle(ana, { type: 'useDoor', position: { x: 2, y: 2 } });
-      expect(house.notifier.ofType('door').map((d) => (d.message as { position: unknown }).position)).toEqual([
+      expect(
+        house.notifier.ofType('door').map((d) => (d.message as { position: unknown }).position),
+      ).toEqual([
         { x: 2, y: 2 },
         { x: 2, y: 1 },
       ]);

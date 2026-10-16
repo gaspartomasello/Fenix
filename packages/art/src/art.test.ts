@@ -20,7 +20,13 @@ import {
 import { drawCreatureFrame } from './creature-art';
 import { creatureLayout } from './monster-art';
 import { ITEM_ART_SIZE, drawItem, itemVariant } from './item-art';
-import { STATIC_ART_HEIGHT, STATIC_ART_WIDTH, drawStatic, staticFrame } from './static-art';
+import {
+  INVISIBLE_STATICS,
+  STATIC_ART_HEIGHT,
+  STATIC_ART_WIDTH,
+  drawStatic,
+  staticFrame,
+} from './static-art';
 import { TERRAIN_ART_SIZE, drawTerrainTile } from './terrain-art';
 
 const opaquePixels = (data: Uint8ClampedArray): number =>
@@ -43,7 +49,9 @@ describe('arte procedural (sin DOM)', () => {
       const image = drawStatic(kind, 0);
       const frame = staticFrame(kind);
       expect([image.width, image.height]).toEqual([frame.width, frame.height]);
-      expect(opaquePixels(image.data)).toBeGreaterThan(10);
+      // La montaña no se dibuja: la ladera la pone el terreno.
+      if (INVISIBLE_STATICS.has(kind)) expect(opaquePixels(image.data)).toBe(0);
+      else expect(opaquePixels(image.data)).toBeGreaterThan(10);
     }
   });
 

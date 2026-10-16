@@ -213,7 +213,8 @@ describe('buildCity: nada tapa el paso', () => {
                 { x: door.x - 1, y: door.y },
                 { x: door.x + 1, y: door.y },
               ];
-          for (const p of across) expect(map.isWalkable(p), `${door.kind} en ${door.x},${door.y}`).toBe(true);
+          for (const p of across)
+            expect(map.isWalkable(p), `${door.kind} en ${door.x},${door.y}`).toBe(true);
         }
         const stuck: string[] = [];
         for (let y = 0; y < map.height; y++)

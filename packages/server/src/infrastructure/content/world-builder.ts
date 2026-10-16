@@ -25,7 +25,7 @@ import { buildCity } from './city-builder';
  * Versión de la forma del mundo: si cambia, los personajes guardados en el
  * mundo anterior aparecen en la capital (su posición vieja ya no sirve).
  */
-const WORLD_VERSION = 3;
+const WORLD_VERSION = 4;
 
 export interface WorldBuildOptions {
   /** Ancho del continente (y alto, si no se da `height`). */
