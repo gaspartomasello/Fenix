@@ -38,6 +38,7 @@ const HUMANOID_LAYOUT: CorpseLayout = { width: 96, height: 64, groundX: 48, grou
 const BEAST_LAYOUT: CorpseLayout = { width: 80, height: 56, groundX: 40, groundY: 36 };
 const MOUNT_LAYOUT: CorpseLayout = { width: 136, height: 88, groundX: 68, groundY: 54 };
 const DRAGON_LAYOUT: CorpseLayout = { width: 168, height: 112, groundX: 84, groundY: 68 };
+const GREAT_DRAGON_LAYOUT: CorpseLayout = { width: 360, height: 220, groundX: 180, groundY: 126 };
 const ELEPHANT_LAYOUT: CorpseLayout = { width: 240, height: 150, groundX: 120, groundY: 92 };
 
 const BACK = Math.PI / 2;
@@ -53,7 +54,8 @@ const POSES: Readonly<Partial<Record<CreatureKind, CorpsePose>>> = {
   'skeleton-mage': { fall: 'back', angle: BACK, center: 30, rest: 3 },
   lich: { fall: 'back', angle: BACK, center: 30, rest: 4 },
   // Desplomado sobre la panza, apenas volcado: las patas quedan bajo el cuerpo.
-  dragon: { fall: 'side', angle: 0.3, center: 22, rest: 9 },
+  dragon: { fall: 'side', angle: 0.3, center: 36, rest: 14 },
+  drake: { fall: 'side', angle: 0.3, center: 22, rest: 9 },
   daemon: { fall: 'back', angle: BACK, center: 30, rest: 4.5 },
   lizardman: { fall: 'back', angle: BACK, center: 30, rest: 4 },
   zombie: { fall: 'back', angle: BACK, center: 30, rest: 3 },
@@ -108,7 +110,10 @@ export function corpseLayout(kind: CreatureKind): CorpseLayout {
   if (isElephant(kind)) return ELEPHANT_LAYOUT;
   if (isMountKind(kind)) return MOUNT_LAYOUT;
   if (isFaunaArtKind(kind)) return faunaCorpse(kind).layout;
-  if (kind === 'dragon') return DRAGON_LAYOUT;
+  if (kind === 'dragon') return GREAT_DRAGON_LAYOUT;
+  if (kind === 'drake') return DRAGON_LAYOUT;
+  // El demonio es grande y cae con las alas abiertas.
+  if (kind === 'daemon') return MOUNT_LAYOUT;
   if (kind === 'rat' || kind === 'wolf' || kind === 'giant-spider') return BEAST_LAYOUT;
   return HUMANOID_LAYOUT;
 }

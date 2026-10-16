@@ -15,6 +15,7 @@ export const CREATURE_KINDS = [
   'skeleton-mage',
   'lich',
   'dragon',
+  'drake',
   // No-muertos de los cementerios
   'zombie',
   'ghoul',
@@ -390,11 +391,12 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       { kind: 'scroll-flamestrike', chance: 0.06 },
     ],
   },
+  // El dragón grande: casi tres veces el alto de una persona.
   dragon: {
     kind: 'dragon',
     name: 'dragón rojo',
     article: 'un',
-    maxHits: 600,
+    maxHits: 900,
     strength: 200,
     dexterity: 80,
     armor: 40,
@@ -420,6 +422,32 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       { kind: 'scroll-summon-daemon', chance: 0.25 },
       { kind: 'scroll-earthquake', chance: 0.25 },
       { kind: 'hides', chance: 1, amount: [10, 20] },
+    ],
+  },
+  // El de antes, chico: un dragón joven.
+  drake: {
+    kind: 'drake',
+    name: 'dragón joven',
+    article: 'un',
+    maxHits: 260,
+    strength: 130,
+    dexterity: 80,
+    armor: 28,
+    skill: 750,
+    weapon: { name: 'garras', minDamage: 10, maxDamage: 20, swingMs: 2600, skill: 'wrestling' },
+    moveMs: 420,
+    aggroRange: 12,
+    humanoid: false,
+    summoned: false,
+    abilities: {
+      breath: { power: [14, 24], cooldownMs: 7000, range: 6 },
+      regeneration: 0.5,
+      magicResist: 900,
+    },
+    loot: [
+      { kind: 'gold', chance: 1, amount: [300, 700] },
+      { kind: 'black-pearl', chance: 1, amount: [3, 8] },
+      { kind: 'sulfurous-ash', chance: 1, amount: [3, 8] },
     ],
   },
   'energy-vortex': summon('energy-vortex', 'vórtice de energía', {

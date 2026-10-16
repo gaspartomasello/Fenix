@@ -65,7 +65,7 @@ const MIN_SIZE_FOR_ALL_TOWNS = 200;
 const LAIR_LEVELS: readonly { upTo: number; kinds: readonly CreatureKind[]; count: number }[] = [
   { upTo: 0.25, kinds: ['giant-spider', 'skeleton', 'skeleton'], count: 3 },
   { upTo: 0.55, kinds: ['skeleton-mage', 'orc', 'giant-spider', 'skeleton'], count: 4 },
-  { upTo: 0.99, kinds: ['lich', 'troll', 'skeleton-mage'], count: 3 },
+  { upTo: 0.99, kinds: ['lich', 'drake', 'troll', 'skeleton-mage'], count: 3 },
 ];
 
 /**

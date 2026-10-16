@@ -4,7 +4,9 @@ import { ART_DETAIL, spriteCanvas, type CanvasFactory } from './humanoid-rig';
 import { mountLayout } from './mount-art';
 import { biteOffset, gait } from './creature-motion';
 import { faunaLayout, isFaunaArtKind } from './fauna-art';
+import { GREAT_DRAGON_LAYOUT, GREAT_DRAGON_ZOOM, drawGreatDragon } from './dragon-art';
 import { drawSkullHead } from './humanoid-head';
+import { DAEMON_LAYOUT } from './summon-art';
 import {
   CHARACTER_ART_HEIGHT,
   CHARACTER_ART_WIDTH,
@@ -45,6 +47,7 @@ export type MonsterKind = Extract<
   | 'skeleton-mage'
   | 'lich'
   | 'dragon'
+  | 'drake'
   | 'lizardman'
   | 'zombie'
   | 'ghoul'
@@ -59,6 +62,7 @@ export function isMonsterKind(kind: CreatureKind): kind is MonsterKind {
     kind === 'skeleton-mage' ||
     kind === 'lich' ||
     kind === 'dragon' ||
+    kind === 'drake' ||
     kind === 'lizardman' ||
     kind === 'zombie' ||
     kind === 'ghoul' ||
@@ -90,7 +94,9 @@ export function creatureLayout(kind: CreatureKind): CreatureLayout {
     return { ...layout, headY: layout.topY };
   }
   if (isFaunaArtKind(kind)) return faunaLayout(kind);
-  return kind === 'dragon' ? DRAGON_LAYOUT : COMMON;
+  if (kind === 'dragon') return GREAT_DRAGON_LAYOUT;
+  if (kind === 'daemon') return DAEMON_LAYOUT;
+  return kind === 'drake' ? DRAGON_LAYOUT : COMMON;
 }
 
 const ZOOM: Readonly<Record<MonsterKind, number>> = {
@@ -99,7 +105,8 @@ const ZOOM: Readonly<Record<MonsterKind, number>> = {
   troll: 1.3,
   'skeleton-mage': 1.1,
   lich: 1.18,
-  dragon: 1.35,
+  dragon: GREAT_DRAGON_ZOOM,
+  drake: 1.35,
   lizardman: 1.1,
   zombie: 1.06,
   ghoul: 1.08,
@@ -113,7 +120,10 @@ export function drawMonsterFrame(
   canvasFor: CanvasFactory = spriteCanvas,
 ): PixelImage {
   const layout = creatureLayout(kind);
-  const camera = kind === 'dragon' ? dragonCamera(direction) : cameraFor(direction, ZOOM[kind]);
+  const camera =
+    kind === 'dragon' || kind === 'drake'
+      ? bigCamera(direction, layout, ZOOM[kind])
+      : cameraFor(direction, ZOOM[kind]);
   const canvas = canvasFor(layout.width, layout.height, camera);
   switch (kind) {
     case 'giant-spider':
@@ -132,6 +142,9 @@ export function drawMonsterFrame(
       drawLich(canvas, humanoidRig(frame, true));
       break;
     case 'dragon':
+      drawGreatDragon(canvas, frame);
+      break;
+    case 'drake':
       drawDragon(canvas, frame);
       break;
     case 'lizardman':
@@ -150,14 +163,14 @@ export function drawMonsterFrame(
   return canvas.toImage(OUTLINE);
 }
 
-/** Cámara del dragón: la misma vista que las demás, centrada en su lienzo más grande. */
-function dragonCamera(direction: Direction): Camera {
+/** Cámara de los dragones: la misma vista que las demás, centrada en su lienzo más grande. */
+function bigCamera(direction: Direction, layout: CreatureLayout, zoom: number): Camera {
   return new Camera(
     facingOf(direction),
-    (DRAGON_LAYOUT.width * ART_DETAIL) / 2,
-    DRAGON_LAYOUT.feetY * ART_DETAIL,
+    (layout.width * ART_DETAIL) / 2,
+    layout.feetY * ART_DETAIL,
     undefined,
-    ZOOM.dragon * ART_DETAIL,
+    zoom * ART_DETAIL,
   );
 }
 
@@ -719,7 +732,7 @@ function drawWraith(c: VolumeCanvas, rig: Rig, frame: CharacterFrame): void {
     c.decal(up(head.at([side * 1.3, 0.4, 4.9])), head.dir([0, 0, 1]), [150, 230, 255], 1, 1);
 }
 
-// ── Dragón ──────────────────────────────────────────────────────────
+// ── Dragón joven (el chico) ─────────────────────────────────────────
 
 function drawDragon(c: VolumeCanvas, frame: CharacterFrame): void {
   const step = gait(frame, 5);

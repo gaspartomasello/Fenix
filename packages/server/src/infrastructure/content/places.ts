@@ -415,6 +415,7 @@ const BIOME_CREATURES: Readonly<
     ['orc', 2.4],
     ['troll', 1],
     ['skeleton-mage', 0.3],
+    ['drake', 0.3],
   ],
 };
 
