@@ -42,17 +42,39 @@ export class TextureCache {
   /** Cuadros pedidos de antemano, que se dibujan de a poco entre un cuadro y otro. */
   private readonly upcoming = new Map<string, Entry>();
 
+  /** Se llama con cada textura nueva (para subirla a la placa de video en el momento). */
+  onCreate: ((texture: Texture) => void) | null = null;
+
   terrain(terrain: Terrain, variant: number, neighbors: TerrainNeighbors): Texture {
-    const v = variant % TERRAIN_VARIANTS;
-    const { north, east, south, west } = neighbors;
-    return this.getOrCreate(`t:${terrain}:${v}:${north}:${east}:${south}:${west}`, () =>
-      drawTerrainTile(terrain, v, neighbors),
-    );
+    return this.fromEntry(this.terrainEntry(terrain, variant, neighbors));
   }
 
   static(kind: StaticKind, variant: number): Texture {
+    return this.fromEntry(this.staticEntry(kind, variant));
+  }
+
+  /** Pide de antemano la textura de un tile; devuelve si ya está dibujada. */
+  prepareTerrain(terrain: Terrain, variant: number, neighbors: TerrainNeighbors): boolean {
+    return this.prepare(this.terrainEntry(terrain, variant, neighbors));
+  }
+
+  /** Pide de antemano la textura de un objeto fijo; devuelve si ya está dibujada. */
+  prepareStatic(kind: StaticKind, variant: number): boolean {
+    return this.prepare(this.staticEntry(kind, variant));
+  }
+
+  private terrainEntry(terrain: Terrain, variant: number, neighbors: TerrainNeighbors): Entry {
+    const v = variant % TERRAIN_VARIANTS;
+    const { north, east, south, west } = neighbors;
+    return {
+      key: `t:${terrain}:${v}:${north}:${east}:${south}:${west}`,
+      draw: () => drawTerrainTile(terrain, v, neighbors),
+    };
+  }
+
+  private staticEntry(kind: StaticKind, variant: number): Entry {
     const v = variant % STATIC_VARIANTS;
-    return this.getOrCreate(`s:${kind}:${v}`, () => drawStatic(kind, v));
+    return { key: `s:${kind}:${v}`, draw: () => drawStatic(kind, v) };
   }
 
   character(
@@ -114,9 +136,10 @@ export class TextureCache {
     }
   }
 
-  private prepare(entry: Entry): void {
-    if (!this.textures.has(entry.key) && !this.upcoming.has(entry.key))
-      this.upcoming.set(entry.key, entry);
+  private prepare(entry: Entry): boolean {
+    if (this.textures.has(entry.key)) return true;
+    if (!this.upcoming.has(entry.key)) this.upcoming.set(entry.key, entry);
+    return false;
   }
 
   private fromEntry(entry: Entry): Texture {
@@ -181,6 +204,7 @@ export class TextureCache {
       texture = Texture.from(toCanvas(draw()));
       texture.source.scaleMode = scaleMode;
       this.textures.set(key, texture);
+      this.onCreate?.(texture);
     }
     return texture;
   }

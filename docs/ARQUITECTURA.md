@@ -488,10 +488,19 @@ gremio llega a sus miembros estén donde estén).
 
 - **Terreno** (`TerrainLayer`): rombos de 44×44 (el tamaño de tile de UO) dibujados a
   resolución completa, con bordes mezclados según los vecinos, en bloques de 16×16 que se
-  ocultan fuera de cámara.
+  ocultan fuera de cámara. El color de cada terreno y variante se calcula una sola vez por
+  pixel (`colorField` en `terrain-art.ts`) y cada combinación de vecinos lo reutiliza: así un
+  tile nuevo cuesta décimas de milisegundo en vez de casi diez. El terreno es un grupo de
+  dibujo propio de Pixi (`isRenderGroup`), así no se rearma su lista de dibujo cada vez que
+  un personaje se mueve.
+- **Sin tirones al caminar**: los bloques de terreno y de objetos que están cerca de la
+  pantalla (`PREPARE_MARGIN`) se preparan de antemano, de a uno por cuadro: primero se dibujan
+  sus texturas con `TextureCache.pump` (y se suben a la placa de video ahí mismo) y después se
+  arma el bloque oculto. Los objetos que salen de pantalla se ocultan y recién se destruyen
+  lejos (`DISCARD_MARGIN`), así ir y volver no rearma nada.
 - **Objetos y personajes** comparten una capa ordenada por profundidad (`x + y`), así se puede
   pasar por detrás de un árbol o una pared. `StaticLayer` solo crea sprites de los bloques
-  visibles y vuelve translúcido lo que tapa al personaje.
+  cercanos y vuelve translúcido lo que tapa al personaje.
 - **Día y noche** (`Lighting`): un mapa de luz a media resolución que multiplica todo lo que
   se ve. Se arma cada cuadro con el color de ambiente según la hora (oscuro y azulado de noche)
   y los halos cálidos de los faroles, la forja, el santuario y el propio jugador, sumados. Así

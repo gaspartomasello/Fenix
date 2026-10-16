@@ -713,33 +713,83 @@ export function drawTerrainTile(
   neighbors: TerrainNeighbors = {},
 ): PixelImage {
   const image = new PixelImage(TERRAIN_ART_SIZE, TERRAIN_ART_SIZE);
-  const seed = seedFor(terrain, 0);
-  const edges: { over: Terrain; distance: (u: number, v: number) => number }[] = [];
-  if (blends(neighbors.north, terrain))
-    edges.push({ over: neighbors.north, distance: (_u, v) => v });
-  if (blends(neighbors.east, terrain)) edges.push({ over: neighbors.east, distance: (u) => 1 - u });
-  if (blends(neighbors.south, terrain))
-    edges.push({ over: neighbors.south, distance: (_u, v) => 1 - v });
-  if (blends(neighbors.west, terrain)) edges.push({ over: neighbors.west, distance: (u) => u });
+  const edges: {
+    over: readonly (Rgb | undefined)[];
+    distance: (u: number, v: number) => number;
+  }[] = [];
+  const edge = (over: Terrain, distance: (u: number, v: number) => number): void => {
+    edges.push({ over: colorField(over, 0), distance });
+  };
+  if (blends(neighbors.north, terrain)) edge(neighbors.north, (_u, v) => v);
+  if (blends(neighbors.east, terrain)) edge(neighbors.east, (u) => 1 - u);
+  if (blends(neighbors.south, terrain)) edge(neighbors.south, (_u, v) => 1 - v);
+  if (blends(neighbors.west, terrain)) edge(neighbors.west, (u) => u);
+  const field = colorField(terrain, variant);
+  const reaches = edges.length > 0 ? reachField(terrain) : null;
 
   for (let y = 0; y < TERRAIN_ART_SIZE; y++) {
     for (let x = 0; x < TERRAIN_ART_SIZE; x++) {
-      if (!insideDiamond(x, y)) continue;
-      const { u, v } = tileCoords(x, y);
-      let color = terrainColor(terrain, variant, u, v);
-      for (const edge of edges) {
+      const i = y * TERRAIN_ART_SIZE + x;
+      let color = field[i];
+      if (!color) continue;
+      if (reaches) {
+        const { u, v } = tileCoords(x, y);
         // Borde irregular con ruido periódico (empalma con el tile vecino).
-        const reach = 0.16 + fbm(u, v, seed + 77, 4, 2) * 0.2;
-        const d = edge.distance(u, v);
-        if (d < reach) {
-          color = terrainColor(edge.over, 0, u, v);
-          break;
+        const reach = reaches[i] ?? 0;
+        for (const { over, distance } of edges) {
+          const d = distance(u, v);
+          if (d < reach) {
+            color = over[i] ?? color;
+            break;
+          }
+          // Sombra fina del terreno de arriba sobre el de abajo.
+          if (d < reach + 0.04) color = shade(color, 0.86);
         }
-        // Sombra fina del terreno de arriba sobre el de abajo.
-        if (d < reach + 0.04) color = shade(color, 0.86);
       }
       image.set(x, y, color);
     }
   }
   return image;
+}
+
+/*
+ * El color de cada pixel de un terreno depende solo del terreno, la variante
+ * y el pixel: se calcula una vez (es la parte cara, varias capas de ruido) y
+ * cada combinación de vecinos lo reutiliza. Fuera del rombo queda vacío.
+ */
+const colorFields = new Map<number, (Rgb | undefined)[]>();
+const reachFields = new Map<Terrain, Float32Array>();
+
+function colorField(terrain: Terrain, variant: number): readonly (Rgb | undefined)[] {
+  const key = terrain * TERRAIN_VARIANTS + (variant % TERRAIN_VARIANTS);
+  let field = colorFields.get(key);
+  if (!field) {
+    field = new Array<Rgb | undefined>(TERRAIN_ART_SIZE * TERRAIN_ART_SIZE);
+    for (let y = 0; y < TERRAIN_ART_SIZE; y++) {
+      for (let x = 0; x < TERRAIN_ART_SIZE; x++) {
+        if (!insideDiamond(x, y)) continue;
+        const { u, v } = tileCoords(x, y);
+        field[y * TERRAIN_ART_SIZE + x] = terrainColor(terrain, variant, u, v);
+      }
+    }
+    colorFields.set(key, field);
+  }
+  return field;
+}
+
+/** Hasta dónde llega el borde de un vecino en cada pixel (irregular, empalma entre tiles). */
+function reachField(terrain: Terrain): Float32Array {
+  let field = reachFields.get(terrain);
+  if (!field) {
+    const seed = seedFor(terrain, 0);
+    field = new Float32Array(TERRAIN_ART_SIZE * TERRAIN_ART_SIZE);
+    for (let y = 0; y < TERRAIN_ART_SIZE; y++) {
+      for (let x = 0; x < TERRAIN_ART_SIZE; x++) {
+        const { u, v } = tileCoords(x, y);
+        field[y * TERRAIN_ART_SIZE + x] = 0.16 + fbm(u, v, seed + 77, 4, 2) * 0.2;
+      }
+    }
+    reachFields.set(terrain, field);
+  }
+  return field;
 }

@@ -26,6 +26,10 @@ const RIDER_HIT_BOX = { halfWidth: 12, bottom: 44 };
 const CAMERA_VERTICAL_OFFSET = 30;
 /** Margen alrededor de la pantalla para crear objetos antes de que entren. */
 const VIEW_MARGIN = 96;
+/** Más allá, el terreno y los objetos se preparan de antemano, de a poco (pixeles del mundo). */
+const PREPARE_MARGIN = 512;
+/** Los objetos fijos se destruyen recién a esta distancia de la pantalla. */
+const DISCARD_MARGIN = 768;
 
 /**
  * Dibuja el estado de `ClientGame` con Pixi. Solo lee el estado: nunca lo
@@ -198,7 +202,8 @@ export class GameRenderer {
       });
     const focus = self.renderPosition(now);
     const view = this.updateCamera(focus);
-    this.terrain?.cull(view);
+    const near = grown(view, PREPARE_MARGIN);
+    this.terrain?.cull(view, near);
     // Lo que tapa a uno mismo o a quien esté cerca (por ejemplo, un orco que
     // ataca escondido detrás de un árbol) se vuelve translúcido.
     const nearby: FractionalPosition[] = [focus];
@@ -208,7 +213,7 @@ export class GameRenderer {
       if (Math.max(Math.abs(p.x - focus.x), Math.abs(p.y - focus.y)) <= NEARBY_REVEAL)
         nearby.push(p);
     }
-    this.statics?.update(view, nearby);
+    this.statics?.update(view, nearby, near, grown(view, DISCARD_MARGIN));
 
     this.effects.update(now);
     // De fantasma el mundo se ve gris, como en UO.
@@ -231,7 +236,8 @@ export class GameRenderer {
         underground: this.game.currentRegion()?.dungeon === true,
       });
     }
-    // Entre cuadro y cuadro, se adelantan unos milisegundos de dibujo de personajes.
+    // Entre cuadro y cuadro, se adelantan unos milisegundos de dibujo de
+    // personajes, criaturas, terreno y objetos que están por entrar.
     this.textures.pump(PREPARE_BUDGET_MS);
     this.app.render();
   }
@@ -268,6 +274,9 @@ export class GameRenderer {
     });
     // El loop lo maneja la aplicación: Pixi solo renderiza cuando se le pide.
     this.app.ticker.stop();
+    // Cada textura nueva se sube a la placa de video al dibujarla (de a poco,
+    // entre cuadros) y no toda junta en el cuadro en que aparece.
+    this.textures.onCreate = (texture) => this.app.renderer.texture.initSource(texture.source);
     host.appendChild(this.app.canvas);
     this.world.addChild(this.scene);
     this.glowing.addChild(this.effects.container);
@@ -343,4 +352,14 @@ export class GameRenderer {
       (height + VIEW_MARGIN * 2) / zoom,
     );
   }
+}
+
+/** Un rectángulo agrandado `margin` pixeles hacia cada lado. */
+function grown(rect: Rectangle, margin: number): Rectangle {
+  return new Rectangle(
+    rect.x - margin,
+    rect.y - margin,
+    rect.width + margin * 2,
+    rect.height + margin * 2,
+  );
 }
