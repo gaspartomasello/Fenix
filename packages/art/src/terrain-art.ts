@@ -652,19 +652,17 @@ const STYLES: Readonly<Record<Terrain, TerrainStyle>> = {
     varies: true,
     base: [118, 108, 96],
     paint(u, v, seed) {
-      // Roca de montaña: estratos inclinados, grietas entre lajas, piedras
-      // sueltas y manchas de liquen.
-      const tone = fbm(u, v, seed, 3, 3);
-      const strata = Math.sin((u * 0.7 + v) * 14 + fbm(u, v, seed + 5, 2, 2) * 6);
-      let color = mix([92, 84, 76], [150, 140, 126], tone);
-      if (strata > 0.75) color = mix(color, [168, 158, 142], 0.45);
-      if (strata < -0.85) color = mix(color, [70, 64, 58], 0.5);
-      const crack = cellEdge(u, v, seed + 9, 5);
-      if (crack < 0.025) color = [58, 52, 48];
-      else if (crack < 0.05) color = mix(color, [78, 72, 66], 0.6);
+      // Roca de montaña: crestas y grietas irregulares (ruido de crestas),
+      // estratos inclinados, piedras claras sueltas y algo de liquen.
+      const tone = fbm(u, v, seed, 4, 4);
+      const ridge = 1 - Math.abs(2 * fbm(u, v, seed + 3, 3, 3) - 1);
+      let color = mix([64, 62, 60], [150, 146, 138], (tone - 0.5) * 1.5 + 0.5 + (ridge - 0.5) * 0.7);
+      const strata = Math.sin((u * 0.6 + v) * 18 + fbm(u, v, seed + 5, 2, 2) * 5);
+      if (strata > 0.82) color = mix(color, [176, 166, 148], 0.3);
+      if (ridge < 0.14) color = mix(color, [44, 40, 38], 0.8);
       const lichen = fbm(u, v, seed + 17, 4, 2);
-      if (lichen > 0.7) color = mix(color, [118, 126, 82], 0.5);
-      if (periodicNoise(u, v, 19, seed + 21) > 0.9) color = mix(color, [182, 174, 160], 0.6);
+      if (lichen > 0.72) color = mix(color, [116, 124, 80], 0.45);
+      if (periodicNoise(u, v, 19, seed + 21) > 0.92) color = mix(color, [186, 178, 164], 0.55);
       return color;
     },
   },

@@ -336,7 +336,7 @@ export function shapeMountains(world: MountainWorld): void {
       if (s.kind !== 'mountain' || (depth[i] ?? 0) < 3) continue;
       const x = i % width;
       const y = Math.floor(i / width);
-      if (hash(seed + 91, x, y) > 0.11) continue;
+      if (hash(seed + 91, x, y) > 0.05) continue;
       const kind = CRAGS[Math.floor(hash(seed + 93, x, y) * CRAGS.length)] ?? 'crag';
       statics.set(i, { kind, x, y });
     }
