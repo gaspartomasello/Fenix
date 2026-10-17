@@ -11,6 +11,8 @@ import type { EconomyActions } from './economy-actions';
 export class UseItem {
   /** Lo arma la aplicación: abrir una bolsa o una caja. */
   openContainer: (playerId: EntityId, containerId: string) => void = () => {};
+  /** Lo arma la aplicación: abrir un libro para leer o escribir. */
+  openBook: (playerId: EntityId, itemId: EntityId) => void = () => {};
 
   constructor(
     private readonly world: World,
@@ -42,6 +44,10 @@ export class UseItem {
     // Doble clic sobre una bolsa: se abre.
     if (item && ITEMS[item.kind].capacity) {
       this.openContainer(playerId, itemId);
+      return;
+    }
+    if (item && ITEMS[item.kind].use === 'book') {
+      this.openBook(playerId, itemId);
       return;
     }
     const result = this.world.items.use(player, itemId);

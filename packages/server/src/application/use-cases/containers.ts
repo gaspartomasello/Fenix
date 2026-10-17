@@ -1,5 +1,6 @@
 import {
   ITEMS,
+  LORE_BOOKS,
   SCROLL_KINDS,
   STATIC_CONTAINERS,
   STATICS,
@@ -41,6 +42,7 @@ const STOCK: Readonly<Record<ContainerLook, readonly [ItemKind, number, number, 
   ],
   bookshelf: [
     ['blank-scroll', 2, 6, 0.7],
+    ['book', 1, 1, 0.3],
     ['scribe-pen', 1, 1, 0.2],
   ],
   shelf: [
@@ -175,6 +177,18 @@ export class Containers {
             this.world.items.contentsOf(containerId).map((it) => it.location),
           ),
         });
+    }
+    // Y casi siempre algún libro para leer.
+    if (this.lookOf(containerId) === 'bookshelf' && this.random.next() < 0.7) {
+      const lore = LORE_BOOKS[Math.floor(this.random.next() * LORE_BOOKS.length)] ?? LORE_BOOKS[0];
+      const book = this.world.items.add(this.ids.next(), 'book', 1, {
+        type: 'container',
+        containerId,
+        position: this.world.items.gridSpot(
+          this.world.items.contentsOf(containerId).map((it) => it.location),
+        ),
+      });
+      book.book = lore ?? null;
     }
     changes.containers.add(containerId);
   }

@@ -1,4 +1,5 @@
 import type {
+  BookText,
   BackpackItemSnapshot,
   EntityId,
   EquipmentSlot,
@@ -37,9 +38,15 @@ export class Item {
   /** Runa marcada: el lugar que guarda (null en blanco). */
   mark: RuneMark | null = null;
 
+  /** Libro: lo que tiene escrito (null si nunca se escribió). */
+  book: BookText | null = null;
+
   /** Lo que el cliente ve además de tipo y cantidad. */
-  private get extra(): { mark?: RuneMark } {
-    return this.mark ? { mark: this.mark } : {};
+  private get extra(): { mark?: RuneMark; bookTitle?: string } {
+    return {
+      ...(this.mark ? { mark: this.mark } : {}),
+      ...(this.book?.title ? { bookTitle: this.book.title } : {}),
+    };
   }
 
   ownerId(): EntityId | null {

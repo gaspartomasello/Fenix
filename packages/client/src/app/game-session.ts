@@ -33,6 +33,7 @@ import {
 } from '@fenix/shared';
 import type { ItemActions } from '../ui/backpack-window';
 import { BankWindow } from '../ui/bank-window';
+import { BookWindow } from '../ui/book-window';
 import { ContainerWindow } from '../ui/container-window';
 import { CorpseWindow } from '../ui/corpse-window';
 import { StableWindow } from '../ui/stable-window';
@@ -436,7 +437,9 @@ export class GameSession {
     // Con el libro abierto, las teclas 1 a 8 lanzan los hechizos de su página;
     // si no, los números son de la barra de atajos.
     window.addEventListener('keydown', (e) => {
-      if (e.target instanceof HTMLInputElement || e.ctrlKey || e.metaKey || e.altKey) return;
+      const typing =
+        e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+      if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
       if (!spellbook.window.visible) return;
       const index = Number(e.key) - 1;
       const spell = index >= 0 && index < 8 ? spellbook.spellAt(index) : undefined;
@@ -575,6 +578,11 @@ export class GameSession {
       if (opened) corpse.window.show();
     });
     // Recipientes abiertos (bolsas, cofres, barriles…): una ventana por cada uno.
+    const book = new BookWindow((itemId, title, page, text) =>
+      this.game.writeBook(itemId, title, page, text),
+    );
+    this.game.on('bookOpened', (contents) => book.open(contents));
+    this.hosts.ui.append(book.window.element);
     const containers = new Map<string, ContainerWindow>();
     let opened = 0;
     this.game.on('containerChanged', ({ containerId, container, opened: requested }) => {

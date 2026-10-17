@@ -21,6 +21,7 @@ import {
   type Position,
   type ChatChannel,
   type SocialCommand,
+  type BookMessage,
   type SocialMessage,
   type Direction,
   type EntityId,
@@ -101,11 +102,16 @@ export interface ClientGameEvents extends Record<string, unknown> {
     container: ContainerContents | null;
     opened: boolean;
   };
+  /** Se abrió un libro (respuesta al doble clic). */
+  bookOpened: BookContents;
   /** Una puerta se abrió o se cerró. */
   doorChanged: { position: Position; open: boolean };
 }
 
 /** Lo que hay en el cuerpo que se está revisando. */
+/** Un libro abierto: lo que tiene escrito y si se puede escribir. */
+export type BookContents = Omit<BookMessage, 'type'>;
+
 /** Lo que hay en un recipiente abierto (una bolsa o un mueble). */
 export interface ContainerContents {
   readonly containerId: string;
@@ -470,6 +476,11 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     this.gateway.send({ type: 'openContainer', containerId });
   }
 
+  /** Guarda una hoja escrita (y el título) de un libro. */
+  writeBook(itemId: EntityId, title: string, page: number, text: string): void {
+    this.gateway.send({ type: 'writeBook', itemId, title, page, text });
+  }
+
   /** Doble clic sobre una bolsa: el servidor la abre (se espera su ventana). */
   expectContainer(containerId: string): void {
     this.containersRequested.add(containerId);
@@ -660,6 +671,16 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         };
         this._containers.set(message.containerId, container);
         this.emit('containerChanged', { containerId: message.containerId, container, opened });
+        break;
+      }
+      case 'book': {
+        this.emit('bookOpened', {
+          itemId: message.itemId,
+          title: message.title,
+          author: message.author,
+          pages: message.pages,
+          writable: message.writable,
+        });
         break;
       }
       case 'containerClosed':

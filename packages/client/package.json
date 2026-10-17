@@ -16,6 +16,8 @@
     "@fenix/art": "0.1.0",
     "@fenix/server": "0.1.0",
     "@fenix/shared": "0.1.0",
+    "@fontsource/im-fell-english": "^5.3.0",
+    "@fontsource/unifrakturmaguntia": "^5.3.0",
     "pixi.js": "^8.22.0"
   },
   "devDependencies": {

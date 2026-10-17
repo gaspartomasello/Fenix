@@ -419,6 +419,7 @@ export class Items {
       case 'bandage':
       case 'scroll':
       case 'container':
+      case 'book':
         // Se resuelven en otros casos de uso (o en el cliente): acá no hay nada que hacer.
         return { ok: true, changes };
       case 'none': {
@@ -436,6 +437,23 @@ export class Items {
 
   all(): Item[] {
     return [...this.byId.values()];
+  }
+
+  /** ¿Lo puede tocar? Devuelve el motivo si no. */
+  reach(actor: ItemActor, itemId: EntityId): string | null {
+    const item = this.byId.get(itemId);
+    return item ? this.checkAccess(actor, item) : 'Ese objeto ya no está.';
+  }
+
+  /** Un objeto cambió sin moverse (un libro escrito): se avisa donde sea que esté. */
+  touch(item: Item, changes: ItemChanges): void {
+    const at = item.location;
+    if (at.type === 'ground') {
+      changes.groundRemoved.push({ id: item.id, position: at.position });
+      changes.groundAdded.push(item);
+    } else if (at.type === 'corpse') changes.corpses.add(at.corpseId);
+    else if (at.type === 'container') changes.containers.add(at.containerId);
+    else changes.inventories.add(at.ownerId);
   }
 
   private checkAccess(actor: ItemActor, item: Item): string | null {

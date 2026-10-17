@@ -152,8 +152,8 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
       tone(wood, s.light, Math.abs(((s.p[1] + 20) % 2.2) - 1.1) < 0.18 ? -1 : 0);
     c.box([0, 2.6, 0], axesAlong([1, 0, 0]), [5, 2.6, 3.6], plank);
     c.box([0, 5.5, 0], axesAlong([1, 0, 0]), [5.3, 0.4, 3.9], solid(ramp([120, 84, 48])));
-    for (const x of [-4.6, 4.6])
-      c.box([x, 2.8, 0], axesAlong([1, 0, 0]), [0.35, 2.8, 3.7], solid(ramp([70, 70, 76])));
+    for (const x of [-2.4, 2.4])
+      c.box([x, 2.8, 0], axesAlong([1, 0, 0]), [5.25, 2.75, 0.4], solid(ramp([70, 70, 76])));
   },
   'raw-fish'(c) {
     fish(c, ramp([150, 170, 182]));
@@ -397,6 +397,27 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
           : tone(cover, s.light, -1),
     );
     c.sphere([0, 2.8, 0], 1.2, metal(GOLD));
+  },
+  book(c) {
+    // Tapas de cuero marrón, lomo redondeado y esquinas de bronce.
+    const cover = ramp([112, 70, 38]);
+    c.box([0, 1.2, 0], lying(-0.3), [4.2, 1.1, 5.4], (s) =>
+      s.n[1] > 0.7
+        ? tone(cover, s.light, Math.abs(s.p[0]) < 0.4 ? -1 : 0)
+        : Math.abs(s.n[1]) < 0.5 && s.p[1] > 0.4 && s.p[1] < 2
+          ? tone(PAPER, s.light)
+          : tone(cover, s.light, -1),
+    );
+    for (const [x, z] of [
+      [3.2, 4.4],
+      [-3.2, 4.4],
+      [3.2, -4.4],
+      [-3.2, -4.4],
+    ] as const) {
+      const a = Math.cos(-0.3) * x + Math.sin(-0.3) * z;
+      const b = -Math.sin(-0.3) * x + Math.cos(-0.3) * z;
+      c.sphere([a, 2.4, b], 0.7, metal(GOLD));
+    }
   },
   'black-pearl'(c) {
     for (const at of [
