@@ -10,6 +10,8 @@ import type { Notifier } from './ports';
 export class ItemNotifications {
   /** Lo arma `Corpses`: avisa que cambió lo que hay dentro de un cuerpo. */
   onCorpseChanged: (corpseId: EntityId) => void = () => {};
+  /** Lo arma `Containers`: avisa que cambió lo que hay dentro de un recipiente. */
+  onContainerChanged: (containerId: string) => void = () => {};
 
   constructor(
     private readonly world: World,
@@ -37,6 +39,7 @@ export class ItemNotifications {
     for (const ownerId of changes.inventories) this.sendInventory(ownerId);
     for (const ownerId of changes.looks) this.sendLook(ownerId);
     for (const corpseId of changes.corpses) this.onCorpseChanged(corpseId);
+    for (const containerId of changes.containers) this.onContainerChanged(containerId);
     if (changes.message) this.notifier.send(actorId, { type: 'system', text: changes.message });
   }
 

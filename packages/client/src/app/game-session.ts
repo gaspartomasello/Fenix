@@ -33,6 +33,7 @@ import {
 } from '@fenix/shared';
 import type { ItemActions } from '../ui/backpack-window';
 import { BankWindow } from '../ui/bank-window';
+import { ContainerWindow } from '../ui/container-window';
 import { CorpseWindow } from '../ui/corpse-window';
 import { StableWindow } from '../ui/stable-window';
 import { CraftingWindow } from '../ui/crafting-window';
@@ -54,6 +55,7 @@ import {
 } from '../core/hotbar';
 import { WorldCombat } from './world-combat';
 import { WorldCorpses } from './world-corpses';
+import { WorldContainers } from './world-containers';
 import { WorldDoors } from './world-doors';
 import { WorldMounts } from './world-mounts';
 import { WorldNpcs } from './world-npcs';
@@ -178,6 +180,7 @@ export class GameSession {
     const worldCombat = new WorldCombat(this.game, renderer, tooltip);
     const worldCorpses = new WorldCorpses(this.game, renderer, tooltip);
     const worldDoors = new WorldDoors(this.game, renderer, tooltip);
+    const worldContainers = new WorldContainers(this.game, renderer, tooltip);
     const worldMounts = new WorldMounts(this.game, renderer, tooltip);
     new WorldSigns(renderer, tooltip);
     const worldItems = new WorldItems(this.game, renderer, drag, tooltip);
@@ -199,6 +202,7 @@ export class GameSession {
         !worldCombat.hasTargetAt(point) &&
         !worldCorpses.hasCorpseAt(point) &&
         !worldDoors.hasDoorAt(point) &&
+        !worldContainers.hasContainerAt(point) &&
         !worldMounts.hasPetAt(point) &&
         !worldNpcs.hasNpcAt(point),
     });
@@ -569,6 +573,23 @@ export class GameSession {
       }
       corpse.render(contents);
       if (opened) corpse.window.show();
+    });
+    // Recipientes abiertos (bolsas, cofres, barriles…): una ventana por cada uno.
+    const containers = new Map<string, ContainerWindow>();
+    let opened = 0;
+    this.game.on('containerChanged', ({ containerId, container, opened: requested }) => {
+      let window = containers.get(containerId);
+      if (!container) {
+        window?.window.hide();
+        return;
+      }
+      if (!window) {
+        window = new ContainerWindow(containerId, drag, actions, opened++);
+        containers.set(containerId, window);
+        this.hosts.ui.append(window.window.element);
+      }
+      window.render(container);
+      if (requested) window.window.show();
     });
     this.hosts.ui.append(
       backpack.window.element,

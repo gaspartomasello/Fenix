@@ -1,4 +1,5 @@
 import {
+  ITEMS,
   MAX_STACK,
   PLAYER_ATTRIBUTES,
   SKILL_KEYS,
@@ -37,6 +38,8 @@ export interface SavedItem {
   readonly location: SavedItemLocation;
   /** Runa marcada: el lugar que guarda. */
   readonly mark?: RuneMark;
+  /** Bolsa o caja: lo que lleva adentro (con su lugar en la ventana). */
+  readonly contents?: readonly SavedItem[];
 }
 
 /** Todo lo que sobrevive a desconectarse: un personaje como datos planos (JSON). */
@@ -97,7 +100,10 @@ export function captureCharacter(
     guild: guild ? { name: guild.name, tag: guild.tag } : null,
     items: owned.flatMap((item): SavedItem[] => {
       const { location } = item;
-      const mark = item.mark ? { mark: item.mark } : {};
+      const mark = {
+        ...(item.mark ? { mark: item.mark } : {}),
+        ...(ITEMS[item.kind].capacity ? { contents: savedContents(world, item.id) } : {}),
+      };
       if (location.type === 'equipment')
         return [
           {
@@ -162,13 +168,36 @@ function parseAttributes(value: unknown): Attributes {
   };
 }
 
-function parseItem(value: unknown): SavedItem | null {
+/** Lo de adentro de una bolsa, con lo de adentro de sus bolsas (lugar en la ventana como posición). */
+function savedContents(world: World, containerId: string, depth = 0): SavedItem[] {
+  if (depth > 5) return [];
+  return world.items.contentsOf(containerId).flatMap((inner): SavedItem[] => {
+    if (inner.location.type !== 'container') return [];
+    return [
+      {
+        kind: inner.kind,
+        amount: inner.amount,
+        location: { type: 'backpack', position: inner.location.position },
+        ...(inner.mark ? { mark: inner.mark } : {}),
+        ...(ITEMS[inner.kind].capacity
+          ? { contents: savedContents(world, inner.id, depth + 1) }
+          : {}),
+      },
+    ];
+  });
+}
+
+function parseItem(value: unknown, depth = 0): SavedItem | null {
   if (!isObject(value) || !isItemKind(value.kind) || !isNumber(value.amount)) return null;
   const amount = Math.min(MAX_STACK, Math.max(1, Math.round(value.amount)));
   const location = value.location;
   if (!isObject(location)) return null;
   const mark = parseMark(value.mark);
-  const extra = mark ? { mark } : {};
+  const contents =
+    Array.isArray(value.contents) && depth < 5
+      ? value.contents.flatMap((inner) => parseItem(inner, depth + 1) ?? [])
+      : [];
+  const extra = { ...(mark ? { mark } : {}), ...(contents.length > 0 ? { contents } : {}) };
   if (location.type === 'equipment' && isEquipmentSlot(location.slot))
     return {
       kind: value.kind,
@@ -281,6 +310,7 @@ export function restoreCharacter(
         position: location.type === 'equipment' ? { x: 0, y: 0 } : location.position,
       });
       restored.mark = item.mark ?? null;
+      restoreContents(world, restored.id, item.contents ?? [], nextId);
     }
   }
   if (saved.mount?.riding) player.mount = saved.mount.kind;
@@ -310,4 +340,22 @@ export function freeSpotNear(world: World, at: Position): Position {
     if (world.map.isWalkable(spot) && !world.isOccupied(spot)) return spot;
   }
   return at;
+}
+
+/** Vuelve a poner adentro de una bolsa lo que tenía guardado. */
+function restoreContents(
+  world: World,
+  containerId: string,
+  contents: readonly SavedItem[],
+  nextId: () => string,
+): void {
+  for (const inner of contents) {
+    const restored = world.items.add(nextId(), inner.kind, inner.amount, {
+      type: 'container',
+      containerId,
+      position: inner.location.type === 'equipment' ? { x: 0, y: 0 } : inner.location.position,
+    });
+    restored.mark = inner.mark ?? null;
+    restoreContents(world, restored.id, inner.contents ?? [], nextId);
+  }
 }

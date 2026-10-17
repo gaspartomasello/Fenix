@@ -273,6 +273,40 @@ export function doorPartner(kind: StaticKind, at: Position): Position | null {
   return leaf[1] === 'x' ? { x: at.x + step, y: at.y } : { x: at.x, y: at.y + step };
 }
 
+/**
+ * Muebles que guardan cosas, como en UO: con doble clic se abren y se ve lo
+ * que tienen (un cofre, un barril, una biblioteca…). `look` es el dibujo de
+ * la ventana.
+ */
+export type ContainerLook = 'chest' | 'barrel' | 'crate' | 'bookshelf' | 'shelf' | 'bag' | 'box';
+
+export const STATIC_CONTAINERS: Readonly<
+  Partial<Record<StaticKind, { readonly look: ContainerLook; readonly capacity: number }>>
+> = {
+  chest: { look: 'chest', capacity: 60 },
+  barrel: { look: 'barrel', capacity: 30 },
+  keg: { look: 'barrel', capacity: 30 },
+  crate: { look: 'crate', capacity: 40 },
+  'bookshelf-x': { look: 'bookshelf', capacity: 30 },
+  'bookshelf-y': { look: 'bookshelf', capacity: 30 },
+  'potion-shelf-x': { look: 'shelf', capacity: 30 },
+  'potion-shelf-y': { look: 'shelf', capacity: 30 },
+};
+
+/** La clave de un mueble que guarda cosas (los recipientes portátiles usan el id del objeto). */
+export function staticContainerId(at: Position): string {
+  return `static:${at.x}:${at.y}`;
+}
+
+/** El tile de un mueble a partir de su clave, o null si es un objeto (una bolsa). */
+export function staticContainerAt(containerId: string): Position | null {
+  const match = /^static:(\d+):(\d+)$/.exec(containerId);
+  return match ? { x: Number(match[1]), y: Number(match[2]) } : null;
+}
+
+/** A cuántos tiles hay que estar de un mueble para abrirlo. */
+export const CONTAINER_RANGE = 2;
+
 /** A cuántos tiles hay que estar de una puerta para abrirla o cerrarla. */
 export const DOOR_RANGE = 1;
 

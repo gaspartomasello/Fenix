@@ -1,3 +1,4 @@
+import { emptyChanges } from '../domain/items/items';
 import {
   DEFAULT_APPEARANCE,
   Direction,
@@ -173,13 +174,12 @@ describe('etapa 10: hechizos, efectos, vendas y oficios', () => {
     const f = createField();
     const ana = f.join('Ana');
     for (const kind of ['spellbook', 'sulfurous-ash'] as const)
-      f.world.items.consumeFromBackpack(ana, kind, f.world.items.countInBackpack(ana, kind), {
-        groundRemoved: [],
-        groundAdded: [],
-        inventories: new Set(),
-        looks: new Set(),
-        corpses: new Set(),
-      });
+      f.world.items.consumeFromBackpack(
+        ana,
+        kind,
+        f.world.items.countInBackpack(ana, kind),
+        emptyChanges(),
+      );
     const rat = new Creature('rata', 'rat', { x: 6, y: 2 });
     f.world.addCreature(rat);
     const scroll = f.give(ana, 'scroll-magic-arrow');

@@ -22,7 +22,9 @@ export type ItemLocation =
     }
   | { readonly type: 'backpack'; readonly ownerId: EntityId; readonly position: Position }
   | { readonly type: 'bank'; readonly ownerId: EntityId; readonly position: Position }
-  | { readonly type: 'equipment'; readonly ownerId: EntityId; readonly slot: EquipmentSlot };
+  | { readonly type: 'equipment'; readonly ownerId: EntityId; readonly slot: EquipmentSlot }
+  /** Adentro de un recipiente: una bolsa (su id) o un mueble (`static:x:y`). */
+  | { readonly type: 'container'; readonly containerId: string; readonly position: Position };
 
 export class Item {
   constructor(
@@ -41,7 +43,9 @@ export class Item {
   }
 
   ownerId(): EntityId | null {
-    return this.location.type === 'ground' || this.location.type === 'corpse'
+    return this.location.type === 'ground' ||
+      this.location.type === 'corpse' ||
+      this.location.type === 'container'
       ? null
       : this.location.ownerId;
   }
@@ -59,7 +63,8 @@ export class Item {
 
   toBackpackSnapshot(): BackpackItemSnapshot | null {
     const inside = this.location.type;
-    if (inside !== 'backpack' && inside !== 'bank' && inside !== 'corpse') return null;
+    if (inside !== 'backpack' && inside !== 'bank' && inside !== 'corpse' && inside !== 'container')
+      return null;
     return {
       id: this.id,
       kind: this.kind,

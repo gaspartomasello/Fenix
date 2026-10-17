@@ -18,6 +18,10 @@ export const BASE_ITEM_KINDS = [
   'agility-potion',
   'empty-bottle',
   'bandage',
+  // Recipientes: se abren con doble clic y guardan cosas adentro
+  'bag',
+  'pouch',
+  'wooden-box',
   // Armas
   'dagger',
   'kryss',
@@ -102,6 +106,7 @@ export type ItemUse =
   | 'smelt'
   | 'bandage'
   | 'scroll'
+  | 'container'
   | 'none';
 
 /** Lo que hace una poción al tomarla. */
@@ -132,6 +137,8 @@ export interface ItemDefinition {
   readonly spell?: SpellKey;
   /** No se puede levantar ni mover (un portal abierto). */
   readonly fixed?: boolean;
+  /** Recipiente: cuántos objetos entran adentro. */
+  readonly capacity?: number;
 }
 
 type Spec = Omit<ItemDefinition, 'kind' | 'stackable' | 'use'> &
@@ -182,6 +189,15 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
     stackable: true,
   },
   bandage: { name: 'venda', plural: 'vendas', article: 'una', stackable: true, use: 'bandage' },
+  bag: { name: 'bolsa', plural: 'bolsas', article: 'una', use: 'container', capacity: 40 },
+  pouch: { name: 'bolsita', plural: 'bolsitas', article: 'una', use: 'container', capacity: 15 },
+  'wooden-box': {
+    name: 'caja de madera',
+    plural: 'cajas de madera',
+    article: 'una',
+    use: 'container',
+    capacity: 60,
+  },
   // Viajes: la runa guarda un lugar (con Marcar) y el portal lo abre Portal.
   rune: { name: 'runa', plural: 'runas', article: 'una', color: 0x8a7a9c },
   moongate: { name: 'portal', plural: 'portales', article: 'un', fixed: true, color: 0x4aa8ff },
