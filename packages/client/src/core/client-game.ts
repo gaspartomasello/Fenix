@@ -22,6 +22,8 @@ import {
   type ChatChannel,
   type SocialCommand,
   type BookMessage,
+  type Quest,
+  type QuestProgress,
   type SocialMessage,
   type Direction,
   type EntityId,
@@ -102,6 +104,10 @@ export interface ClientGameEvents extends Record<string, unknown> {
     container: ContainerContents | null;
     opened: boolean;
   };
+  /** Un vecino ofrece una misión. */
+  questOffered: { npcId: EntityId; quest: Quest };
+  /** Cambiaron las misiones aceptadas. */
+  questsChanged: readonly QuestProgress[];
   /** Se abrió un libro (respuesta al doble clic). */
   bookOpened: BookContents;
   /** Una puerta se abrió o se cerró. */
@@ -476,6 +482,19 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     this.gateway.send({ type: 'openContainer', containerId });
   }
 
+  /** Hablar con un vecino (misiones). */
+  talkNpc(npcId: EntityId): void {
+    this.gateway.send({ type: 'talkNpc', npcId });
+  }
+
+  acceptQuest(npcId: EntityId): void {
+    this.gateway.send({ type: 'acceptQuest', npcId });
+  }
+
+  abandonQuest(giver: string): void {
+    this.gateway.send({ type: 'abandonQuest', giver });
+  }
+
   /** Guarda una hoja escrita (y el título) de un libro. */
   writeBook(itemId: EntityId, title: string, page: number, text: string): void {
     this.gateway.send({ type: 'writeBook', itemId, title, page, text });
@@ -673,6 +692,12 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this.emit('containerChanged', { containerId: message.containerId, container, opened });
         break;
       }
+      case 'questOffer':
+        this.emit('questOffered', { npcId: message.npcId, quest: message.quest });
+        break;
+      case 'quests':
+        this.emit('questsChanged', message.quests);
+        break;
       case 'book': {
         this.emit('bookOpened', {
           itemId: message.itemId,

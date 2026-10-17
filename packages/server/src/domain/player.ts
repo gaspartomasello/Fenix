@@ -21,6 +21,7 @@ import {
   type Notoriety,
   type MountKind,
   type Position,
+  type QuestProgress,
   type SkillValues,
   type TileMap,
 } from '@fenix/shared';
@@ -76,6 +77,8 @@ export class Player implements Mobile {
   pendingBandage: { targetId: EntityId; resolveAt: number } | null = null;
   /** Atributos que subieron y todavía no se avisaron. */
   readonly statGains: AttributeKey[] = [];
+  /** Misiones aceptadas (ver `Quests`). */
+  quests: QuestProgress[] = [];
   private usesSinceStatGain = 0;
   /** Cuándo puede volver a recolectar o fabricar. */
   nextActionAt = 0;

@@ -1,6 +1,10 @@
 import {
   ITEMS,
   BOOK_PAGES,
+  MAX_QUESTS,
+  isCreatureKind,
+  type QuestGoal,
+  type QuestProgress,
   MAX_STACK,
   cleanBookPage,
   cleanBookTitle,
@@ -69,6 +73,8 @@ export interface SavedCharacter {
   readonly items: readonly SavedItem[];
   /** Su montura: montada o suelta a su lado (los personajes viejos no tienen). */
   readonly mount: { readonly kind: MountKind; readonly riding: boolean } | null;
+  /** Misiones aceptadas. */
+  readonly quests?: readonly QuestProgress[];
 }
 
 /** Toma una foto del personaje conectado (con su mochila, equipo y banco). */
@@ -131,6 +137,7 @@ export function captureCharacter(
         ];
       return [];
     }),
+    ...(player.quests.length > 0 ? { quests: player.quests } : {}),
     mount: player.mount
       ? { kind: player.mount, riding: true }
       : petKind
@@ -242,6 +249,38 @@ function parseBook(value: unknown): BookText | null {
   };
 }
 
+const text = (value: unknown, max: number): string | null =>
+  typeof value === 'string' ? value.slice(0, max) : null;
+
+function parseQuest(value: unknown): QuestProgress | null {
+  if (!isObject(value) || !isObject(value.goal) || !isObject(value.reward)) return null;
+  const giver = text(value.giver, 60);
+  const town = text(value.town, 60);
+  const title = text(value.title, 80);
+  const story = text(value.story, 600);
+  if (!giver || !town || !title || story === null) return null;
+  const g = value.goal;
+  const count = isNumber(g.count) ? Math.max(1, Math.min(100, Math.round(g.count))) : 1;
+  let goal: QuestGoal;
+  if (g.kind === 'slay' && isCreatureKind(g.creature))
+    goal = { kind: 'slay', creature: g.creature, count };
+  else if (g.kind === 'gather' && isItemKind(g.item))
+    goal = { kind: 'gather', item: g.item, count };
+  else if (g.kind === 'deliver' && text(g.to, 60) && text(g.town, 60))
+    goal = { kind: 'deliver', to: String(g.to).slice(0, 60), town: String(g.town).slice(0, 60) };
+  else return null;
+  const r = value.reward;
+  const gold = isNumber(r.gold) ? Math.max(0, Math.min(10000, Math.round(r.gold))) : 0;
+  const reward =
+    isItemKind(r.item) && isNumber(r.amount)
+      ? { gold, item: r.item, amount: Math.max(1, Math.min(100, Math.round(r.amount))) }
+      : { gold };
+  const progress = isNumber(value.progress)
+    ? Math.max(0, Math.min(count, Math.round(value.progress)))
+    : 0;
+  return { giver, town, title, story, goal, reward, progress };
+}
+
 function parseMark(value: unknown): RuneMark | null {
   if (!isObject(value) || !isNumber(value.x) || !isNumber(value.y)) return null;
   const label = typeof value.label === 'string' ? value.label.slice(0, 60) : 'Tierras salvajes';
@@ -286,6 +325,9 @@ export function parseSavedCharacter(value: unknown): SavedCharacter | null {
         ? { name: guild.name, tag: guild.tag }
         : null,
     items: items.flatMap((item) => parseItem(item) ?? []),
+    ...(Array.isArray(value.quests)
+      ? { quests: value.quests.slice(0, MAX_QUESTS).flatMap((q) => parseQuest(q) ?? []) }
+      : {}),
     mount:
       isObject(value.mount) && isMountKind(value.mount.kind)
         ? { kind: value.mount.kind, riding: value.mount.riding === true }
@@ -342,6 +384,7 @@ export function restoreCharacter(
       restoreContents(world, restored.id, item.contents ?? [], nextId);
     }
   }
+  player.quests = [...(saved.quests ?? [])];
   if (saved.mount?.riding) player.mount = saved.mount.kind;
   else if (saved.mount)
     world.addCreature(

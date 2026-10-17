@@ -55,6 +55,8 @@ export const RESURRECT_HEALTH = 0.5;
  */
 export class GameLoop {
   private readonly shrines: readonly Position[];
+  /** Lo arma la aplicación: una criatura murió a manos de un jugador (misiones de caza). */
+  onCreatureKilled: (killer: Player, creature: Creature) => void = () => {};
 
   constructor(
     private readonly world: World,
@@ -537,6 +539,7 @@ export class GameLoop {
       const fame = CREATURE_FAME[creature.body] ?? 0;
       killer.reputation.award(fame, fame);
       this.social.sendSocial(killer);
+      if (!creature.temporary && !creature.ownerId) this.onCreatureKilled(killer, creature);
     }
     this.dropLoot(creature);
   }

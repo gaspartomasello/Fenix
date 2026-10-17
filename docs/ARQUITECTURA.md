@@ -400,6 +400,20 @@ con `@fontsource`). Se escribe hoja por hoja (`writeBook`, para no pasar el lím
 un mensaje); el primero que escribe queda como autor. Las bibliotecas traen libros ya escritos
 (`LORE_BOOKS`, con `sealed`) que se leen pero no se cambian. La maga vende libros en blanco.
 
+### Misiones
+
+Los vecinos (`townsfolk`) dan misiones, como en UO: al hacerles clic el cliente manda
+`talkNpc` y `Quests` (caso de uso) decide qué contestar. Si el vecino necesita algo, le
+manda al jugador un `questOffer`; si ya se la habían aceptado, recuerda lo que falta o
+paga si está lista; y si le traen una carta, la recibe. Hay tres tipos (ver
+`shared/domain/quests/quests.ts`): **cazar** criaturas (cuentan las que mata el jugador, por
+`GameLoop.onCreatureKilled`), **traer** materiales (se descuentan de la mochila al entregar)
+y **llevar una carta** (`letter`, se lee como un libro) a un vecino de otro pueblo. Lo que
+pide cada vecino sale de su nombre (siempre lo mismo hasta terminarla) y cambia después de
+cada misión cumplida; después descansa un rato. Paga en oro según lo pedido, a veces suma un
+objeto, y da fama y karma. Se llevan hasta cinco a la vez (`Player.quests`, se guardan con el
+personaje) y se ven en el diario de misiones (tecla J).
+
 ### Persistencia
 
 Un personaje se guarda como datos planos (`SavedCharacter`, en `domain/persistence`):

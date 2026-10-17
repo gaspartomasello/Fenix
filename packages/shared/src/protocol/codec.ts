@@ -241,6 +241,14 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       if (typeof data.containerId === 'string' && data.containerId.length <= 64)
         return { ok: true, message: { type: 'openContainer', containerId: data.containerId } };
       break;
+    case 'talkNpc':
+    case 'acceptQuest':
+      if (isId(data.npcId)) return { ok: true, message: { type: data.type, npcId: data.npcId } };
+      break;
+    case 'abandonQuest':
+      if (typeof data.giver === 'string' && data.giver.length <= 60)
+        return { ok: true, message: { type: 'abandonQuest', giver: data.giver } };
+      break;
     case 'readBook':
       if (isId(data.itemId))
         return { ok: true, message: { type: 'readBook', itemId: data.itemId } };
@@ -315,6 +323,8 @@ const SERVER_TYPE_FLAGS: Readonly<Record<ServerMessageType, true>> = {
   container: true,
   containerClosed: true,
   book: true,
+  questOffer: true,
+  quests: true,
   joinRejected: true,
   mobileAppeared: true,
   mobileDisappeared: true,

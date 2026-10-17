@@ -34,6 +34,7 @@ import {
 import type { ItemActions } from '../ui/backpack-window';
 import { BankWindow } from '../ui/bank-window';
 import { BookWindow } from '../ui/book-window';
+import { QuestJournal, QuestOfferWindow } from '../ui/quest-windows';
 import { ContainerWindow } from '../ui/container-window';
 import { CorpseWindow } from '../ui/corpse-window';
 import { StableWindow } from '../ui/stable-window';
@@ -212,6 +213,7 @@ export class GameSession {
     const targeting: Targeting = { banner, worldCombat, tilePicker };
     const magic = this.setUpMagic(targeting);
     this.setUpSocial();
+    this.setUpQuests();
     const chat = new ChatPanel((text) => this.game.say(text));
     const menu = this.setUpInventory(
       drag,
@@ -271,7 +273,12 @@ export class GameSession {
         this.hosts.ui.append(bank.window.element);
       },
       openNpc: (id, role) => {
-        // Con los vecinos y los guardias se charla: dicen una frase.
+        // Los vecinos cuentan lo que les pasa (y a veces piden ayuda): lo decide el servidor.
+        if (role === 'townsfolk') {
+          this.game.talkNpc(id);
+          return;
+        }
+        // Con los guardias se charla: dicen una frase.
         if (!isMerchant(role)) {
           const lines = NPC_CHATTER[role] ?? [VENDORS[role].greeting];
           const line = lines[Math.floor(Math.random() * lines.length)] ?? VENDORS[role].greeting;
@@ -329,6 +336,16 @@ export class GameSession {
   }
 
   /** Ventana social y modo guerra. */
+  /** Misiones de los vecinos: la oferta al hablarles y el diario (tecla J). */
+  private setUpQuests(): void {
+    const offer = new QuestOfferWindow((npcId) => this.game.acceptQuest(npcId));
+    const journal = new QuestJournal((giver) => this.game.abandonQuest(giver));
+    this.game.on('questOffered', ({ npcId, quest }) => offer.open(npcId, quest));
+    this.game.on('questsChanged', (quests) => journal.render(quests));
+    this.hosts.ui.append(offer.window.element, journal.window.element);
+    this.hudExtras.push({ label: 'Misiones', key: 'j', onPress: () => journal.window.toggle() });
+  }
+
   private setUpSocial(): void {
     const social = new SocialWindow((command, name, tag) =>
       this.game.socialCommand(command, name, tag),

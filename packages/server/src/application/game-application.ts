@@ -31,6 +31,7 @@ import { LeaveWorld } from './use-cases/leave-world';
 import { GameMaster } from './use-cases/game-master';
 import { TownLife } from './use-cases/town-life';
 import { Books } from './use-cases/books';
+import { Quests } from './use-cases/quests';
 import { Containers } from './use-cases/containers';
 import { MovePlayer } from './use-cases/move-player';
 import { SendChat } from './use-cases/send-chat';
@@ -64,6 +65,7 @@ export class GameApplication {
   private readonly townLife: TownLife;
   private readonly containers: Containers;
   private readonly books: Books;
+  private readonly quests: Quests;
   private readonly movePlayer: MovePlayer;
   private readonly sendChat: SendChat;
   private readonly moveItem: MoveItem;
@@ -184,6 +186,7 @@ export class GameApplication {
     this.useItem.openContainer = (playerId, id) => this.containers.openFor(playerId, id);
     this.books = new Books(world, notifications, notifier);
     this.useItem.openBook = (playerId, id) => this.books.read(playerId, id);
+    this.quests = new Quests(world, clock, ids, notifications, notifier);
     this.townLife = new TownLife(
       world,
       this.mobiles,
@@ -206,6 +209,7 @@ export class GameApplication {
       this.stealth,
       warMode,
     );
+    this.loop.onCreatureKilled = (killer, creature) => this.quests.creatureKilled(killer, creature);
   }
 
   private revealPlayer(playerId: EntityId, text: string): void {
@@ -243,6 +247,7 @@ export class GameApplication {
       this.mobiles.sendSkills(player);
       this.mobiles.sendEffects(player);
       this.social.sendSocial(player);
+      this.quests.sendJournal(player);
     }
   }
 
@@ -321,6 +326,15 @@ export class GameApplication {
         break;
       case 'toggleInvulnerable':
         this.toggleInvulnerable(playerId);
+        break;
+      case 'talkNpc':
+        this.quests.talk(playerId, message.npcId);
+        break;
+      case 'acceptQuest':
+        this.quests.accept(playerId, message.npcId);
+        break;
+      case 'abandonQuest':
+        this.quests.abandon(playerId, message.giver);
         break;
       case 'readBook':
         this.books.read(playerId, message.itemId);
