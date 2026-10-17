@@ -7,6 +7,7 @@ import { createWorld } from './infrastructure/content/world-builder';
 import { createHttpServer } from './infrastructure/http/static-server';
 import { GameSocketServer } from './infrastructure/network/game-socket-server';
 import { SessionRegistry } from './infrastructure/network/session-registry';
+import { JsonFileAccountStore } from './infrastructure/persistence/account-stores';
 import { JsonFileCharacterStore } from './infrastructure/persistence/json-file-character-store';
 import { ScryptPasswordHasher } from './infrastructure/system/scrypt-password-hasher';
 import { SeededRandom } from './infrastructure/system/seeded-random';
@@ -26,6 +27,7 @@ function main(): void {
   const sessions = new SessionRegistry();
   const clock = new SystemClock();
   const characters = new JsonFileCharacterStore(join(config.dataDir, 'personajes.json'));
+  const accounts = new JsonFileAccountStore(join(config.dataDir, 'cuentas.json'));
   const app = new GameApplication({
     world,
     worldClock: new WorldClock(clock.now(), config.startHour),
@@ -34,6 +36,7 @@ function main(): void {
     random: new SeededRandom(Date.now()),
     notifier: sessions,
     characters,
+    accounts,
     passwords: new ScryptPasswordHasher(),
     testCharacters: config.testCharacters,
     admins: config.admins,
@@ -55,6 +58,7 @@ function main(): void {
     stopTicker();
     app.saveAll();
     characters.flush();
+    accounts.flush();
     void sockets.close().then(() => httpServer.close(() => process.exit(0)));
   };
   process.on('SIGINT', shutdown);

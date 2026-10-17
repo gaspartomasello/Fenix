@@ -12,7 +12,8 @@ import type { ContainerLook } from '../domain/world/statics';
 import type { ChatChannel, SocialCommand } from '../domain/social/groups';
 import type { Notoriety } from '../domain/social/reputation';
 import type { SpellKey } from '../domain/magic/spell-catalog';
-import type { SkillValues } from '../domain/skills/skill-catalog';
+import type { SkillKey, SkillValues } from '../domain/skills/skill-catalog';
+import type { CharacterCreation } from '../domain/character/creation';
 import type { ActiveSkill } from '../domain/skills/stealth';
 import type { WorldTime } from '../domain/rules/daylight';
 import type { MoveMode } from '../domain/rules/movement';
@@ -73,6 +74,8 @@ export interface ItemSnapshot {
   readonly bookTitle?: string;
   /** Teñido: su color. */
   readonly hue?: number;
+  /** Equipo inicial: no se puede tirar, dar ni vender. */
+  readonly newbie?: true;
 }
 
 /** Lugar grabado en una runa con Marcar. */
@@ -114,6 +117,33 @@ export interface JoinRequest {
   readonly appearance: Appearance;
   /** Contraseña del personaje (el modo solo no la pide). */
   readonly password?: string;
+}
+
+/** Entrar a una cuenta (o crearla, con `create`). */
+export interface LoginRequest {
+  readonly type: 'login';
+  readonly account: string;
+  /** El modo solo no la pide. */
+  readonly password?: string;
+  readonly create: boolean;
+}
+
+/** Crear un personaje en la cuenta y entrar con él. */
+export interface CreateCharacterRequest {
+  readonly type: 'createCharacter';
+  readonly creation: CharacterCreation;
+}
+
+/** Entrar al mundo con un personaje de la cuenta. */
+export interface PlayRequest {
+  readonly type: 'play';
+  readonly name: string;
+}
+
+/** Borrar un personaje de la cuenta (para siempre). */
+export interface DeleteCharacterRequest {
+  readonly type: 'deleteCharacter';
+  readonly name: string;
 }
 
 export interface MoveRequest {
@@ -410,6 +440,10 @@ export interface CraftRequest {
 
 export type ClientMessage =
   | JoinRequest
+  | LoginRequest
+  | CreateCharacterRequest
+  | PlayRequest
+  | DeleteCharacterRequest
   | MoveRequest
   | ChatRequest
   | MoveItemRequest
@@ -468,6 +502,23 @@ export interface DoorMessage {
   readonly type: 'door';
   readonly position: Position;
   readonly open: boolean;
+}
+
+/** Un personaje de la cuenta, como se ve en la lista para elegir. */
+export interface CharacterSummary {
+  readonly name: string;
+  readonly appearance: Appearance;
+  /** Sus tres mejores habilidades (en décimas). */
+  readonly topSkills: readonly { readonly skill: SkillKey; readonly value: number }[];
+}
+
+/** Entró a la cuenta (o cambió la lista de personajes). */
+export interface AccountMessage {
+  readonly type: 'account';
+  readonly name: string;
+  readonly characters: readonly CharacterSummary[];
+  /** Cuántos personajes entran. */
+  readonly slots: number;
 }
 
 export interface JoinRejectedMessage {
@@ -807,6 +858,7 @@ export type ServerMessage =
   | QuestOfferMessage
   | QuestsMessage
   | JoinRejectedMessage
+  | AccountMessage
   | MobileAppearedMessage
   | MobileDisappearedMessage
   | MobileMovedMessage
