@@ -33,6 +33,7 @@ import {
   type ShipSnapshot,
   shipTiles,
   type QuestProgress,
+  type AccountMessage,
   type SocialMessage,
   type Direction,
   type EntityId,
@@ -77,6 +78,8 @@ export interface ClientGameEvents extends Record<string, unknown> {
   /** Se recibió el mundo inicial: ya se puede dibujar. */
   ready: { selfId: EntityId; map: TileMap };
   joinRejected: { reason: string };
+  /** Entró a la cuenta o cambió su lista de personajes. */
+  account: AccountMessage;
   log: LogEntry;
   entityAdded: Entity;
   entityRemoved: EntityId;
@@ -710,6 +713,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         break;
       case 'joinRejected':
         this.emit('joinRejected', { reason: message.reason });
+        break;
+      case 'account':
+        this.emit('account', message);
         break;
       case 'mobileAppeared':
         if (!this.entities.has(message.mobile.id)) this.addEntity(new Entity(message.mobile));

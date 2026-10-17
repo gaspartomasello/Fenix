@@ -1007,6 +1007,128 @@ body {
   display: none;
 }
 
+/* ── Cuenta: lista de personajes y creación ───────────────────────── */
+
+.character-list-panel {
+  width: min(100%, 460px);
+}
+
+.character-slots {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.character-slot {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 64px;
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius);
+}
+
+.character-slot--empty {
+  justify-content: space-between;
+  border-style: dashed;
+}
+
+.character-portrait {
+  width: 40px;
+  height: 70px;
+  image-rendering: pixelated;
+  flex: none;
+}
+
+.character-slot__text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.character-slot__skills {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.character-slot__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.creation-panel {
+  width: min(100%, 760px);
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.creation-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  text-align: left;
+}
+
+.creation-column {
+  display: grid;
+  gap: 0.6rem;
+  align-content: start;
+}
+
+.creation-heading {
+  margin: 0.4rem 0 0;
+  font-size: 1rem;
+  color: var(--color-accent);
+}
+
+.creation-row {
+  gap: 0.5rem;
+}
+
+.creation-label {
+  width: 6.5rem;
+  flex: none;
+}
+
+.creation-slider {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--color-accent);
+}
+
+.creation-value {
+  width: 2rem;
+  text-align: right;
+  font-weight: bold;
+}
+
+.creation-select {
+  flex: 1;
+  min-width: 0;
+  padding: 0.35rem 0.5rem;
+}
+
+.creation-kit {
+  text-align: left;
+  line-height: 1.4;
+}
+
+.creation-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .creation-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ── Ventana de personaje (estilo UO) ─────────────────────────────── */
 
 .paperdoll {

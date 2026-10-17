@@ -68,6 +68,8 @@ import { WorldMounts } from './world-mounts';
 import { WorldNpcs } from './world-npcs';
 import { WorldItems } from './world-items';
 import { LoginScreen, type LoginRequest } from '../ui/login-screen';
+import { CharacterListScreen } from '../ui/character-list-screen';
+import { CreationScreen } from '../ui/creation-screen';
 import { showOverlay } from '../ui/overlay';
 import { StatusBar } from '../ui/status-bar';
 
@@ -109,6 +111,11 @@ export class GameSession {
   private readonly game: ClientGame;
   private readonly gateway: GameGateway;
   private readonly login: LoginScreen;
+  private readonly characterList: CharacterListScreen;
+  /** La pantalla de creación (se arma de nuevo cada vez). */
+  private creation: CreationScreen | null = null;
+  /** Qué pantalla de antes del mundo está a la vista. */
+  private screen: 'login' | 'list' | 'create' = 'login';
   private inWorld = false;
   /** Salida pedida por el jugador: no es una conexión perdida. */
   private loggingOut = false;
@@ -133,9 +140,30 @@ export class GameSession {
       if (!isEditable(e.target)) e.preventDefault();
     });
     this.login = new LoginScreen({
-      subtitle: IS_SOLO ? 'Modo solo' : 'Entrá o creá tu personaje',
+      subtitle: IS_SOLO ? 'Modo solo' : 'Entrá a tu cuenta',
       askPassword: !IS_SOLO,
       onSubmit: (request) => void this.enter(request),
+    });
+    this.characterList = new CharacterListScreen({
+      onPlay: (name) => this.gateway.send({ type: 'play', name }),
+      onDelete: (name) => this.gateway.send({ type: 'deleteCharacter', name }),
+      onCreate: () => this.showCreation(),
+    });
+    this.game.on('account', (account) => {
+      this.characterList.show(account);
+      this.showScreen('list');
+    });
+    this.game.on('joinRejected', ({ reason }) => {
+      if (this.screen === 'create') this.creation?.showError(reason);
+      else if (this.screen === 'list') this.characterList.showError(reason);
+      else {
+        this.login.showError(reason);
+        this.gateway.close();
+      }
+    });
+    const offReady = this.game.on('ready', () => {
+      offReady();
+      void this.startWorld();
     });
   }
 
@@ -144,28 +172,42 @@ export class GameSession {
     this.login.focus();
   }
 
-  private async enter(request: LoginRequest): Promise<void> {
-    const offRejected = this.game.on('joinRejected', ({ reason }) => {
-      this.login.showError(reason);
-      this.gateway.close();
-    });
-    const offReady = this.game.on('ready', () => {
-      offRejected();
-      offReady();
-      void this.startWorld();
-    });
+  /** Muestra una de las pantallas de antes del mundo (cuenta, personajes, creación). */
+  private showScreen(screen: 'login' | 'list' | 'create'): void {
+    this.screen = screen;
+    this.login.element.remove();
+    this.characterList.element.remove();
+    if (screen !== 'create') {
+      this.creation?.destroy();
+      this.creation = null;
+    }
+    if (screen === 'login') {
+      this.hosts.ui.append(this.login.element);
+      this.login.focus();
+    } else if (screen === 'list') this.hosts.ui.append(this.characterList.element);
+  }
 
+  private showCreation(): void {
+    this.creation?.destroy();
+    this.creation = new CreationScreen({
+      onCreate: (creation) => this.gateway.send({ type: 'createCharacter', creation }),
+      onBack: () => this.showScreen('list'),
+    });
+    this.showScreen('create');
+    this.hosts.ui.append(this.creation.element);
+    this.creation.focus();
+  }
+
+  private async enter(request: LoginRequest): Promise<void> {
     try {
       await this.gateway.connect();
       this.gateway.send({
-        type: 'join',
-        name: request.name,
-        appearance: request.appearance,
+        type: 'login',
+        account: request.account,
+        create: request.create,
         ...(request.password === undefined ? {} : { password: request.password }),
       });
     } catch (error) {
-      offRejected();
-      offReady();
       this.login.showError(error instanceof Error ? error.message : 'Error de conexión');
     }
   }
@@ -173,6 +215,9 @@ export class GameSession {
   private async startWorld(): Promise<void> {
     this.inWorld = true;
     this.login.destroy();
+    this.characterList.destroy();
+    this.creation?.destroy();
+    this.creation = null;
 
     const renderer = await GameRenderer.create(this.hosts.game, this.game);
     const drag = new DragController(this.hosts.ui);
@@ -812,7 +857,15 @@ export class GameSession {
   }
 
   private onDisconnected(): void {
-    if (!this.inWorld || this.loggingOut) return;
+    if (this.loggingOut) return;
+    if (!this.inWorld) {
+      // Antes de entrar al mundo: de vuelta a la cuenta.
+      if (this.screen !== 'login') {
+        this.showScreen('login');
+        this.login.showError('Se cortó la conexión con el servidor.');
+      }
+      return;
+    }
     showOverlay(this.hosts.ui, 'Conexión perdida', 'Se cortó la conexión con el servidor.');
   }
 }
