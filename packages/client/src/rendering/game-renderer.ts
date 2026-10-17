@@ -1,4 +1,5 @@
 import {
+  ITEMS,
   STATIC_CONTAINERS,
   type EntityId,
   type GroundItemSnapshot,
@@ -260,6 +261,7 @@ export class GameRenderer {
         dayProgress: time.dayProgress,
         focus,
         lights: this.statics?.visibleLights() ?? [],
+        carried: this.carriedLights(now),
         nightVision: this.game.hasEffect('night-sight'),
         underground: this.game.currentRegion()?.dungeon === true,
       });
@@ -268,6 +270,15 @@ export class GameRenderer {
     // personajes, criaturas, terreno y objetos que están por entrar.
     this.textures.pump(PREPARE_BUDGET_MS);
     this.app.render();
+  }
+
+  /** Quienes llevan una antorcha o un farol en la mano: alumbran a su alrededor. */
+  private *carriedLights(now: number): Iterable<{ at: FractionalPosition; radius: number }> {
+    for (const entity of this.game.allEntities()) {
+      const held = entity.equipment.leftHand;
+      const radius = held ? ITEMS[held].light : undefined;
+      if (radius && !entity.dead) yield { at: entity.renderPosition(now), radius };
+    }
   }
 
   destroy(): void {

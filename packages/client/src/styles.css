@@ -2365,3 +2365,40 @@ body {
 .quest-abandon {
   font-size: 0.75rem;
 }
+
+/* Tienda: estantes (filtros), detalles de cada objeto y vender todo. */
+.shop-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 6px 0;
+}
+
+.shop-filters[hidden] {
+  display: none;
+}
+
+.shop-filter {
+  padding: 2px 8px;
+  border: 1px solid var(--color-panel-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.shop-filter[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.shop-details {
+  color: var(--color-system);
+  font-size: 0.72rem;
+}
+
+.shop-row--all {
+  justify-content: flex-end;
+}

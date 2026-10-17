@@ -1,4 +1,4 @@
-import { ITEMS, describeItem, type EntityId } from '@fenix/shared';
+import { ITEMS, describeItem, type EntityId, type ItemKind } from '@fenix/shared';
 import { startBandage } from '../../domain/healing/bandage';
 import { consume } from '../../domain/items/consumables';
 import type { World } from '../../domain/world';
@@ -6,6 +6,15 @@ import type { ItemNotifications } from '../item-notifications';
 import type { MobileNotifications } from '../mobile-notifications';
 import type { Clock, IdGenerator, Notifier, RandomSource } from '../ports';
 import type { EconomyActions } from './economy-actions';
+
+/** Lo que suena al tocar un instrumento. */
+const TUNES: readonly string[] = [
+  'una melodía alegre que invita a bailar.',
+  'una canción triste de marineros.',
+  'una balada sobre un dragón y un caballero.',
+  'un ritmo rápido que hace golpear los pies.',
+  'una tonada antigua que nadie recuerda dónde nació.',
+];
 
 /** Doble clic sobre un objeto, o usarlo sobre alguien (vendas). */
 export class UseItem {
@@ -24,6 +33,16 @@ export class UseItem {
     private readonly mobiles: MobileNotifications,
     private readonly economy: EconomyActions,
   ) {}
+
+  /** Tocar un instrumento: lo escuchan todos los que están cerca. */
+  private play(playerId: EntityId, kind: ItemKind): void {
+    const player = this.world.get(playerId);
+    if (!player) return;
+    const tune = TUNES[Math.floor(this.random.next() * TUNES.length)] ?? TUNES[0];
+    const text = `${player.name} toca ${ITEMS[kind].article === 'una' ? 'la' : 'el'} ${ITEMS[kind].name}: ${tune}`;
+    for (const id of this.mobiles.watchers(player))
+      this.notifier.send(id, { type: 'system', text });
+  }
 
   execute(playerId: EntityId, itemId: EntityId): void {
     const player = this.world.get(playerId);
@@ -44,6 +63,10 @@ export class UseItem {
     // Doble clic sobre una bolsa: se abre.
     if (item && ITEMS[item.kind].capacity) {
       this.openContainer(playerId, itemId);
+      return;
+    }
+    if (item && ITEMS[item.kind].use === 'music' && item.ownerId() === playerId) {
+      this.play(playerId, item.kind);
       return;
     }
     if (item && ITEMS[item.kind].use === 'book') {

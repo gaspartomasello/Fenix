@@ -414,6 +414,19 @@ cada misión cumplida; después descansa un rato. Paga en oro según lo pedido, 
 objeto, y da fama y karma. Se llevan hasta cinco a la vez (`Player.quests`, se guardan con el
 personaje) y se ven en el diario de misiones (tecla J).
 
+### Objetos y comercios
+
+El catálogo suma comidas y bebidas (pan, queso, jamón, zanahoria, pastel de carne, vino,
+cerveza), armas (espada larga, cimitarra, hacha de guerra, alabarda, garrote, bastón de
+combate), escudos (rodela, escudo de metal), capucha de malla y cota de anillas, luz
+(`light` en el catálogo: antorcha y farol, que alumbran alrededor de quien los lleva en la
+mano izquierda; el cliente suma esas luces al mapa de luz), instrumentos (`music`: al tocarlos,
+lo escuchan los que están cerca) y gemas que dejan las criaturas fuertes. Marta la proveedora
+(`provisioner`) atiende un almacén en los pueblos medianos y grandes: vende comida, luz,
+bolsas e instrumentos, y compra gemas. La ventana de la tienda muestra el daño, la defensa o
+cuánto alimenta cada objeto, separa los estantes (armas, armaduras, comida, otros) en las
+tiendas grandes, calcula el total al comprar varios y tiene «Vender todo».
+
 ### Persistencia
 
 Un personaje se guarda como datos planos (`SavedCharacter`, en `domain/persistence`):

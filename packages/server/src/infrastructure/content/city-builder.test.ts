@@ -76,6 +76,7 @@ describe('buildCity', () => {
         'carpenter',
         'innkeeper',
         'mage',
+        'provisioner',
         'stablemaster',
         'woodcutter',
       ].sort(),

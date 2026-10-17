@@ -30,6 +30,15 @@ const ZOOM: Readonly<Record<ItemStyle, number>> = { ground: 1.9, icon: 2.5 };
 
 /** Ajuste del tamaño del ícono para que los objetos largos entren y los chicos se vean. */
 const ICON_FIT: Partial<Record<ItemKind, number>> = {
+  longsword: 0.66,
+  halberd: 0.72,
+  quarterstaff: 0.62,
+  'war-axe': 0.72,
+  ruby: 1.3,
+  sapphire: 1.3,
+  emerald: 1.3,
+  amethyst: 1.3,
+  diamond: 1.3,
   'short-sword': 0.72,
   axe: 0.72,
   pickaxe: 0.72,
@@ -86,6 +95,21 @@ function hilt(c: VolumeCanvas, at: Vec3, dir: Vec3, length: number, guard: numbe
 }
 
 type Model = (c: VolumeCanvas, color: Ramp) => void;
+
+/** Unas gemas talladas, brillantes, del color pedido. */
+function gems(rgb: Rgb): Model {
+  const color = ramp(rgb);
+  return (c) => {
+    for (const [x, z, r] of [
+      [-1.6, 0.8, 1.6],
+      [1.4, 1.2, 1.3],
+      [0.2, -1.4, 1.5],
+    ] as const)
+      c.ellipsoid([x, r * 0.8, z], lying(x), [r, r * 0.8, r], (s) =>
+        s.light > 0.82 ? [255, 255, 255] : tone(color, s.light + 0.1, s.n[1] > 0.5 ? 1 : 0),
+      );
+  };
+}
 
 /** Una bolsa: el cuerpo redondeado, el cuello fruncido y el cordón. */
 function sack(c: VolumeCanvas, leather: Ramp, radius: number, height: number): void {
@@ -183,6 +207,230 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
       );
     }
   },
+  bread(c) {
+    // Hogaza dorada con cortes en la corteza.
+    const crust = ramp([196, 140, 70]);
+    c.ellipsoid([0, 2.2, 0], lying(0.5), [3.4, 2.4, 5.2], (s) =>
+      tone(crust, s.light, Math.abs(((s.p[2] * 0.9 + s.p[0] * 0.4 + 20) % 3) - 1.5) < 0.3 ? -1 : 0),
+    );
+  },
+  cheese(c) {
+    // Una rueda con una porción cortada: cáscara amarilla y agujeros.
+    const paste = ramp([236, 200, 90]);
+    c.limb([0, 0, 0], [0, 1.6, 0], 4.6, 4.6, (s) =>
+      noise(Math.floor(s.p[0] * 1.6), Math.floor(s.p[2] * 1.6), 3) > 0.84
+        ? tone(paste, s.light, -1)
+        : tone(paste, s.light),
+    );
+  },
+  ham(c) {
+    const meat = ramp([196, 92, 80]);
+    c.ellipsoid([0, 2.4, 0.6], lying(0.6), [3.4, 2.6, 4.8], (s) =>
+      tone(meat, s.light, s.n[1] > 0.6 ? 1 : 0),
+    );
+    c.limb([-2, 2.4, -3.2], [-3.4, 2.6, -5.6], 0.8, 0.6, solid(ramp([236, 228, 210])));
+  },
+  carrot(c) {
+    for (const [x, z, a] of [
+      [-1.4, 0.6, 0.4],
+      [1.2, -0.6, -0.3],
+    ] as const) {
+      const from: Vec3 = [x - Math.sin(a) * 4, 1.2, z - Math.cos(a) * 4];
+      const to: Vec3 = [x + Math.sin(a) * 3, 0.8, z + Math.cos(a) * 3];
+      c.limb(from, to, 1.2, 0.2, (s) => tone(ramp([230, 120, 40]), s.light));
+      c.limb(
+        from,
+        add(from, [-Math.sin(a) * 2, 0.6, -Math.cos(a) * 2]),
+        0.6,
+        0.2,
+        solid(ramp([80, 150, 60])),
+      );
+    }
+  },
+  'meat-pie'(c) {
+    const crust = ramp([206, 150, 80]);
+    c.limb([0, 0, 0], [0, 1.2, 0], 5, 4.4, (s) =>
+      s.n[1] > 0.7 && Math.abs(((s.p[0] + s.p[2] + 20) % 2.4) - 1.2) < 0.25
+        ? tone(crust, s.light, -1)
+        : tone(crust, s.light),
+    );
+  },
+  wine(c) {
+    // Botella oscura con corcho.
+    const glass = ramp([90, 30, 50]);
+    c.limb([0, 0, 0], [0, 5.4, 0], 2.4, 2.4, (s) =>
+      s.light > 0.85 ? [220, 180, 200] : tone(glass, s.light),
+    );
+    c.limb([0, 5.4, 0], [0, 8.4, 0], 2.2, 0.8, (s) => tone(glass, s.light));
+    c.limb([0, 8.4, 0], [0, 9.4, 0], 0.8, 0.8, solid(ramp([170, 130, 90])));
+  },
+  ale(c) {
+    // Jarra de madera con aros de hierro y espuma.
+    const wood = ramp([150, 104, 60]);
+    c.limb([0, 0, 0], [0, 5.6, 0], 2.8, 2.6, (s) =>
+      Math.abs(s.p[1] - 1) < 0.4 || Math.abs(s.p[1] - 4.6) < 0.4
+        ? tone(DARK_STEEL, s.light)
+        : tone(wood, s.light, Math.floor(Math.atan2(s.p[2], s.p[0]) * 3) % 2 ? -1 : 0),
+    );
+    c.ellipsoid([0, 5.8, 0], lying(0), [2.6, 0.8, 2.6], solid(ramp([240, 236, 220])));
+    c.limb([2.6, 1.4, 0], [3.8, 3, 0], 0.6, 0.6, solid(wood, -1));
+    c.limb([3.8, 3, 0], [2.6, 4.6, 0], 0.6, 0.6, solid(wood, -1));
+  },
+  longsword(c) {
+    blade(c, [-3.6, 0.6, 2.8], [7.4, 0.6, -3], 1.2);
+    hilt(c, [-3.6, 0.6, 2.8], normalize([11, 0, -5.8]), 4.4, 2.8);
+  },
+  scimitar(c) {
+    // Hoja curva que se ensancha hacia la punta.
+    const from: Vec3 = [-2.8, 0.6, 2.2];
+    c.limb(from, [1.6, 0.6, 0.2], 0.9, 1.1, metal(STEEL));
+    c.limb([1.6, 0.6, 0.2], [5.4, 0.6, -0.4], 1.1, 1.3, metal(STEEL));
+    c.limb([5.4, 0.6, -0.4], [7.2, 0.6, -2.2], 1.3, 0.2, metal(STEEL));
+    hilt(c, from, normalize([4.4, 0, -2]), 3.2, 2);
+  },
+  'war-axe'(c) {
+    // Mango y hoja doble, como una media luna a cada lado.
+    const end: Vec3 = [4.6, 0.9, -2.2];
+    const d = normalize([10.6, 0, -5.2]);
+    const n: Vec3 = [-d[2], 0, d[0]];
+    const at = (along: number, out: number): Vec3 => [
+      end[0] + d[0] * along + n[0] * out,
+      1,
+      end[2] + d[2] * along + n[2] * out,
+    ];
+    c.limb([-6, 0.7, 3], add(end, [d[0] * 1.5, 0, d[2] * 1.5]), 0.75, 0.75, solid(WOOD));
+    for (const side of [1, -1])
+      c.polygon(
+        [
+          at(-1, 0.4 * side),
+          at(1, 0.4 * side),
+          at(3.4, 4.6 * side),
+          at(0, 5.6 * side),
+          at(-3.4, 4.6 * side),
+        ],
+        (s) => tone(STEEL, s.light + 0.1),
+      );
+  },
+  halberd(c) {
+    // Asta larga, hoja de hacha y punta de lanza.
+    c.limb([-8, 0.6, 4.4], [6.6, 0.6, -3.2], 0.55, 0.55, solid(WOOD));
+    const d = normalize([14.6, 0, -7.6]);
+    const n: Vec3 = [-d[2], 0, d[0]];
+    const at = (along: number, out: number): Vec3 => [
+      4 + d[0] * along + n[0] * out,
+      0.9,
+      -1.9 + d[2] * along + n[2] * out,
+    ];
+    c.polygon([at(-2.2, 0.3), at(2, 0.3), at(1.6, 5), at(-2.6, 4.2)], metal(STEEL));
+    c.polygon([at(-1, -0.3), at(1, -0.3), at(0, -2.4)], metal(STEEL));
+    c.polygon([at(2.6, 0), at(3.8, 1), at(7, 0), at(3.8, -1)], metal(STEEL));
+  },
+  club(c) {
+    // Palo nudoso que engorda hacia la punta.
+    c.limb([-5, 0.8, 2.8], [4.8, 1.4, -2.2], 0.7, 1.7, (s) =>
+      tone(WOOD, s.light, noise(Math.floor(s.p[0]), Math.floor(s.p[2])) > 0.8 ? -1 : 0),
+    );
+  },
+  quarterstaff(c) {
+    c.limb([-8, 0.6, 4.2], [8, 0.6, -4.2], 0.6, 0.6, solid(WOOD));
+    for (const t of [-0.15, 0.15])
+      c.limb(
+        [t * 16 - 0.6, 0.6, -t * 8.4 + 0.3],
+        [t * 16 + 0.6, 0.6, -t * 8.4 - 0.3],
+        0.75,
+        0.75,
+        solid(GRIP),
+      );
+  },
+  buckler(c) {
+    // Escudo chico de metal con el centro abombado.
+    c.ellipsoid([0, 1, 0], lying(0), [4.4, 1.1, 4.4], (s) =>
+      Math.hypot(s.p[0], s.p[2]) > 3.7 ? tone(DARK_STEEL, s.light) : metal(STEEL)(s),
+    );
+    c.sphere([0, 1.8, 0], 1.3, metal(STEEL));
+  },
+  'metal-shield'(c) {
+    // Escudo en forma de gota (punta abajo), de acero con borde y cruz.
+    c.polygon(
+      [
+        [-5, 1, -5],
+        [5, 1, -5],
+        [5.4, 1, 0],
+        [0, 1, 6.4],
+        [-5.4, 1, 0],
+      ],
+      (s) =>
+        Math.abs(s.p[0]) < 0.4 || Math.abs(s.p[2] + 1) < 0.4
+          ? tone(GOLD, s.light - 0.2)
+          : tone(STEEL, s.light - 0.25, Math.abs(s.p[0]) > 4.4 || s.p[2] < -4.4 ? -1 : 0),
+    );
+  },
+  'chain-coif'(c) {
+    c.ellipsoid(
+      [0, 0.2, 0],
+      lying(0),
+      [4.2, 3.6, 4.4],
+      clipping((s) =>
+        s.p[1] > 0 ? tone(STEEL, s.light, (s.x + s.y * 2) % 3 === 0 ? -1 : 0) : null,
+      ),
+    );
+    c.ellipsoid([0, 0.5, 0], lying(0), [5.2, 0.6, 5.6], (s) =>
+      tone(STEEL, s.light, (s.x + s.y) % 2 ? -1 : 0),
+    );
+  },
+  ringmail(c) {
+    tunic(c, (s) => tone(DARK_STEEL, s.light + 0.1, Math.round(s.p[2] * 1.2) % 2 ? 1 : 0));
+  },
+  torch(c) {
+    c.limb([-4, 0.6, 2.4], [3, 0.8, -1.4], 0.6, 0.8, solid(WOOD));
+    c.ellipsoid([3.6, 1.2, -1.8], lying(1), [1.3, 1.1, 1.8], solid(ramp([60, 40, 28])));
+    c.sphere([4.4, 2.4, -2.2], 1.4, (s) => tone(ramp([255, 190, 70]), 0.6 + s.light * 0.4));
+  },
+  lantern(c) {
+    // Farol de hierro con vidrios y una llama adentro.
+    c.box([0, 2.8, 0], lying(0.3), [2.2, 2.8, 2.2], (s) =>
+      Math.abs(s.n[1]) > 0.7 || Math.abs(Math.abs(s.p[0]) - 2) < 0.4
+        ? tone(DARK_STEEL, s.light)
+        : tone(ramp([255, 210, 120]), 0.7 + s.light * 0.3),
+    );
+    c.limb([0, 5.6, 0], [0, 6.8, 0], 1.6, 0.6, metal(DARK_STEEL));
+    c.limb([-1, 7, 0], [1, 7, 0], 0.3, 0.3, metal(DARK_STEEL));
+  },
+  lute(c) {
+    // Caja en forma de pera y mástil con el clavijero doblado.
+    const wood = ramp([186, 120, 62]);
+    c.ellipsoid([1.6, 1.4, 1], lying(0.9), [3.6, 1.4, 4.6], (s) =>
+      Math.hypot(s.p[0] - 1, s.p[2] - 0.6) < 1.1 && s.n[1] > 0.7
+        ? tone(ramp([40, 26, 18]), s.light)
+        : tone(wood, s.light),
+    );
+    c.limb([-1.4, 1.6, -1.2], [-5.4, 1.6, -4], 0.7, 0.6, solid(GRIP));
+    c.limb([-5.4, 1.6, -4], [-6.6, 1, -4.2], 0.8, 0.8, solid(GRIP));
+  },
+  drum(c) {
+    c.limb([0, 0, 0], [0, 4.4, 0], 3.8, 3.8, (s) =>
+      s.n[1] > 0.7
+        ? tone(ramp([226, 212, 180]), s.light)
+        : tone(
+            ramp([150, 50, 40]),
+            s.light,
+            Math.floor(Math.atan2(s.p[2], s.p[0]) * 2.5) % 2 ? -1 : 0,
+          ),
+    );
+    c.limb([-4, 5.6, 2], [1, 4.6, 0], 0.35, 0.35, solid(WOOD));
+  },
+  flute(c) {
+    c.limb([-6, 0.6, 3], [6, 0.6, -3], 0.75, 0.7, (s) =>
+      Math.abs(((s.p[0] + 20) % 2) - 1) < 0.25 && s.n[1] > 0.6
+        ? tone(ramp([60, 40, 24]), s.light)
+        : tone(ramp([196, 156, 96]), s.light),
+    );
+  },
+  ruby: gems([220, 30, 50]),
+  sapphire: gems([40, 70, 220]),
+  emerald: gems([40, 180, 90]),
+  amethyst: gems([150, 70, 200]),
+  diamond: gems([230, 240, 250]),
   dagger(c) {
     blade(c, [-1, 0.6, 1.2], [4.6, 0.6, -1.6], 1);
     hilt(c, [-1, 0.6, 1.2], normalize([5.6, 0, -2.8]), 3, 1.8);
