@@ -430,3 +430,58 @@ describe('montañas', () => {
     }
   });
 });
+
+describe('pisos altos: posadas, torres de mago y casas de dos pisos', () => {
+  const { map } = buildWorld({ size: 700, height: 900, seed: 1997 });
+  const floors = map.regions.filter((r) => r.floor);
+  const levelOf = (p: Position): number => map.regionAt(p)?.floor ?? 0;
+  const hop = (p: Position): Position | undefined => map.teleportAt(p);
+
+  it('hay posadas con piso alto y torres de mago con dos pisos y escalera de caracol', () => {
+    expect(floors.some((r) => r.name.includes('la posada'))).toBe(true);
+    expect(floors.some((r) => r.name.includes('la torre del mago') && r.floor === 2)).toBe(true);
+    const kinds = new Set(map.statics.map((s) => s.kind));
+    for (const kind of ['spiral-stairs', 'stair-hole', 'stairs-wood'] as const)
+      expect(kinds.has(kind), kind).toBe(true);
+  });
+
+  it('se sube piso por piso por la escalera y se baja por el hueco hasta la planta baja', () => {
+    const stairs = map.statics.filter((s) => s.kind === 'spiral-stairs' && levelOf(s) === 0);
+    expect(stairs.length).toBeGreaterThan(0);
+    for (const stair of stairs) {
+      // Arriba: planta baja → primer piso → segundo piso.
+      const first = hop(stair);
+      expect(first && levelOf(first)).toBe(1);
+      if (!first) continue;
+      const walk1 = reachable(map, first);
+      const up = map.statics.find(
+        (s) => s.kind === 'spiral-stairs' && map.regionAt(s) === map.regionAt(first),
+      );
+      expect(up && walk1.has(`${up.x},${up.y}`)).toBe(true);
+      const second = up ? hop(up) : undefined;
+      expect(second && levelOf(second)).toBe(2);
+      if (!second) continue;
+      // Abajo: desde el segundo piso se vuelve al primero y de ahí a la calle.
+      const hole2 = map.statics.find(
+        (s) => s.kind === 'stair-hole' && map.regionAt(s) === map.regionAt(second),
+      );
+      const back1 = hole2 ? hop(hole2) : undefined;
+      expect(back1 && levelOf(back1)).toBe(1);
+      const hole1 = map.statics.find(
+        (s) => s.kind === 'stair-hole' && map.regionAt(s) === map.regionAt(first),
+      );
+      const street = hole1 ? hop(hole1) : undefined;
+      expect(street && levelOf(street)).toBe(0);
+      expect(street && map.isWalkable(street)).toBe(true);
+      expect(street && Math.abs(street.x - stair.x) + Math.abs(street.y - stair.y)).toBe(1);
+    }
+  });
+
+  it('desde un piso alto no se ve la calle', () => {
+    const floor = floors[0];
+    if (!floor) throw new Error('sin pisos');
+    const inside = { x: floor.x + 3, y: floor.y + 3 };
+    expect(map.levelAt(inside)).not.toBe('');
+    expect(map.levelAt({ x: 10, y: 10 })).toBe('');
+  });
+});

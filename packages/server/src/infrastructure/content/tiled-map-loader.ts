@@ -20,6 +20,7 @@ import {
   type StaticPlacement,
   type Terrain,
 } from '@fenix/shared';
+import type { Ascent } from './upper-floors';
 
 /** Error con un mensaje claro para quien está editando el mapa. */
 export class MapFormatError extends Error {
@@ -70,6 +71,8 @@ export interface MapRegion {
    */
   /** Bajadas a lugares bajo tierra (la cripta del cementerio, la alcantarilla). */
   readonly descents?: readonly Descent[];
+  /** Subidas a los pisos altos de los edificios. */
+  readonly ascents?: readonly Ascent[];
   readonly rivers?: readonly {
     readonly x: number;
     readonly y: number;

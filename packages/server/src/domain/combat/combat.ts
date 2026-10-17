@@ -2,6 +2,7 @@ import {
   MELEE_RANGE,
   armorOf,
   resolveAttack,
+  hasLineOfSight,
   tileDistance,
   weaponOf,
   type DefenderStats,
@@ -85,6 +86,8 @@ export function trySwing(
   const weapon = weaponFor(attacker, world);
   const range = weapon.range ?? MELEE_RANGE;
   if (tileDistance(attacker.position, target.position) > range) return null;
+  // Ni flechas ni golpes atraviesan paredes, rejas o puertas cerradas.
+  if (!hasLineOfSight(world.map, attacker.position, target.position)) return null;
   if (now < attacker.combat.nextSwingAt) return null;
 
   // Los arcos gastan una flecha por disparo; sin flechas no se dispara.

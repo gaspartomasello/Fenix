@@ -21,6 +21,7 @@ import {
 } from './procedural-map';
 import { buildCity } from './city-builder';
 import { generateCrypt, generateSewer, type Underground } from './underground';
+import { generateFloors, type Ascent, type UpperFloor } from './upper-floors';
 
 /**
  * Versión de la forma del mundo: si cambia, los personajes guardados en el
@@ -53,6 +54,8 @@ export interface BuiltWorld extends GeneratedWorld {
 export const DUNGEON_NAME = 'Cueva del Lamento';
 const DUNGEON_SIZE = 60;
 /** Roca maciza entre el continente y la mazmorra, para que desde adentro no se vea el mar. */
+/** Separación entre los pisos altos (roca negra). */
+const FLOOR_GAP = 40;
 const DUNGEON_GAP = 24;
 
 /** Por debajo de este tamaño el mapa no da para los tres pueblos: queda solo la capital. */
@@ -208,8 +211,36 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
     pocketTop += place.height + DUNGEON_GAP;
   }
   const pocketWidth = Math.max(0, ...below.map((b) => b.place.width));
-  const width = pockets.length > 0 ? pocketLeft + pocketWidth : left + dungeon.width;
-  const height = Math.max(landHeight, dungeon.height, pocketTop);
+  // Los pisos altos de los edificios, todavía más a la derecha, en columnas.
+  const upperLeft =
+    (pockets.length > 0 ? pocketLeft + pocketWidth : left + dungeon.width) + FLOOR_GAP;
+  const columnHeight = Math.max(landHeight, dungeon.height, pocketTop, 120);
+  const upper: { ascent: Ascent; floors: { floor: UpperFloor; at: Position }[] }[] = [];
+  let column = { x: upperLeft, y: 0, width: 0 };
+  continent.ascents.forEach((ascent, i) => {
+    const floors = generateFloors(ascent, seed + 300 + i * 11).map((floor) => {
+      if (column.y + floor.height > columnHeight) {
+        column = { x: column.x + column.width + FLOOR_GAP, y: 0, width: 0 };
+      }
+      const at = { x: column.x, y: column.y };
+      column.y += floor.height + FLOOR_GAP;
+      column.width = Math.max(column.width, floor.width);
+      return { floor, at };
+    });
+    upper.push({ ascent, floors });
+  });
+  const width =
+    upper.length > 0
+      ? column.x + column.width
+      : pockets.length > 0
+        ? pocketLeft + pocketWidth
+        : left + dungeon.width;
+  const height = Math.max(
+    landHeight,
+    dungeon.height,
+    pocketTop,
+    upper.length > 0 ? columnHeight : 0,
+  );
   const terrain = new Array<Terrain>(width * height).fill(Terrain.Rock);
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -226,7 +257,10 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
       terrain[y * width + x] = tile ?? Terrain.Rock;
     }
   }
-  for (const { place, at } of pockets)
+  for (const { place, at } of [
+    ...pockets,
+    ...upper.flatMap((u) => u.floors.map((f) => ({ place: f.floor, at: f.at }))),
+  ])
     place.terrain.forEach((tile, i) => {
       const x = at.x + (i % place.width);
       const y = at.y + Math.floor(i / place.width);
@@ -253,6 +287,9 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
     ...islandData.statics,
     ...dungeon.statics.map((s) => ({ ...s, ...shift(s) })),
     ...pockets.flatMap(({ place, at }) => place.statics.map((s) => ({ ...s, ...inPocket(at)(s) }))),
+    ...upper.flatMap(({ floors }) =>
+      floors.flatMap(({ floor, at }) => floor.statics.map((s) => ({ ...s, ...inPocket(at)(s) }))),
+    ),
   ];
 
   const map = new TileMap({
@@ -270,6 +307,17 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
         height: place.height,
         dungeon: true,
       })),
+      // Los pisos altos: tienen luz de día y son tan seguros como el pueblo.
+      ...upper.flatMap(({ floors }) =>
+        floors.map(({ floor, at }) => ({
+          name: floor.name,
+          x: at.x,
+          y: at.y,
+          width: floor.width,
+          height: floor.height,
+          floor: floor.level,
+        })),
+      ),
       { name: DUNGEON_NAME, x: size, y: 0, width: width - size, height, dungeon: true },
     ],
     teleporters: [
@@ -289,6 +337,22 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
           { ...to(pocket.place.ladder), to: back },
         ];
       }),
+      // Subir por la escalera y bajar por el hueco, piso por piso.
+      ...upper.flatMap(({ ascent, floors }) =>
+        floors.flatMap(({ floor, at }, k) => {
+          const here = inPocket(at);
+          const previous = floors[k - 1];
+          const next = floors[k + 1];
+          const below = previous?.floor.upBack
+            ? inPocket(previous.at)(previous.floor.upBack)
+            : ascent.back;
+          const links = [{ ...here(floor.down), to: below }];
+          if (!previous) links.push({ ...ascent.position, to: here(floor.arrival) });
+          if (next && floor.up)
+            links.push({ ...here(floor.up), to: inPocket(next.at)(next.floor.arrival) });
+          return links;
+        }),
+      ),
     ],
     signs: islandData.signs ?? [],
     ...(heights ? { heights } : {}),

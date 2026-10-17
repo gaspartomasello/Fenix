@@ -6,6 +6,7 @@ import {
   TREASURE_MAP_DROPS,
   SPELLS,
   describeItem,
+  hasLineOfSight,
   step,
   tileDistance,
   wearsMetalArmor,
@@ -273,6 +274,12 @@ export class GameLoop {
       case 'fizzled':
         this.notifier.send(player.id, { type: 'system', text: `${spell.name}: el hechizo falló.` });
         return;
+      case 'blocked':
+        this.notifier.send(player.id, {
+          type: 'system',
+          text: `${spell.name}: el hechizo falló, el objetivo no está a la vista.`,
+        });
+        return;
       case 'delayed':
         // El maná ya se gastó; cae en un rato y mientras tanto se puede lanzar otro.
         this.delayedSpells.push(outcome.delayed);
@@ -449,11 +456,15 @@ export class GameLoop {
       this.afterHarm(creature, cast.target, cast.amount, cast.killed, cast.effectsChanged, now);
     }
     if (!target || creature.fleeing) return;
-    const spell = startCreatureCast(creature, target, now, this.roll);
+    // Sin verlo (una pared, otro piso) no le tira hechizos ni fuego: se acerca.
+    const visible = hasLineOfSight(this.world.map, creature.position, target.position);
+    const spell = startCreatureCast(creature, target, now, this.roll, visible);
     if (spell) this.mobiles.castStart(creature, spell);
     // El aliento no sale siempre que puede: así no es predecible.
     const hits =
-      this.roll() < 0.5 ? breatheFire(creature, target, this.world, now, this.roll) : null;
+      visible && this.roll() < 0.5
+        ? breatheFire(creature, target, this.world, now, this.roll)
+        : null;
     for (const hit of hits ?? []) {
       this.mobiles.spellEffect(creature, hit.target, 'flamestrike', hit.amount, false);
       this.afterHarm(creature, hit.target, hit.amount, hit.killed, false, now);

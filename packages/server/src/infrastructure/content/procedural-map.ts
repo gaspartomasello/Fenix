@@ -12,6 +12,7 @@ import {
 } from '@fenix/shared';
 import { cheapestPath, curvePath } from './roads';
 import type { Descent, MapRegion, PlacedItem } from './tiled-map-loader';
+import type { Ascent } from './upper-floors';
 
 export interface GeneratedWorld {
   readonly map: TileMap;
@@ -87,6 +88,8 @@ export interface Continent extends GeneratedWorld {
   readonly townCreatures: readonly { readonly kind: CreatureKind; readonly home: Position }[];
   /** Bajadas de los pueblos (criptas, alcantarilla), ya en coordenadas del mapa. */
   readonly descents: readonly Descent[];
+  /** Subidas a pisos altos de los pueblos, ya en coordenadas del mapa. */
+  readonly ascents: readonly Ascent[];
 }
 
 /** Suelos naturales que se entreveran en los bordes (los pisos y el agua no). */
@@ -629,6 +632,7 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
   const npcs: { role: NpcRole; position: Position; name?: string }[] = [];
   const townCreatures: { kind: CreatureKind; home: Position }[] = [];
   const descents: Descent[] = [];
+  const ascents: Ascent[] = [];
   let spawnPoint: Position = { x: Math.floor(width / 2), y: Math.floor(height / 2) };
   for (const { plan, x: ox, y: oy } of towns) {
     const town = plan.map;
@@ -650,6 +654,14 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
       ...(town.descents ?? []).map((d) => ({
         ...d,
         position: { x: d.position.x + ox, y: d.position.y + oy },
+      })),
+    );
+    const shift = (p: Position): Position => ({ x: p.x + ox, y: p.y + oy });
+    ascents.push(
+      ...(town.ascents ?? []).map((a) => ({
+        ...a,
+        position: shift(a.position),
+        back: shift(a.back),
       })),
     );
     townCreatures.push(
@@ -970,6 +982,7 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     passes,
     townCreatures,
     descents,
+    ascents,
   };
 
   function neighbors4(x: number, y: number): [number, number][] {
