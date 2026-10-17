@@ -165,6 +165,14 @@ export class Items {
     return item;
   }
 
+  /** Lo saca del mundo avisando a quien lo tenía o lo veía (un mapa que se usó). */
+  destroy(id: EntityId, changes: ItemChanges): void {
+    const item = this.byId.get(id);
+    if (!item) return;
+    this.detach(item, changes);
+    this.byId.delete(id);
+  }
+
   /** El cuerpo se deshizo: lo que quedaba adentro se pierde con él. */
   removeCorpse(corpseId: EntityId): void {
     for (const item of this.corpseOf(corpseId)) this.byId.delete(item.id);
@@ -432,6 +440,8 @@ export class Items {
       case 'book':
       case 'music':
       case 'dye':
+      case 'map':
+      case 'dig':
         // Se resuelven en otros casos de uso (o en el cliente): acá no hay nada que hacer.
         return { ok: true, changes };
       case 'none': {

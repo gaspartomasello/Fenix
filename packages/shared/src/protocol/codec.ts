@@ -194,6 +194,12 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       }
       break;
     }
+    case 'dig': {
+      const position = asPosition(data.position);
+      if (isId(data.toolId) && position)
+        return { ok: true, message: { type: 'dig', toolId: data.toolId, position } };
+      break;
+    }
     case 'buy':
       if (
         isId(data.vendorId) &&
@@ -328,6 +334,7 @@ const SERVER_TYPE_FLAGS: Readonly<Record<ServerMessageType, true>> = {
   container: true,
   containerClosed: true,
   book: true,
+  treasureMap: true,
   questOffer: true,
   quests: true,
   joinRejected: true,

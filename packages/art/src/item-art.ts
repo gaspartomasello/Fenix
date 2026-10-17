@@ -52,6 +52,7 @@ const ICON_FIT: Partial<Record<ItemKind, number>> = {
   nightshade: 1.5,
   'scribe-pen': 1.2,
   'empty-bottle': 1.05,
+  shovel: 0.72,
 };
 
 const OUTLINE: Rgb = [24, 17, 14];
@@ -830,6 +831,42 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
       tone(PAPER, s.light, Math.abs(s.p[0] * 0.9 - s.p[2] * 0.4) < 0.25 ? -1 : 0),
     );
     c.sphere([0.4, 1, 0.2], 1.1, (s) => tone(ramp([170, 30, 30]), s.light));
+  },
+  'treasure-map'(c) {
+    // Pergamino viejo, manchado, con un camino punteado que termina en una cruz roja.
+    const aged = ramp([206, 184, 140]);
+    c.box([0, 0.5, 0], lying(0.35), [4.8, 0.3, 3.6], (s) => {
+      const [x, , z] = s.p;
+      const cross = Math.abs(Math.abs(x - 2) - Math.abs(z + 1.2)) < 0.35 && Math.abs(x - 2) < 1;
+      if (cross) return tone(ramp([176, 34, 30]), s.light);
+      const path = Math.abs(z - Math.sin(x * 0.9) * 1.4) < 0.22 && Math.floor(x * 1.6) % 2 === 0;
+      if (path && x < 1.4) return tone(ramp([92, 62, 40]), s.light);
+      return tone(aged, s.light, noise(s.x, s.y) > 0.82 ? -1 : 0);
+    });
+    // Un borde todavía enrollado.
+    c.limb([-4.6, 1, -2], [-3, 1, 3.4], 0.9, 0.9, (s) => tone(aged, s.light, -1));
+  },
+  shovel(c) {
+    c.limb([-6, 0.7, 3.6], [3, 0.7, -1.8], 0.6, 0.6, solid(WOOD));
+    c.limb([-6.6, 0.7, 2.6], [-5.4, 0.7, 4.6], 0.55, 0.55, solid(GRIP));
+    c.box([4.8, 0.8, -2.9], lying(-0.54), [2.6, 0.4, 2.1], solid(DARK_STEEL));
+  },
+  'treasure-chest'(c) {
+    // Cofre grande con tapa redonda, flejes y cerradura de oro; asoman monedas.
+    const wood = ramp([112, 70, 38]);
+    const plank: Material = (s) =>
+      tone(wood, s.light, Math.abs(((s.p[0] + 20) % 2.4) - 1.2) < 0.16 ? -1 : 0);
+    const axes = lying(0);
+    c.box([0, 2.8, 0], axes, [6.4, 2.8, 4.2], plank);
+    c.ellipsoid([0, 5.6, 0], axes, [6.5, 2, 4.3], plank);
+    for (const x of [-4.4, 0, 4.4]) c.box([x, 3.6, 0], axes, [0.45, 3.7, 4.45], metal(GOLD));
+    c.box([0, 4.6, 4.4], axes, [1, 1.1, 0.4], metal(GOLD));
+    for (const [x, z] of [
+      [-2.2, -0.8],
+      [2.6, 1],
+      [0.4, -1.8],
+    ] as const)
+      c.ellipsoid([x, 7.4, z], lying(0.6), [1.1, 0.35, 1.1], metal(GOLD));
   },
   'black-pearl'(c) {
     for (const at of [

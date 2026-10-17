@@ -477,6 +477,21 @@ al objetivo y a todo lo que tenga alrededor: curar y proteger a varios, cadena d
 meteoritos y maldición en masa. «Trampa mágica» se lanza sobre un cofre o barril del mundo: quien
 lo abra recibe una explosión (`TRAP_DAMAGE`); «Desactivar trampa» la quita.
 
+### Búsqueda de tesoros
+
+Algunas criaturas (orcos, bandoleros, piratas, corsarios, trolls, liches, dragones… ver
+`TREASURE_MAP_DROPS`) pueden dejar en el cuerpo un mapa del tesoro de nivel 1 a 4. Al dejarlo,
+`chartTreasure` elige un lugar de tierra firme fuera de los pueblos y las mazmorras y lo guarda en
+`Item.treasure` (se persiste con el personaje). El caso de uso `TreasureHunt` responde al doble
+clic con `treasureMap`: el cliente dibuja ese trozo del mundo en pergamino, con la cruz y una pista
+respecto del pueblo o lugar más cercano (`treasureHint`). Con el mapa encima, se cava con una pala
+(`dig`) a menos de `DIG_RANGE` tiles de la cruz: hace falta minería según el nivel y cada palada
+tiene una probabilidad (`digChance`). Al acertar, el mapa se gasta, aparece un cofre del tesoro fijo
+en el suelo con oro, gemas y algún objeto (`TREASURE_LEVELS`), y salen sus guardianes (criaturas
+temporales, que no reaparecen). El cofre se deshace solo después de `TREASURE_CHEST_MS`. La pala la
+venden el herrero y Marta; Marta también compra mapas. Los administradores ven las coordenadas de la
+marca al leer el mapa.
+
 ### Persistencia
 
 Un personaje se guarda como datos planos (`SavedCharacter`, en `domain/persistence`):

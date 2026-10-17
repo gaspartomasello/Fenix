@@ -24,6 +24,7 @@ import {
   type SocialCommand,
   type BookMessage,
   type Quest,
+  type TreasureMark,
   type QuestProgress,
   type SocialMessage,
   type Direction,
@@ -111,6 +112,8 @@ export interface ClientGameEvents extends Record<string, unknown> {
   questsChanged: readonly QuestProgress[];
   /** Se abrió un libro (respuesta al doble clic). */
   bookOpened: BookContents;
+  /** Se abrió un mapa del tesoro. */
+  treasureMapOpened: { name: string; mark: TreasureMark; hint: string };
   /** Una puerta se abrió o se cerró. */
   doorChanged: { position: Position; open: boolean };
 }
@@ -457,6 +460,11 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     if (this.self) this.gateway.send({ type: 'gather', toolId, position });
   }
 
+  /** Cavar con la pala (buscando un tesoro). */
+  dig(toolId: EntityId, position: { x: number; y: number }): void {
+    if (this.self) this.gateway.send({ type: 'dig', toolId, position });
+  }
+
   buy(vendorId: EntityId, kind: ItemKind, amount: number): void {
     if (this.self) this.gateway.send({ type: 'buy', vendorId, kind, amount });
   }
@@ -708,6 +716,13 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         break;
       case 'quests':
         this.emit('questsChanged', message.quests);
+        break;
+      case 'treasureMap':
+        this.emit('treasureMapOpened', {
+          name: message.name,
+          mark: message.mark,
+          hint: message.hint,
+        });
         break;
       case 'book': {
         this.emit('bookOpened', {

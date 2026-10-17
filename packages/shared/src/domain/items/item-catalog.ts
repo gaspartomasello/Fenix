@@ -102,6 +102,10 @@ export const BASE_ITEM_KINDS = [
   'field-poison',
   'field-paralyze',
   'field-energy',
+  // Búsqueda de tesoros
+  'treasure-map',
+  'shovel',
+  'treasure-chest',
   'black-pearl',
   'blood-moss',
   'garlic',
@@ -170,6 +174,8 @@ export type ItemUse =
   | 'book'
   | 'music'
   | 'dye'
+  | 'map'
+  | 'dig'
   | 'none';
 
 /** Lo que hace una poción al tomarla. */
@@ -294,6 +300,20 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
     plural: 'campos de energía',
     article: 'un',
     fixed: true,
+  },
+  'treasure-map': {
+    name: 'mapa del tesoro',
+    plural: 'mapas del tesoro',
+    article: 'un',
+    use: 'map',
+  },
+  shovel: { name: 'pala', plural: 'palas', article: 'una', use: 'dig' },
+  'treasure-chest': {
+    name: 'cofre del tesoro',
+    plural: 'cofres del tesoro',
+    article: 'un',
+    fixed: true,
+    capacity: 40,
   },
 
   dagger: weapon('daga', 'dagas', 'una'),

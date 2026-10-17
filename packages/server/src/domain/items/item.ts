@@ -8,6 +8,7 @@ import type {
   ItemKind,
   Position,
   RuneMark,
+  TreasureMark,
 } from '@fenix/shared';
 
 /** Dónde está un objeto: en el suelo, en una mochila, puesto o dentro de un cuerpo. */
@@ -43,6 +44,9 @@ export class Item {
 
   /** Teñido: su color (null: el de siempre). */
   hue: number | null = null;
+
+  /** Mapa del tesoro: dónde está enterrado el cofre (null si no es un mapa). */
+  treasure: TreasureMark | null = null;
 
   /** Lo que el cliente ve además de tipo y cantidad. */
   private get extra(): { mark?: RuneMark; bookTitle?: string; hue?: number } {

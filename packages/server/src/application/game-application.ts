@@ -32,6 +32,7 @@ import { GameMaster } from './use-cases/game-master';
 import { TownLife } from './use-cases/town-life';
 import { Books } from './use-cases/books';
 import { Dyeing } from './use-cases/dyeing';
+import { TreasureHunt } from './use-cases/treasure-hunt';
 import { Quests } from './use-cases/quests';
 import { Containers } from './use-cases/containers';
 import { MovePlayer } from './use-cases/move-player';
@@ -67,6 +68,7 @@ export class GameApplication {
   private readonly containers: Containers;
   private readonly books: Books;
   private readonly dyeing: Dyeing;
+  private readonly treasure: TreasureHunt;
   private readonly quests: Quests;
   private readonly movePlayer: MovePlayer;
   private readonly sendChat: SendChat;
@@ -189,6 +191,17 @@ export class GameApplication {
     this.books = new Books(world, notifications, notifier);
     this.dyeing = new Dyeing(world, notifications, notifier);
     this.useItem.openBook = (playerId, id) => this.books.read(playerId, id);
+    this.treasure = new TreasureHunt(
+      world,
+      clock,
+      ids,
+      random,
+      notifications,
+      this.mobiles,
+      notifier,
+      (name) => isTestCharacter(name, [...testCharacters, ...admins]),
+    );
+    this.useItem.openTreasureMap = (playerId, id) => this.treasure.read(playerId, id);
     this.quests = new Quests(world, clock, ids, notifications, notifier);
     this.townLife = new TownLife(
       world,
@@ -213,6 +226,7 @@ export class GameApplication {
       warMode,
     );
     this.loop.onCreatureKilled = (killer, creature) => this.quests.creatureKilled(killer, creature);
+    this.loop.onTreasureMap = (corpseId, level) => this.treasure.chartCorpse(corpseId, level);
     this.loop.onTrap = (casterId, containerId, armed) =>
       this.containers.setTrap(casterId, containerId, armed);
     this.containers.hurt = (playerId, amount) => {
@@ -231,6 +245,7 @@ export class GameApplication {
     this.loop.tick(now);
     this.townLife.tick(now);
     this.containers.tick(now);
+    this.treasure.tick(now);
     this.persistence.autosave(now);
   }
 
@@ -347,6 +362,9 @@ export class GameApplication {
         break;
       case 'dye':
         this.dyeing.dye(playerId, message.itemId, message.hue);
+        break;
+      case 'dig':
+        this.treasure.dig(playerId, message.toolId, message.position);
         break;
       case 'readBook':
         this.books.read(playerId, message.itemId);

@@ -18,6 +18,7 @@ import type { WorldTime } from '../domain/rules/daylight';
 import type { MoveMode } from '../domain/rules/movement';
 import type { CompactMapData } from '../domain/world/map-codec';
 import type { Quest, QuestProgress } from '../domain/quests/quests';
+import type { TreasureMark } from '../domain/treasure/treasure';
 
 export type EntityId = string;
 
@@ -179,6 +180,13 @@ export interface UseOnRequest {
 /** Recolectar del árbol o roca en esa posición, con la herramienta indicada. */
 export interface GatherRequest {
   readonly type: 'gather';
+  readonly toolId: EntityId;
+  readonly position: Position;
+}
+
+/** Cavar con la pala en esa posición (buscando un tesoro enterrado). */
+export interface DigRequest {
+  readonly type: 'dig';
   readonly toolId: EntityId;
   readonly position: Position;
 }
@@ -365,6 +373,7 @@ export type ClientMessage =
   | CastSpellRequest
   | UseOnRequest
   | GatherRequest
+  | DigRequest
   | BuyRequest
   | SellRequest
   | CraftRequest
@@ -649,6 +658,16 @@ export interface BookMessage {
   readonly writable: boolean;
 }
 
+/** Un mapa del tesoro abierto: dónde está marcado el cofre. */
+export interface TreasureMapMessage {
+  readonly type: 'treasureMap';
+  readonly itemId: EntityId;
+  readonly name: string;
+  readonly mark: TreasureMark;
+  /** "al noreste de Puerto Ceniza". */
+  readonly hint: string;
+}
+
 /** Un vecino ofrece una misión: se acepta o no. */
 export interface QuestOfferMessage {
   readonly type: 'questOffer';
@@ -686,6 +705,7 @@ export type ServerMessage =
   | ContainerMessage
   | ContainerClosedMessage
   | BookMessage
+  | TreasureMapMessage
   | QuestOfferMessage
   | QuestsMessage
   | JoinRejectedMessage
