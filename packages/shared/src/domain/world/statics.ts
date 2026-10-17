@@ -190,6 +190,10 @@ export const STATIC_KINDS = [
   'plank-window-y',
   'basalt-window-x',
   'basalt-window-y',
+  // Bajo tierra: criptas y alcantarillas
+  'sarcophagus',
+  'sewer-grate',
+  'cobweb',
 ] as const;
 
 export type StaticKind = (typeof STATIC_KINDS)[number];
@@ -434,6 +438,9 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   'plank-stack': define('plank-stack', 'pila de tablas', true),
   carpet: define('carpet', 'alfombra', false),
   candelabra: define('candelabra', 'candelabro', true, 4),
+  sarcophagus: define('sarcophagus', 'sarcófago', true),
+  'sewer-grate': define('sewer-grate', 'reja de la alcantarilla', false),
+  cobweb: define('cobweb', 'telaraña', false),
   'door-x': define('door-x', 'puerta', true),
   'door-y': define('door-y', 'puerta', true),
   'door-x-open': define('door-x-open', 'puerta abierta', false),

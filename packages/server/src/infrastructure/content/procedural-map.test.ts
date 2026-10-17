@@ -1,7 +1,7 @@
 import { DOORS, STATICS, Terrain, type Position, type TileMap } from '@fenix/shared';
 import { describe, expect, it } from 'vitest';
 import { generateIslandMap } from './procedural-map';
-import { buildWorld, createWorld } from './world-builder';
+import { DUNGEON_NAME, buildWorld, createWorld } from './world-builder';
 import { SequentialIds } from '../../test-support/fakes';
 
 describe('generateIslandMap', () => {
@@ -261,7 +261,8 @@ describe('mazmorra', () => {
     for (const d of doors) map.setDoorOpen(d, true);
     const cave = reachable(map, inside);
     expect(cave.size).toBeGreaterThan(closed.size);
-    for (const { home } of lairs) expect(cave.has(`${home.x},${home.y}`)).toBe(true);
+    for (const { home } of lairs.filter((l) => map.regionAt(l.home)?.name === DUNGEON_NAME))
+      expect(cave.has(`${home.x},${home.y}`)).toBe(true);
     const ladder = map.teleporters.find((t) => map.regionAt(t)?.dungeon);
     expect(ladder && cave.has(`${ladder.x},${ladder.y}`)).toBe(true);
     // La escalera devuelve al lado de la boca, afuera.
@@ -278,6 +279,34 @@ describe('mazmorra', () => {
     const dragons = lairs.filter((l) => l.kind === 'dragon');
     expect(dragons).toHaveLength(1);
     expect(lairs.some((l) => l.kind === 'lich')).toBe(true);
+  });
+});
+
+describe('bajo tierra: criptas y alcantarilla', () => {
+  const { map, lairs } = buildWorld({ size: 700, height: 900, seed: 1997 });
+  const below = map.regions.filter(
+    (r) => r.dungeon && (r.name.startsWith('Cripta') || r.name.startsWith('Alcantarillas')),
+  );
+
+  it('cada cementerio tiene su cripta y la capital su alcantarilla', () => {
+    expect(below.some((r) => r.name.startsWith('Alcantarillas'))).toBe(true);
+    expect(below.filter((r) => r.name.startsWith('Cripta')).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('se baja desde el pueblo, se llega a todas las criaturas y la escalera devuelve arriba', () => {
+    for (const region of below) {
+      const inside = (p: { x: number; y: number }): boolean => map.regionAt(p) === region;
+      const down = map.teleporters.find((t) => !map.regionAt(t)?.dungeon && inside(t.to));
+      expect(down, region.name).toBeDefined();
+      if (!down) continue;
+      const walk = reachable(map, down.to);
+      for (const { home } of lairs.filter((l) => inside(l.home)))
+        expect(walk.has(`${home.x},${home.y}`), `${region.name} ${home.x},${home.y}`).toBe(true);
+      const up = map.teleporters.find((t) => inside(t));
+      expect(up && walk.has(`${up.x},${up.y}`)).toBe(true);
+      expect(map.isWalkable(up?.to ?? down)).toBe(true);
+      expect(map.regionAt(up?.to ?? down)?.dungeon).toBeFalsy();
+    }
   });
 });
 

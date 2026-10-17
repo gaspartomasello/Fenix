@@ -20,6 +20,7 @@ import {
   type TownPlan,
 } from './procedural-map';
 import { buildCity } from './city-builder';
+import { generateCrypt, generateSewer, type Underground } from './underground';
 
 /**
  * Versión de la forma del mundo: si cambia, los personajes guardados en el
@@ -190,8 +191,25 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
   // La mazmorra va a la derecha del continente, en el mismo mapa; no hay forma
   // de llegar caminando: se entra y se sale por la boca de la cueva.
   const left = size + DUNGEON_GAP;
-  const width = left + dungeon.width;
-  const height = Math.max(landHeight, dungeon.height);
+  // Más a la derecha, uno debajo del otro, lo que hay bajo los pueblos: las
+  // criptas de los cementerios y la alcantarilla de la capital.
+  const below = continent.descents.map((d, i) => ({
+    descent: d,
+    place:
+      d.kind === 'sewer'
+        ? generateSewer(d.town, seed + 101 + i)
+        : generateCrypt(d.town, d.size, seed + 103 + i * 7),
+  }));
+  const pocketLeft = left + dungeon.width + DUNGEON_GAP;
+  const pockets: { place: Underground; at: Position }[] = [];
+  let pocketTop = 0;
+  for (const { place } of below) {
+    pockets.push({ place, at: { x: pocketLeft, y: pocketTop } });
+    pocketTop += place.height + DUNGEON_GAP;
+  }
+  const pocketWidth = Math.max(0, ...below.map((b) => b.place.width));
+  const width = pockets.length > 0 ? pocketLeft + pocketWidth : left + dungeon.width;
+  const height = Math.max(landHeight, dungeon.height, pocketTop);
   const terrain = new Array<Terrain>(width * height).fill(Terrain.Rock);
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -202,10 +220,21 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
             : Terrain.Water
           : x < left
             ? Terrain.Rock
-            : dungeon.terrain[y * dungeon.width + (x - left)];
+            : x < left + dungeon.width
+              ? dungeon.terrain[y * dungeon.width + (x - left)]
+              : Terrain.Rock;
       terrain[y * width + x] = tile ?? Terrain.Rock;
     }
   }
+  for (const { place, at } of pockets)
+    place.terrain.forEach((tile, i) => {
+      const x = at.x + (i % place.width);
+      const y = at.y + Math.floor(i / place.width);
+      terrain[y * width + x] = tile;
+    });
+  const inPocket =
+    (at: Position) =>
+    (p: Position): Position => ({ x: p.x + at.x, y: p.y + at.y });
   const shift = (p: Position): Position => ({ x: p.x + left, y: p.y });
   // Las lomas del continente; la mazmorra y el mar de alrededor, planos.
   const landHeights = islandData.heights;
@@ -223,6 +252,7 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
   const statics: StaticPlacement[] = [
     ...islandData.statics,
     ...dungeon.statics.map((s) => ({ ...s, ...shift(s) })),
+    ...pockets.flatMap(({ place, at }) => place.statics.map((s) => ({ ...s, ...inPocket(at)(s) }))),
   ];
 
   const map = new TileMap({
@@ -232,11 +262,33 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
     statics,
     regions: [
       ...islandData.regions,
+      ...pockets.map(({ place, at }) => ({
+        name: place.name,
+        x: at.x,
+        y: at.y,
+        width: place.width,
+        height: place.height,
+        dungeon: true,
+      })),
       { name: DUNGEON_NAME, x: size, y: 0, width: width - size, height, dungeon: true },
     ],
     teleporters: [
       { ...entrance, to: shift(dungeon.arrival) },
       { ...shift(dungeon.ladder), to: outside },
+      // Bajar por la cripta o la reja, y volver por la escalera a un paso de la bajada.
+      ...below.flatMap(({ descent }, i) => {
+        const pocket = pockets[i];
+        if (!pocket) return [];
+        const to = inPocket(pocket.at);
+        const back =
+          descent.kind === 'crypt'
+            ? { x: descent.position.x, y: descent.position.y + 1 }
+            : { x: descent.position.x + 1, y: descent.position.y + 1 };
+        return [
+          { ...descent.position, to: to(pocket.place.arrival) },
+          { ...to(pocket.place.ladder), to: back },
+        ];
+      }),
     ],
     signs: islandData.signs ?? [],
     ...(heights ? { heights } : {}),
@@ -250,11 +302,16 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
     caveEntrance: entrance,
     places: continent.places,
     wildlife: continent.homes,
-    lairs: lairHomes(
-      dungeon.rooms.map((r) => ({ ...r, ...shift(r) })),
-      map,
-      seed,
-    ),
+    lairs: [
+      ...lairHomes(
+        dungeon.rooms.map((r) => ({ ...r, ...shift(r) })),
+        map,
+        seed,
+      ),
+      ...pockets.flatMap(({ place, at }) =>
+        place.lairs.map((l) => ({ kind: l.kind, home: inPocket(at)(l.position) })),
+      ),
+    ],
   };
 }
 

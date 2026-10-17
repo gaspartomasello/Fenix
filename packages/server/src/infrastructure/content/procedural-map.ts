@@ -11,7 +11,7 @@ import {
   type StaticPlacement,
 } from '@fenix/shared';
 import { cheapestPath, curvePath } from './roads';
-import type { MapRegion, PlacedItem } from './tiled-map-loader';
+import type { Descent, MapRegion, PlacedItem } from './tiled-map-loader';
 
 export interface GeneratedWorld {
   readonly map: TileMap;
@@ -85,6 +85,8 @@ export interface Continent extends GeneratedWorld {
   readonly passes: readonly Position[];
   /** Criaturas que viven dentro de los pueblos (los cementerios). */
   readonly townCreatures: readonly { readonly kind: CreatureKind; readonly home: Position }[];
+  /** Bajadas de los pueblos (criptas, alcantarilla), ya en coordenadas del mapa. */
+  readonly descents: readonly Descent[];
 }
 
 /** Suelos naturales que se entreveran en los bordes (los pisos y el agua no). */
@@ -626,6 +628,7 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
   const items: PlacedItem[] = [];
   const npcs: { role: NpcRole; position: Position; name?: string }[] = [];
   const townCreatures: { kind: CreatureKind; home: Position }[] = [];
+  const descents: Descent[] = [];
   let spawnPoint: Position = { x: Math.floor(width / 2), y: Math.floor(height / 2) };
   for (const { plan, x: ox, y: oy } of towns) {
     const town = plan.map;
@@ -642,6 +645,12 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     if (plan.capital && town.spawn) spawnPoint = { x: town.spawn.x + ox, y: town.spawn.y + oy };
     npcs.push(
       ...town.npcs.map((n) => ({ ...n, position: { x: n.position.x + ox, y: n.position.y + oy } })),
+    );
+    descents.push(
+      ...(town.descents ?? []).map((d) => ({
+        ...d,
+        position: { x: d.position.x + ox, y: d.position.y + oy },
+      })),
     );
     townCreatures.push(
       ...(town.lairs ?? []).map((l) => ({
@@ -946,7 +955,18 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     signs,
     heights,
   });
-  return { map, spawnPoint, items, npcs, biomes, towns: placed, roads, passes, townCreatures };
+  return {
+    map,
+    spawnPoint,
+    items,
+    npcs,
+    biomes,
+    towns: placed,
+    roads,
+    passes,
+    townCreatures,
+    descents,
+  };
 
   function neighbors4(x: number, y: number): [number, number][] {
     return (

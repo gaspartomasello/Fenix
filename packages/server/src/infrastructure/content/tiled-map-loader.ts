@@ -40,6 +40,14 @@ export interface PlacedItem {
   readonly position: Position;
 }
 
+/** Una bajada: pisándola se llega a la cripta o a la alcantarilla del pueblo. */
+export interface Descent {
+  readonly kind: 'crypt' | 'sewer';
+  readonly position: Position;
+  readonly town: string;
+  readonly size: 'large' | 'medium' | 'small';
+}
+
 export interface MapRegion {
   readonly width: number;
   readonly height: number;
@@ -60,6 +68,8 @@ export interface MapRegion {
    * Por dónde entra (`in`) y sale (`out`) un río que cruza el plano: el
    * continente lo sigue cuesta arriba hasta una vertiente y cuesta abajo hasta el mar.
    */
+  /** Bajadas a lugares bajo tierra (la cripta del cementerio, la alcantarilla). */
+  readonly descents?: readonly Descent[];
   readonly rivers?: readonly {
     readonly x: number;
     readonly y: number;
