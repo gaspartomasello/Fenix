@@ -76,6 +76,8 @@ export class TileMap {
   private readonly openDoors = new Set<number>();
   /** Muros mágicos que cierran el paso un rato (piedra, energía). */
   private readonly barriers = new Set<number>();
+  /** Cubiertas de barcos: tiles de agua que se pisan mientras el barco esté ahí. */
+  private readonly decks = new Set<number>();
 
   constructor(data: TileMapInit) {
     if (data.terrain.length !== data.width * data.height) {
@@ -169,12 +171,31 @@ export class TileMap {
     else this.barriers.delete(i);
   }
 
+  /** Pone o saca la cubierta de un barco sobre el tile. */
+  setDeck(position: Position, on: boolean): void {
+    if (!this.contains(position)) return;
+    const i = position.y * this.width + position.x;
+    if (on) this.decks.add(i);
+    else this.decks.delete(i);
+  }
+
+  /** ¿Hay un objeto fijo que tapa el tile (un muelle, una roca en el agua)? */
+  hasBlockingStatic(position: Position): boolean {
+    return this.contains(position) && this.blocked[position.y * this.width + position.x] !== 0;
+  }
+
+  isDeck(position: Position): boolean {
+    return this.contains(position) && this.decks.has(position.y * this.width + position.x);
+  }
+
   /** Transitable: terreno caminable y sin objetos que bloqueen (una puerta abierta no bloquea). */
   isWalkable(position: Position): boolean {
     const terrain = this.terrainAt(position);
-    if (terrain === undefined || !TERRAINS[terrain].walkable) return false;
+    if (terrain === undefined) return false;
     const i = position.y * this.width + position.x;
     if (this.barriers.has(i)) return false;
+    if (this.decks.has(i)) return true;
+    if (!TERRAINS[terrain].walkable) return false;
     return this.blocked[i] === 0 || this.openDoors.has(i);
   }
 

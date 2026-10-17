@@ -442,6 +442,7 @@ export class Items {
       case 'dye':
       case 'map':
       case 'dig':
+      case 'ship':
         // Se resuelven en otros casos de uso (o en el cliente): acá no hay nada que hacer.
         return { ok: true, changes };
       case 'none': {

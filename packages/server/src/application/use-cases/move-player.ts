@@ -6,6 +6,7 @@ import {
   type MobileTeleportedMessage,
   type MoveMode,
   type Position,
+  step,
   tileDistance,
 } from '@fenix/shared';
 import { freeSpotNear } from '../../domain/persistence/saved-character';
@@ -28,6 +29,9 @@ export interface MovePlayerInput {
 }
 
 export class MovePlayer {
+  /** Lo arma la aplicación: por qué no puede pisar ese tile (subir a un barco ajeno). */
+  refusal: (player: Player, from: Position, to: Position) => string | null = () => null;
+
   constructor(
     private readonly world: World,
     private readonly clock: Clock,
@@ -51,7 +55,11 @@ export class MovePlayer {
     const effectiveMode = player.mount
       ? mode
       : effectiveMoveMode(mode, player.combat.current.stamina);
-    const outcome = player.tryMove(this.world.map, direction, effectiveMode, this.clock.now());
+    const refused = this.refusal(player, player.position, step(player.position, direction));
+    if (refused) this.notifier.send(playerId, { type: 'system', text: refused });
+    const outcome = refused
+      ? { ok: false as const }
+      : player.tryMove(this.world.map, direction, effectiveMode, this.clock.now());
     if (!outcome.ok) {
       this.notifier.send(playerId, {
         type: 'moveRejected',

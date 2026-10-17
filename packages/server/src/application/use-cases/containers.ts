@@ -82,6 +82,8 @@ export class Containers {
   private readonly traps = new Set<string>();
   /** Lo arma la aplicación: daña a alguien (la trampa que estalla). */
   hurt: (playerId: EntityId, amount: number) => void = () => {};
+  /** Lo arma la aplicación: por qué alguien no puede abrir un recipiente (la bodega de un barco). */
+  refusal: (playerId: EntityId, containerId: string) => string | null = () => null;
   private nextCheckAt = 0;
 
   constructor(
@@ -104,6 +106,8 @@ export class Containers {
     if (!name) return;
     const denied = this.world.items.containerAccess(player, containerId, this.nearBanker(playerId));
     if (denied) return this.say(playerId, denied);
+    const refused = this.refusal(playerId, containerId);
+    if (refused) return this.say(playerId, refused);
     if (this.traps.delete(containerId)) {
       const [min, max] = TRAP_DAMAGE;
       const amount = min + Math.floor(this.random.next() * (max - min + 1));

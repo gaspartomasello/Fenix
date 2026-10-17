@@ -1,3 +1,4 @@
+import type { ShipRecord } from '../ships/ship';
 import type {
   BookText,
   BackpackItemSnapshot,
@@ -47,6 +48,9 @@ export class Item {
 
   /** Mapa del tesoro: dónde está enterrado el cofre (null si no es un mapa). */
   treasure: TreasureMark | null = null;
+
+  /** Maqueta de un barco ya botado alguna vez: su nombre, casco y permisos. */
+  ship: ShipRecord | null = null;
 
   /** Lo que el cliente ve además de tipo y cantidad. */
   private get extra(): { mark?: RuneMark; bookTitle?: string; hue?: number } {

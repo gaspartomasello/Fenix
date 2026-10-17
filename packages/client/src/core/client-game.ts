@@ -25,6 +25,13 @@ import {
   type BookMessage,
   type Quest,
   type TreasureMark,
+  type ShipAction,
+  type ShipLevel,
+  type ShipOrder,
+  type ShipSecurity,
+  type ShipSecurityChange,
+  type ShipSnapshot,
+  shipTiles,
   type QuestProgress,
   type SocialMessage,
   type Direction,
@@ -112,6 +119,12 @@ export interface ClientGameEvents extends Record<string, unknown> {
   questsChanged: readonly QuestProgress[];
   /** Se abrió un libro (respuesta al doble clic). */
   bookOpened: BookContents;
+  /** Cambiaron los barcos que se ven (o alguno se movió). */
+  shipsChanged: readonly ShipSnapshot[];
+  /** Se abrió la ventana de un barco. */
+  shipPanelOpened: { shipId: EntityId; level: ShipLevel; security?: ShipSecurity };
+  /** Un cañonazo. */
+  cannonShot: { from: Position; to: Position; hit: boolean };
   /** Se abrió un mapa del tesoro. */
   treasureMapOpened: { name: string; mark: TreasureMark; hint: string };
   /** Una puerta se abrió o se cerró. */
@@ -186,6 +199,8 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   private _effects: EffectsState | null = null;
   private _corpse: CorpseContents | null = null;
   private readonly _containers = new Map<string, ContainerContents>();
+  /** Los barcos que se ven. */
+  private readonly _ships = new Map<EntityId, ShipSnapshot>();
   private readonly containersRequested = new Set<string>();
   private corpseRequested: EntityId | null = null;
 
@@ -339,6 +354,14 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         if (this.self?.mount) this.dismount();
         else this.notify('No estás montado.');
         return;
+      case 'ship': {
+        const ship =
+          input.action === 'panel' ? (this.shipAboard ?? this.nearestShip()) : this.nearestShip();
+        if (!ship) this.notify('No hay ningún barco cerca.');
+        else if (input.action === 'panel') this.shipAction(ship.id, 'panel');
+        else this.boardShip(ship.id);
+        return;
+      }
       case 'useSkill':
         this.useSkill(input.skill);
         return;
@@ -458,6 +481,57 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
 
   gather(toolId: EntityId, position: { x: number; y: number }): void {
     if (this.self) this.gateway.send({ type: 'gather', toolId, position });
+  }
+
+  /** Los barcos que se ven. */
+  get ships(): readonly ShipSnapshot[] {
+    return [...this._ships.values()];
+  }
+
+  /** El barco que tiene un tile de cubierta en esa posición. */
+  shipAt(position: Position): ShipSnapshot | undefined {
+    return this.ships.find((ship) =>
+      shipTiles(ship.kind, ship, ship.facing).some((t) => t.x === position.x && t.y === position.y),
+    );
+  }
+
+  /** El barco en que se está a bordo. */
+  get shipAboard(): ShipSnapshot | undefined {
+    return this.self ? this.shipAt(this.self.position) : undefined;
+  }
+
+  /** El barco más cerca de uno (por el tile de cubierta más cercano). */
+  nearestShip(): ShipSnapshot | undefined {
+    const self = this.self;
+    if (!self) return undefined;
+    let best: { ship: ShipSnapshot; distance: number } | undefined;
+    for (const ship of this.ships)
+      for (const t of shipTiles(ship.kind, ship, ship.facing)) {
+        const distance = Math.max(Math.abs(t.x - self.position.x), Math.abs(t.y - self.position.y));
+        if (!best || distance < best.distance) best = { ship, distance };
+      }
+    return best?.ship;
+  }
+
+  boardShip(shipId: EntityId): void {
+    if (this.self) this.gateway.send({ type: 'boardShip', shipId });
+  }
+
+  shipOrder(shipId: EntityId, order: ShipOrder): void {
+    if (this.self) this.gateway.send({ type: 'shipOrder', shipId, order });
+  }
+
+  shipAction(shipId: EntityId, action: ShipAction): void {
+    if (this.self) this.gateway.send({ type: 'shipAction', shipId, action });
+  }
+
+  shipSecurity(shipId: EntityId, change: ShipSecurityChange): void {
+    if (this.self) this.gateway.send({ type: 'shipSecurity', shipId, change });
+  }
+
+  /** Pone o saca la cubierta de un barco en el mapa local (para caminar sobre él). */
+  private setDecks(ship: ShipSnapshot, on: boolean): void {
+    for (const t of shipTiles(ship.kind, ship, ship.facing)) this._map?.setDeck(t, on);
   }
 
   /** Cavar con la pala (buscando un tesoro). */
@@ -716,6 +790,36 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         break;
       case 'quests':
         this.emit('questsChanged', message.quests);
+        break;
+      case 'ships': {
+        for (const ship of this._ships.values()) this.setDecks(ship, false);
+        this._ships.clear();
+        for (const ship of message.ships) {
+          this._ships.set(ship.id, ship);
+          this.setDecks(ship, true);
+        }
+        this.emit('shipsChanged', this.ships);
+        break;
+      }
+      case 'shipMoved': {
+        const ship = this._ships.get(message.id);
+        if (!ship) break;
+        this.setDecks(ship, false);
+        const moved = { ...ship, x: message.x, y: message.y, facing: message.facing };
+        this._ships.set(ship.id, moved);
+        this.setDecks(moved, true);
+        this.emit('shipsChanged', this.ships);
+        break;
+      }
+      case 'shipPanel':
+        this.emit('shipPanelOpened', {
+          shipId: message.shipId,
+          level: message.level,
+          ...(message.security ? { security: message.security } : {}),
+        });
+        break;
+      case 'cannonShot':
+        this.emit('cannonShot', { from: message.from, to: message.to, hit: message.hit });
         break;
       case 'treasureMap':
         this.emit('treasureMapOpened', {
