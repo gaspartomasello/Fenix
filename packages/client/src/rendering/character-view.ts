@@ -1,15 +1,14 @@
 import {
   CHARACTER_ART_HEIGHT,
+  CHARACTER_ART_WIDTH,
   CHARACTER_FEET_Y,
   CHARACTER_HEAD_Y,
-  MOUNTED_ART_HEIGHT,
   WALK_FRAMES,
   guardFrame,
-  MOUNTED_FEET_Y,
-  MOUNTED_HEAD_Y,
   attackStyleFor,
   corpseLayout,
   creatureLayout,
+  mountLayout,
   leavesCorpse,
   type CharacterFrame,
 } from '@fenix/art';
@@ -165,12 +164,13 @@ export class CharacterView {
       this.entity.body !== 'human'
         ? creatureLayout(this.entity.body)
         : mount
-          ? {
-              height: MOUNTED_ART_HEIGHT,
-              feetY: MOUNTED_FEET_Y,
-              headY: MOUNTED_HEAD_Y,
-            }
-          : { height: CHARACTER_ART_HEIGHT, feetY: CHARACTER_FEET_Y, headY: CHARACTER_HEAD_Y };
+          ? mountLayout(mount)
+          : {
+              width: CHARACTER_ART_WIDTH,
+              height: CHARACTER_ART_HEIGHT,
+              feetY: CHARACTER_FEET_Y,
+              headY: CHARACTER_HEAD_Y,
+            };
     const big = layout.height > CHARACTER_ART_HEIGHT;
     this._spriteHeight = (layout.feetY - layout.headY) * CHARACTER_SCALE;
     this._hitBox = {
@@ -178,9 +178,11 @@ export class CharacterView {
       up: Math.max(64, this._spriteHeight),
       down: 6,
     };
+    // La sombra crece con el animal: el elefante tapa bastante más que un caballo.
+    const shadow = big ? layout.width * 0.28 : 13;
     this.shadow
       .clear()
-      .ellipse(0, 0, big ? 34 : 13, big ? 13 : 6)
+      .ellipse(0, 0, shadow, big ? shadow * 0.38 : 6)
       .fill({ color: 0x000000, alpha: 0.28 });
     this.sprite.anchor.set(0.5, layout.feetY / layout.height);
     this.nameLabel.position.set(0, -this._spriteHeight - 8);

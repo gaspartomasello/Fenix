@@ -1,5 +1,6 @@
 import { isMountKind, type CreatureKind, type Direction } from '@fenix/shared';
 import { drawCreatureFrame } from './creature-art';
+import { faunaLayout, isFaunaArtKind, type FaunaArtKind } from './fauna-art';
 import type { PixelImage } from './pixel-art';
 import { VolumeCanvas, add, pitch, roll, type Projection, type Vec3 } from './volume';
 
@@ -37,6 +38,7 @@ const HUMANOID_LAYOUT: CorpseLayout = { width: 96, height: 64, groundX: 48, grou
 const BEAST_LAYOUT: CorpseLayout = { width: 80, height: 56, groundX: 40, groundY: 36 };
 const MOUNT_LAYOUT: CorpseLayout = { width: 136, height: 88, groundX: 68, groundY: 54 };
 const DRAGON_LAYOUT: CorpseLayout = { width: 168, height: 112, groundX: 84, groundY: 68 };
+const ELEPHANT_LAYOUT: CorpseLayout = { width: 240, height: 150, groundX: 120, groundY: 92 };
 
 const BACK = Math.PI / 2;
 const SIDE = Math.PI / 2;
@@ -53,14 +55,43 @@ const POSES: Readonly<Partial<Record<CreatureKind, CorpsePose>>> = {
   // Desplomado sobre la panza, apenas volcado: las patas quedan bajo el cuerpo.
   dragon: { fall: 'side', angle: 0.3, center: 22, rest: 9 },
   daemon: { fall: 'back', angle: BACK, center: 30, rest: 4.5 },
+  lizardman: { fall: 'back', angle: BACK, center: 30, rest: 4 },
   'earth-elemental': { fall: 'back', angle: BACK, center: 30, rest: 5 },
 };
 /** Las monturas (caballos, llamas, lagartos): de costado, con las patas estiradas. */
 const MOUNT_POSE: CorpsePose = { fall: 'side', angle: SIDE, center: 26, rest: 6 };
 
+/** El elefante (montura o salvaje) cae de costado como un caballo, pero es mucho más grande. */
+const ELEPHANT_POSE: CorpsePose = { fall: 'side', angle: SIDE, center: 56, rest: 17 };
+const isElephant = (kind: CreatureKind): boolean => kind === 'elephant' || kind === 'wild-elephant';
+
 function poseOf(kind: CreatureKind): CorpsePose | null {
+  if (isElephant(kind)) return ELEPHANT_POSE;
   if (isMountKind(kind)) return MOUNT_POSE;
+  if (isFaunaArtKind(kind)) return faunaCorpse(kind).pose;
   return POSES[kind] ?? null;
+}
+
+/**
+ * El cuerpo de un animal: los de cuatro patas caen de costado; las
+ * serpientes, cocodrilos, pájaros y bichos chatos quedan casi como están.
+ */
+function faunaCorpse(kind: FaunaArtKind): { pose: CorpsePose; layout: CorpseLayout } {
+  const art = faunaLayout(kind);
+  const layout: CorpseLayout =
+    art.width >= 110
+      ? MOUNT_LAYOUT
+      : art.width >= 80
+        ? { width: 112, height: 72, groundX: 56, groundY: 46 }
+        : BEAST_LAYOUT;
+  const flat = ['snake', 'king-cobra', 'python', 'alligator', 'crocodile', 'bullfrog', 'walrus'];
+  if (flat.includes(kind))
+    return { pose: { fall: 'side', angle: 0.25, center: 3, rest: 2 }, layout };
+  if (kind === 'scorpion' || kind === 'king-scorpion')
+    return { pose: { fall: 'side', angle: Math.PI, center: 3, rest: 2.5 }, layout };
+  // Alto del lomo (en el modelo), a partir de dónde va el nombre; las astas del ciervo no cuentan.
+  const center = kind === 'great-hart' ? 22 : ((art.feetY - art.headY) / art.zoom) * 0.45;
+  return { pose: { fall: 'side', angle: SIDE, center, rest: Math.max(2, center * 0.3) }, layout };
 }
 
 /**
@@ -72,7 +103,9 @@ export function leavesCorpse(kind: CreatureKind): boolean {
 }
 
 export function corpseLayout(kind: CreatureKind): CorpseLayout {
+  if (isElephant(kind)) return ELEPHANT_LAYOUT;
   if (isMountKind(kind)) return MOUNT_LAYOUT;
+  if (isFaunaArtKind(kind)) return faunaCorpse(kind).layout;
   if (kind === 'dragon') return DRAGON_LAYOUT;
   if (kind === 'rat' || kind === 'wolf' || kind === 'giant-spider') return BEAST_LAYOUT;
   return HUMANOID_LAYOUT;

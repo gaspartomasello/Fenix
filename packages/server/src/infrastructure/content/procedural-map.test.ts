@@ -192,7 +192,8 @@ describe('createWorld', () => {
     const creatures = world.allCreatures();
     expect(creatures.length).toBeGreaterThanOrEqual(80);
     const bodies = new Set(creatures.map((c) => c.body));
-    for (const kind of ['rat', 'wolf', 'giant-spider', 'orc', 'troll', 'dragon', 'lich'])
+    // Fauna del lugar en las tierras salvajes y los monstruos en las mazmorras.
+    for (const kind of ['rabbit', 'hind', 'wolf', 'giant-spider', 'orc', 'troll', 'dragon', 'lich'])
       expect(bodies).toContain(kind);
     for (const creature of creatures) {
       expect(world.map.safeZoneAt(creature.position)).toBeUndefined();

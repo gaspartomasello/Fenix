@@ -2,6 +2,7 @@ import type { ItemKind } from '../items/item-catalog';
 import type { Weapon } from '../combat/weapons';
 import type { SpellKey } from '../magic/spell-catalog';
 import { MOUNTS, MOUNT_KINDS, type MountKind } from '../mounts/mount-catalog';
+import { FAUNA_KINDS, faunaDefinitions } from './fauna-catalog';
 
 export const CREATURE_KINDS = [
   'rat',
@@ -23,6 +24,8 @@ export const CREATURE_KINDS = [
   'daemon',
   // Monturas, sueltas siguiendo a su dueño
   ...MOUNT_KINDS,
+  // Fauna de las tierras salvajes
+  ...FAUNA_KINDS,
 ] as const;
 export type CreatureKind = (typeof CREATURE_KINDS)[number];
 
@@ -417,6 +420,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     humanoid: true,
   }),
   ...mounts(),
+  ...faunaDefinitions(),
 };
 
 /**
@@ -429,6 +433,14 @@ function mounts(): Record<MountKind, CreatureDefinition> {
     horse: { name: 'coces', minDamage: 4, maxDamage: 9, swingMs: 2600, skill: 'wrestling' },
     llama: { name: 'coces', minDamage: 2, maxDamage: 6, swingMs: 2400, skill: 'wrestling' },
     runner: { name: 'mordida', minDamage: 5, maxDamage: 11, swingMs: 2400, skill: 'wrestling' },
+    camel: { name: 'coces', minDamage: 3, maxDamage: 8, swingMs: 2500, skill: 'wrestling' },
+    elephant: {
+      name: 'colmillos',
+      minDamage: 7,
+      maxDamage: 15,
+      swingMs: 3000,
+      skill: 'wrestling',
+    },
   } as const satisfies Record<string, Weapon>;
   const entries = MOUNT_KINDS.map((kind): [MountKind, CreatureDefinition] => [
     kind,
@@ -436,10 +448,10 @@ function mounts(): Record<MountKind, CreatureDefinition> {
       kind,
       name: MOUNTS[kind].name,
       article: MOUNTS[kind].article,
-      maxHits: MOUNTS[kind].species === 'llama' ? 45 : MOUNTS[kind].species === 'runner' ? 80 : 70,
+      maxHits: { horse: 70, llama: 45, runner: 80, camel: 75, elephant: 170 }[MOUNTS[kind].species],
       strength: 60,
       dexterity: 50,
-      armor: MOUNTS[kind].species === 'runner' ? 12 : 6,
+      armor: { runner: 12, elephant: 16 }[MOUNTS[kind].species as string] ?? 6,
       skill: 450,
       weapon: fight[MOUNTS[kind].species],
       moveMs: 200,

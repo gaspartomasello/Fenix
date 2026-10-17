@@ -10,11 +10,13 @@ export const MOUNT_KINDS = [
   'horse-pinto',
   'llama',
   'runner',
+  'camel',
+  'elephant',
 ] as const;
 export type MountKind = (typeof MOUNT_KINDS)[number];
 
 /** Forma del cuerpo: cada especie tiene su esqueleto y sus andares. */
-export type MountSpecies = 'horse' | 'llama' | 'runner';
+export type MountSpecies = 'horse' | 'llama' | 'runner' | 'camel' | 'elephant';
 
 export interface MountDefinition {
   readonly kind: MountKind;
@@ -55,12 +57,21 @@ export const MOUNTS: Readonly<Record<MountKind, MountDefinition>> = {
     price: 900,
   },
   llama: { kind: 'llama', species: 'llama', name: 'llama', article: 'una', price: 400 },
+  camel: { kind: 'camel', species: 'camel', name: 'camello', article: 'un', price: 800 },
   runner: {
     kind: 'runner',
     species: 'runner',
     name: 'lagarto corredor',
     article: 'un',
     price: 1200,
+  },
+  // Montura especial: cara, fuerte y bastante más grande que un caballo.
+  elephant: {
+    kind: 'elephant',
+    species: 'elephant',
+    name: 'elefante',
+    article: 'un',
+    price: 6000,
   },
 };
 

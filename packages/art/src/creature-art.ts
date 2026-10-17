@@ -12,6 +12,7 @@ import { spriteCanvas, type CanvasFactory } from './humanoid-rig';
 import type { PixelImage, Rgb } from './pixel-art';
 import { drawSummonFrame, isSummonKind } from './summon-art';
 import { drawMonsterFrame, isMonsterKind } from './monster-art';
+import { drawFaunaFrame, isFaunaArtKind } from './fauna-art';
 import type { VolumeCanvas } from './volume';
 import { add, axesAlong, normalize, ramp, solid, tone, type Vec3 } from './volume';
 import { biteOffset, fur, gait, tailWag } from './creature-motion';
@@ -27,6 +28,7 @@ export function drawCreatureFrame(
   if (isSummonKind(kind)) return drawSummonFrame(kind, direction, frame, canvasFor);
   if (isMonsterKind(kind)) return drawMonsterFrame(kind, direction, frame, canvasFor);
   if (isMountKind(kind)) return drawMountFrame(kind, direction, frame, canvasFor);
+  if (isFaunaArtKind(kind)) return drawFaunaFrame(kind, direction, frame, canvasFor);
   const zoom = kind === 'rat' ? 1.6 : 1.25;
   const canvas = canvasFor(CHARACTER_ART_WIDTH, CHARACTER_ART_HEIGHT, cameraFor(direction, zoom));
   if (kind === 'wolf') drawWolf(canvas, frame);

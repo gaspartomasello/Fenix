@@ -369,6 +369,21 @@ Implementaciones: `JsonFileCharacterStore` (servidor, escritura atómica y agrup
 `KeyValueCharacterStore` (modo solo, sobre `localStorage`) y `ScryptPasswordHasher`. El modo
 solo no pide contraseña: el servidor embebido se compone sin hasher.
 
+### Fauna
+
+La fauna está en `@fenix/shared` (`fauna-catalog.ts`): cada animal tiene su carácter. Las
+**presas** tienen rango de agresión 0 y huyen siempre (`fleeAt: 1`), los **mansos** tienen
+rango 0 (solo devuelven los golpes) y las **fieras** atacan a quien se acerca. No hizo falta
+cambiar la IA: con esos valores alcanza. En `@fenix/art`, `fauna-art.ts` dibuja cada animal:
+los de pezuñas con el esqueleto de las monturas (sin montura), los de zarpas con un cuadrúpedo
+con medidas, orejas, cola y pelaje propios (rosetas del jaguar y del leopardo), y los demás con
+modelos propios (pájaros, serpientes, escorpiones, cocodrilos, rana, morsa, gorila). El hombre
+lagarto, que anda en dos patas, está con los monstruos. `places.ts` reparte la fauna por bioma.
+Cada animal tiene su lienzo y su escala (`faunaLayout`), así no todos miden lo mismo: los
+grandes sobresalen del tile. Las monturas también: `mountLayout(kind)` da el lienzo de cada una
+(el elefante usa uno mucho más grande que el del caballo) y el cliente lo usa para anclar el
+dibujo, el nombre, la vida y el tamaño de la sombra.
+
 ### Monturas
 
 `MOUNTS` (shared) lista las monturas; cada una es también una `CreatureKind`. Comprada en la

@@ -20,7 +20,7 @@ import {
   type CharacterFrame,
   type Rig,
 } from './humanoid-rig';
-import { MOUNTED_ART_HEIGHT, MOUNTED_ART_WIDTH, drawMount, mountedCamera } from './mount-art';
+import { drawMount, mountLayout, mountedCamera } from './mount-art';
 import { hexToRgb, type PixelImage, type Rgb } from './pixel-art';
 import type { VolumeCanvas } from './volume';
 import {
@@ -143,8 +143,9 @@ export function drawCharacterFrame(
   mount: MountKind | null = null,
 ): PixelImage {
   // Montado: lienzo más grande, la montura primero y el jinete sentado en ella.
-  const canvas = mount
-    ? spriteCanvas(MOUNTED_ART_WIDTH, MOUNTED_ART_HEIGHT, mountedCamera(direction))
+  const layout = mount ? mountLayout(mount) : null;
+  const canvas = layout
+    ? spriteCanvas(layout.width, layout.height, mountedCamera(direction, mount ?? undefined))
     : spriteCanvas(CHARACTER_ART_WIDTH, CHARACTER_ART_HEIGHT, cameraFor(direction));
   const ride = mount ? drawMount(canvas, mount, frame) : null;
   const female = appearance.gender === 'female';
