@@ -4,6 +4,8 @@ import {
   MAX_QUESTS,
   isCreatureKind,
   isDyeHue,
+  isTreasureLevel,
+  type TreasureMark,
   type QuestGoal,
   type QuestProgress,
   MAX_STACK,
@@ -51,6 +53,8 @@ export interface SavedItem {
   readonly book?: BookText;
   /** Teñido: su color. */
   readonly hue?: number;
+  /** Mapa del tesoro: dónde está enterrado. */
+  readonly treasure?: TreasureMark;
   /** Bolsa o caja: lo que lleva adentro (con su lugar en la ventana). */
   readonly contents?: readonly SavedItem[];
 }
@@ -119,6 +123,7 @@ export function captureCharacter(
         ...(item.mark ? { mark: item.mark } : {}),
         ...(item.book ? { book: item.book } : {}),
         ...(item.hue !== null ? { hue: item.hue } : {}),
+        ...(item.treasure ? { treasure: item.treasure } : {}),
         ...(ITEMS[item.kind].capacity ? { contents: savedContents(world, item.id) } : {}),
       };
       if (location.type === 'equipment')
@@ -199,12 +204,19 @@ function savedContents(world: World, containerId: string, depth = 0): SavedItem[
         ...(inner.mark ? { mark: inner.mark } : {}),
         ...(inner.book ? { book: inner.book } : {}),
         ...(inner.hue !== null ? { hue: inner.hue } : {}),
+        ...(inner.treasure ? { treasure: inner.treasure } : {}),
         ...(ITEMS[inner.kind].capacity
           ? { contents: savedContents(world, inner.id, depth + 1) }
           : {}),
       },
     ];
   });
+}
+
+function parseTreasure(value: unknown): TreasureMark | undefined {
+  if (!isObject(value) || !isNumber(value.x) || !isNumber(value.y)) return undefined;
+  if (!isTreasureLevel(value.level)) return undefined;
+  return { x: Math.round(value.x), y: Math.round(value.y), level: value.level };
 }
 
 function parseItem(value: unknown, depth = 0): SavedItem | null {
@@ -219,10 +231,12 @@ function parseItem(value: unknown, depth = 0): SavedItem | null {
       : [];
   const book = parseBook(value.book);
   const hue = isNumber(value.hue) && isDyeHue(value.hue) ? value.hue : undefined;
+  const treasure = parseTreasure(value.treasure);
   const extra = {
     ...(mark ? { mark } : {}),
     ...(book ? { book } : {}),
     ...(hue !== undefined ? { hue } : {}),
+    ...(treasure ? { treasure } : {}),
     ...(contents.length > 0 ? { contents } : {}),
   };
   if (location.type === 'equipment' && isEquipmentSlot(location.slot))
@@ -381,6 +395,7 @@ export function restoreCharacter(
       restored.mark = item.mark ?? null;
       restored.book = item.book ?? null;
       restored.hue = item.hue ?? null;
+      restored.treasure = item.treasure ?? null;
     } else {
       const restored = world.items.add(nextId(), item.kind, item.amount, {
         type: location.type === 'bank' ? 'bank' : 'backpack',
@@ -390,6 +405,7 @@ export function restoreCharacter(
       restored.mark = item.mark ?? null;
       restored.book = item.book ?? null;
       restored.hue = item.hue ?? null;
+      restored.treasure = item.treasure ?? null;
       restoreContents(world, restored.id, item.contents ?? [], nextId);
     }
   }
@@ -439,6 +455,7 @@ function restoreContents(
     restored.mark = inner.mark ?? null;
     restored.book = inner.book ?? null;
     restored.hue = inner.hue ?? null;
+    restored.treasure = inner.treasure ?? null;
     restoreContents(world, restored.id, inner.contents ?? [], nextId);
   }
 }

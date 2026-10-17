@@ -44,6 +44,7 @@ export const VENDORS: Readonly<Record<NpcRole, VendorDefinition>> = {
     greeting: '¡Buen acero para buenos aventureros!',
     sells: offers({
       pickaxe: 30,
+      shovel: 25,
       'smith-hammer': 25,
       'iron-ingot': 8,
       dagger: 40,
@@ -262,8 +263,10 @@ export const VENDORS: Readonly<Record<NpcRole, VendorDefinition>> = {
       drum: 40,
       flute: 30,
       'fishing-pole': 15,
+      shovel: 20,
     }),
     buys: offers({
+      'treasure-map': 40,
       ruby: 45,
       sapphire: 45,
       emerald: 55,

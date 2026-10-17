@@ -2456,3 +2456,32 @@ body {
   height: 100%;
   image-rendering: pixelated;
 }
+
+/* Mapa del tesoro: pergamino con la zona dibujada y la pista abajo. */
+.treasure-map-window .window-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.treasure-map-canvas {
+  width: 240px;
+  height: 240px;
+  border: 3px solid #6b4a2b;
+  border-radius: 4px;
+  box-shadow: inset 0 0 12px rgba(60, 36, 16, 0.6);
+}
+
+.treasure-map-hint {
+  margin: 0;
+  max-width: 240px;
+  font-family: Georgia, serif;
+  font-style: italic;
+  text-align: center;
+}
+
+.treasure-map-window .window-hint {
+  width: 240px;
+  text-align: center;
+}

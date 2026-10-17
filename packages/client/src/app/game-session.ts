@@ -35,6 +35,7 @@ import {
 import type { ItemActions } from '../ui/backpack-window';
 import { BankWindow } from '../ui/bank-window';
 import { BookWindow } from '../ui/book-window';
+import { TreasureMapWindow } from '../ui/treasure-map-window';
 import { DyeWindow } from '../ui/dye-window';
 import { QuestJournal, QuestOfferWindow } from '../ui/quest-windows';
 import { ContainerWindow } from '../ui/container-window';
@@ -543,6 +544,13 @@ export class GameSession {
               this.game.gather(itemId, tile);
             }, done);
             return;
+          case 'dig':
+            banner.show('Tocá dónde querés cavar, al lado tuyo (Escape cancela).');
+            tilePicker.pick((tile) => {
+              done();
+              this.game.dig(itemId, tile);
+            }, done);
+            return;
           default:
             worldItems.actions.useItem(itemId);
         }
@@ -619,6 +627,12 @@ export class GameSession {
     );
     this.game.on('bookOpened', (contents) => book.open(contents));
     this.hosts.ui.append(book.window.element);
+    const treasureMap = new TreasureMapWindow(
+      () => this.game.map,
+      () => this.game.self?.position ?? null,
+    );
+    this.game.on('treasureMapOpened', (contents) => treasureMap.open(contents));
+    this.hosts.ui.append(treasureMap.window.element);
     const containers = new Map<string, ContainerWindow>();
     let opened = 0;
     this.game.on('containerChanged', ({ containerId, container, opened: requested }) => {

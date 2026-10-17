@@ -22,6 +22,8 @@ export class UseItem {
   openContainer: (playerId: EntityId, containerId: string) => void = () => {};
   /** Lo arma la aplicación: abrir un libro para leer o escribir. */
   openBook: (playerId: EntityId, itemId: EntityId) => void = () => {};
+  /** Lo arma la aplicación: leer un mapa del tesoro. */
+  openTreasureMap: (playerId: EntityId, itemId: EntityId) => void = () => {};
 
   constructor(
     private readonly world: World,
@@ -71,6 +73,10 @@ export class UseItem {
     }
     if (item && ITEMS[item.kind].use === 'book') {
       this.openBook(playerId, itemId);
+      return;
+    }
+    if (item && ITEMS[item.kind].use === 'map') {
+      this.openTreasureMap(playerId, itemId);
       return;
     }
     const result = this.world.items.use(player, itemId);

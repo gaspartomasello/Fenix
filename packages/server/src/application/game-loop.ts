@@ -3,6 +3,7 @@ import {
   CREATURE_FAME,
   poisonDurationMs,
   REGEN_INTERVAL_MS,
+  TREASURE_MAP_DROPS,
   SPELLS,
   describeItem,
   step,
@@ -11,6 +12,7 @@ import {
   type EntityId,
   type Position,
   type SpellKey,
+  type TreasureLevel,
 } from '@fenix/shared';
 import { outOfAmmo, trySwing, type SwingResult } from '../domain/combat/combat';
 import { resolveBandage } from '../domain/healing/bandage';
@@ -63,6 +65,8 @@ export class GameLoop {
   onTrap: (casterId: EntityId, containerId: string, armed: boolean) => void = () => {};
   /** Lo arma la aplicación: una criatura murió a manos de un jugador (misiones de caza). */
   onCreatureKilled: (killer: Player, creature: Creature) => void = () => {};
+  /** Lo arma la aplicación: una criatura dejó un mapa del tesoro en su cuerpo. */
+  onTreasureMap: (corpseId: EntityId, level: TreasureLevel) => void = () => {};
 
   constructor(
     private readonly world: World,
@@ -618,7 +622,12 @@ export class GameLoop {
     // Las invocaciones no dejan nada: se desvanecen.
     if (creature.ownerId) return;
     const drops = rollLoot(creature.definition, this.roll);
+    // Algunas llevan encima un mapa del tesoro (las que aparecen de un tesoro, no).
+    const map = TREASURE_MAP_DROPS[creature.definition.kind];
+    const withMap = map && !creature.temporary && this.roll() < map.chance ? map : null;
+    if (withMap) drops.push({ kind: 'treasure-map', amount: 1 });
     if (!this.corpses.fill(creature, drops)) return;
+    if (withMap) this.onTreasureMap(creature.id, withMap.level);
     const names = drops.map((d) => describeItem(d.kind, d.amount));
     for (const id of this.mobiles.watchers(creature)) {
       this.notifier.send(id, {
