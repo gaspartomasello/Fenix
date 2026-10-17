@@ -128,6 +128,39 @@ describe('GameApplication', () => {
       expect(ctx.notifier.ofType('moveAck')).toHaveLength(1);
     });
 
+    it('las puertas se abren y se cierran estando al lado, y cerradas no dejan pasar', () => {
+      const map = new TileMap({
+        width: 4,
+        height: 3,
+        terrain: new Array<Terrain>(12).fill(G),
+        statics: [{ kind: 'door-y', x: 2, y: 1 }],
+      });
+      const house = createApp(map, { x: 1, y: 1 });
+      const ana = house.join('Ana');
+      const door = { x: 2, y: 1 };
+      house.app.handle(ana, { type: 'move', direction: Direction.East, mode: 'walk', seq: 1 });
+      expect(house.world.get(ana)?.position).toEqual({ x: 1, y: 1 });
+      house.notifier.clear();
+      house.app.handle(ana, { type: 'useDoor', position: door });
+      expect(house.notifier.ofType('door').map((d) => d.message)).toEqual([
+        { type: 'door', position: door, open: true },
+      ]);
+      house.clock.advance(MOVE_DURATION_MS.walk);
+      house.app.handle(ana, { type: 'move', direction: Direction.East, mode: 'walk', seq: 2 });
+      expect(house.world.get(ana)?.position).toEqual(door);
+      // Con alguien en la puerta no se puede cerrar.
+      house.app.handle(ana, { type: 'useDoor', position: door });
+      expect(map.isDoorOpen(door)).toBe(true);
+      // De lejos, tampoco.
+      house.clock.advance(MOVE_DURATION_MS.walk);
+      house.app.handle(ana, { type: 'move', direction: Direction.East, mode: 'walk', seq: 3 });
+      house.clock.advance(MOVE_DURATION_MS.walk);
+      house.app.handle(ana, { type: 'useDoor', position: { x: 0, y: 1 } });
+      expect(map.isDoorOpen(door)).toBe(true);
+      house.app.handle(ana, { type: 'useDoor', position: door });
+      expect(map.isDoorOpen(door)).toBe(false);
+    });
+
     it('al pisar un teletransporte (la boca de una cueva) aparece del otro lado', () => {
       const terrain = new Array<Terrain>(5 * 3).fill(G);
       const map = new TileMap({

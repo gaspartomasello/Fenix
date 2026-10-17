@@ -97,6 +97,20 @@ export class GameRenderer {
     return null;
   }
 
+  /**
+   * La puerta bajo un punto de la pantalla: la del tile o la de uno o dos
+   * tiles más adelante (la puerta sube sobre su tile y tapa los de atrás).
+   */
+  doorAt(point: ScreenPoint): Position | null {
+    const map = this.game.map;
+    if (!map) return null;
+    for (const lift of [0, 14, 28, 42]) {
+      const tile = this.screenToTile({ x: point.x, y: point.y + lift * this.zoom });
+      if (map.doorAt(tile)) return tile;
+    }
+    return null;
+  }
+
   /** Objeto del suelo bajo un punto de la pantalla, si hay. */
   groundItemAt(point: ScreenPoint): GroundItemSnapshot | null {
     return this.groundItems.itemAt(this.toWorld(point));
@@ -268,6 +282,7 @@ export class GameRenderer {
       this.game.on('groundItemsChanged', ({ added, removed }) =>
         this.groundItems.apply(added, removed),
       ),
+      this.game.on('doorChanged', ({ position }) => this.statics?.refreshDoor(position)),
       this.game.on('ready', ({ map: newMap }) => {
         this.views.forEach((view) => view.destroy());
         this.views.clear();

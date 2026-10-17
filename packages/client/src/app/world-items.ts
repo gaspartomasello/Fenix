@@ -79,7 +79,8 @@ export class WorldItems {
       this.renderer.npcAt(point) === null &&
       this.renderer.corpseAt(point) === null &&
       this.renderer.ownPetAt(point) === null &&
-      this.renderer.signAt(point) === null
+      this.renderer.signAt(point) === null &&
+      this.renderer.doorAt(point) === null
     ) {
       this.tooltip.hide();
     }

@@ -3,6 +3,7 @@ import { PixelImage, type Rgb } from './pixel-art';
 import { TREE_SHADOWS, drawTree, type TreeSpecies } from './tree-art';
 import {
   VolumeCanvas,
+  clipping,
   WorldProjection,
   axesAlong,
   metal,
@@ -1904,6 +1905,265 @@ function add3(a: Vec3, b: Vec3): Vec3 {
   return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 }
 
+// ── Puertas y ventanas ──────────────────────────────────────────────
+
+/** Qué hay en cada punto de una ventana: vidrio, plomo (las varillas), marco o nada. */
+type WindowPart = 'glass' | 'lead' | 'frame' | null;
+type WindowShape = (t: number, y: number) => WindowPart;
+
+/** Dentro de una ojiva de medio ancho `w`, entre `y0` y el vértice `apex` (arranca en `spring`). */
+function inLancet(
+  t: number,
+  y: number,
+  w: number,
+  y0: number,
+  spring: number,
+  apex: number,
+): boolean {
+  if (y < y0 || y > apex) return false;
+  if (y <= spring) return Math.abs(t) < w;
+  const k = (y - spring) / (apex - spring);
+  return Math.abs(t) < w * Math.sqrt(1 - k * k) * (1 - k * 0.35);
+}
+
+/** Dentro de un arco de medio punto. */
+function inRound(t: number, y: number, w: number, y0: number, spring: number): boolean {
+  if (y < y0) return false;
+  if (y <= spring) return Math.abs(t) < w;
+  return t * t + (y - spring) ** 2 < w * w;
+}
+
+/** Ventanas góticas (muros de piedra), como las de los vitrales: ojival, doble y de medio punto. */
+const GOTHIC: readonly WindowShape[] = [
+  // Ojival con emplomado en rombos.
+  (t, y) => {
+    if (inLancet(t, y, 5.4, 12, 31, 44)) {
+      const a = (((t + y) % 2.6) + 2.6) % 2.6;
+      const b = (((t - y) % 2.6) + 2.6) % 2.6;
+      return a < 0.35 || b < 0.35 ? 'lead' : 'glass';
+    }
+    return inLancet(t, y, 6.6, 11, 31, 46.5) ? 'frame' : null;
+  },
+  // Doble ojiva con parteluz y un óculo arriba.
+  (t, y) => {
+    for (const c of [-3.3, 3.3])
+      if (inLancet(t - c, y, 2.4, 13, 30, 39)) return y % 3 < 0.4 ? 'lead' : 'glass';
+    if (t * t + (y - 42.5) ** 2 < 3.2) return 'glass';
+    return inLancet(t, y, 6.8, 11, 31, 47) ? 'frame' : null;
+  },
+  // Medio punto con cuadrícula.
+  (t, y) => {
+    if (inRound(t, y, 5.6, 12, 32)) {
+      const grid =
+        Math.abs(((t + 100) % 2.2) - 1.1) < 0.22 || Math.abs(((y + 100) % 3) - 1.5) < 0.25;
+      return grid ? 'lead' : 'glass';
+    }
+    return inRound(t, y, 6.8, 11, 32) ? 'frame' : null;
+  },
+];
+
+/** Ventana cuadrada con cruz de madera (cabañas y casas de tablas). */
+const SQUARE: WindowShape = (t, y) => {
+  if (Math.abs(t) < 5.4 && y > 15 && y < 33)
+    return Math.abs(t) < 0.5 || Math.abs(y - 24) < 0.5 ? 'frame' : 'glass';
+  return Math.abs(t) < 6.8 && y > 13.6 && y < 34.6 ? 'frame' : null;
+};
+
+/** Ojiva angosta (piedra negra), con vidrio ámbar. */
+const NARROW: WindowShape = (t, y) => {
+  if (inLancet(t, y, 3, 14, 34, 44)) return y % 3.4 < 0.4 ? 'lead' : 'glass';
+  return inLancet(t, y, 4.2, 13, 34, 46) ? 'frame' : null;
+};
+
+/**
+ * Una pared con ventana: la pared de su estilo y, sobre la cara que se ve,
+ * la ventana (marco, vidrio y varillas). El vidrio refleja el cielo de día; de
+ * noche la ventana alumbra (ver `lightRadius`).
+ */
+function windowWall(
+  face: WallFace,
+  shape: (variant: number) => WindowShape,
+  front: number,
+  glass: Ramp,
+  frame: Ramp,
+  shutters: boolean,
+): Record<'x' | 'y', Model> {
+  const draw = (c: VolumeCanvas, along: 0 | 2, variant: number): void => {
+    face(c, along);
+    const part = shape(variant);
+    const lead = ramp([46, 44, 48]);
+    for (const side of [front + 0.35]) {
+      c.box(
+        edge(along, 0, 29, side),
+        UP,
+        edgeHalf(along, H - 1, 17, 0.35),
+        clipping((s) => {
+          const t = s.p[along];
+          const kind = part(t, s.p[1]);
+          if (!kind) return null;
+          if (kind === 'frame') return tone(frame, s.light);
+          if (kind === 'lead') return tone(lead, s.light);
+          // Reflejo: más claro arriba a la izquierda.
+          const shine = s.p[1] > 30 && t < 0 ? 1 : 0;
+          return tone(glass, 0.75 + s.light * 0.25, shine);
+        }),
+      );
+    }
+    if (shutters)
+      for (const k of [-1, 1]) {
+        c.box(
+          edge(along, k * 9.6, 24, front + 1.2),
+          UP,
+          edgeHalf(along, 2.6, 9.4, 0.6),
+          planks(ramp([70, 96, 70]), 1, 2),
+        );
+      }
+  };
+  return { x: (c, v) => draw(c, 0, v), y: (c, v) => draw(c, 2, v) };
+}
+
+const SKY_GLASS = ramp([92, 136, 176]);
+const AMBER_GLASS = ramp([214, 146, 70]);
+const STONE_WINDOW = windowWall(
+  wall,
+  (v) => GOTHIC[v % GOTHIC.length] ?? SQUARE,
+  6,
+  SKY_GLASS,
+  ramp([186, 178, 160]),
+  false,
+);
+const LOG_WINDOW = windowWall(logWall, () => SQUARE, 6, SKY_GLASS, ramp([110, 76, 46]), true);
+const PLANK_WINDOW = windowWall(plankWall, () => SQUARE, 4.8, SKY_GLASS, ramp([96, 66, 40]), true);
+const BASALT_WINDOW = windowWall(
+  basaltWall,
+  () => NARROW,
+  6,
+  AMBER_GLASS,
+  ramp([110, 60, 44]),
+  false,
+);
+
+/** Tipos de puerta: de madera (casas), de hierro (castillo y banco), de mazmorra y de huesos. */
+type DoorStyle = 'wood' | 'iron' | 'dungeon' | 'bone';
+
+const BONE_WHITE = ramp([226, 218, 196]);
+
+/**
+ * Una puerta en su marco, sobre el borde de atrás del tile: dos jambas, el
+ * dintel y la hoja. Abierta, la hoja gira sobre las bisagras hacia adelante.
+ * - madera: tablones, bisagras de hierro y una argolla de bronce;
+ * - hierro: planchas remachadas con flejes, en un marco de piedra;
+ * - mazmorra: roble oscuro con flejes gruesos, clavos y una mirilla enrejada;
+ * - huesos: fémures atados, con calaveras arriba y una calavera de argolla.
+ */
+function door(c: VolumeCanvas, along: 0 | 2, open: boolean, style: DoorStyle = 'wood'): void {
+  const inset = 3;
+  const stone = style === 'iron' || style === 'dungeon';
+  const frame: Material =
+    style === 'bone'
+      ? solid(BONE_WHITE)
+      : stone
+        ? rocky(style === 'dungeon' ? ramp([92, 88, 84]) : ramp([150, 144, 134]), 3)
+        : planks(DARK_WOOD, 1, 3);
+  if (style === 'bone') {
+    // Jambas de fémures y un dintel de costillas.
+    for (const t of [-H + 1.6, H - 1.6]) {
+      c.limb(edge(along, t, 0, inset), edge(along, t, 44, inset), 1.6, 1.6, frame);
+      c.sphere(edge(along, t, 44.5, inset), 2.4, frame);
+    }
+    c.limb(edge(along, -H + 1.6, 44, inset), edge(along, H - 1.6, 44, inset), 1.4, 1.4, frame);
+  } else {
+    for (const t of [-H + 1.6, H - 1.6])
+      c.box(edge(along, t, 22, inset), UP, edgeHalf(along, 1.6, 22, 3), frame);
+    c.box(
+      edge(along, 0, 44, inset),
+      UP,
+      edgeHalf(along, H, 4, 3.2),
+      stone ? frame : planks(DARK_WOOD, along, 4),
+    );
+  }
+  const width = H - 3.2;
+  // Un punto de la hoja: `u` desde la bisagra (0) hasta el otro canto (2·width), `y` de alto, `d` hacia afuera.
+  const leaf = (u: number, y: number, d: number): Vec3 => {
+    if (!open) return edge(along, -width + u, y, inset + d);
+    const a = -width + 1.2 + d;
+    const depth = -H + inset + u;
+    return along === 0 ? [a, y, depth] : [depth, y, a];
+  };
+  const leafHalf = (hu: number, hy: number, hd: number): Vec3 =>
+    open ? (along === 0 ? [hd, hy, hu] : [hu, hy, hd]) : edgeHalf(along, hu, hy, hd);
+  const across = (s: { p: Vec3 }): number => (open ? s.p[along === 0 ? 2 : 0] : s.p[along]);
+  const iron = metal(ramp([60, 60, 66]));
+  const w2 = width * 2;
+  switch (style) {
+    case 'wood': {
+      c.box(leaf(width, 19.5, 0), UP, leafHalf(width, 19.5, 1.2), (s) =>
+        tone(
+          ramp([138, 92, 52]),
+          s.light,
+          Math.abs(((across(s) + 100) % 3.4) - 1.7) < 0.3 ? -1 : 0,
+        ),
+      );
+      for (const y of [8, 31]) c.box(leaf(3.6, y, 1.3), UP, leafHalf(3.6, 0.8, 0.3), iron);
+      c.sphere(leaf(w2 - 2.4, 19, 1.6), 0.9, metal(BRASS));
+      break;
+    }
+    case 'iron': {
+      const steel = ramp([120, 124, 132]);
+      c.box(leaf(width, 19.5, 0), UP, leafHalf(width, 19.5, 1.2), (s) =>
+        tone(
+          steel,
+          s.light,
+          Math.abs(((s.p[1] + 100) % 9.6) - 4.8) < 0.5 ? -1 : s.light > 0.85 ? 1 : 0,
+        ),
+      );
+      for (const y of [5, 14.6, 24.2, 33.8])
+        for (let u = 2; u < w2; u += 4) c.sphere(leaf(u, y, 1.3), 0.55, metal(steel));
+      c.limb(leaf(w2 - 3, 21, 1.6), leaf(w2 - 3, 17, 2.4), 0.5, 0.5, metal(ramp([60, 60, 66])));
+      break;
+    }
+    case 'dungeon': {
+      c.box(leaf(width, 19.5, 0), UP, leafHalf(width, 19.5, 1.6), (s) =>
+        tone(ramp([72, 48, 32]), s.light, Math.abs(((across(s) + 100) % 4) - 2) < 0.35 ? -1 : 0),
+      );
+      for (const y of [6, 19, 32]) {
+        c.box(leaf(width, y, 1.7), UP, leafHalf(width, 1.2, 0.3), iron);
+        for (let u = 2; u < w2; u += 5) c.sphere(leaf(u, y, 2), 0.6, iron);
+      }
+      // Mirilla enrejada.
+      c.box(leaf(width, 26, 1.7), UP, leafHalf(3, 2.4, 0.2), solid(ramp([18, 16, 16])));
+      for (const k of [-1.6, 0, 1.6])
+        c.limb(leaf(width + k, 23.4, 2), leaf(width + k, 28.6, 2), 0.35, 0.35, iron);
+      c.sphere(leaf(w2 - 2.6, 15, 2.2), 1.1, iron);
+      break;
+    }
+    case 'bone': {
+      const bone = solid(BONE_WHITE);
+      for (let u = 1.6; u < w2; u += 3.2) {
+        c.limb(leaf(u, 1, 0), leaf(u, 36, 0), 1.3, 1.3, bone);
+        c.sphere(leaf(u, 1, 0), 1.7, bone);
+        c.sphere(leaf(u, 36.4, 0), 1.7, bone);
+      }
+      // Ataduras y calaveras.
+      for (const y of [10, 26])
+        c.box(leaf(width, y, 0.9), UP, leafHalf(width, 0.6, 0.4), solid(ramp([90, 64, 40])));
+      const dark = solid(ramp([24, 20, 18]));
+      for (const u of [width - 5, width + 5]) {
+        c.sphere(leaf(u, 40, 0.5), 2.6, bone);
+        c.sphere(leaf(u - 0.9, 40.4, 2.6), 0.6, dark);
+        c.sphere(leaf(u + 0.9, 40.4, 2.6), 0.6, dark);
+      }
+      c.sphere(leaf(w2 - 3, 18, 1.8), 1.6, bone);
+      c.sphere(leaf(w2 - 3.5, 18.4, 3.2), 0.4, dark);
+      c.sphere(leaf(w2 - 2.5, 18.4, 3.2), 0.4, dark);
+      break;
+    }
+  }
+  if (open)
+    // Se ve el piso del umbral.
+    c.box(edge(along, 0, 0.3, inset), UP, edgeHalf(along, width, 0.3, 3), solid(DARK_WOOD, -1));
+}
+
 const LOG_WALL = wallSet(logWall, logPost);
 const PLANK_WALL = wallSet(plankWall, plankPost);
 const BASALT_WALL = wallSet(basaltWall, basaltPost);
@@ -2043,4 +2303,28 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   'plank-stack': { model: plankStack, shadow: [14, 6] },
   carpet: { model: carpet, flat: true },
   candelabra: { model: candelabra, shadow: [6, 3] },
+  'door-x': { model: (c) => door(c, 0, false) },
+  'door-y': { model: (c) => door(c, 2, false) },
+  'door-x-open': { model: (c) => door(c, 0, true) },
+  'door-y-open': { model: (c) => door(c, 2, true) },
+  'iron-door-x': { model: (c) => door(c, 0, false, 'iron') },
+  'iron-door-y': { model: (c) => door(c, 2, false, 'iron') },
+  'iron-door-x-open': { model: (c) => door(c, 0, true, 'iron') },
+  'iron-door-y-open': { model: (c) => door(c, 2, true, 'iron') },
+  'dungeon-door-x': { model: (c) => door(c, 0, false, 'dungeon') },
+  'dungeon-door-y': { model: (c) => door(c, 2, false, 'dungeon') },
+  'dungeon-door-x-open': { model: (c) => door(c, 0, true, 'dungeon') },
+  'dungeon-door-y-open': { model: (c) => door(c, 2, true, 'dungeon') },
+  'bone-door-x': { model: (c) => door(c, 0, false, 'bone') },
+  'bone-door-y': { model: (c) => door(c, 2, false, 'bone') },
+  'bone-door-x-open': { model: (c) => door(c, 0, true, 'bone') },
+  'bone-door-y-open': { model: (c) => door(c, 2, true, 'bone') },
+  'wall-window-x': { model: STONE_WINDOW.x },
+  'wall-window-y': { model: STONE_WINDOW.y },
+  'log-window-x': { model: LOG_WINDOW.x },
+  'log-window-y': { model: LOG_WINDOW.y },
+  'plank-window-x': { model: PLANK_WINDOW.x },
+  'plank-window-y': { model: PLANK_WINDOW.y },
+  'basalt-window-x': { model: BASALT_WINDOW.x },
+  'basalt-window-y': { model: BASALT_WINDOW.y },
 };

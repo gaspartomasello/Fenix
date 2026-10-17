@@ -1,6 +1,6 @@
 import type { Position } from '../geometry/position';
 import type { Direction } from '../geometry/direction';
-import { SEATS, STATICS, type StaticPlacement } from './statics';
+import { DOORS, SEATS, STATICS, type StaticKind, type StaticPlacement } from './statics';
 import { TERRAINS, type Terrain } from './terrain';
 
 /** Zona con nombre (un pueblo, un bosque…). */
@@ -71,6 +71,9 @@ export class TileMap {
   private readonly blocked: Uint8Array;
   /** Asientos por tile (sillas, bancos, tronos). */
   private readonly seats = new Map<number, Direction | 'any'>();
+  /** Puertas por tile, y cuáles están abiertas (lo único del mapa que cambia). */
+  private readonly doors = new Map<number, StaticKind>();
+  private readonly openDoors = new Set<number>();
 
   constructor(data: TileMapInit) {
     if (data.terrain.length !== data.width * data.height) {
@@ -90,6 +93,7 @@ export class TileMap {
     for (const placed of this.statics) {
       const seat = SEATS[placed.kind];
       if (seat !== undefined) this.seats.set(placed.y * this.width + placed.x, seat);
+      if (DOORS[placed.kind]) this.doors.set(placed.y * this.width + placed.x, placed.kind);
       const { blocking, footprint } = STATICS[placed.kind];
       if (!blocking) continue;
       for (let dy = 0; dy < footprint; dy++)
@@ -130,14 +134,37 @@ export class TileMap {
     return this.seats.get(position.y * this.width + position.x);
   }
 
-  /** Transitable: terreno caminable y sin objetos que bloqueen. */
+  /** La puerta del tile (su tipo, cerrada), si hay una. */
+  doorAt(position: Position): StaticKind | undefined {
+    if (!this.contains(position)) return undefined;
+    return this.doors.get(position.y * this.width + position.x);
+  }
+
+  isDoorOpen(position: Position): boolean {
+    return this.contains(position) && this.openDoors.has(position.y * this.width + position.x);
+  }
+
+  /** Abre o cierra la puerta del tile (si hay una). Devuelve si cambió algo. */
+  setDoorOpen(position: Position, open: boolean): boolean {
+    if (!this.doorAt(position)) return false;
+    const i = position.y * this.width + position.x;
+    if (this.openDoors.has(i) === open) return false;
+    if (open) this.openDoors.add(i);
+    else this.openDoors.delete(i);
+    return true;
+  }
+
+  /** Las puertas abiertas (para contarle a quien llega cómo está el mundo). */
+  openDoorPositions(): Position[] {
+    return [...this.openDoors].map((i) => ({ x: i % this.width, y: Math.floor(i / this.width) }));
+  }
+
+  /** Transitable: terreno caminable y sin objetos que bloqueen (una puerta abierta no bloquea). */
   isWalkable(position: Position): boolean {
     const terrain = this.terrainAt(position);
-    return (
-      terrain !== undefined &&
-      TERRAINS[terrain].walkable &&
-      this.blocked[position.y * this.width + position.x] === 0
-    );
+    if (terrain === undefined || !TERRAINS[terrain].walkable) return false;
+    const i = position.y * this.width + position.x;
+    return this.blocked[i] === 0 || this.openDoors.has(i);
   }
 
   regionAt(position: Position): RegionData | undefined {

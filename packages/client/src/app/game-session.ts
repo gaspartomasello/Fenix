@@ -46,6 +46,7 @@ import {
 } from '../core/hotbar';
 import { WorldCombat } from './world-combat';
 import { WorldCorpses } from './world-corpses';
+import { WorldDoors } from './world-doors';
 import { WorldMounts } from './world-mounts';
 import { WorldNpcs } from './world-npcs';
 import { WorldItems } from './world-items';
@@ -168,6 +169,7 @@ export class GameSession {
     );
     const worldCombat = new WorldCombat(this.game, renderer, tooltip);
     const worldCorpses = new WorldCorpses(this.game, renderer, tooltip);
+    const worldDoors = new WorldDoors(this.game, renderer, tooltip);
     const worldMounts = new WorldMounts(this.game, renderer, tooltip);
     new WorldSigns(renderer, tooltip);
     const worldItems = new WorldItems(this.game, renderer, drag, tooltip);
@@ -188,6 +190,7 @@ export class GameSession {
         !worldItems.hasItemAt(point) &&
         !worldCombat.hasTargetAt(point) &&
         !worldCorpses.hasCorpseAt(point) &&
+        !worldDoors.hasDoorAt(point) &&
         !worldMounts.hasPetAt(point) &&
         !worldNpcs.hasNpcAt(point),
     });

@@ -255,6 +255,12 @@ export interface LootAllRequest {
   readonly corpseId: EntityId;
 }
 
+/** Abrir o cerrar una puerta (doble clic). */
+export interface UseDoorRequest {
+  readonly type: 'useDoor';
+  readonly position: Position;
+}
+
 export interface CraftRequest {
   readonly type: 'craft';
   readonly recipe: string;
@@ -285,6 +291,7 @@ export type ClientMessage =
   | ReleasePetRequest
   | UseSkillRequest
   | SetWarModeRequest
+  | UseDoorRequest
   | SocialRequest;
 
 // ── Servidor → Cliente ────────────────────────────────────────────────
@@ -297,6 +304,15 @@ export interface WelcomeMessage {
   /** Jugadores y criaturas dentro del rango de visión (incluido el propio). */
   readonly mobiles: readonly MobileSnapshot[];
   readonly time: WorldTime;
+  /** Las puertas que están abiertas (las demás, cerradas). */
+  readonly openDoors?: readonly Position[];
+}
+
+/** Una puerta se abrió o se cerró. */
+export interface DoorMessage {
+  readonly type: 'door';
+  readonly position: Position;
+  readonly open: boolean;
 }
 
 export interface JoinRejectedMessage {
@@ -558,6 +574,7 @@ export type ServerMessage =
   | MountChangedMessage
   | HiddenChangedMessage
   | WarModeChangedMessage
+  | DoorMessage
   | SystemMessage;
 
 export type ServerMessageType = ServerMessage['type'];

@@ -22,6 +22,26 @@ describe('TileMap', () => {
     expect(map.isWalkable({ x: 0, y: 0 })).toBe(true);
   });
 
+  it('una puerta cerrada bloquea; abierta, se pasa', () => {
+    const doorMap = new TileMap({
+      width: 3,
+      height: 1,
+      terrain: [G, G, G],
+      statics: [{ kind: 'door-y', x: 1, y: 0 }],
+    });
+    const door = { x: 1, y: 0 };
+    expect(doorMap.doorAt(door)).toBe('door-y');
+    expect(doorMap.isWalkable(door)).toBe(false);
+    expect(doorMap.setDoorOpen(door, true)).toBe(true);
+    expect(doorMap.isWalkable(door)).toBe(true);
+    expect(doorMap.openDoorPositions()).toEqual([door]);
+    expect(doorMap.setDoorOpen(door, true)).toBe(false);
+    doorMap.setDoorOpen(door, false);
+    expect(doorMap.isWalkable(door)).toBe(false);
+    // Donde no hay puerta no pasa nada.
+    expect(doorMap.setDoorOpen({ x: 0, y: 0 }, true)).toBe(false);
+  });
+
   it('encuentra la zona de una posición', () => {
     expect(map.regionAt({ x: 1, y: 2 })?.name).toBe('Plaza');
     expect(map.regionAt({ x: 2, y: 0 })).toBeUndefined();

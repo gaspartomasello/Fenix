@@ -1,4 +1,4 @@
-import { SEATS, STATICS, TileMap, Terrain, type Position } from '@fenix/shared';
+import { DOORS, SEATS, STATICS, TileMap, Terrain, type Position } from '@fenix/shared';
 import { describe, expect, it } from 'vitest';
 import { buildCity, type City, type CityStyle } from './city-builder';
 
@@ -12,6 +12,12 @@ function asMap(city: City): TileMap {
     regions: [...city.regions],
     signs: [],
   });
+}
+
+/** Abre todas las puertas del mapa (para ver por dónde se llega caminando). */
+function openAll(map: TileMap): TileMap {
+  for (const s of map.statics) if (DOORS[s.kind]) map.setDoorOpen(s, true);
+  return map;
 }
 
 function reachable(map: TileMap, from: Position): Set<string> {
@@ -41,7 +47,7 @@ describe('buildCity', () => {
     size: 'large',
     starterItems: true,
   });
-  const map = asMap(capital);
+  const map = openAll(asMap(capital));
 
   it('la capital tiene muralla con torres, castillo con trono, fuente y mercado', () => {
     const kinds = new Set(capital.statics.map((s) => s.kind));
@@ -159,6 +165,20 @@ describe('buildCity', () => {
     const seats = capital.statics.filter((s) => SEATS[s.kind] !== undefined);
     expect(seats.length).toBeGreaterThan(10);
     for (const seat of seats) expect(map.seatAt(seat), seat.kind).toBeDefined();
+  });
+
+  it('las casas tienen puerta y ventanas; el banco y el salón del trono, puerta de hierro', () => {
+    const kinds = capital.statics.map((s) => s.kind);
+    expect(kinds.filter((k) => k === 'door-x' || k === 'door-y').length).toBeGreaterThan(20);
+    expect(kinds.filter((k) => k.startsWith('iron-door')).length).toBeGreaterThanOrEqual(3);
+    expect(kinds.filter((k) => k.startsWith('wall-window')).length).toBeGreaterThan(20);
+    // Cerradas, no se pasa a los negocios.
+    const closed = asMap(capital);
+    const spawn = capital.spawn;
+    if (!spawn) return;
+    const walk = reachable(closed, spawn);
+    const banker = capital.npcs.find((n) => n.role === 'banker');
+    expect(banker && walk.has(`${banker.position.x},${banker.position.y}`)).toBe(false);
   });
 
   it('las torres y la cripta ocupan 2 × 2 y no tapan a nadie', () => {

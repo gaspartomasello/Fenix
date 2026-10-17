@@ -84,6 +84,7 @@ export class JoinWorld {
       map: encodeMap(this.world.map.toData()),
       mobiles: [player, ...nearby].map((m) => this.world.snapshotOf(m)),
       time: this.worldClock.timeAt(this.clock.now()),
+      openDoors: this.world.map.openDoorPositions(),
     });
     this.notifications.sendInventory(playerId);
     this.notifications.sendGroundDiff(

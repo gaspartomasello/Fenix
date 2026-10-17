@@ -251,6 +251,11 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       if (isId(data.corpseId))
         return { ok: true, message: { type: data.type, corpseId: data.corpseId } };
       break;
+    case 'useDoor': {
+      const position = asPosition(data.position);
+      if (position) return { ok: true, message: { type: 'useDoor', position } };
+      break;
+    }
     case 'useItem':
       if (isId(data.itemId)) return { ok: true, message: { type: 'useItem', itemId: data.itemId } };
       break;
@@ -287,6 +292,7 @@ const SERVER_TYPE_FLAGS: Readonly<Record<ServerMessageType, true>> = {
   mountChanged: true,
   hiddenChanged: true,
   warModeChanged: true,
+  door: true,
   system: true,
 };
 // Con un Record el compilador exige cada tipo nuevo: si falta, el cliente lo descartaría.

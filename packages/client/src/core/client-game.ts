@@ -93,6 +93,8 @@ export interface ClientGameEvents extends Record<string, unknown> {
    * `opened` es true cuando llega la respuesta al doble clic propio.
    */
   corpseChanged: { corpse: CorpseContents | null; opened: boolean };
+  /** Una puerta se abrió o se cerró. */
+  doorChanged: { position: Position; open: boolean };
 }
 
 /** Lo que hay en el cuerpo que se está revisando. */
@@ -420,6 +422,12 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   }
 
   /** Doble clic sobre un cuerpo: pedir ver qué tiene. */
+  /** Abrir o cerrar una puerta (doble clic); el servidor decide y avisa a todos. */
+  useDoor(position: Position): void {
+    if (!this.self) return;
+    this.gateway.send({ type: 'useDoor', position });
+  }
+
   openCorpse(corpseId: EntityId): void {
     if (!this.self) return;
     this.corpseRequested = corpseId;
@@ -513,6 +521,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this.entities.clear();
         this.ground.clear();
         this._map = new TileMap(decodeMap(message.map));
+        for (const door of message.openDoors ?? []) this._map.setDoorOpen(door, true);
         this.selfIdValue = message.selfId;
         this.predictor = new MovementPredictor(this._map);
         this.time = { value: message.time, receivedAt: now };
@@ -521,6 +530,10 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this.emit('ready', { selfId: message.selfId, map: this._map });
         break;
       }
+      case 'door':
+        if (this._map?.setDoorOpen(message.position, message.open))
+          this.emit('doorChanged', { position: message.position, open: message.open });
+        break;
       case 'joinRejected':
         this.emit('joinRejected', { reason: message.reason });
         break;

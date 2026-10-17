@@ -2,6 +2,7 @@ import { formatGameTime, type ClientMessage, type EntityId, type Position } from
 import { isTestCharacter } from '../domain/testing/test-character';
 import type { WorldClock } from '../domain/world-clock';
 import type { World } from '../domain/world';
+import { Doors } from './use-cases/doors';
 import { Corpses } from './corpses';
 import { MountActions } from './use-cases/mount-actions';
 import { Gates } from './gates';
@@ -64,6 +65,7 @@ export class GameApplication {
   private readonly social: SocialNotifications;
   private readonly loop: GameLoop;
   private readonly corpses: Corpses;
+  private readonly doors: Doors;
   private readonly mounts: MountActions;
   private readonly stealth: Stealth;
   private readonly mobiles: MobileNotifications;
@@ -150,6 +152,7 @@ export class GameApplication {
       notifier,
     );
     this.corpses = new Corpses(world, clock, ids, notifications, notifier);
+    this.doors = new Doors(world, notifier);
     this.mounts = new MountActions(world, ids, notifications, this.mobiles, notifier);
     this.loop = new GameLoop(
       world,
@@ -282,6 +285,9 @@ export class GameApplication {
         break;
       case 'openCorpse':
         this.corpses.open(playerId, message.corpseId);
+        break;
+      case 'useDoor':
+        this.doors.use(playerId, message.position);
         break;
       case 'lootAll':
         this.corpses.lootAll(playerId, message.corpseId);
