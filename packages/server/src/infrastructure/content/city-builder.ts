@@ -532,7 +532,10 @@ export function buildCity(spec: CitySpec): City {
   plan.fill({ x0: 0, y0: cy - 1, x1: width - 1, y1: cy + 1 }, style.avenue);
   const plazaR = spec.size === 'large' ? 7 : spec.size === 'medium' ? 4 : 3;
   const plaza: Rect = { x0: cx - plazaR, y0: cy - plazaR, x1: cx + plazaR, y1: cy + plazaR };
-  plan.fill(plaza, style.plaza);
+  // La plaza, redonda.
+  for (let y = plaza.y0 - 1; y <= plaza.y1 + 1; y++)
+    for (let x = plaza.x0 - 1; x <= plaza.x1 + 1; x++)
+      if (Math.hypot(x - cx, y - cy) <= plazaR + 1.2) plan.ground(x, y, style.plaza);
   plan.claim({ x0: plaza.x0 - 1, y0: plaza.y0 - 1, x1: plaza.x1 + 1, y1: plaza.y1 + 1 });
   plan.claim({ x0: cx - 2, y0: 0, x1: cx + 2, y1: height - 1 });
   plan.claim({ x0: 0, y0: cy - 2, x1: width - 1, y1: cy + 2 });
@@ -541,7 +544,20 @@ export function buildCity(spec: CitySpec): City {
   const river = style.river ? buildRiver(plan, style, inner, cx, random) : null;
 
   // ── La muralla con sus puertas (y torres, en las de piedra) ──
-  buildRing(plan, style, inner, cx, cy, river);
+  // Las esquinas se cortan en diagonal, cada una distinta: la ciudad no es un
+  // cuadrado. La del castillo queda entera (necesita su rincón).
+  const cutMax = Math.floor(Math.min(innerW, innerH) / 4);
+  const cut = (limit: number): number =>
+    Math.max(0, Math.min(limit, Math.floor(cutMax * (0.35 + random.next() * 0.65))));
+  const northLimit = river ? river.top - 4 - inner.y0 : cutMax;
+  const southLimit = river ? inner.y1 - river.bottom - 4 : cutMax;
+  const corners: Corners = {
+    nw: cut(northLimit),
+    ne: style.castle ? 0 : cut(northLimit),
+    sw: cut(southLimit),
+    se: cut(southLimit),
+  };
+  buildRing(plan, style, inner, cx, cy, river, corners);
 
   // ── La plaza: fuente (o fogata), santuario, puestos del mercado y faroles ──
   if (style.lawless) plan.put(cx, cy, 'campfire');
@@ -612,8 +628,16 @@ export function buildCity(spec: CitySpec): City {
     regions.push(buildCastle(plan, style, castleRect, spec.name, cx));
   const lots = quadrants
     .filter((q) => q !== castleQuadrant)
+    // Cuadras de distinto tamaño en cada barrio.
     .flatMap((q) =>
-      blocks(plan, style, q, spec.size === 'large' ? 11 : spec.size === 'small' ? 8 : 10),
+      blocks(
+        plan,
+        style,
+        q,
+        (spec.size === 'large' ? 11 : spec.size === 'small' ? 8 : 10) +
+          Math.floor(random.next() * 4) -
+          1,
+      ),
     );
   // Los negocios van en las cuadras más cerca de la plaza.
   lots.sort(
@@ -794,6 +818,19 @@ function buildRiver(
 }
 
 /** La muralla: piedra con torres, empalizada o cerca, con puertas al medio de cada lado. */
+/** Cuánto se corta en diagonal cada esquina de la muralla (0: esquina entera). */
+interface Corners {
+  readonly nw: number;
+  readonly ne: number;
+  readonly sw: number;
+  readonly se: number;
+}
+
+/**
+ * La muralla sigue el contorno de la ciudad: un rectángulo con las esquinas
+ * cortadas en diagonal (en escalones, como las murallas de UO). Lo que queda
+ * afuera del corte no se construye.
+ */
 function buildRing(
   plan: Plan,
   style: Style,
@@ -801,18 +838,54 @@ function buildRing(
   cx: number,
   cy: number,
   river: River | null,
+  corners: Corners,
 ): void {
   const kit = style.ring === 'rampart' ? RAMPART : style.ring === 'palisade' ? PALISADE : FENCE;
-  const gaps: Position[] = [];
-  for (const d of [-1, 0, 1]) {
-    gaps.push({ x: cx + d, y: inner.y0 }, { x: cx + d, y: inner.y1 + 1 });
-    gaps.push({ x: inner.x0, y: cy + d }, { x: inner.x1 + 1, y: cy + d });
-  }
-  // El río pasa por debajo de la muralla.
-  if (river)
-    for (let y = river.top; y <= river.bottom; y++)
-      gaps.push({ x: inner.x0, y }, { x: inner.x1 + 1, y });
-  plan.enclose(inner, kit, gaps);
+  const right = inner.x1 + 1;
+  const bottom = inner.y1 + 1;
+  const within = (x: number, y: number): boolean =>
+    x >= inner.x0 &&
+    y >= inner.y0 &&
+    x <= right &&
+    y <= bottom &&
+    x - inner.x0 + (y - inner.y0) >= corners.nw &&
+    right - x + (y - inner.y0) >= corners.ne &&
+    x - inner.x0 + (bottom - y) >= corners.sw &&
+    right - x + (bottom - y) >= corners.se;
+  const isWall = (x: number, y: number): boolean => {
+    if (!within(x, y)) return false;
+    for (let dy = -1; dy <= 1; dy++)
+      for (let dx = -1; dx <= 1; dx++) if (!within(x + dx, y + dy)) return true;
+    return false;
+  };
+  const gate = (x: number, y: number): boolean =>
+    (Math.abs(x - cx) <= 1 && (y === inner.y0 || y === bottom)) ||
+    (Math.abs(y - cy) <= 1 && (x === inner.x0 || x === right)) ||
+    (river !== null && y >= river.top && y <= river.bottom && (x === inner.x0 || x === right));
+  for (let y = inner.y0; y <= bottom; y++)
+    for (let x = inner.x0; x <= right; x++) {
+      if (!within(x, y)) {
+        // Afuera del corte: no se construye ahí.
+        plan.claim({ x0: x, y0: y, x1: x, y1: y });
+        continue;
+      }
+      if (!isWall(x, y)) continue;
+      plan.claim({ x0: x, y0: y, x1: x, y1: y });
+      if (gate(x, y)) continue;
+      const w = isWall(x - 1, y);
+      const e = isWall(x + 1, y);
+      const n = isWall(x, y - 1);
+      const s = isWall(x, y + 1);
+      let kind: StaticKind;
+      if ((w || e) && (n || s)) {
+        if (e && s) kind = kit.corner;
+        else if (w && n) kind = kit.post;
+        else if (e && n) kind = kit.x;
+        else kind = kit.y;
+      } else kind = n || s ? kit.y : kit.x;
+      plan.clear(x, y);
+      plan.put(x, y, kind);
+    }
   if (!style.towers) return;
   // Torres a los lados de donde entra y sale el río.
   if (river)
@@ -820,12 +893,8 @@ function buildRing(
       plan.big(x, river.top - 3, 'tower');
       plan.big(x, river.bottom + 2, 'tower');
     }
-  // Torres en las esquinas y a los lados de cada puerta.
+  // Torres en cada quiebre de la muralla y a los lados de cada puerta.
   const towers: Position[] = [
-    { x: inner.x0 - 1, y: inner.y0 - 1 },
-    { x: inner.x1 + 1, y: inner.y0 - 1 },
-    { x: inner.x0 - 1, y: inner.y1 + 1 },
-    { x: inner.x1 + 1, y: inner.y1 + 1 },
     { x: cx - 3, y: inner.y0 - 1 },
     { x: cx + 2, y: inner.y0 - 1 },
     { x: cx - 3, y: inner.y1 + 1 },
@@ -835,7 +904,24 @@ function buildRing(
     { x: inner.x1 + 1, y: cy - 3 },
     { x: inner.x1 + 1, y: cy + 2 },
   ];
-  for (const t of towers) plan.big(t.x, t.y, 'tower');
+  const { nw, ne, sw, se } = corners;
+  towers.push(
+    { x: inner.x0 + nw - 1, y: inner.y0 - 1 },
+    { x: inner.x0 - 1, y: inner.y0 + nw - 1 },
+    { x: right - ne, y: inner.y0 - 1 },
+    { x: right, y: inner.y0 + ne - 1 },
+    { x: inner.x0 + sw - 1, y: bottom },
+    { x: inner.x0 - 1, y: bottom - sw },
+    { x: right - se, y: bottom },
+    { x: right, y: bottom - se },
+  );
+  const seen = new Set<string>();
+  for (const t of towers) {
+    const key = `${t.x},${t.y}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    plan.big(t.x, t.y, 'tower');
+  }
 }
 
 /**
