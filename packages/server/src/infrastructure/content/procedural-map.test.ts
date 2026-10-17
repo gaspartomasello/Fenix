@@ -276,21 +276,53 @@ describe('buildWorld: el continente alargado (más alto que ancho)', () => {
   const world = buildWorld({ size: 420, height: 600, seed: 1997 });
   const { map, spawnPoint } = world;
 
-  it('es más largo de norte a sur que de este a oeste, con istmo e islas', () => {
-    const landRows: number[] = [];
-    for (let y = 0; y < 600; y++) {
+  it('es un solo continente de norte a sur (sin estrecho), con una bahía al este', () => {
+    const isLand = (x: number, y: number): boolean => {
+      const t = map.terrainAt({ x, y });
+      return t !== Terrain.Water && t !== Terrain.ShallowWater;
+    };
+    /** La costa este del continente en una fila (el último tile de tierra antes del mar abierto). */
+    const eastCoast = (y: number): number => {
+      let x = 0;
+      while (x < 420 && !isLand(x, y)) x++;
+      // Avanza hasta encontrar mar abierto (20 tiles seguidos de agua).
+      for (let water = 0; x < 420 && water < 20; x++) water = isLand(x, y) ? 0 : water + 1;
+      return x - 20;
+    };
+    // Tierra en todas las filas del continente: no hay estrecho que lo corte.
+    for (let y = 40; y < 560; y += 4) {
       let land = 0;
-      for (let x = 0; x < 420; x++) {
-        const t = map.terrainAt({ x, y });
-        if (t !== Terrain.Water && t !== Terrain.ShallowWater) land++;
-      }
-      landRows.push(land);
+      for (let x = 0; x < 300; x++) if (isLand(x, y)) land++;
+      expect(land, `fila ${y}`).toBeGreaterThan(40);
     }
-    const north = Math.max(...landRows.slice(60, 240));
-    const isthmus = Math.min(...landRows.slice(280, 340));
-    expect(isthmus).toBeLessThan(north / 3);
-    // Tierra en el norte y en el sur.
-    expect(Math.max(...landRows.slice(380, 520))).toBeGreaterThan(north / 3);
+    // La bahía: a media latitud la costa este se mete bien adentro.
+    expect(eastCoast(312)).toBeLessThan(eastCoast(150) - 60);
+  });
+
+  it('la isla grande tiene su ciudad y las Tierras de Ceniza, con el volcán y la lava', () => {
+    const names = map.regions.map((r) => r.name);
+    expect(names).toEqual(
+      expect.arrayContaining(['Puerto Brasa', 'Tierras de Ceniza', 'Monte del Fuego']),
+    );
+    const volcano = map.regions.find((r) => r.name === 'Monte del Fuego');
+    let lava = 0;
+    let ash = 0;
+    for (let y = 0; y < 600; y++)
+      for (let x = 280; x < 420; x++) {
+        const t = map.terrainAt({ x, y });
+        if (t === Terrain.Lava) lava++;
+        if (t === Terrain.Ash || t === Terrain.Corrupted) ash++;
+      }
+    expect(lava).toBeGreaterThan(20);
+    expect(ash).toBeGreaterThan(100);
+    expect(volcano).toBeDefined();
+    // A la isla no se llega caminando desde la capital.
+    const walkable = reachable(map, spawnPoint);
+    const onIsland = [...walkable].some((key) => {
+      const [x = 0, y = 0] = key.split(',').map(Number);
+      return map.regionAt({ x, y })?.name === 'Puerto Brasa';
+    });
+    expect(onIsland).toBe(false);
   });
 
   it('hace frío al norte, calor en el medio y la capital queda en lo templado', () => {

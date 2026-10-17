@@ -348,6 +348,11 @@ const BIOME_CREATURES: Readonly<
     ['giant-spider', 0.8],
   ],
   meadow: [['rat', 1]],
+  wasteland: [
+    ['orc', 2.4],
+    ['troll', 1],
+    ['skeleton-mage', 0.3],
+  ],
   plains: [['rat', 0.6]],
 };
 

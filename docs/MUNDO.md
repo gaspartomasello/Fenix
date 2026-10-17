@@ -6,21 +6,30 @@ es procedural (`@fenix/art`), sin nada de UO.
 ## Forma del mundo
 
 El continente mide **1400 × 2000** tiles (`MAP_SIZE` × `MAP_HEIGHT`) y es alargado de norte a sur,
-mezcla de América y Britannia:
+mezcla de América y Britannia, **en una sola pieza** (sin estrecho):
 
-- **Norte**: una masa ancha y templada con bahías, golfos, un gran golfo interior al oeste y
-  lagos. Ahí están la capital (Puerto Ceniza), Roca Alta al pie de la cordillera y Junco Verde.
-  Más arriba, tundra y nieve.
-- **Istmo**: angosto y caluroso (selva y desierto).
-- **Sur**: otra masa con selva grande, desiertos, tierra roja y sabana, que se enfría hacia la
-  punta.
+- **Norte**: tundra y nieve arriba; más abajo, tierras templadas con la capital (Puerto Ceniza),
+  Roca Alta al pie de la cordillera y Junco Verde.
+- **Centro**: una **gran bahía** que se mete desde la costa este; del lado oeste sigue la tierra
+  (selva, desiertos, tierra roja).
+- **Sur**: tierras que se enfrían hacia la punta.
 - **Cordillera** a lo largo de la costa oeste, cortada por pasos.
-- **Mares abiertos** a los dos lados, con unas 35 islas (algunas grandes, para explorar y para
-  los barcos que vendrán).
 
-Las costas se tuercen con ruido (nada queda redondo) y el clima depende de la latitud: frío
-arriba, templado donde está la capital, caluroso en el istmo y fresco en la punta sur. Un mapa
-cuadrado (los de prueba) usa la isla redonda de antes.
+En el mar:
+
+- **La isla grande**, al este de la bahía: al oeste está **Puerto Brasa** (por ahora con el plano
+  de Roca Alta) y en el medio las **Tierras de Ceniza**, un valle negro de ceniza y tierra
+  corrupta, amurallado por montañas con **una sola entrada** (del lado de la ciudad). Adentro
+  viven orcos, trolls y magos esqueleto, y en el centro está el **Monte del Fuego**, un volcán con
+  un cráter de lava.
+- **Dos islas al sudeste**, frente a la punta sur y separadas por un canal angosto, de costas
+  muy recortadas (como las Malvinas frente a la Patagonia).
+- Una isla larga al noreste, otra angosta al oeste y otras chicas de formas variadas
+  (alargadas, de dos lóbulos), para explorar y, más adelante, navegar.
+
+Las costas se tuercen con ruido (nada queda redondo) y el clima depende de la latitud. Un mapa
+cuadrado (los de prueba) usa la isla redonda de antes. Si cambia la forma del mundo
+(`WORLD_VERSION`), los personajes guardados aparecen en la capital.
 
 ## Agua
 
@@ -73,6 +82,7 @@ cordilleras), **latitud** (frío al norte, calor al sur) y **humedad**:
 | Selva       | sur, húmedo         | suelo de selva               | árboles de selva con lianas, palmeras, plantas de hojas grandes, helechos |
 | Montaña     | cordilleras         | —                            | macizos de roca; al pie, grava, piedras y pinos                           |
 | Costa       | junto al mar        | arena                        | piedras, piedritas; el mar cercano es poco profundo                       |
+| Ceniza      | la isla grande      | ceniza, tierra corrupta      | árboles muertos, peñascos, huesos; lava en el cráter del volcán           |
 
 Los verdes no son todos iguales: dentro de cada bioma, un ruido de matices mezcla pasto, prado,
 pasto seco y suelo de selva.
