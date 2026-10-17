@@ -17,7 +17,10 @@ import { generateIslandMap, type GeneratedWorld, type TownPlan } from './procedu
 import { loadTiledMap } from './tiled-map-loader';
 
 export interface WorldBuildOptions {
+  /** Ancho del continente (y alto, si no se da `height`). */
   readonly size: number;
+  /** Alto: si es bastante mayor que el ancho, el continente es alargado de norte a sur. */
+  readonly height?: number;
   readonly seed: number;
   /** Poblar el mundo con criaturas (por defecto, sí). */
   readonly creatures?: boolean;
@@ -54,25 +57,50 @@ const LAIR_LEVELS: readonly { upTo: number; kinds: readonly CreatureKind[]; coun
   { upTo: 0.99, kinds: ['lich', 'troll', 'skeleton-mage'], count: 3 },
 ];
 
-/** Los pueblos del continente: la capital al centro, Roca Alta al noroeste, Junco Verde al este. */
-function townPlans(size: number): TownPlan[] {
+/**
+ * Los pueblos del continente. En el continente alargado, la capital queda en
+ * el norte templado cerca de la costa este, Roca Alta al pie de la cordillera
+ * del oeste y Junco Verde más al sur, en lo bajo y húmedo. En uno cuadrado:
+ * la capital al centro, Roca Alta al noroeste, Junco Verde al este.
+ */
+function townPlans(width: number, height: number): TownPlan[] {
   const load = (name: keyof typeof TOWN_MAPS) => loadTiledMap(name, TOWN_MAPS[name], TILESETS);
+  const elongated = height > width * 1.2;
   const plans: TownPlan[] = [
-    { map: load('puerto-ceniza'), at: { x: 0.5, y: 0.55 }, climate: 'temperate', capital: true },
+    {
+      map: load('puerto-ceniza'),
+      at: elongated ? { x: 0.6, y: 0.27 } : { x: 0.5, y: 0.55 },
+      climate: 'temperate',
+      capital: true,
+    },
   ];
-  if (size >= MIN_SIZE_FOR_ALL_TOWNS) {
+  if (Math.min(width, height) >= MIN_SIZE_FOR_ALL_TOWNS) {
     plans.push(
-      { map: load('roca-alta'), at: { x: 0.27, y: 0.3 }, climate: 'mountain' },
-      { map: load('junco-verde'), at: { x: 0.77, y: 0.5 }, climate: 'swamp' },
+      {
+        map: load('roca-alta'),
+        at: elongated ? { x: 0.36, y: 0.215 } : { x: 0.27, y: 0.3 },
+        climate: 'mountain',
+      },
+      {
+        map: load('junco-verde'),
+        at: elongated ? { x: 0.5, y: 0.39 } : { x: 0.77, y: 0.5 },
+        climate: 'swamp',
+      },
     );
   }
   return plans;
 }
 
 /** Arma el mapa completo: continente con pueblos y lugares, y la mazmorra al este. */
-export function buildWorld({ size, seed }: WorldBuildOptions): BuiltWorld {
+export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): BuiltWorld {
+  const landHeight = tall ?? size;
   const continent = populateContinent(
-    generateIslandMap({ width: size, height: size, seed, towns: townPlans(size) }),
+    generateIslandMap({
+      width: size,
+      height: landHeight,
+      seed,
+      towns: townPlans(size, landHeight),
+    }),
     seed,
   );
   const dungeon = generateDungeon({ width: DUNGEON_SIZE, height: DUNGEON_SIZE, seed: seed + 7 });
@@ -82,13 +110,13 @@ export function buildWorld({ size, seed }: WorldBuildOptions): BuiltWorld {
   // de llegar caminando: se entra y se sale por la boca de la cueva.
   const left = size + DUNGEON_GAP;
   const width = left + dungeon.width;
-  const height = Math.max(size, dungeon.height);
+  const height = Math.max(landHeight, dungeon.height);
   const terrain = new Array<Terrain>(width * height).fill(Terrain.Rock);
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const tile =
         x < size
-          ? y < size
+          ? y < landHeight
             ? islandData.terrain[y * size + x]
             : Terrain.Water
           : x < left
@@ -142,7 +170,7 @@ export function buildWorld({ size, seed }: WorldBuildOptions): BuiltWorld {
 /** Crea el mundo listo para jugar, con los objetos sueltos del mapa en el suelo. */
 export function createWorld(options: WorldBuildOptions, ids: IdGenerator): World {
   const { map, spawnPoint, items, npcs, lairs, wildlife } = buildWorld(options);
-  const world = new World(map, spawnPoint);
+  const world = new World(map, spawnPoint, `${map.width}x${map.height}@${options.seed}`);
   for (const { role, position, name } of npcs)
     world.addNpc(new Npc(ids.next(), role, position, name));
   for (const { kind, amount, position } of items) {

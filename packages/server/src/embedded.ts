@@ -22,6 +22,7 @@ import { UuidGenerator } from './infrastructure/system/uuid-generator';
 export interface EmbeddedServerOptions {
   readonly mapSeed?: number;
   readonly mapSize?: number;
+  readonly mapHeight?: number;
   readonly startHour?: number;
   /** Dónde guardar el personaje (el `localStorage` del navegador); sin esto no se guarda. */
   readonly storage?: KeyValueStorage;
@@ -45,7 +46,14 @@ export interface EmbeddedServer {
 
 export function createEmbeddedServer(options: EmbeddedServerOptions = {}): EmbeddedServer {
   const ids = new UuidGenerator();
-  const world = createWorld({ size: options.mapSize ?? 320, seed: options.mapSeed ?? 1997 }, ids);
+  const world = createWorld(
+    {
+      size: options.mapSize ?? 1000,
+      height: options.mapHeight ?? options.mapSize ?? 1400,
+      seed: options.mapSeed ?? 1997,
+    },
+    ids,
+  );
   const sessions = new SessionRegistry();
   const clock = new SystemClock();
   const app = new GameApplication({

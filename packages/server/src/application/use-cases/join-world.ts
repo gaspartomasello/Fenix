@@ -1,4 +1,4 @@
-import { validateCharacterName, type Appearance, type EntityId } from '@fenix/shared';
+import { encodeMap, validateCharacterName, type Appearance, type EntityId } from '@fenix/shared';
 import { STARTING_KIT } from '../../domain/items/starting-kit';
 import { equipTestCharacter, isTestCharacter } from '../../domain/testing/test-character';
 import { restoreCharacter } from '../../domain/persistence/saved-character';
@@ -81,7 +81,7 @@ export class JoinWorld {
     this.notifier.send(playerId, {
       type: 'welcome',
       selfId: playerId,
-      map: this.world.map.toData(),
+      map: encodeMap(this.world.map.toData()),
       mobiles: [player, ...nearby].map((m) => this.world.snapshotOf(m)),
       time: this.worldClock.timeAt(this.clock.now()),
     });

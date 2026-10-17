@@ -3,6 +3,7 @@ import {
   CREATURES,
   SPELLS,
   TileMap,
+  decodeMap,
   advanceTime,
   bodyMoveMs,
   directionBetween,
@@ -508,7 +509,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       case 'welcome': {
         this.entities.clear();
         this.ground.clear();
-        this._map = new TileMap(message.map);
+        this._map = new TileMap(decodeMap(message.map));
         this.selfIdValue = message.selfId;
         this.predictor = new MovementPredictor(this._map);
         this.time = { value: message.time, receivedAt: now };

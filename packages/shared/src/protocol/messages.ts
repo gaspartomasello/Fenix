@@ -15,7 +15,7 @@ import type { SkillValues } from '../domain/skills/skill-catalog';
 import type { ActiveSkill } from '../domain/skills/stealth';
 import type { WorldTime } from '../domain/rules/daylight';
 import type { MoveMode } from '../domain/rules/movement';
-import type { TileMapData } from '../domain/world/tile-map';
+import type { CompactMapData } from '../domain/world/map-codec';
 
 export type EntityId = string;
 
@@ -283,7 +283,8 @@ export type ClientMessage =
 export interface WelcomeMessage {
   readonly type: 'welcome';
   readonly selfId: EntityId;
-  readonly map: TileMapData;
+  /** El mapa completo, compacto (ver `encodeMap`). */
+  readonly map: CompactMapData;
   /** Jugadores y criaturas dentro del rango de visión (incluido el propio). */
   readonly mobiles: readonly MobileSnapshot[];
   readonly time: WorldTime;

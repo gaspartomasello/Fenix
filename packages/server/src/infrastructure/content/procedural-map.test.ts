@@ -271,3 +271,51 @@ describe('mazmorra', () => {
     expect(lairs.some((l) => l.kind === 'lich')).toBe(true);
   });
 });
+
+describe('buildWorld: el continente alargado (más alto que ancho)', () => {
+  const world = buildWorld({ size: 420, height: 600, seed: 1997 });
+  const { map, spawnPoint } = world;
+
+  it('es más largo de norte a sur que de este a oeste, con istmo e islas', () => {
+    const landRows: number[] = [];
+    for (let y = 0; y < 600; y++) {
+      let land = 0;
+      for (let x = 0; x < 420; x++) {
+        const t = map.terrainAt({ x, y });
+        if (t !== Terrain.Water && t !== Terrain.ShallowWater) land++;
+      }
+      landRows.push(land);
+    }
+    const north = Math.max(...landRows.slice(60, 240));
+    const isthmus = Math.min(...landRows.slice(280, 340));
+    expect(isthmus).toBeLessThan(north / 3);
+    // Tierra en el norte y en el sur.
+    expect(Math.max(...landRows.slice(380, 520))).toBeGreaterThan(north / 3);
+  });
+
+  it('hace frío al norte, calor en el medio y la capital queda en lo templado', () => {
+    const snowY = map.statics.filter((s) => s.kind === 'snow-pine').map((s) => s.y);
+    const hotY = map.statics
+      .filter((s) => s.kind === 'cactus' || s.kind === 'jungle-tree' || s.kind === 'palm')
+      .map((s) => s.y);
+    expect(median(snowY)).toBeLessThan(median(hotY));
+    expect(spawnPoint.y).toBeGreaterThan(Math.min(...snowY));
+    expect(map.regionAt(spawnPoint)?.name).toBe('Puerto Ceniza');
+  });
+
+  it('desde la capital se llega caminando a los otros pueblos', () => {
+    const walkable = reachable(map, spawnPoint);
+    for (const name of ['Roca Alta', 'Junco Verde']) {
+      const inside = [...walkable].some((key) => {
+        const [x = 0, y = 0] = key.split(',').map(Number);
+        return map.regionAt({ x, y })?.name === name;
+      });
+      expect(inside, name).toBe(true);
+    }
+  });
+});
+
+function median(values: readonly number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)] ?? 0;
+}

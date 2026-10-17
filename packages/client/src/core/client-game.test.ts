@@ -3,6 +3,7 @@ import {
   Direction,
   MOVE_DURATION_MS,
   Terrain,
+  encodeMap,
   type ClientMessage,
   type MobileSnapshot,
 } from '@fenix/shared';
@@ -43,14 +44,14 @@ describe('ClientGame', () => {
     game.apply({
       type: 'welcome',
       selfId: 'ana',
-      map: {
+      map: encodeMap({
         width: 4,
         height: 1,
         terrain: [G, G, G, W],
         statics: [],
         regions: [{ name: 'Muelle', x: 0, y: 0, width: 2, height: 1 }],
         teleporters: [],
-      },
+      }),
       time: { dayProgress: 0.5, dayLengthMs: 10_000 },
       mobiles: [snapshot('ana', 0, 0), snapshot('bruno', 2, 0)],
     });

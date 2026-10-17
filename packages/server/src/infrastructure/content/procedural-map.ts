@@ -158,7 +158,10 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
   // Matices del suelo: que los verdes no sean todos iguales.
   const greens = new ValueNoise(seed + 15, 6);
   const salts = new ValueNoise(seed + 16, Math.max(6, size / 14));
+  const roadWander = new ValueNoise(seed + 22, 9);
 
+  // Un mapa más alto que ancho es un continente alargado de norte a sur (ver `ElongatedShape`).
+  const elongated = height > width * 1.2 ? new ElongatedShape(width, height, seed) : null;
   const elevation = new Float32Array(total);
   const biomes: Biome[] = new Array<Biome>(total).fill('ocean');
   for (let y = 0; y < height; y++) {
@@ -167,13 +170,17 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
         (shape[0]?.at(x, y) ?? 0) * 0.55 +
         (shape[1]?.at(x, y) ?? 0) * 0.3 +
         (shape[2]?.at(x, y) ?? 0) * 0.15;
-      const dx = (x - width / 2) / (width / 2);
-      const dy = (y - height / 2) / (height / 2);
-      const falloff = smoothstep(0.68, 1.05, Math.hypot(dx, dy));
+      let land: number;
+      if (elongated) {
+        land = elongated.land(x, y);
+      } else {
+        const dx = (x - width / 2) / (width / 2);
+        const dy = (y - height / 2) / (height / 2);
+        land = -smoothstep(0.68, 1.05, Math.hypot(dx, dy)) * 0.62;
+      }
       const edge = Math.min(x, y, width - 1 - x, height - 1 - y);
       const coastGuard = edge < 3 ? 1 : 0;
-      elevation[index(x, y)] =
-        base + 0.12 - falloff * 0.62 + townInfluence(x, y) * 0.3 - coastGuard;
+      elevation[index(x, y)] = base + 0.12 + land + townInfluence(x, y) * 0.3 - coastGuard;
     }
   }
 
@@ -182,13 +189,16 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
       const i = index(x, y);
       const e = elevation[i] ?? 0;
       if (e < SEA) continue;
-      const cold = 1 - y / height + (chill.at(x, y) - 0.5) * 0.18;
+      const cold =
+        (elongated ? elongated.cold(y) : 1 - y / height) +
+        (chill.at(x, y) - 0.5) * (elongated ? 0.34 : 0.18);
       const wet = wetness.at(x, y) + townInfluence(x, y, 'swamp') * 0.45;
       const ridge =
         1 -
         Math.abs(2 * ridges.at(x, y) - 1) * 0.8 -
         Math.abs(2 * ridgeDetail.at(x, y) - 1) * 0.2 +
-        mountainRing(x, y) * 0.5;
+        mountainRing(x, y) * 0.5 +
+        (elongated?.cordillera(x, y) ?? 0) * 0.6;
       const nearTown = inTown(x, y, 5);
       const marsh = townInfluence(x, y, 'swamp');
       let biome: Biome;
@@ -197,15 +207,17 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
         !nearTown &&
         ridge > 0.94 &&
         e > SEA + 0.1 &&
-        (ranges.at(x, y) > 0.7 || mountainRing(x, y) > 0)
+        (ranges.at(x, y) > 0.7 ||
+          mountainRing(x, y) > 0 ||
+          (elongated?.cordillera(x, y) ?? 0) > 0.3)
       )
         biome = 'mountain';
       else if (marsh > 0 && marsh + (wet - 0.5) * 0.4 > 0.06) biome = 'swamp';
       else if (cold > 0.8) biome = 'snow';
       else if (cold > 0.7) biome = 'tundra';
-      else if (cold < 0.27 && wet > 0.64) biome = 'jungle';
+      else if (cold < 0.27 && wet > (elongated ? 0.7 : 0.64)) biome = 'jungle';
       else if (cold < 0.27) biome = reds.at(x, y) > 0.68 ? 'badlands' : 'desert';
-      else if (cold < 0.38 && wet < 0.52) biome = 'savanna';
+      else if (cold < 0.38 && wet < (elongated ? 0.6 : 0.52)) biome = 'savanna';
       else if (wet > 0.66 && e < SEA + 0.2 + townInfluence(x, y, 'swamp') * 0.35) biome = 'swamp';
       else biome = temperate(x, y);
       biomes[i] = biome;
@@ -468,7 +480,7 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     if (!from || !to) continue;
     const start = gate(from, to);
     const end = gate(to, from);
-    const path = cheapestPath(width, height, start, end, roadCost, ROAD_TURN);
+    const path = cheapestPath(width, height, start, end, roadCost, elongated ? 2.5 : ROAD_TURN);
     if (!path) continue;
     for (const p of path) carveRoad(p.x, p.y);
     posts.push([start, path, to.name], [end, [...path].reverse(), from.name]);
@@ -489,6 +501,8 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
 
   function roadCost(x: number, y: number): number {
     const i = index(x, y);
+    // Un poco de ruido en el costo: los caminos serpentean en vez de ir en escuadra.
+    const wander = elongated ? roadWander.at(x, y) * 1.6 : 0;
     if (inTown(x, y)) return Infinity;
     if (roads.has(i)) return 0.3;
     const biome = biomes[i];
@@ -496,9 +510,9 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     if (isWater(terrain[i])) return river[i] ? 14 : 30;
     if (biome === 'mountain') return 70;
     if (biome === 'swamp') return 3;
-    if (biome === 'forest' || biome === 'foothill' || biome === 'snow') return 1.25;
-    if (biome === 'desert' || biome === 'beach') return 1.15;
-    return 1;
+    if (biome === 'forest' || biome === 'foothill' || biome === 'snow') return 1.25 + wander;
+    if (biome === 'desert' || biome === 'beach') return 1.15 + wander;
+    return 1 + wander;
   }
 
   /** Un camino de tres tiles de ancho, despejado a los costados. */
@@ -810,3 +824,140 @@ const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 const smooth = (t: number): number => t * t * (3 - 2 * t);
 const smoothstep = (a: number, b: number, t: number): number =>
   smooth(Math.max(0, Math.min(1, (t - a) / (b - a))));
+
+/** Ancho del continente (medio, en fracción del ancho del mapa) según la latitud (0 = norte). */
+const HALF_WIDTH: readonly (readonly [number, number])[] = [
+  [0, 0.04],
+  [0.03, 0.16],
+  [0.08, 0.32],
+  [0.2, 0.38],
+  [0.34, 0.33],
+  [0.42, 0.2],
+  [0.47, 0.07],
+  [0.53, 0.04],
+  [0.58, 0.06],
+  [0.63, 0.26],
+  [0.72, 0.3],
+  [0.82, 0.22],
+  [0.9, 0.12],
+  [0.96, 0.05],
+  [1, 0],
+];
+
+/** Frío según la latitud: helado arriba, templado (la capital), caluroso en el istmo y el sur, fresco en la punta. */
+const COLD: readonly (readonly [number, number])[] = [
+  [0, 1],
+  [0.07, 0.82],
+  [0.12, 0.72],
+  [0.42, 0.4],
+  [0.55, 0.15],
+  [0.6, 0.1],
+  [0.7, 0.2],
+  [0.8, 0.38],
+  [0.92, 0.6],
+  [1, 0.78],
+];
+
+function interpolate(keys: readonly (readonly [number, number])[], t: number): number {
+  for (let i = 1; i < keys.length; i++) {
+    const [t1, v1] = keys[i] ?? [1, 0];
+    const [t0, v0] = keys[i - 1] ?? [0, 0];
+    if (t <= t1) return v0 + ((v1 - v0) * (t - t0)) / Math.max(1e-6, t1 - t0);
+  }
+  return keys[keys.length - 1]?.[1] ?? 0;
+}
+
+/**
+ * Continente alargado de norte a sur, mezcla de América y Britannia: una
+ * masa ancha y templada al norte (con bahías, golfos y lagos), un istmo
+ * angosto y caluroso, otra masa al sur que se enfría hacia la punta, una
+ * cordillera a lo largo de la costa oeste (con pasos) y islas sueltas en
+ * los mares, para explorar y, más adelante, navegar. Las costas se tuercen
+ * con ruido para que nada quede redondo ni parejo.
+ */
+class ElongatedShape {
+  private readonly warpX: ValueNoise;
+  private readonly warpY: ValueNoise;
+  private readonly fineX: ValueNoise;
+  private readonly gulfs: ValueNoise;
+  private readonly gaps: ValueNoise;
+  private readonly islands: { x: number; y: number; r: number }[] = [];
+
+  constructor(
+    private readonly width: number,
+    private readonly height: number,
+    seed: number,
+  ) {
+    const size = Math.min(width, height);
+    this.warpX = new ValueNoise(seed + 17, Math.max(8, size / 7));
+    this.warpY = new ValueNoise(seed + 18, Math.max(8, size / 7));
+    this.fineX = new ValueNoise(seed + 21, Math.max(4, size / 28));
+    this.gulfs = new ValueNoise(seed + 19, Math.max(8, size / 9));
+    this.gaps = new ValueNoise(seed + 20, Math.max(6, size / 16));
+    // Islas: unas grandes (para pueblos y guaridas) y muchas chicas, en el mar abierto.
+    const wanted = Math.round(size / 40);
+    for (let tries = 0; this.islands.length < wanted && tries < wanted * 80; tries++) {
+      const x = Math.round((0.03 + hash(seed + 31, tries, 1) * 0.94) * width);
+      const y = Math.round((0.03 + hash(seed + 31, tries, 2) * 0.94) * height);
+      const big = this.islands.length < 4;
+      const r =
+        size *
+        (big
+          ? 0.04 + hash(seed + 31, tries, 3) * 0.025
+          : 0.006 + hash(seed + 31, tries, 3) * 0.018);
+      if (this.edge(x, y) < r / width + 0.03) continue;
+      if (this.islands.some((o) => Math.hypot(o.x - x, o.y - y) < o.r + r + 14)) continue;
+      this.islands.push({ x, y, r });
+    }
+  }
+
+  /** Medio ancho del continente a la latitud `v`: deja mares abiertos a los costados. */
+  private half(v: number): number {
+    return interpolate(HALF_WIDTH, Math.max(0, Math.min(1, v))) * 0.8;
+  }
+
+  private spine(v: number): number {
+    const isthmus = v > 0.44 && v < 0.64 ? 0.09 * Math.sin(((v - 0.44) / 0.2) * Math.PI) : 0;
+    return 0.5 + 0.06 * Math.sin(v * Math.PI * 2.4 + 0.6) + isthmus;
+  }
+
+  /** Distancia horizontal (fracción del ancho) al borde del continente; positiva afuera. */
+  private edge(x: number, y: number): number {
+    const u =
+      x / this.width + (this.warpX.at(x, y) - 0.5) * 0.22 + (this.fineX.at(x, y) - 0.5) * 0.06;
+    const v = y / this.height + (this.warpY.at(x, y) - 0.5) * 0.05;
+    return Math.abs(u - this.spine(v)) - this.half(v);
+  }
+
+  /** Cuánto suma (o resta) a la elevación: tierra adentro, mar afuera, golfos e islas. */
+  land(x: number, y: number): number {
+    const d = this.edge(x, y);
+    let value = -smoothstep(-0.03, 0.05, d) * 0.62;
+    // Golfos y bahías que se meten desde la costa.
+    if (d > -0.12) value -= smoothstep(0.7, 0.86, this.gulfs.at(x, y)) * 0.4;
+    for (const island of this.islands) {
+      const dx = x - island.x;
+      const dy = y - island.y;
+      if (Math.abs(dx) > island.r * 1.6 || Math.abs(dy) > island.r * 1.6) continue;
+      const k = 1 - Math.hypot(dx, dy) / (island.r * (0.8 + this.warpX.at(x, y) * 0.5));
+      if (k > 0) value = Math.max(value, -0.62 + k * 0.85);
+    }
+    return value;
+  }
+
+  cold(y: number): number {
+    return interpolate(COLD, y / this.height);
+  }
+
+  /** La cordillera del oeste (0 a 1), con pasos donde se corta. */
+  cordillera(x: number, y: number): number {
+    const v = y / this.height;
+    const half = this.half(v);
+    if (half < 0.1) return 0;
+    const u = x / this.width + (this.warpX.at(x, y) - 0.5) * 0.08;
+    const west = this.spine(v) - half * 0.76;
+    const band = 1 - Math.abs(u - west) / (half * 0.14);
+    if (band <= 0 || this.gaps.at(x, y) < 0.34) return 0;
+    return band;
+  }
+}

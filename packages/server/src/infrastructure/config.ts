@@ -7,6 +7,7 @@ export interface ServerConfig {
   readonly clientDist: string | null;
   readonly mapSeed: number;
   readonly mapSize: number;
+  readonly mapHeight: number;
   /** Hora del juego con la que arranca el mundo (0–24). */
   readonly startHour: number;
   /** Carpeta donde se guardan los personajes. */
@@ -34,7 +35,8 @@ export function loadConfig(defaultClientDist: string): ServerConfig {
     clientDist:
       process.env.CLIENT_DIST ?? (existsSync(defaultClientDist) ? defaultClientDist : null),
     mapSeed: intFromEnv('MAP_SEED', 1997),
-    mapSize: intFromEnv('MAP_SIZE', 320),
+    mapSize: intFromEnv('MAP_SIZE', 1000),
+    mapHeight: intFromEnv('MAP_HEIGHT', 1400),
     startHour: intFromEnv('START_HOUR', 8),
     dataDir: process.env.DATA_DIR ?? 'data',
     testCharacters: (process.env.TEST_CHARACTERS ?? '')

@@ -389,6 +389,7 @@ export function populateContinent(continent: Continent, seed: number): Populated
   const oldRoads = new Set<string>();
   const homes: { kind: CreatureKind; home: Position }[] = [];
 
+  const scale = Math.max(1, Math.max(width, height) / 320);
   const free = (x: number, y: number): boolean => x > 1 && y > 1 && x < width - 2 && y < height - 2;
 
   for (const spec of PLACES) {
@@ -553,9 +554,12 @@ export function populateContinent(continent: Continent, seed: number): Populated
 
   /** Un lugar del bioma pedido, a la distancia pedida y lejos de los demás. */
   function findSite(spec: PlaceSpec, origin: Position): Position | null {
-    for (let attempt = 0; attempt < 6000; attempt++) {
+    for (let attempt = 0; attempt < 12000; attempt++) {
       const angle = random.next() * Math.PI * 2;
-      const distance = spec.from + random.next() * (spec.to - spec.from);
+      // Las distancias están pensadas para un mapa de 320: en uno más grande se estiran.
+      const from = spec.from * Math.sqrt(scale);
+      const to = spec.to * scale;
+      const distance = from + random.next() * (to - from);
       const x = Math.round(origin.x + Math.cos(angle) * distance);
       const y = Math.round(origin.y + Math.sin(angle) * distance);
       const r = spec.radius;
