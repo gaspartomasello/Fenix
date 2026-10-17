@@ -60,4 +60,8 @@ describe('comandos del chat', () => {
   it('/desconectar pide salir del juego', () => {
     expect(parseChatInput('/desconectar')).toEqual({ kind: 'logout' });
   });
+
+  it('/invul activa o desactiva la invulnerabilidad', () => {
+    expect(parseChatInput('/invul')).toEqual({ kind: 'invulnerable' });
+  });
 });

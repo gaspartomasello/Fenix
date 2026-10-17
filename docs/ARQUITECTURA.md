@@ -312,6 +312,14 @@ puede atacar a otro: nunca dentro de un pueblo ni a alguien del propio grupo o g
 un inocente marca como criminal por dos minutos; matarlo suma una muerte (con cinco se es
 asesino), y cada muerte se olvida a la media hora.
 
+El nombre de cada persona (uno mismo también) se pinta según su reputación: azul inocente, gris
+criminal, rojo asesino y **amarillo invulnerable**. `Combatant.invulnerable` hace que nada le haga
+daño (como un administrador del juego) y `Player.notoriety` lo muestra como `invulnerable`; los
+personajes de prueba lo activan y desactivan con `/invul` (`toggleInvulnerable`).
+
+Los botones del juego (Mochila, Personaje, Hechizos, Habilidades, Social, Guerra, Mapa) van en la
+barra de arriba (`StatusBar.dock`), ajustados a la palabra.
+
 En el cliente, `parseChatInput` (en `core`) traduce los comandos del chat y `SocialWindow` muestra
 todo con botones.
 

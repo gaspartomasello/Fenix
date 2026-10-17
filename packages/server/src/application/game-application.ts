@@ -277,6 +277,9 @@ export class GameApplication {
       case 'testTravel':
         this.testTravel(playerId, message.to === 'place' ? { place: message.place } : message.to);
         break;
+      case 'toggleInvulnerable':
+        this.toggleInvulnerable(playerId);
+        break;
       case 'openCorpse':
         this.corpses.open(playerId, message.corpseId);
         break;
@@ -299,6 +302,27 @@ export class GameApplication {
         // Ya está en el mundo: se ignora un segundo ingreso.
         break;
     }
+  }
+
+  /** `/invul`: un personaje de prueba se vuelve invulnerable (nombre amarillo) o deja de serlo. */
+  private toggleInvulnerable(playerId: EntityId): void {
+    const player = this.world.get(playerId);
+    if (!player) return;
+    if (!isTestCharacter(player.name, this.testCharacters)) {
+      this.notifier.send(playerId, {
+        type: 'system',
+        text: 'Solo los personajes de prueba pueden volverse invulnerables.',
+      });
+      return;
+    }
+    player.combat.invulnerable = !player.combat.invulnerable;
+    this.social.statusChanged(player);
+    this.notifier.send(playerId, {
+      type: 'system',
+      text: player.combat.invulnerable
+        ? 'Ahora sos invulnerable: nadie puede lastimarte (nombre amarillo).'
+        : 'Ya no sos invulnerable.',
+    });
   }
 
   /** `/hora`: un personaje de prueba mueve la hora del mundo, para todos. */

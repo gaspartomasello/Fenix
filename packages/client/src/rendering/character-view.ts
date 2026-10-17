@@ -22,12 +22,15 @@ import type { Ground } from './ground';
 import { CHARACTER_SCALE } from './iso';
 import type { TextureCache } from './texture-cache';
 
-const NAME_COLOR_SELF = 0xf6d36b;
-/** Personas según su reputación: azul inocente, gris criminal, rojo asesino. */
+/**
+ * Personas según su reputación (uno mismo también): azul inocente, gris
+ * criminal, rojo asesino y amarillo invulnerable.
+ */
 const NAME_COLOR_NOTORIETY: Readonly<Record<Notoriety, number>> = {
-  innocent: 0x8fbfff,
+  innocent: 0x6fa8ff,
   criminal: 0xb4b4b4,
   murderer: 0xff5a4a,
+  invulnerable: 0xffd84a,
 };
 /** Gris, como las criaturas atacables de UO. */
 const NAME_COLOR_CREATURE = 0xd0c8b8;
@@ -311,9 +314,7 @@ export class CharacterView {
       ? NAME_COLOR_NPC
       : !entity.isPlayer
         ? NAME_COLOR_CREATURE
-        : this.isSelf && entity.notoriety === 'innocent'
-          ? NAME_COLOR_SELF
-          : NAME_COLOR_NOTORIETY[entity.notoriety];
+        : NAME_COLOR_NOTORIETY[entity.notoriety];
     const key = `${text}|${color}`;
     if (key === this.shownName) return;
     this.shownName = key;

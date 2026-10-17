@@ -200,14 +200,46 @@ body {
   right: 12px;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-  gap: 0.5rem 1rem;
-  padding: 0.4rem 0.75rem;
+  gap: 0.35rem 1rem;
+  padding: 0.25rem 0.4rem 0.25rem 0.75rem;
   font-size: 0.9rem;
 }
 
-.status-help {
-  color: var(--color-text-muted);
+/* Los botones (Mochila, Personaje, Mapa…) van dentro de la barra de arriba, ajustados a la palabra. */
+.status-bar .hud-buttons {
+  position: static;
+  z-index: auto;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.3rem;
+}
+
+.status-bar .hud-button {
+  gap: 0.3rem;
+  padding: 0.12rem 0.45rem;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  border-width: 1px;
+}
+
+.status-bar .hud-button kbd {
+  padding: 0 0.2rem;
+  font-size: 0.68rem;
+}
+
+/* En ventanas angostas se ocultan las teclas, así la barra entra en una línea. */
+@media (max-width: 1100px) {
+  .status-bar .hud-button kbd {
+    display: none;
+  }
+
+  .status-bar .hud-button {
+    padding: 0.12rem 0.35rem;
+    font-size: 0.8rem;
+  }
 }
 
 .chat-panel {
@@ -276,12 +308,6 @@ body {
   max-width: 360px;
   padding: 1.5rem;
   text-align: center;
-}
-
-@media (max-width: 640px) {
-  .status-help {
-    display: none;
-  }
 }
 
 /* ── Ventanas de objetos ──────────────────────────────────────────── */
@@ -868,6 +894,10 @@ body {
   color: #ff5a4a;
 }
 
+.social-notoriety--invulnerable {
+  color: #ffd84a;
+}
+
 .social-invite {
   display: grid;
   gap: 0.3rem;
@@ -1161,6 +1191,10 @@ body {
 
 .paperdoll-name[data-notoriety='murderer'] {
   color: #8a1a14;
+}
+
+.paperdoll-name[data-notoriety='invulnerable'] {
+  color: #9a6a00;
 }
 
 .paperdoll-title {
@@ -1502,8 +1536,7 @@ body {
   user-select: none;
 }
 
-.touch-ui .hud-buttons,
-.touch-ui .status-help {
+.touch-ui .hud-buttons {
   display: none;
 }
 

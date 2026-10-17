@@ -84,4 +84,23 @@ describe('personaje de prueba', () => {
     app.handle(ana.id, { type: 'testTravel', to: 'place', place: 'Roca Alta' });
     expect(ana.position).toEqual(before);
   });
+
+  it('/invul vuelve invulnerable a un personaje de prueba: amarillo y sin daño', () => {
+    const { world, join, app, notifier } = createApp();
+    const gaspar = join('Gaspar');
+    expect(world.snapshotOf(gaspar).notoriety).toBe('innocent');
+    app.handle(gaspar.id, { type: 'toggleInvulnerable' });
+    expect(world.snapshotOf(gaspar).notoriety).toBe('invulnerable');
+    expect(notifier.ofType('mobileStatus').at(-1)?.message).toMatchObject({
+      notoriety: 'invulnerable',
+    });
+    expect(gaspar.combat.takeDamage(500)).toBe(false);
+    expect(gaspar.combat.health).toBe(1);
+    app.handle(gaspar.id, { type: 'toggleInvulnerable' });
+    expect(world.snapshotOf(gaspar).notoriety).toBe('innocent');
+
+    const ana = join('Ana');
+    app.handle(ana.id, { type: 'toggleInvulnerable' });
+    expect(world.snapshotOf(ana).notoriety).toBe('innocent');
+  });
 });

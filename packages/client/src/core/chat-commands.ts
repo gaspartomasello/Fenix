@@ -26,6 +26,8 @@ export type ChatInput =
   | { readonly kind: 'travel'; readonly to: 'cave' | 'lair' }
   /** `/ir Roca Alta`: viajar a un lugar con nombre (solo personajes de prueba). */
   | { readonly kind: 'goto'; readonly place: string }
+  /** `/invul`: volverse invulnerable o dejar de serlo (solo personajes de prueba). */
+  | { readonly kind: 'invulnerable' }
   | { readonly kind: 'help' }
   | { readonly kind: 'error'; readonly text: string };
 
@@ -46,6 +48,7 @@ export const CHAT_HELP = [
   '/mirar — buscar a los escondidos cerca (habilidad Mirar)',
   '/hora 22 — cambiar la hora del mundo (solo personajes de prueba)',
   '/cueva o /cueva fondo — ir a la mazmorra (solo personajes de prueba)',
+  '/invul — volverte invulnerable (nombre amarillo) o dejar de serlo (solo personajes de prueba)',
   '/ir lugar — ir a un pueblo o lugar con nombre, o a unas coordenadas (/ir 120 300); /ir solo, la lista (solo personajes de prueba)',
 ] as const;
 
@@ -103,6 +106,9 @@ export function parseChatInput(raw: string): ChatInput {
       return { kind: 'travel', to: args.toLocaleLowerCase() === 'fondo' ? 'lair' : 'cave' };
     case 'ir':
       return { kind: 'goto', place: args };
+    case 'invul':
+    case 'invulnerable':
+      return { kind: 'invulnerable' };
     case 'ayuda':
     case '?':
       return { kind: 'help' };

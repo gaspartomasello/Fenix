@@ -1,13 +1,16 @@
 /**
  * Reputación, como en UO: inocentes (azul), criminales (gris, por atacar
- * a un inocente) y asesinos (rojo, con 5 muertes de inocentes o más).
+ * a un inocente) y asesinos (rojo, con 5 muertes de inocentes o más). Los
+ * invulnerables (amarillo) son como los administradores del juego: no se los
+ * puede lastimar.
  */
-export type Notoriety = 'innocent' | 'criminal' | 'murderer';
+export type Notoriety = 'innocent' | 'criminal' | 'murderer' | 'invulnerable';
 
 export const NOTORIETY_NAMES: Readonly<Record<Notoriety, string>> = {
   innocent: 'Inocente',
   criminal: 'Criminal',
   murderer: 'Asesino',
+  invulnerable: 'Invulnerable',
 };
 
 /** Cuánto dura la marca de criminal después de atacar a un inocente. */

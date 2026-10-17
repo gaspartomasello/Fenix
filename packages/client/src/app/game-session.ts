@@ -209,6 +209,7 @@ export class GameSession {
     if (touch) this.setUpTouch(menu, chat);
     this.setUpVitals();
     const status = new StatusBar();
+    if (this.hud) status.dock(this.hud.element);
     this.hosts.ui.append(status.element, chat.element);
     this.game.on('log', (entry) => chat.append(entry));
     chat.append({ kind: 'system', text: 'Bienvenido a Fenix.' });

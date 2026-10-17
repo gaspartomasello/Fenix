@@ -46,6 +46,8 @@ export class Combatant {
   private vitals: Vitals;
   targetId: EntityId | null = null;
   nextSwingAt = 0;
+  /** Invulnerable (como un administrador del juego): nada le hace daño. */
+  invulnerable = false;
   private dead = false;
   private readonly nextRegen = { hits: 0, mana: 0, stamina: 0 };
   private readonly effects = new Map<EffectKind, ActiveEffect>();
@@ -106,7 +108,7 @@ export class Combatant {
 
   /** Aplica daño. Devuelve true si este golpe lo mató. Un golpe corta la parálisis. */
   takeDamage(amount: number): boolean {
-    if (this.dead) return false;
+    if (this.dead || this.invulnerable) return false;
     if (amount > 0) this.effects.delete('paralyzed');
     const hits = Math.max(0, this.vitals.hits - amount);
     this.vitals = { ...this.vitals, hits };
@@ -223,7 +225,7 @@ export class Combatant {
     let killed = false;
     let poisonerId: EntityId | null = null;
     for (const [kind, effect] of [...this.effects]) {
-      if (kind === 'poison' && now >= effect.nextTickAt && !this.dead) {
+      if (kind === 'poison' && now >= effect.nextTickAt && !this.dead && !this.invulnerable) {
         effect.nextTickAt = now + POISON_TICK_MS;
         const hit = poisonDamage(effect.amount, random);
         damage += hit;
