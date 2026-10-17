@@ -200,6 +200,8 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
   // Llanuras abiertas (sin árboles, para construir), prados y tierras rojas dentro de los biomas.
   const openness = new ValueNoise(seed + 12, Math.max(10, size / 9));
   const meadows = new ValueNoise(seed + 13, Math.max(8, size / 12));
+  // Claros lisos: zonas sin ninguna planta ni piedra, donde entra una casa.
+  const clearings = new ValueNoise(seed + 14, Math.max(9, size / 16));
   const reds = new ValueNoise(seed + 14, Math.max(8, size / 10));
   // Matices del suelo: que los verdes no sean todos iguales.
   const greens = new ValueNoise(seed + 15, 6);
@@ -309,7 +311,7 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
   /** Tierras templadas: bosque, llanura abierta (sin árboles), prado o pradera. */
   function temperate(x: number, y: number): Biome {
     if (forests.at(x, y) > 0.68) return 'forest';
-    if (openness.at(x, y) > 0.64) return 'plains';
+    if (openness.at(x, y) > 0.6) return 'plains';
     if (meadows.at(x, y) > 0.66) return 'meadow';
     return 'grassland';
   }
@@ -582,6 +584,8 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
         place(x, y, 'mountain');
         continue;
       }
+      // No todo tiene que estar cargado: en los claros el suelo queda liso.
+      if (clearings.at(x, y) > (CLEARING[biome] ?? 2)) continue;
       const kind = vegetation(
         biome,
         terrain[i],
@@ -1012,6 +1016,20 @@ function climateGround(climate: TownClimate): Terrain {
   if (climate === 'mountain') return Terrain.Dirt;
   return Terrain.Grass;
 }
+
+/**
+ * Desde qué valor del ruido de claros el suelo queda liso, por bioma: la
+ * llanura es casi toda lisa, el campo y el prado tienen claros grandes y
+ * los bosques, alguno chico. Los demás biomas no tienen claros.
+ */
+const CLEARING: Partial<Record<Biome, number>> = {
+  plains: 0.38,
+  grassland: 0.52,
+  meadow: 0.56,
+  savanna: 0.6,
+  tundra: 0.62,
+  forest: 0.7,
+};
 
 /**
  * Qué crece en un tile según el bioma. `roll` decide si hay algo y `pick`

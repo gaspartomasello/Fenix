@@ -1,4 +1,7 @@
 import {
+  DOORS,
+  STATICS,
+  TERRAINS,
   Terrain,
   type CreatureKind,
   type ItemKind,
@@ -10,6 +13,12 @@ import {
 } from '@fenix/shared';
 import { SeededRandom } from '../system/seeded-random';
 import type { MapRegion, PlacedItem } from './tiled-map-loader';
+
+/** Lo que es parte de una construcción: no se saca para abrir paso. */
+const STRUCTURE =
+  /wall|rampart|palisade|fence|tower|door|post|corner|window|mountain|crypt|fountain|ladder/;
+/** Paredes de casa (a lo largo de x o de y), donde se puede abrir una puerta. */
+const HOUSE_WALL = /^(wall|log-wall|plank-wall|basalt-wall)-(x|y)$/;
 
 /**
  * Ciudades generadas: cada una con su estilo según la región.
@@ -37,6 +46,8 @@ export interface CitySpec {
 /** Una ciudad armada: el plano, más las criaturas que viven en ella (el cementerio). */
 export interface City extends MapRegion {
   readonly lairs: readonly { readonly kind: CreatureKind; readonly position: Position }[];
+  /** Un tile libre de la plaza (desde donde se llega caminando a todo). */
+  readonly square: Position;
 }
 
 interface WallKit {
@@ -327,6 +338,20 @@ class Plan {
   }
 
   /**
+   * Una puerta doble de dos hojas: `at` y el tile siguiente a lo largo del
+   * eje. Se abren de par en par, con las bisagras en el marco de afuera.
+   */
+  doubleDoor(
+    at: Position,
+    along: 'x' | 'y',
+    style: 'door' | 'iron-door' | 'dungeon-door' | 'bone-door' = 'door',
+  ): void {
+    const next = along === 'x' ? { x: at.x + 1, y: at.y } : { x: at.x, y: at.y + 1 };
+    this.put(at.x, at.y, `${style}-${along}-l`);
+    this.put(next.x, next.y, `${style}-${along}-r`);
+  }
+
+  /**
    * Ventanas en las paredes de afuera de una casa (la del sur y la del este,
    * que se ven desde la calle), cada tres tiles y lejos de la puerta.
    */
@@ -360,7 +385,107 @@ class Plan {
     if (this.inside(x, y)) this.decor.push({ x, y, kind });
   }
 
-  toCity(regions: RegionData[], spawn: Position | null): City {
+  /**
+   * Revisa que desde `from` se llegue caminando (con las puertas abiertas) a
+   * todo el suelo libre y que cada puerta tenga paso de los dos lados, y
+   * arregla lo que tape el paso: un mueble o adorno que cierra un rincón se
+   * saca; un cuarto cerrado por una pared de casa recibe una puerta; y un
+   * hueco chico que quedó encerrado (entre una torre y el río) se tapa.
+   */
+  repair(from: Position): void {
+    const { width } = this;
+    const walkable = (i: number): boolean => {
+      const x = i % width;
+      const y = Math.floor(i / width);
+      if (!this.inside(x, y) || this.covered.has(i)) return false;
+      if (!TERRAINS[this.terrain[i] ?? Terrain.Grass].walkable) return false;
+      const kind = this.statics.get(i);
+      return !kind || !STATICS[kind].blocking || DOORS[kind] !== undefined;
+    };
+    const removable = (i: number): boolean => {
+      const kind = this.statics.get(i);
+      return (
+        kind !== undefined &&
+        STATICS[kind].blocking &&
+        STATICS[kind].footprint === 1 &&
+        !STRUCTURE.test(kind)
+      );
+    };
+    const neighbors = (i: number): number[] => {
+      const x = i % width;
+      return [x > 0 ? i - 1 : -1, x < width - 1 ? i + 1 : -1, i - width, i + width].filter(
+        (n) => n >= 0 && n < this.terrain.length,
+      );
+    };
+    const flood = (start: number): Set<number> => {
+      const seen = new Set([start]);
+      const queue = [start];
+      for (let c = queue.pop(); c !== undefined; c = queue.pop())
+        for (const n of neighbors(c))
+          if (!seen.has(n) && walkable(n)) {
+            seen.add(n);
+            queue.push(n);
+          }
+      return seen;
+    };
+
+    // Delante y detrás de cada puerta, nada que tape.
+    for (const [i, kind] of this.statics) {
+      if (!DOORS[kind]) continue;
+      const across = /-x(-|$)/.test(kind) ? [i - width, i + width] : [i - 1, i + 1];
+      for (const n of across) if (removable(n)) this.statics.delete(n);
+    }
+
+    const start = from.y * width + from.x;
+    const given = new Set<number>();
+    for (let round = 0; round < 400; round++) {
+      const reached = flood(start);
+      let lost = -1;
+      for (let i = 0; i < this.terrain.length && lost < 0; i++)
+        if (!given.has(i) && !reached.has(i) && walkable(i)) lost = i;
+      if (lost < 0) return;
+      const pocket = flood(lost);
+      const touches = (i: number, set: Set<number>): boolean =>
+        neighbors(i).some((n) => set.has(n));
+      const edge = [...pocket].flatMap(neighbors).filter((n) => !pocket.has(n));
+      // Un mueble entre el rincón y el resto: se saca.
+      const furniture = edge.find((n) => removable(n) && touches(n, reached));
+      if (furniture !== undefined) {
+        this.statics.delete(furniture);
+        continue;
+      }
+      // Una pared de casa entre un cuarto y la calle: se le abre una puerta.
+      const wall = edge.find((n) => {
+        const kind = this.statics.get(n);
+        if (!kind || !HOUSE_WALL.test(kind)) return false;
+        const pair = kind.endsWith('-x') ? [n - width, n + width] : [n - 1, n + 1];
+        const [a = -1, b = -1] = pair;
+        return (pocket.has(a) && reached.has(b)) || (pocket.has(b) && reached.has(a));
+      });
+      if (wall !== undefined) {
+        const kind = this.statics.get(wall) ?? '';
+        this.statics.set(wall, kind.endsWith('-x') ? 'door-x' : 'door-y');
+        continue;
+      }
+      // Un mueble que lleva a otro mueble: se saca y se vuelve a mirar.
+      const inner = edge.find((n) => removable(n));
+      if (inner !== undefined) {
+        this.statics.delete(inner);
+        continue;
+      }
+      // Un hueco chico encerrado: junto al agua se hace agua; si no, una roca.
+      for (const i of pocket) {
+        given.add(i);
+        if (pocket.size > 12) continue;
+        const wet = neighbors(i).some((n) => this.terrain[n] === Terrain.Water);
+        if (wet) this.terrain[i] = Terrain.Water;
+        else this.statics.set(i, 'rock');
+      }
+    }
+  }
+
+  toCity(regions: RegionData[], spawn: Position | null, square: Position): City {
+    this.repair(square);
     const statics: StaticPlacement[] = [];
     for (const [i, kind] of this.statics)
       statics.push({ x: i % this.width, y: Math.floor(i / this.width), kind });
@@ -372,6 +497,7 @@ class Plan {
       statics,
       regions,
       spawn,
+      square,
       items: this.items,
       npcs: this.npcs,
       lairs: this.lairs,
@@ -406,7 +532,10 @@ export function buildCity(spec: CitySpec): City {
   plan.fill({ x0: 0, y0: cy - 1, x1: width - 1, y1: cy + 1 }, style.avenue);
   const plazaR = spec.size === 'large' ? 7 : spec.size === 'medium' ? 4 : 3;
   const plaza: Rect = { x0: cx - plazaR, y0: cy - plazaR, x1: cx + plazaR, y1: cy + plazaR };
-  plan.fill(plaza, style.plaza);
+  // La plaza, redonda.
+  for (let y = plaza.y0 - 1; y <= plaza.y1 + 1; y++)
+    for (let x = plaza.x0 - 1; x <= plaza.x1 + 1; x++)
+      if (Math.hypot(x - cx, y - cy) <= plazaR + 1.2) plan.ground(x, y, style.plaza);
   plan.claim({ x0: plaza.x0 - 1, y0: plaza.y0 - 1, x1: plaza.x1 + 1, y1: plaza.y1 + 1 });
   plan.claim({ x0: cx - 2, y0: 0, x1: cx + 2, y1: height - 1 });
   plan.claim({ x0: 0, y0: cy - 2, x1: width - 1, y1: cy + 2 });
@@ -415,7 +544,20 @@ export function buildCity(spec: CitySpec): City {
   const river = style.river ? buildRiver(plan, style, inner, cx, random) : null;
 
   // ── La muralla con sus puertas (y torres, en las de piedra) ──
-  buildRing(plan, style, inner, cx, cy, river);
+  // Las esquinas se cortan en diagonal, cada una distinta: la ciudad no es un
+  // cuadrado. La del castillo queda entera (necesita su rincón).
+  const cutMax = Math.floor(Math.min(innerW, innerH) / 4);
+  const cut = (limit: number): number =>
+    Math.max(0, Math.min(limit, Math.floor(cutMax * (0.35 + random.next() * 0.65))));
+  const northLimit = river ? river.top - 4 - inner.y0 : cutMax;
+  const southLimit = river ? inner.y1 - river.bottom - 4 : cutMax;
+  const corners: Corners = {
+    nw: cut(northLimit),
+    ne: style.castle ? 0 : cut(northLimit),
+    sw: cut(southLimit),
+    se: cut(southLimit),
+  };
+  buildRing(plan, style, inner, cx, cy, river, corners);
 
   // ── La plaza: fuente (o fogata), santuario, puestos del mercado y faroles ──
   if (style.lawless) plan.put(cx, cy, 'campfire');
@@ -471,23 +613,31 @@ export function buildCity(spec: CitySpec): City {
       { x0: inner.x0 + 1, y0: river.bottom + 3, x1: cx - 3, y1: cy - 3 },
       { x0: cx + 3, y0: river.bottom + 3, x1: inner.x1, y1: cy - 3 },
     );
-  // El castillo ocupa el barrio del noreste.
-  const castleQuadrant = style.castle ? quadrants[1] : undefined;
+  // El castillo ocupa el barrio del noreste, si entra con su salón del trono.
+  const northeast = quadrants[1];
+  const castleRect = northeast && { ...northeast, y1: Math.min(northeast.y1, plaza.y0 - 2) };
+  const castleQuadrant =
+    style.castle &&
+    castleRect &&
+    castleRect.x1 - castleRect.x0 >= 20 &&
+    castleRect.y1 - castleRect.y0 >= 13
+      ? northeast
+      : undefined;
   const regions: RegionData[] = [];
-  if (castleQuadrant)
-    regions.push(
-      buildCastle(
-        plan,
-        style,
-        { ...castleQuadrant, y1: Math.min(castleQuadrant.y1, plaza.y0 - 2) },
-        spec.name,
-        cx,
-      ),
-    );
+  if (castleQuadrant && castleRect)
+    regions.push(buildCastle(plan, style, castleRect, spec.name, cx));
   const lots = quadrants
     .filter((q) => q !== castleQuadrant)
+    // Cuadras de distinto tamaño en cada barrio.
     .flatMap((q) =>
-      blocks(plan, style, q, spec.size === 'large' ? 11 : spec.size === 'small' ? 8 : 10),
+      blocks(
+        plan,
+        style,
+        q,
+        (spec.size === 'large' ? 11 : spec.size === 'small' ? 8 : 10) +
+          Math.floor(random.next() * 4) -
+          1,
+      ),
     );
   // Los negocios van en las cuadras más cerca de la plaza.
   lots.sort(
@@ -599,7 +749,7 @@ export function buildCity(spec: CitySpec): City {
     height: innerH + 3,
     ...(style.lawless ? { wild: true } : {}),
   });
-  return plan.toCity(regions, spec.style === 'capital' || spec.starterItems ? spawn : null);
+  return plan.toCity(regions, spec.style === 'capital' || spec.starterItems ? spawn : null, spawn);
 }
 
 /** El río de la capital: filas de agua honda con muelles de piedra y puentes. */
@@ -668,6 +818,19 @@ function buildRiver(
 }
 
 /** La muralla: piedra con torres, empalizada o cerca, con puertas al medio de cada lado. */
+/** Cuánto se corta en diagonal cada esquina de la muralla (0: esquina entera). */
+interface Corners {
+  readonly nw: number;
+  readonly ne: number;
+  readonly sw: number;
+  readonly se: number;
+}
+
+/**
+ * La muralla sigue el contorno de la ciudad: un rectángulo con las esquinas
+ * cortadas en diagonal (en escalones, como las murallas de UO). Lo que queda
+ * afuera del corte no se construye.
+ */
 function buildRing(
   plan: Plan,
   style: Style,
@@ -675,18 +838,54 @@ function buildRing(
   cx: number,
   cy: number,
   river: River | null,
+  corners: Corners,
 ): void {
   const kit = style.ring === 'rampart' ? RAMPART : style.ring === 'palisade' ? PALISADE : FENCE;
-  const gaps: Position[] = [];
-  for (const d of [-1, 0, 1]) {
-    gaps.push({ x: cx + d, y: inner.y0 }, { x: cx + d, y: inner.y1 + 1 });
-    gaps.push({ x: inner.x0, y: cy + d }, { x: inner.x1 + 1, y: cy + d });
-  }
-  // El río pasa por debajo de la muralla.
-  if (river)
-    for (let y = river.top; y <= river.bottom; y++)
-      gaps.push({ x: inner.x0, y }, { x: inner.x1 + 1, y });
-  plan.enclose(inner, kit, gaps);
+  const right = inner.x1 + 1;
+  const bottom = inner.y1 + 1;
+  const within = (x: number, y: number): boolean =>
+    x >= inner.x0 &&
+    y >= inner.y0 &&
+    x <= right &&
+    y <= bottom &&
+    x - inner.x0 + (y - inner.y0) >= corners.nw &&
+    right - x + (y - inner.y0) >= corners.ne &&
+    x - inner.x0 + (bottom - y) >= corners.sw &&
+    right - x + (bottom - y) >= corners.se;
+  const isWall = (x: number, y: number): boolean => {
+    if (!within(x, y)) return false;
+    for (let dy = -1; dy <= 1; dy++)
+      for (let dx = -1; dx <= 1; dx++) if (!within(x + dx, y + dy)) return true;
+    return false;
+  };
+  const gate = (x: number, y: number): boolean =>
+    (Math.abs(x - cx) <= 1 && (y === inner.y0 || y === bottom)) ||
+    (Math.abs(y - cy) <= 1 && (x === inner.x0 || x === right)) ||
+    (river !== null && y >= river.top && y <= river.bottom && (x === inner.x0 || x === right));
+  for (let y = inner.y0; y <= bottom; y++)
+    for (let x = inner.x0; x <= right; x++) {
+      if (!within(x, y)) {
+        // Afuera del corte: no se construye ahí.
+        plan.claim({ x0: x, y0: y, x1: x, y1: y });
+        continue;
+      }
+      if (!isWall(x, y)) continue;
+      plan.claim({ x0: x, y0: y, x1: x, y1: y });
+      if (gate(x, y)) continue;
+      const w = isWall(x - 1, y);
+      const e = isWall(x + 1, y);
+      const n = isWall(x, y - 1);
+      const s = isWall(x, y + 1);
+      let kind: StaticKind;
+      if ((w || e) && (n || s)) {
+        if (e && s) kind = kit.corner;
+        else if (w && n) kind = kit.post;
+        else if (e && n) kind = kit.x;
+        else kind = kit.y;
+      } else kind = n || s ? kit.y : kit.x;
+      plan.clear(x, y);
+      plan.put(x, y, kind);
+    }
   if (!style.towers) return;
   // Torres a los lados de donde entra y sale el río.
   if (river)
@@ -694,12 +893,8 @@ function buildRing(
       plan.big(x, river.top - 3, 'tower');
       plan.big(x, river.bottom + 2, 'tower');
     }
-  // Torres en las esquinas y a los lados de cada puerta.
+  // Torres en cada quiebre de la muralla y a los lados de cada puerta.
   const towers: Position[] = [
-    { x: inner.x0 - 1, y: inner.y0 - 1 },
-    { x: inner.x1 + 1, y: inner.y0 - 1 },
-    { x: inner.x0 - 1, y: inner.y1 + 1 },
-    { x: inner.x1 + 1, y: inner.y1 + 1 },
     { x: cx - 3, y: inner.y0 - 1 },
     { x: cx + 2, y: inner.y0 - 1 },
     { x: cx - 3, y: inner.y1 + 1 },
@@ -709,7 +904,24 @@ function buildRing(
     { x: inner.x1 + 1, y: cy - 3 },
     { x: inner.x1 + 1, y: cy + 2 },
   ];
-  for (const t of towers) plan.big(t.x, t.y, 'tower');
+  const { nw, ne, sw, se } = corners;
+  towers.push(
+    { x: inner.x0 + nw - 1, y: inner.y0 - 1 },
+    { x: inner.x0 - 1, y: inner.y0 + nw - 1 },
+    { x: right - ne, y: inner.y0 - 1 },
+    { x: right, y: inner.y0 + ne - 1 },
+    { x: inner.x0 + sw - 1, y: bottom },
+    { x: inner.x0 - 1, y: bottom - sw },
+    { x: right - se, y: bottom },
+    { x: right, y: bottom - se },
+  );
+  const seen = new Set<string>();
+  for (const t of towers) {
+    const key = `${t.x},${t.y}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    plan.big(t.x, t.y, 'tower');
+  }
 }
 
 /**
@@ -721,7 +933,8 @@ function buildRing(
  * puerta mira a la avenida.
  */
 function buildCastle(plan: Plan, style: Style, q: Rect, cityName: string, cx: number): RegionData {
-  const walls: Rect = { x0: q.x0 + 1, y0: q.y0 + 1, x1: q.x1 - 2, y1: q.y1 - 2 };
+  // Pegado a la muralla de la ciudad al norte y al este (sin un pasillo encerrado entre las dos).
+  const walls: Rect = { x0: q.x0 + 1, y0: q.y0, x1: q.x1 - 1, y1: q.y1 - 2 };
   plan.claim({ x0: q.x0, y0: q.y0, x1: q.x1, y1: q.y1 });
   plan.fill(walls, Terrain.Flagstone);
   const gateY = Math.floor((walls.y0 + walls.y1) / 2);
@@ -756,8 +969,7 @@ function buildCastle(plan: Plan, style: Style, q: Rect, cityName: string, cx: nu
     { x: keep.x0, y: gateY },
     { x: keep.x0, y: gateY + 1 },
   ]);
-  plan.put(keep.x0, gateY, 'iron-door-y');
-  plan.put(keep.x0, gateY + 1, 'iron-door-y');
+  plan.doubleDoor({ x: keep.x0, y: gateY }, 'y', 'iron-door');
   plan.fill({ x0: walls.x0 + 2, y0: gateY, x1: keep.x0, y1: gateY + 1 }, Terrain.Flagstone);
   // Alfombra roja desde la puerta hasta el trono, entre candelabros y armaduras.
   for (let x = keep.x0 + 1; x <= keep.x1; x++) {
@@ -1163,8 +1375,7 @@ function buildStable(
   plan.fill(barn, Terrain.Dirt);
   const door = { x: barn.x1 + 1, y: barn.y0 + 3 };
   plan.enclose(barn, style.walls, [door, { x: door.x, y: door.y + 1 }]);
-  plan.door(door, 'y');
-  plan.door({ x: door.x, y: door.y + 1 }, 'y');
+  plan.doubleDoor(door, 'y');
   plan.windows(barn, style.walls, door);
   plan.ground(door.x, door.y, Terrain.Dirt);
   plan.ground(door.x, door.y + 1, Terrain.Dirt);

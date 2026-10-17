@@ -454,6 +454,17 @@ sin tapar el paso de la puerta al centro; las bibliotecas y estantes se cuelgan 
 El servidor (`use-cases/doors.ts`) abre o cierra con `useDoor` si el jugador está al lado y avisa
 a todos con `door`; quien entra recibe las abiertas en `welcome.openDoors`. El cliente actualiza
 su mapa (la predicción de movimiento usa el mismo) y `StaticLayer.refreshDoor` cambia el dibujo.
+Las **puertas dobles** son dos hojas (`*-l` en la menor coordenada y `*-r` en la siguiente) con la
+bisagra en el marco de afuera y sin jamba en el medio: `doorPartner` encuentra la otra hoja y
+`Doors.use` abre y cierra las dos juntas (`Plan.doubleDoor` las pone; la caballeriza, el salón del
+trono y los pasillos de la mazmorra las usan).
+
+**Nada tapa el paso:** `Plan.repair` revisa al final de cada ciudad que desde la plaza se llegue
+caminando (con las puertas abiertas) a todo el suelo libre y que cada puerta tenga paso de los dos
+lados: saca el mueble que cierra un rincón, abre una puerta en una pared de casa que deja un cuarto
+cerrado y tapa los huecos chicos encerrados. La muralla sigue un contorno con las esquinas cortadas
+en diagonal (distintas en cada ciudad), la plaza es redonda y las cuadras cambian de tamaño en cada
+barrio. Las pruebas de `city-builder.test.ts` y `dungeon-map.test.ts` lo verifican en varias semillas.
 
 **Asientos:** `SEATS` (shared) dice qué objetos son asiento y hacia dónde miran; `TileMap.seatAt`
 lo responde por tile. Sentarse es solo visual: el cliente dibuja el cuadro `sit` (pose propia
@@ -469,13 +480,28 @@ comprime los mensajes de la conexión (el mapa viaja al entrar).
 ### Mazmorra
 
 `world-builder.ts` arma un solo mapa: el continente a la izquierda, roca maciza en el medio y la
-mazmorra (`dungeon-map.ts`) a la derecha. La mazmorra son salas en serpentina unidas por
-pasillos de dos tiles; la roca que toca el suelo se vuelve `cave-wall`. Se entra y se sale por
+mazmorra (`dungeon-map.ts`) a la derecha. La mazmorra son cavernas de forma irregular (una elipse
+con el borde ondulado y lóbulos, suavizada) en serpentina, unidas por pasillos de dos tiles que
+serpentean entre puntos al azar; la roca que toca el suelo se vuelve `cave-wall`. Las puertas
+dobles van en el primer tramo recto del pasillo al salir de cada caverna (de huesos en la guarida),
+y los braseros y estalagmitas solo se ponen si no cierran ningún paso ni tapan una puerta. Se entra y se sale por
 **teletransportes** del mapa (`TileMap.teleporters`): `MovePlayer`, después de un paso, mira si el
 tile lleva a otro lado y llama a `teleport`. El cliente no predice pasos desde un teletransporte.
 La zona de la mazmorra tiene `dungeon: true`: no es protegida (`safeZoneAt`) y el cliente la dibuja
 oscura a cualquier hora. Las criaturas de cada sala salen de `LAIR_LEVELS` según la profundidad;
-la última es la guarida del dragón.
+la última es la guarida del dragón. El dragón rojo es grande (lienzo propio en `dragon-art.ts`,
+casi tres veces una persona); el dragón joven es el chico, en el fondo y en las Tierras de Ceniza.
+
+### Montañas
+
+Las montañas son como en UO: terreno de roca (`Terrain.Mountain`) que sube en laderas, más alto
+cuanto más adentro del macizo (`mountains.ts`, al final de `populateContinent`). La marca
+`mountain` sigue en cada tile (bloquea y se pica con el pico) pero no se dibuja
+(`INVISIBLE_STATICS`); encima van riscos sueltos de tres formas (`crag`, `crag-spire`,
+`crag-ledge`). Los macizos grandes tienen una **mina**: un socavón de dos tiles que entra hasta una
+galería, con su nombre de región. Y ningún rincón de tierra firme queda encerrado (por montañas,
+árboles o un farol delante de una puerta): se le abre el paso más corto, nunca a través de paredes.
+En el campo, un ruido de **claros** deja zonas lisas, sin plantas ni piedras, para poder construir.
 
 ### Rango de visión
 

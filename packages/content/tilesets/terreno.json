@@ -3,10 +3,10 @@
   "name": "terreno",
   "tilewidth": 44,
   "tileheight": 44,
-  "tilecount": 36,
-  "columns": 36,
+  "tilecount": 37,
+  "columns": 37,
   "image": "terreno.png",
-  "imagewidth": 1584,
+  "imagewidth": 1628,
   "imageheight": 44,
   "tiles": [
     {
@@ -366,6 +366,16 @@
           "name": "terrain",
           "type": "string",
           "value": "sparse-grass"
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "properties": [
+        {
+          "name": "terrain",
+          "type": "string",
+          "value": "mountain"
         }
       ]
     }

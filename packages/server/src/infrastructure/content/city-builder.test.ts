@@ -187,3 +187,40 @@ describe('buildCity', () => {
     for (const npc of capital.npcs) expect(map.isWalkable(npc.position), npc.role).toBe(true);
   });
 });
+
+describe('buildCity: nada tapa el paso', () => {
+  const cases: { style: CityStyle; size: 'large' | 'medium' | 'small' }[] = [
+    { style: 'capital', size: 'large' },
+    { style: 'capital', size: 'medium' },
+    { style: 'mountain', size: 'medium' },
+    { style: 'swamp', size: 'small' },
+    { style: 'volcanic', size: 'medium' },
+    { style: 'bandit', size: 'small' },
+  ];
+  for (const { style, size } of cases)
+    for (const seed of [3, 11, 42]) {
+      it(`${style} ${size} (semilla ${seed}): cada puerta tiene paso de los dos lados y se llega a todo`, () => {
+        const city = buildCity({ name: 'Prueba', style, seed, size });
+        const map = openAll(asMap(city));
+        const seen = reachable(map, city.square);
+        for (const door of map.statics.filter((s) => DOORS[s.kind])) {
+          const across = /-x(-|$)/.test(door.kind)
+            ? [
+                { x: door.x, y: door.y - 1 },
+                { x: door.x, y: door.y + 1 },
+              ]
+            : [
+                { x: door.x - 1, y: door.y },
+                { x: door.x + 1, y: door.y },
+              ];
+          for (const p of across)
+            expect(map.isWalkable(p), `${door.kind} en ${door.x},${door.y}`).toBe(true);
+        }
+        const stuck: string[] = [];
+        for (let y = 0; y < map.height; y++)
+          for (let x = 0; x < map.width; x++)
+            if (map.isWalkable({ x, y }) && !seen.has(`${x},${y}`)) stuck.push(`${x},${y}`);
+        expect(stuck).toEqual([]);
+      });
+    }
+});

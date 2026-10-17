@@ -36,6 +36,7 @@ export const Terrain = {
   SandyGrass: 33,
   Leaves: 34,
   SparseGrass: 35,
+  Mountain: 36,
 } as const;
 
 export type Terrain = (typeof Terrain)[keyof typeof Terrain];
@@ -308,6 +309,14 @@ export const TERRAINS: Readonly<Record<Terrain, TerrainDefinition>> = {
     name: 'pasto ralo',
     walkable: true,
     blendPriority: 2.5,
+  },
+  // La ladera de la montaña: roca que sube; no se camina (se entra por las minas).
+  [Terrain.Mountain]: {
+    id: Terrain.Mountain,
+    key: 'mountain',
+    name: 'montaña',
+    walkable: false,
+    blendPriority: 4.2,
   },
 };
 

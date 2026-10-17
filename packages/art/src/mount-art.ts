@@ -15,6 +15,7 @@ import type { VolumeCanvas } from './volume';
 import {
   add,
   axesAlong,
+  clipping,
   lerp,
   metal,
   noise,
@@ -409,8 +410,9 @@ function drawLeg(
 }
 
 /**
- * Pata de columna: gruesa de arriba abajo, con la rodilla apenas marcada,
- * el pie redondo y ancho, y uñas claras adelante.
+ * Pata de columna: gruesa de arriba abajo, con la rodilla apenas marcada y
+ * un pie cilíndrico, un poco más ancho abajo y plano contra el suelo, con
+ * las uñas claras al ras del frente.
  */
 function drawPillar(
   canvas: VolumeCanvas,
@@ -421,20 +423,28 @@ function drawPillar(
 ): void {
   const [upper, lower] = leg.thickness;
   canvas.limb(add(j.top, [0, 7, 0]), j.top, upper * 1.1, upper, skin);
-  canvas.limb(j.top, j.mid, upper, lower * 1.05, skin);
-  canvas.sphere(j.mid, lower * 1.08, skin);
-  canvas.limb(j.mid, j.coronet, lower * 1.05, lower, skin);
-  canvas.limb(j.coronet, j.sole, lower, lower * 1.12, (s) =>
-    tone(ELEPHANT_DARK, s.light, s.p[1] < j.sole[1] + 0.8 ? -1 : 0),
+  canvas.limb(j.top, j.mid, upper, lower * 1.04, skin);
+  canvas.sphere(j.mid, lower * 1.02, skin);
+  canvas.limb(j.mid, j.coronet, lower * 1.02, lower * 1.06, skin);
+  // El pie: un cilindro que se corta al ras del suelo (sin la punta redonda).
+  const sole = j.sole[1];
+  const foot = lower * 1.18;
+  canvas.limb(
+    j.coronet,
+    add(j.sole, [0, -foot, 0]),
+    lower * 1.06,
+    foot,
+    clipping((s) =>
+      s.p[1] < sole ? null : tone(ELEPHANT_DARK, s.light, s.p[1] < sole + 1.6 ? -1 : 0),
+    ),
   );
-  // Uñas: tres o cuatro medialunas claras al frente del pie.
-  for (const toe of [-0.55, -0.18, 0.18, 0.55]) {
-    const angle = toe * 1.4;
-    const at = add(j.sole, [Math.sin(angle) * lower * 1.1, 1.3, Math.cos(angle) * lower * 1.1]);
+  // Uñas: tres medialunas claras pegadas al frente del pie.
+  for (const toe of [-0.5, 0, 0.5]) {
+    const at = add(j.sole, [Math.sin(toe) * foot * 0.96, 1.2, Math.cos(toe) * foot * 0.96]);
     canvas.ellipsoid(
       at,
-      axesAlong([Math.sin(angle), 0, Math.cos(angle)]),
-      [1.3, 1, 0.6],
+      axesAlong([Math.sin(toe), 0, Math.cos(toe)]),
+      [1.5, 1.1, 0.45],
       solid(nails),
     );
   }
@@ -939,14 +949,14 @@ export const ELEPHANT: QuadrupedBuild = {
     top: [10.3, 48, 22],
     lengths: [21.6, 19.2, 2.9],
     rest: [0, 0, 0.05],
-    thickness: [9.6, 7.8],
+    thickness: [10.6, 8.9],
     hind: false,
   },
   hind: {
     top: [10.8, 49, -22],
     lengths: [21.6, 19.2, 2.9],
     rest: [-0.08, 0.08, 0.05],
-    thickness: [9.9, 7.8],
+    thickness: [10.9, 8.9],
     hind: true,
   },
   hoof: 3.6,
@@ -969,11 +979,24 @@ const ELEPHANT_SKIN = ramp([138, 132, 128]);
 const ELEPHANT_DARK = ramp([108, 102, 100]);
 const IVORY = ramp([234, 224, 196]);
 
-/** Piel gruesa y arrugada: surcos finos y manchas más oscuras. */
+/**
+ * Piel gruesa del cuerpo: manchas suaves y alguna arruga suelta que baja por
+ * los costados (no rayas parejas).
+ */
 const elephantSkin: Material = (s) => {
-  const fold = Math.sin(s.p[1] * 1.7 + noise(Math.floor(s.p[0]), Math.floor(s.p[2])) * 2) > 0.8;
-  const blotch = noise(Math.floor(s.p[0] / 3), Math.floor(s.p[1] / 3), Math.floor(s.p[2] / 3));
-  return tone(blotch > 0.7 ? ELEPHANT_DARK : ELEPHANT_SKIN, s.light, fold ? -1 : 0);
+  // Manchitas chicas y sueltas (no parches cuadrados) y arrugas que bajan.
+  const fleck = noise(Math.floor(s.p[0] / 1.5), Math.floor(s.p[1] / 1.5), Math.floor(s.p[2] / 1.5));
+  const crease =
+    Math.sin(s.p[2] * 0.9 + noise(Math.floor(s.p[1] / 3), Math.floor(s.p[0] / 5)) * 3) > 0.94;
+  return tone(ELEPHANT_SKIN, s.light, crease || fleck > 0.95 ? -1 : 0);
+};
+
+/** Piel de las patas: arrugas en anillos, finas y separadas, y más polvo abajo. */
+const elephantLegSkin: Material = (s) => {
+  const ring =
+    Math.sin(s.p[1] * 1.25 + noise(Math.floor(s.p[0] / 2), Math.floor(s.p[2] / 2))) > 0.9;
+  const dusty = s.p[1] < 14;
+  return tone(dusty ? ELEPHANT_DARK : ELEPHANT_SKIN, s.light, ring ? -1 : 0);
 };
 
 export const ELEPHANT_COAT: Coat = {
@@ -982,7 +1005,7 @@ export const ELEPHANT_COAT: Coat = {
   blaze: false,
   blanket: ramp([168, 36, 40]),
   // Los pies tienen uñas claras adelante.
-  leg: () => elephantSkin,
+  leg: () => elephantLegSkin,
   hoof: () => ramp([186, 176, 160]),
 };
 
@@ -1020,10 +1043,16 @@ function drawElephantBody({ canvas, at, axes, coat, gait }: BodyKit, tame: boole
   for (const side of [1, -1] as const) {
     const root = add(skull, [side * 8.9, 1.2, -3.6]);
     canvas.ellipsoid(
-      add(root, [side * 2.4, -3.6, -5.3]),
+      add(root, [side * 2.6, -6, -7.4]),
       axesAlong([side * (0.15 + flap), -0.1, -1]),
-      [1.7, 12.5, 9.8],
-      (s) => tone(s.n[0] * side > 0 ? ELEPHANT_SKIN : ELEPHANT_DARK, s.light, -1),
+      [1.8, 15.5, 12.5],
+      (s) =>
+        tone(
+          s.n[0] * side > 0 ? ELEPHANT_SKIN : ELEPHANT_DARK,
+          s.light,
+          // Venas y pliegues en la oreja.
+          Math.sin(s.p[1] * 0.8 + s.p[2] * 0.5) > 0.9 ? -1 : 0,
+        ),
     );
   }
 

@@ -25,7 +25,7 @@ import { buildCity } from './city-builder';
  * Versión de la forma del mundo: si cambia, los personajes guardados en el
  * mundo anterior aparecen en la capital (su posición vieja ya no sirve).
  */
-const WORLD_VERSION = 3;
+const WORLD_VERSION = 4;
 
 export interface WorldBuildOptions {
   /** Ancho del continente (y alto, si no se da `height`). */
@@ -65,7 +65,7 @@ const MIN_SIZE_FOR_ALL_TOWNS = 200;
 const LAIR_LEVELS: readonly { upTo: number; kinds: readonly CreatureKind[]; count: number }[] = [
   { upTo: 0.25, kinds: ['giant-spider', 'skeleton', 'skeleton'], count: 3 },
   { upTo: 0.55, kinds: ['skeleton-mage', 'orc', 'giant-spider', 'skeleton'], count: 4 },
-  { upTo: 0.99, kinds: ['lich', 'troll', 'skeleton-mage'], count: 3 },
+  { upTo: 0.99, kinds: ['lich', 'drake', 'troll', 'skeleton-mage'], count: 3 },
 ];
 
 /**

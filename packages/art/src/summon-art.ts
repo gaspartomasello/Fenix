@@ -3,6 +3,7 @@ import { OUTLINE } from './character-art';
 import { spriteCanvas, type CanvasFactory } from './humanoid-rig';
 import {
   CHARACTER_ART_HEIGHT,
+  CHARACTER_FEET_Y,
   CHARACTER_ART_WIDTH,
   cameraFor,
   humanoidRig,
@@ -55,8 +56,11 @@ const ZOOM: Readonly<Record<SummonKind, number>> = {
   'earth-elemental': 1.25,
   'fire-elemental': 1.18,
   'water-elemental': 1.18,
-  daemon: 1.24,
+  daemon: 1.75,
 };
+
+/** Lienzo del demonio: con las alas en alto no entra en el de una persona. */
+export const DAEMON_LAYOUT = { width: 168, height: 184, feetY: 168, headY: 22 } as const;
 
 /** Fase de la animación (0–3), para que el fuego, el agua y el viento se muevan. */
 function phaseOf(frame: CharacterFrame): number {
@@ -77,10 +81,15 @@ export function drawSummonFrame(
   frame: CharacterFrame,
   canvasFor: CanvasFactory = spriteCanvas,
 ): PixelImage {
+  // El demonio es grande (casi dos veces una persona) y tiene su lienzo.
+  const frameSize =
+    kind === 'daemon'
+      ? DAEMON_LAYOUT
+      : { width: CHARACTER_ART_WIDTH, height: CHARACTER_ART_HEIGHT, feetY: CHARACTER_FEET_Y };
   const canvas = canvasFor(
-    CHARACTER_ART_WIDTH,
-    CHARACTER_ART_HEIGHT,
-    cameraFor(direction, ZOOM[kind]),
+    frameSize.width,
+    frameSize.height,
+    cameraFor(direction, ZOOM[kind], frameSize),
   );
   const phase = phaseOf(frame);
   switch (kind) {
@@ -143,26 +152,69 @@ function drawDaemon(canvas: VolumeCanvas, rig: Rig): void {
   const flesh: Material = (s) => tone(skin, s.light, noise(s.x, s.y) > 0.8 ? -1 : 0);
   const chest = rig.chest;
 
-  // Alas: dos membranas desde los omóplatos, con nervaduras.
+  // Alas de murciélago, grandes y en alto: el brazo del ala sube del
+  // omóplato al codo y a la muñeca, y de ahí salen cuatro dedos largos; la
+  // membrana va entre dedo y dedo, con el borde mordido.
+  const membrane: Material = (s) =>
+    tone(ramp([126, 46, 50]), 0.3 + s.light * 0.6, Math.sin(s.p[1] * 1.3 + s.p[0]) > 0.92 ? -1 : 0);
+  const bone = solid(ramp([120, 36, 34]));
   for (const side of [1, -1] as const) {
-    const root = chest.at([side * 2.5, 4, -3]);
-    const tip = chest.at([side * 12.5, 13, -9]);
-    const elbow = chest.at([side * 8, 10.5, -7]);
-    canvas.limb(root, elbow, 1, 0.8, solid(dark));
-    canvas.limb(elbow, tip, 0.8, 0.4, solid(dark));
+    const root = chest.at([side * 3, 4, -3]);
+    const elbow = chest.at([side * 11, 19, -9]);
+    const wrist = chest.at([side * 10, 32, -14]);
+    const fingers = [
+      chest.at([side * 28, 22, -20]),
+      chest.at([side * 32, 7, -19]),
+      chest.at([side * 26, -7, -14]),
+      chest.at([side * 13, -10, -8]),
+    ];
+    canvas.limb(root, elbow, 1.6, 1.3, bone);
+    canvas.limb(elbow, wrist, 1.3, 1, bone);
+    canvas.sphere(elbow, 1.5, bone);
+    canvas.limb(
+      wrist,
+      add(wrist, chest.dir([side * 0.5, 2, 1])),
+      0.6,
+      0.15,
+      solid(ramp([220, 210, 190])),
+    );
+    fingers.forEach((tip, k) => canvas.limb(wrist, tip, 0.9 - k * 0.1, 0.25, bone));
+    for (let k = 0; k < fingers.length - 1; k++) {
+      const a = fingers[k] as Vec3;
+      const b = fingers[k + 1] as Vec3;
+      canvas.polygon([wrist, a, lerp(lerp(a, b, 0.5), wrist, 0.2), b], membrane);
+    }
     canvas.polygon(
-      [root, elbow, tip, chest.at([side * 10.5, -2, -8]), chest.at([side * 6, -4, -5])],
-      (s) => tone(ramp([110, 34, 40]), s.light * 0.8, Math.sin(s.p[1] * 1.2) > 0.85 ? -1 : 0),
+      [root, elbow, wrist, fingers[3] as Vec3, chest.at([side * 5, -6, -5])],
+      membrane,
     );
   }
   // Cola.
-  canvas.limb(rig.pelvis.at([0, -1, -3]), rig.pelvis.at([1.5, -10, -9]), 1.3, 0.8, flesh);
-  canvas.limb(rig.pelvis.at([1.5, -10, -9]), rig.pelvis.at([-1, -17, -11]), 0.8, 0.3, flesh);
+  const tail = [
+    rig.pelvis.at([0, -1, -3]),
+    rig.pelvis.at([2, -8, -10]),
+    rig.pelvis.at([0, -12, -17]),
+    rig.pelvis.at([-3, -9, -23]),
+  ];
+  tail
+    .slice(1)
+    .forEach((to, i) => canvas.limb(tail[i] as Vec3, to, 1.3 - i * 0.3, 1 - i * 0.3, flesh));
+  // Punta de flecha.
+  const tip = tail[3] as Vec3;
+  canvas.polygon(
+    [
+      add(tip, [0, 2.4, 0]),
+      add(tip, [1.6, 0, -1.6]),
+      add(tip, [0, -0.6, -3.6]),
+      add(tip, [-1.6, 0, -1.6]),
+    ],
+    flesh,
+  );
 
   for (const side of [1, -1] as const) {
     const leg = rig.legs[side];
-    canvas.limb(leg.hip, leg.knee, 3.6, 2.8, flesh);
-    canvas.limb(leg.knee, leg.ankle, 2.8, 1.8, flesh);
+    canvas.limb(leg.hip, leg.knee, 4.6, 3.4, flesh);
+    canvas.limb(leg.knee, leg.ankle, 3.4, 2.2, flesh);
     // Pezuña.
     canvas.ellipsoid(
       lerp(leg.ankle, leg.toe, 0.5),
@@ -172,13 +224,18 @@ function drawDaemon(canvas: VolumeCanvas, rig: Rig): void {
     );
   }
   canvas.ellipsoid(rig.pelvis.origin, rig.pelvis.axes, [5.2, 4, 3.6], flesh);
-  canvas.ellipsoid(chest.at([0, 0.5, 0]), chest.axes, [7.2, 7.4, 4.6], flesh);
-  canvas.ellipsoid(chest.at([0, 3.4, 0.6]), chest.axes, [7.8, 3.6, 4.4], flesh);
+  canvas.ellipsoid(chest.at([0, 0.5, 0]), chest.axes, [7.4, 7.6, 4.8], flesh);
+  canvas.ellipsoid(chest.at([0, 3.4, 0.6]), chest.axes, [8.4, 3.8, 4.6], flesh);
+  // Pectorales y hombros de luchador.
+  for (const side of [1, -1] as const) {
+    canvas.ellipsoid(chest.at([side * 3, 2, 2.6]), chest.axes, [3.4, 2.8, 2], flesh);
+    canvas.sphere(chest.at([side * 7.4, 4, 0]), 3.4, flesh);
+  }
   for (const side of [1, -1] as const) {
     const arm = rig.arms[side];
-    canvas.limb(arm.shoulder, arm.elbow, 3.2, 2.5, flesh);
-    canvas.limb(arm.elbow, arm.hand, 2.5, 2, flesh);
-    canvas.sphere(arm.hand, 2.1, flesh);
+    canvas.limb(arm.shoulder, arm.elbow, 4.2, 3.2, flesh);
+    canvas.limb(arm.elbow, arm.hand, 3.4, 2.4, flesh);
+    canvas.sphere(arm.hand, 2.6, flesh);
     // Garras.
     for (const k of [-1, 0, 1])
       canvas.limb(

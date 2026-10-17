@@ -3,6 +3,7 @@
  * de UO. Cada uno ocupa un tile; los que bloquean impiden pasar por él.
  */
 import { Direction } from '../geometry/direction';
+import type { Position } from '../geometry/position';
 
 export const STATIC_KINDS = [
   'oak',
@@ -36,6 +37,10 @@ export const STATIC_KINDS = [
   'poplar',
   'dead-tree',
   'mountain',
+  // Riscos y picos sueltos sobre la ladera de la montaña (cada uno con su forma)
+  'crag',
+  'crag-spire',
+  'crag-ledge',
   'cactus',
   'tent',
   'campfire',
@@ -144,6 +149,39 @@ export const STATIC_KINDS = [
   'bone-door-y',
   'bone-door-x-open',
   'bone-door-y-open',
+  // Hojas de puertas dobles: la de menor coordenada (`-l`) y la otra (`-r`)
+  'door-x-l',
+  'door-x-l-open',
+  'door-x-r',
+  'door-x-r-open',
+  'door-y-l',
+  'door-y-l-open',
+  'door-y-r',
+  'door-y-r-open',
+  'iron-door-x-l',
+  'iron-door-x-l-open',
+  'iron-door-x-r',
+  'iron-door-x-r-open',
+  'iron-door-y-l',
+  'iron-door-y-l-open',
+  'iron-door-y-r',
+  'iron-door-y-r-open',
+  'dungeon-door-x-l',
+  'dungeon-door-x-l-open',
+  'dungeon-door-x-r',
+  'dungeon-door-x-r-open',
+  'dungeon-door-y-l',
+  'dungeon-door-y-l-open',
+  'dungeon-door-y-r',
+  'dungeon-door-y-r-open',
+  'bone-door-x-l',
+  'bone-door-x-l-open',
+  'bone-door-x-r',
+  'bone-door-x-r-open',
+  'bone-door-y-l',
+  'bone-door-y-l-open',
+  'bone-door-y-r',
+  'bone-door-y-r-open',
   'wall-window-x',
   'wall-window-y',
   'log-window-x',
@@ -205,7 +243,35 @@ export const DOORS: Readonly<Partial<Record<StaticKind, StaticKind>>> = {
   'dungeon-door-y': 'dungeon-door-y-open',
   'bone-door-x': 'bone-door-x-open',
   'bone-door-y': 'bone-door-y-open',
+  'door-x-l': 'door-x-l-open',
+  'door-x-r': 'door-x-r-open',
+  'door-y-l': 'door-y-l-open',
+  'door-y-r': 'door-y-r-open',
+  'iron-door-x-l': 'iron-door-x-l-open',
+  'iron-door-x-r': 'iron-door-x-r-open',
+  'iron-door-y-l': 'iron-door-y-l-open',
+  'iron-door-y-r': 'iron-door-y-r-open',
+  'dungeon-door-x-l': 'dungeon-door-x-l-open',
+  'dungeon-door-x-r': 'dungeon-door-x-r-open',
+  'dungeon-door-y-l': 'dungeon-door-y-l-open',
+  'dungeon-door-y-r': 'dungeon-door-y-r-open',
+  'bone-door-x-l': 'bone-door-x-l-open',
+  'bone-door-x-r': 'bone-door-x-r-open',
+  'bone-door-y-l': 'bone-door-y-l-open',
+  'bone-door-y-r': 'bone-door-y-r-open',
 };
+
+/**
+ * La otra hoja de una puerta doble: la `-l` está en la menor coordenada
+ * del eje de la puerta y la `-r` en el tile siguiente. Se abren y se cierran
+ * juntas. `null` si es una puerta sola.
+ */
+export function doorPartner(kind: StaticKind, at: Position): Position | null {
+  const leaf = /-(x|y)-(l|r)(-open)?$/.exec(kind);
+  if (!leaf) return null;
+  const step = leaf[2] === 'l' ? 1 : -1;
+  return leaf[1] === 'x' ? { x: at.x + step, y: at.y } : { x: at.x, y: at.y + step };
+}
 
 /** A cuántos tiles hay que estar de una puerta para abrirla o cerrarla. */
 export const DOOR_RANGE = 1;
@@ -242,6 +308,9 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   poplar: define('poplar', 'álamo', true),
   'dead-tree': define('dead-tree', 'árbol seco', true),
   mountain: define('mountain', 'montaña', true),
+  crag: define('crag', 'risco', true),
+  'crag-spire': define('crag-spire', 'aguja de roca', true),
+  'crag-ledge': define('crag-ledge', 'peñasco', true),
   cactus: define('cactus', 'cactus', true),
   tent: define('tent', 'carpa', true),
   campfire: define('campfire', 'fogata', true, 4),
@@ -347,6 +416,38 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   'bone-door-y': define('bone-door-y', 'puerta de huesos', true),
   'bone-door-x-open': define('bone-door-x-open', 'puerta de huesos abierta', false),
   'bone-door-y-open': define('bone-door-y-open', 'puerta de huesos abierta', false),
+  'door-x-l': define('door-x-l', 'puerta', true),
+  'door-x-l-open': define('door-x-l-open', 'puerta abierta', false),
+  'door-x-r': define('door-x-r', 'puerta', true),
+  'door-x-r-open': define('door-x-r-open', 'puerta abierta', false),
+  'door-y-l': define('door-y-l', 'puerta', true),
+  'door-y-l-open': define('door-y-l-open', 'puerta abierta', false),
+  'door-y-r': define('door-y-r', 'puerta', true),
+  'door-y-r-open': define('door-y-r-open', 'puerta abierta', false),
+  'iron-door-x-l': define('iron-door-x-l', 'puerta de hierro', true),
+  'iron-door-x-l-open': define('iron-door-x-l-open', 'puerta de hierro abierta', false),
+  'iron-door-x-r': define('iron-door-x-r', 'puerta de hierro', true),
+  'iron-door-x-r-open': define('iron-door-x-r-open', 'puerta de hierro abierta', false),
+  'iron-door-y-l': define('iron-door-y-l', 'puerta de hierro', true),
+  'iron-door-y-l-open': define('iron-door-y-l-open', 'puerta de hierro abierta', false),
+  'iron-door-y-r': define('iron-door-y-r', 'puerta de hierro', true),
+  'iron-door-y-r-open': define('iron-door-y-r-open', 'puerta de hierro abierta', false),
+  'dungeon-door-x-l': define('dungeon-door-x-l', 'puerta de la mazmorra', true),
+  'dungeon-door-x-l-open': define('dungeon-door-x-l-open', 'puerta de la mazmorra abierta', false),
+  'dungeon-door-x-r': define('dungeon-door-x-r', 'puerta de la mazmorra', true),
+  'dungeon-door-x-r-open': define('dungeon-door-x-r-open', 'puerta de la mazmorra abierta', false),
+  'dungeon-door-y-l': define('dungeon-door-y-l', 'puerta de la mazmorra', true),
+  'dungeon-door-y-l-open': define('dungeon-door-y-l-open', 'puerta de la mazmorra abierta', false),
+  'dungeon-door-y-r': define('dungeon-door-y-r', 'puerta de la mazmorra', true),
+  'dungeon-door-y-r-open': define('dungeon-door-y-r-open', 'puerta de la mazmorra abierta', false),
+  'bone-door-x-l': define('bone-door-x-l', 'puerta de huesos', true),
+  'bone-door-x-l-open': define('bone-door-x-l-open', 'puerta de huesos abierta', false),
+  'bone-door-x-r': define('bone-door-x-r', 'puerta de huesos', true),
+  'bone-door-x-r-open': define('bone-door-x-r-open', 'puerta de huesos abierta', false),
+  'bone-door-y-l': define('bone-door-y-l', 'puerta de huesos', true),
+  'bone-door-y-l-open': define('bone-door-y-l-open', 'puerta de huesos abierta', false),
+  'bone-door-y-r': define('bone-door-y-r', 'puerta de huesos', true),
+  'bone-door-y-r-open': define('bone-door-y-r-open', 'puerta de huesos abierta', false),
   'wall-window-x': define('wall-window-x', 'ventana', true, 2),
   'wall-window-y': define('wall-window-y', 'ventana', true, 2),
   'log-window-x': define('log-window-x', 'ventana', true, 2),

@@ -10,6 +10,7 @@ import {
   type StaticPlacement,
 } from '@fenix/shared';
 import { SeededRandom } from '../system/seeded-random';
+import { shapeMountains } from './mountains';
 import { type Biome, type Continent, wanderField } from './procedural-map';
 import { cheapestPath, curvePath } from './roads';
 
@@ -414,6 +415,7 @@ const BIOME_CREATURES: Readonly<
     ['orc', 2.4],
     ['troll', 1],
     ['skeleton-mage', 0.3],
+    ['drake', 0.3],
   ],
 };
 
@@ -614,6 +616,10 @@ export function populateContinent(continent: Continent, seed: number): Populated
           if ((dx || dy) && statics.get(index(s.x + dx, s.y + dy))?.kind === 'mountain') around++;
       if (around < 2) statics.delete(i);
     }
+  // Las montañas toman forma al final (los lugares y senderos ya las recortaron).
+  const baseHeights = map.toData().heights;
+  const heights = baseHeights ? [...baseHeights] : undefined;
+  shapeMountains({ width, height, terrain, statics, heights, regions, spawn: capital, seed });
   const populated = new TileMap({
     width,
     height,
@@ -621,7 +627,7 @@ export function populateContinent(continent: Continent, seed: number): Populated
     statics: [...statics.values()],
     regions,
     signs: map.signs.filter((s) => statics.get(index(s.x, s.y))?.kind === 'sign'),
-    ...(map.toData().heights ? { heights: map.toData().heights } : {}),
+    ...(heights ? { heights } : {}),
   });
   homes.push(...biomeCreatures(populated), ...continent.townCreatures);
   return { ...continent, map: populated, places, caveEntrance, homes };
