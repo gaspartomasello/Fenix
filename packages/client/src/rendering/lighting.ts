@@ -30,6 +30,8 @@ export interface LightingFrame {
   readonly dayProgress: number;
   readonly focus: FractionalPosition;
   readonly lights: Iterable<{ placement: StaticPlacement; radius: number }>;
+  /** Antorchas y faroles en la mano de alguien (también de uno mismo). */
+  readonly carried: Iterable<{ at: FractionalPosition; radius: number }>;
   /** Visión nocturna: se ve como de día, sin oscuridad. */
   readonly nightVision: boolean;
   /** Dentro de una mazmorra: oscuro a cualquier hora. */
@@ -91,6 +93,7 @@ export class Lighting {
     for (const { placement, radius } of frame.lights) {
       this.place(used++, frame, placement, radius, darkness);
     }
+    for (const { at, radius } of frame.carried) this.place(used++, frame, at, radius, darkness);
     for (let i = used; i < this.pool.length; i++) {
       const sprite = this.pool[i];
       if (sprite) sprite.visible = false;

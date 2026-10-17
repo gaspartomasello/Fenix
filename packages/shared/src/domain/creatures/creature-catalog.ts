@@ -162,6 +162,8 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     humanoid: true,
     summoned: false,
     loot: [
+      { kind: 'scimitar', chance: 0.05 },
+      { kind: 'chain-coif', chance: 0.05 },
       { kind: 'gold', chance: 1, amount: [15, 40] },
       { kind: 'healing-potion', chance: 0.3 },
       { kind: 'short-sword', chance: 0.1 },
@@ -216,6 +218,9 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     summoned: false,
     abilities: { fleeAt: 0.2 },
     loot: [
+      { kind: 'club', chance: 0.12 },
+      { kind: 'amethyst', chance: 0.08 },
+      { kind: 'bread', chance: 0.3, amount: [1, 2] },
       { kind: 'gold', chance: 1, amount: [20, 50] },
       { kind: 'mace', chance: 0.12 },
       { kind: 'leather-armor', chance: 0.1 },
@@ -240,6 +245,9 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     summoned: false,
     abilities: { regeneration: 1.5 },
     loot: [
+      { kind: 'war-axe', chance: 0.08 },
+      { kind: 'ruby', chance: 0.12 },
+      { kind: 'emerald', chance: 0.08 },
       { kind: 'gold', chance: 1, amount: [50, 120] },
       { kind: 'war-hammer', chance: 0.08 },
       { kind: 'plate-helm', chance: 0.05 },
@@ -284,6 +292,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     // Sus garras sucias envenenan.
     abilities: { poison: { chance: 0.25, level: 1 } },
     loot: [
+      { kind: 'amethyst', chance: 0.1 },
       { kind: 'gold', chance: 1, amount: [20, 50] },
       { kind: 'cure-potion', chance: 0.2 },
     ],
@@ -313,6 +322,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       magicResist: 700,
     },
     loot: [
+      { kind: 'sapphire', chance: 0.15 },
       { kind: 'gold', chance: 1, amount: [30, 70] },
       { kind: 'refresh-potion', chance: 0.3 },
     ],
@@ -341,6 +351,8 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       magicResist: 600,
     },
     loot: [
+      { kind: 'sapphire', chance: 0.15 },
+      { kind: 'quarterstaff', chance: 0.08 },
       { kind: 'gold', chance: 1, amount: [30, 70] },
       { kind: 'black-pearl', chance: 0.6, amount: [2, 6] },
       { kind: 'sulfurous-ash', chance: 0.6, amount: [2, 6] },
@@ -381,6 +393,8 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       magicResist: 850,
     },
     loot: [
+      { kind: 'sapphire', chance: 0.4, amount: [1, 3] },
+      { kind: 'diamond', chance: 0.15 },
       { kind: 'gold', chance: 1, amount: [150, 320] },
       { kind: 'nightshade', chance: 0.8, amount: [4, 10] },
       { kind: 'blood-moss', chance: 0.8, amount: [4, 10] },
@@ -412,6 +426,9 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       magicResist: 900,
     },
     loot: [
+      { kind: 'ruby', chance: 0.8, amount: [2, 6] },
+      { kind: 'diamond', chance: 0.5, amount: [1, 3] },
+      { kind: 'emerald', chance: 0.6, amount: [1, 4] },
       { kind: 'gold', chance: 1, amount: [2000, 4000] },
       { kind: 'gold', chance: 1, amount: [1000, 3000] },
       { kind: 'plate-chest', chance: 0.4 },
@@ -445,6 +462,8 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       magicResist: 900,
     },
     loot: [
+      { kind: 'ruby', chance: 0.4, amount: [1, 2] },
+      { kind: 'amethyst', chance: 0.3 },
       { kind: 'gold', chance: 1, amount: [300, 700] },
       { kind: 'black-pearl', chance: 1, amount: [3, 8] },
       { kind: 'sulfurous-ash', chance: 1, amount: [3, 8] },

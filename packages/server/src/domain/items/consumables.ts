@@ -28,7 +28,8 @@ export function consume(
   if (definition.food !== undefined) {
     combat.heal(definition.food);
     combat.restoreStamina(10);
-    return { message: `Comiste ${describeItem(kind)}.`, effectsChanged: false };
+    const verb = definition.use === 'drink' ? 'Tomaste' : 'Comiste';
+    return { message: `${verb} ${describeItem(kind)}.`, effectsChanged: false };
   }
   const drank = `Tomaste ${describeItem(kind)}`;
   switch (definition.potion) {

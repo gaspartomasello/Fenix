@@ -11,6 +11,13 @@ export const BASE_ITEM_KINDS = [
   'fish-steak',
   'raw-ribs',
   'cooked-ribs',
+  'bread',
+  'cheese',
+  'ham',
+  'carrot',
+  'meat-pie',
+  'wine',
+  'ale',
   'healing-potion',
   'cure-potion',
   'refresh-potion',
@@ -32,17 +39,27 @@ export const BASE_ITEM_KINDS = [
   'axe',
   'mace',
   'war-hammer',
+  'longsword',
+  'scimitar',
+  'war-axe',
+  'halberd',
+  'club',
+  'quarterstaff',
   'bow',
   'arrow',
   // Armaduras y ropa
   'wooden-shield',
+  'buckler',
+  'metal-shield',
   'leather-cap',
+  'chain-coif',
   'iron-helmet',
   'plate-helm',
   'wizard-hat',
   'leather-armor',
   'studded-leather',
   'chainmail',
+  'ringmail',
   'plate-chest',
   'robe',
   'cloak',
@@ -65,6 +82,19 @@ export const BASE_ITEM_KINDS = [
   'nightshade',
   'spiders-silk',
   'sulfurous-ash',
+  // Luz: en la mano izquierda, alumbra alrededor de noche y en las mazmorras
+  'torch',
+  'lantern',
+  // Instrumentos
+  'lute',
+  'drum',
+  'flute',
+  // Gemas: botín valioso, se venden bien
+  'ruby',
+  'sapphire',
+  'emerald',
+  'amethyst',
+  'diamond',
   // Herramientas
   'pickaxe',
   'fishing-pole',
@@ -110,6 +140,7 @@ export type ItemUse =
   | 'scroll'
   | 'container'
   | 'book'
+  | 'music'
   | 'none';
 
 /** Lo que hace una poción al tomarla. */
@@ -142,6 +173,8 @@ export interface ItemDefinition {
   readonly fixed?: boolean;
   /** Recipiente: cuántos objetos entran adentro. */
   readonly capacity?: number;
+  /** Luz que da llevándolo en la mano (radio en tiles). */
+  readonly light?: number;
 }
 
 type Spec = Omit<ItemDefinition, 'kind' | 'stackable' | 'use'> &
@@ -180,6 +213,13 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
     use: 'eat',
     food: 10,
   },
+  bread: food('pan', 'panes', 'un', 6),
+  cheese: food('queso', 'quesos', 'un', 5),
+  ham: food('jamón', 'jamones', 'un', 12),
+  carrot: food('zanahoria', 'zanahorias', 'una', 3),
+  'meat-pie': food('pastel de carne', 'pasteles de carne', 'un', 14),
+  wine: { ...food('botella de vino', 'botellas de vino', 'una', 4), use: 'drink' },
+  ale: { ...food('jarra de cerveza', 'jarras de cerveza', 'una', 3), use: 'drink' },
   'healing-potion': potion('poción de curación', 'pociones de curación', 'heal'),
   'cure-potion': potion('poción de purificación', 'pociones de purificación', 'cure'),
   'refresh-potion': potion('poción de vigor', 'pociones de vigor', 'refresh'),
@@ -214,10 +254,19 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
   axe: { ...weapon('hacha', 'hachas', 'un'), use: 'tool' },
   mace: weapon('maza', 'mazas', 'una'),
   'war-hammer': { ...weapon('martillo de guerra', 'martillos de guerra', 'un'), twoHanded: true },
+  longsword: weapon('espada larga', 'espadas largas', 'una'),
+  scimitar: weapon('cimitarra', 'cimitarras', 'una'),
+  'war-axe': weapon('hacha de guerra', 'hachas de guerra', 'un'),
+  halberd: { ...weapon('alabarda', 'alabardas', 'una'), twoHanded: true },
+  club: weapon('garrote', 'garrotes', 'un'),
+  quarterstaff: { ...weapon('bastón de combate', 'bastones de combate', 'un'), twoHanded: true },
   bow: { ...weapon('arco', 'arcos', 'un'), twoHanded: true },
   arrow: { name: 'flecha', plural: 'flechas', article: 'una', stackable: true },
 
   'wooden-shield': wear('escudo de madera', 'escudos de madera', 'un', 'leftHand', 0x8a5a2e),
+  buckler: wear('rodela', 'rodelas', 'una', 'leftHand', 0x9aa0a8),
+  'metal-shield': wear('escudo de metal', 'escudos de metal', 'un', 'leftHand', 0xa8aeb6),
+  'chain-coif': wear('capucha de malla', 'capuchas de malla', 'una', 'head', 0x8e949c),
   'leather-cap': wear('gorro de cuero', 'gorros de cuero', 'un', 'head', 0x7a4e2a),
   'iron-helmet': wear('yelmo de hierro', 'yelmos de hierro', 'un', 'head', 0x9aa0a8),
   'plate-helm': wear('yelmo cerrado', 'yelmos cerrados', 'un', 'head', 0xa8aeb6),
@@ -225,6 +274,7 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
   'leather-armor': wear('pechera de cuero', 'pecheras de cuero', 'una', 'torso', 0x7a4e2a),
   'studded-leather': wear('pechera tachonada', 'pecheras tachonadas', 'una', 'torso', 0x5e3c22),
   chainmail: wear('cota de malla', 'cotas de malla', 'una', 'torso', 0x8e949c),
+  ringmail: wear('cota de anillas', 'cotas de anillas', 'una', 'torso', 0x7e848c),
   'plate-chest': wear('peto de placas', 'petos de placas', 'un', 'torso', 0xa8aeb6),
   robe: wear('túnica', 'túnicas', 'una', 'torso', 0x3a2a6a),
   cloak: wear('capa', 'capas', 'una', 'cloak', 0x7a1f2a),
@@ -269,6 +319,17 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
   'spiders-silk': reagent('seda de araña', 'sedas de araña', 'una'),
   'sulfurous-ash': reagent('ceniza sulfurosa', 'cenizas sulfurosas', 'una'),
 
+  torch: { ...wear('antorcha', 'antorchas', 'una', 'leftHand', 0x8a5a2e), light: 6 },
+  lantern: { ...wear('farol', 'faroles', 'un', 'leftHand', 0x6a5a3a), light: 5 },
+  lute: { name: 'laúd', plural: 'laúdes', article: 'un', use: 'music' },
+  drum: { name: 'tambor', plural: 'tambores', article: 'un', use: 'music' },
+  flute: { name: 'flauta', plural: 'flautas', article: 'una', use: 'music' },
+  ruby: gem('rubí', 'rubíes', 'un'),
+  sapphire: gem('zafiro', 'zafiros', 'un'),
+  emerald: gem('esmeralda', 'esmeraldas', 'una'),
+  amethyst: gem('amatista', 'amatistas', 'una'),
+  diamond: gem('diamante', 'diamantes', 'un'),
+
   pickaxe: { ...weapon('pico', 'picos', 'un'), use: 'tool' },
   'fishing-pole': {
     name: 'caña de pescar',
@@ -303,6 +364,12 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
   hides: { name: 'piel', plural: 'pieles', article: 'una', stackable: true },
 };
 
+function food(name: string, plural: string, article: 'un' | 'una', amount: number): Spec {
+  return { name, plural, article, stackable: true, use: 'eat', food: amount };
+}
+function gem(name: string, plural: string, article: 'un' | 'una'): Spec {
+  return { name, plural, article, stackable: true };
+}
 function potion(name: string, plural: string, effect: PotionEffect): Spec {
   return { name, plural, article: 'una', stackable: true, use: 'drink', potion: effect };
 }

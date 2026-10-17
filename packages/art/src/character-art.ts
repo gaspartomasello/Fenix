@@ -176,7 +176,10 @@ export function drawCharacterFrame(
     female,
     skirt: female && !equipment.legs && !robed,
     robed,
-    metalTorso: equipment.torso === 'chainmail' || equipment.torso === 'plate-chest',
+    metalTorso:
+      equipment.torso === 'chainmail' ||
+      equipment.torso === 'ringmail' ||
+      equipment.torso === 'plate-chest',
   };
 
   drawLegs(canvas, figure);
@@ -190,7 +193,7 @@ export function drawCharacterFrame(
     facialHair: female ? 'none' : (appearance.facialHair ?? 'none'),
     female,
     headgear:
-      headgear === 'iron-helmet'
+      headgear === 'iron-helmet' || headgear === 'chain-coif'
         ? 'helmet'
         : headgear === 'plate-helm'
           ? 'plate-helm'
@@ -303,6 +306,10 @@ function torsoMaterial({ rig, palette: p, equipment, outfit, female, robed }: Fi
       if (front && Math.abs(local[0]) < 0.5) return tone(STEEL, s.light + 0.25, 1);
       if (band < 0.12) return tone(STEEL, s.light - 0.25, -1);
       return metal(STEEL)(s);
+    }
+    if (armor === 'ringmail' && y > -4) {
+      // Anillas cosidas en hileras sobre cuero.
+      return tone(DARK_STEEL, s.light + 0.1, Math.round(y * 1.2) % 2 ? 1 : 0);
     }
     if (armor === 'chainmail' && y > -4) {
       // Malla: anillos alternados.
@@ -541,6 +548,21 @@ function drawCloak(canvas: VolumeCanvas, rig: Rig, cloak: Ramp): void {
 
 function drawShield(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
   const hand = rig.arms[-1].hand;
+  if (kind === 'torch' || kind === 'lantern') return drawLight(canvas, rig, kind);
+  if (kind === 'buckler' || kind === 'metal-shield') {
+    // Rodela chica y abombada, o escudo de metal largo con una cruz dorada.
+    const small = kind === 'buckler';
+    const middle = add(hand, rig.chest.dir([-1.4, small ? 1.6 : 3, 1.2]));
+    const facing = normalize(rig.chest.dir([-0.8, 0, 0.6]));
+    canvas.ellipsoid(middle, axesAlong(facing), small ? [3.6, 3.6, 1] : [5, 7, 0.9], (s) => {
+      const local = sub(s.p, middle);
+      if (!small && (Math.abs(local[1] - 1) < 0.45 || Math.hypot(local[0], local[2]) < 0.45))
+        return tone(GOLD, s.light);
+      return metal(STEEL)(s);
+    });
+    if (small) canvas.sphere(add(middle, scale(facing, 0.8)), 1.1, metal(STEEL));
+    return;
+  }
   const center = add(hand, rig.chest.dir([-1.6, 3, 1.2]));
   const facing = normalize(rig.chest.dir([-0.8, 0, 0.6]));
   const wood = ramp(wornColor(kind) ?? [138, 90, 46]);
@@ -553,6 +575,32 @@ function drawShield(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
   });
 }
 
+/** Antorcha encendida o farol, en la mano izquierda. */
+function drawLight(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
+  const hand = rig.arms[-1].hand;
+  const up = rig.chest.dir([0.1, 1, 0.5]);
+  if (kind === 'torch') {
+    const top = add(hand, scale(up, 7));
+    canvas.limb(add(hand, scale(up, -2)), top, 0.6, 0.8, solid(WOOD));
+    canvas.sphere(add(top, scale(up, 1)), 1.4, solid(ramp([60, 40, 28])));
+    canvas.sphere(add(top, scale(up, 2.6)), 2.2, (s) =>
+      tone(ramp([255, 190, 70]), 0.7 + s.light * 0.3),
+    );
+    canvas.sphere(add(top, scale(up, 4.4)), 1.3, (s) =>
+      tone(ramp([255, 236, 150]), 0.8 + s.light * 0.2),
+    );
+    return;
+  }
+  // Farol colgando de la mano.
+  const body = add(hand, [0, -3.4, 0]);
+  canvas.limb(hand, add(body, [0, 2, 0]), 0.25, 0.25, metal(DARK_STEEL));
+  canvas.ellipsoid(body, axesAlong([0, 1, 0]), [1.6, 2.2, 1.6], (s) =>
+    Math.abs(s.p[1] - body[1]) > 1.6
+      ? tone(DARK_STEEL, s.light)
+      : tone(ramp([255, 214, 120]), 0.75 + s.light * 0.25),
+  );
+}
+
 function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
   const { hand, weaponDir: dir } = rig.arms[1];
   const across = cross(dir, [0, 1, 0]);
@@ -560,10 +608,24 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
   const along = (k: number): Vec3 => add(hand, scale(dir, k));
   const grip = solid(ramp([84, 56, 34]));
 
-  if (kind === 'axe' || kind === 'pickaxe') {
+  if (kind === 'axe' || kind === 'pickaxe' || kind === 'war-axe') {
     canvas.limb(along(-3), along(12), 0.75, 0.75, solid(WOOD));
     const up = normalize(cross(side, dir));
-    if (kind === 'axe') {
+    if (kind === 'war-axe') {
+      // Hoja doble, una a cada lado del mango.
+      const head = along(10.5);
+      for (const k of [1, -1])
+        canvas.polygon(
+          [
+            add(head, scale(side, 0.5 * k)),
+            add(head, scale(up, 2.4)),
+            add(add(head, scale(side, 4 * k)), scale(up, 3.2)),
+            add(add(head, scale(side, 4 * k)), scale(up, -3.2)),
+            add(head, scale(up, -2.4)),
+          ],
+          metal(STEEL),
+        );
+    } else if (kind === 'axe') {
       const head = along(10.5);
       canvas.polygon(
         [
@@ -584,7 +646,7 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
   }
 
   const up = normalize(cross(side, dir));
-  if (kind === 'spear') {
+  if (kind === 'spear' || kind === 'halberd') {
     // Asta larga que sale por detrás de la mano y punta en forma de hoja.
     canvas.limb(along(-9), along(18), 0.6, 0.6, solid(WOOD));
     const tip = along(18);
@@ -592,6 +654,25 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
       [tip, add(along(20), scale(side, 1.3)), along(24), add(along(20), scale(side, -1.3))],
       metal(STEEL),
     );
+    // La alabarda suma una hoja de hacha bajo la punta.
+    if (kind === 'halberd')
+      canvas.polygon(
+        [
+          along(14),
+          along(18),
+          add(along(18.6), scale(side, 4.4)),
+          add(along(13.4), scale(side, 4)),
+        ],
+        metal(STEEL),
+      );
+    return;
+  }
+  if (kind === 'quarterstaff') {
+    canvas.limb(along(-14), along(14), 0.65, 0.65, solid(WOOD));
+    return;
+  }
+  if (kind === 'club') {
+    canvas.limb(along(-2), along(10), 0.7, 1.6, solid(WOOD));
     return;
   }
   if (kind === 'mace' || kind === 'war-hammer') {
@@ -622,9 +703,26 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     kryss: { length: 11, width: 0.6, guard: 1.8 },
     broadsword: { length: 15, width: 1.15, guard: 3 },
     katana: { length: 14, width: 0.7, guard: 0 },
+    longsword: { length: 17, width: 1, guard: 3 },
+    scimitar: { length: 13, width: 1.1, guard: 2.2 },
   };
   const { length, width, guard } = blades[kind] ?? { length: 13, width: 0.85, guard: 2.4 };
   const katana = kind === 'katana';
+  if (kind === 'scimitar') {
+    // Hoja curva que se ensancha antes de la punta.
+    canvas.limb(along(-2), along(1.2), 0.8, 0.8, grip);
+    canvas.limb(
+      add(along(1.6), scale(side, -guard)),
+      add(along(1.6), scale(side, guard)),
+      0.6,
+      0.6,
+      metal(GOLD),
+    );
+    const mid = add(along(2 + length * 0.6), scale(up, 1));
+    canvas.limb(along(2), mid, width * 0.8, width * 1.2, metal(STEEL));
+    canvas.limb(mid, add(along(2 + length), scale(up, 3)), width * 1.2, 0.25, metal(STEEL));
+    return;
+  }
   canvas.limb(along(katana ? -3.6 : -2), along(1.2), 0.8, 0.8, grip);
   if (!katana) canvas.sphere(along(-2.4), 0.9, metal(GOLD));
   if (katana) {

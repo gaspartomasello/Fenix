@@ -420,6 +420,7 @@ export class Items {
       case 'scroll':
       case 'container':
       case 'book':
+      case 'music':
         // Se resuelven en otros casos de uso (o en el cliente): acá no hay nada que hacer.
         return { ok: true, changes };
       case 'none': {
