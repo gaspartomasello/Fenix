@@ -122,6 +122,7 @@ export class World {
 
   addNpc(npc: Npc): void {
     this.npcs.set(npc.id, npc);
+    npc.moved = () => this.nearNpcs.update(npc);
     this.nearNpcs.update(npc);
   }
 

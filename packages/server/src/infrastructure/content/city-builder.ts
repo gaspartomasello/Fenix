@@ -14,6 +14,30 @@ import {
 import { SeededRandom } from '../system/seeded-random';
 import type { MapRegion, PlacedItem } from './tiled-map-loader';
 
+/** Nombres de los vecinos. */
+const TOWNSFOLK_NAMES = [
+  'Marta',
+  'Julián',
+  'Rosa',
+  'Ernesto',
+  'Lucía',
+  'Benito',
+  'Inés',
+  'Ramiro',
+  'Clara',
+  'Fermín',
+  'Elena',
+  'Tadeo',
+  'Agustina',
+  'Hilario',
+  'Pilar',
+  'Cosme',
+  'Dolores',
+  'Eusebio',
+  'Remedios',
+  'Gervasio',
+] as const;
+
 /** Lo que es parte de una construcción: no se saca para abrir paso. */
 const STRUCTURE =
   /wall|rampart|palisade|fence|tower|door|post|corner|window|mountain|crypt|fountain|ladder/;
@@ -738,6 +762,41 @@ export function buildCity(spec: CitySpec): City {
     if (plan.used.has(y * width + x) || !plan.isFree(x, y) || plan.terrain[y * width + x] !== null)
       continue;
     plan.put(x, y, pick(style.trees));
+  }
+
+  // ── La gente: vecinos que pasean por las avenidas y guardias en las puertas y la plaza ──
+  const free = (x: number, y: number): boolean =>
+    plan.isFree(x, y) &&
+    !plan.npcs.some((n) => n.position.x === x && n.position.y === y) &&
+    (plan.terrain[y * width + x] ?? Terrain.Grass) !== Terrain.Water;
+  const along: Position[] = [];
+  for (let y = inner.y0 + 2; y <= inner.y1 - 1; y += 3) along.push({ x: cx + (y % 2 ? 1 : -1), y });
+  for (let x = inner.x0 + 2; x <= inner.x1 - 1; x += 3) along.push({ x, y: cy + (x % 2 ? 1 : -1) });
+  const crowd = spec.size === 'large' ? 12 : spec.size === 'medium' ? 7 : 4;
+  const names = [...TOWNSFOLK_NAMES];
+  for (let i = 0; i < crowd && along.length > 0 && names.length > 0; i++) {
+    const at = along.splice(Math.floor(random.next() * along.length), 1)[0] as Position;
+    if (Math.abs(at.x - cx) <= plazaR && Math.abs(at.y - cy) <= plazaR) continue;
+    if (!free(at.x, at.y)) continue;
+    const name = names.splice(Math.floor(random.next() * names.length), 1)[0] as string;
+    plan.npcs.push({ role: 'townsfolk', position: at, name });
+  }
+  if (!style.lawless) {
+    // Dos guardias adentro de cada puerta y dos en la plaza.
+    const posts: Position[] = [
+      { x: cx - 2, y: inner.y0 + 2 },
+      { x: cx + 2, y: inner.y0 + 2 },
+      { x: cx - 2, y: inner.y1 - 1 },
+      { x: cx + 2, y: inner.y1 - 1 },
+      { x: inner.x0 + 2, y: cy - 2 },
+      { x: inner.x0 + 2, y: cy + 2 },
+      { x: inner.x1 - 1, y: cy - 2 },
+      { x: inner.x1 - 1, y: cy + 2 },
+      { x: cx - plazaR - 1, y: cy },
+      { x: cx + plazaR + 1, y: cy },
+    ];
+    for (const post of spec.size === 'small' ? posts.slice(-2) : posts)
+      if (free(post.x, post.y)) plan.npcs.push({ role: 'guard', position: post, name: 'guardia' });
   }
 
   // La zona protegida (o sin ley) es lo de adentro de la muralla.
