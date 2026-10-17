@@ -104,14 +104,25 @@ function paletteFor(appearance: Appearance, equipment: EquipmentLook): Palette {
 }
 
 /** Ropa de trabajo de los personajes del pueblo. */
-type Outfit = 'apron' | 'robe' | 'innkeeper' | 'vest';
+type Outfit = 'apron' | 'robe' | 'innkeeper' | 'vest' | 'woodcutter';
 const OUTFITS: Readonly<Record<NpcRole, Outfit>> = {
   blacksmith: 'apron',
   mage: 'robe',
   innkeeper: 'innkeeper',
   banker: 'vest',
   stablemaster: 'apron',
+  woodcutter: 'woodcutter',
+  carpenter: 'apron',
 };
+
+/** Camisa a cuadros rojos y negros del leñador. */
+const PLAID_RED = ramp([170, 44, 40]);
+const PLAID_DARK = ramp([52, 30, 30]);
+function plaid(s: { p: Vec3; light: number }): Rgb {
+  const a = Math.floor((s.p[0] + s.p[2] + 100) / 1.6) % 2;
+  const b = Math.floor((s.p[1] + 100) / 1.6) % 2;
+  return tone(a && b ? PLAID_DARK : a || b ? PLAID_RED : ramp([200, 70, 60]), s.light);
+}
 
 /** Todo lo que define cómo se ve el cuerpo en un frame. */
 interface Figure {
@@ -311,6 +322,11 @@ function torsoMaterial({ rig, palette: p, equipment, outfit, female, robed }: Fi
         return tone(GOLD, s.light, 1);
       return tone(leather, s.light);
     }
+    if (outfit === 'woodcutter' && y > 0) {
+      // Tiradores oscuros sobre la camisa a cuadros.
+      if (Math.abs(Math.abs(local[0]) - 2.4) < 0.55) return tone(LEATHER_DARK, s.light);
+      return plaid(s);
+    }
     if (outfit === 'vest' && y > 0) {
       // Chaleco oscuro abierto sobre camisa blanca, con botones dorados.
       if (front && Math.abs(local[0]) < 1.6) {
@@ -430,9 +446,11 @@ function drawArms(
     ? metal(STEEL)
     : outfit === 'vest'
       ? solid(LINEN)
-      : solid(p.cloth);
+      : outfit === 'woodcutter'
+        ? plaid
+        : solid(p.cloth);
   // Herrero y tabernero trabajan con las mangas arremangadas.
-  const bareForearms = outfit === 'apron' || outfit === 'innkeeper';
+  const bareForearms = outfit === 'apron' || outfit === 'innkeeper' || outfit === 'woodcutter';
   const thin = female ? 0.85 : 1;
   for (const side of [1, -1] as const) {
     const arm = rig.arms[side];

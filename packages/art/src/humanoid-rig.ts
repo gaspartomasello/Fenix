@@ -44,6 +44,7 @@ export type WalkStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 /** `guard`: en guardia (modo guerra); `guard-0..7`: caminando en guardia. */
 export type CharacterFrame =
   | 'idle'
+  | 'sit'
   | 'dead'
   | 'guard'
   | WalkStep
@@ -613,6 +614,12 @@ const RIDING_LEG = (girth: number): LegPose => ({
   spread: Math.min(0.75, 0.3 + girth * 0.032),
   shinSpread: 0.06,
 });
+/** En una silla: muslo horizontal hacia adelante y canilla vertical, piernas juntas. */
+const CHAIR_LEG: LegPose = { thigh: Math.PI / 2, knee: Math.PI / 2, spread: 0.1, shinSpread: 0.08 };
+/** La cadera a la altura del asiento, un poco atrás del centro del tile. */
+const CHAIR_SEAT: Seat = { y: 15.5, z: -5, girth: 0 };
+/** Las manos descansan sobre las rodillas. */
+const ON_KNEES: ArmPose = { raise: 0.55, spread: 0.12, bend: 0.75 };
 /** Las manos al frente, sosteniendo las riendas. */
 const REINS: ArmPose = { raise: 0.7, spread: 0.08, bend: 0.85 };
 
@@ -640,25 +647,42 @@ export function humanoidRig(
   build: Build = BUILDS.male,
   seat?: Seat,
 ): Rig {
-  const posed = poseFor(frame);
+  // Sentado en una silla: no es como ir montado, las piernas van juntas,
+  // los muslos derechos hacia adelante, las canillas al piso y las manos en
+  // las rodillas.
+  if (frame === 'sit' && !seat) seat = CHAIR_SEAT;
+  const sitting = frame === 'sit';
+  const posed = poseFor(sitting ? 'idle' : frame);
   const guarding = frame === 'guard' || cyclePhase(frame)?.guard === true;
   const base: BodyPose = guarding ? { ...posed, ...guardArms(armed) } : posed;
   const moving = frame === 'idle' || cyclePhase(frame) !== null;
   const galloping = cyclePhase(frame)?.running === true;
   // Montado, las piernas van siempre en la montura; los brazos llevan las
   // riendas salvo durante una acción (golpe, hechizo, disparo).
-  const pose: BodyPose = seat
+  const pose: BodyPose = sitting
     ? {
         ...base,
-        right: RIDING_LEG(seat.girth),
-        left: RIDING_LEG(seat.girth),
-        ...(moving ? { rightArm: REINS, leftArm: REINS } : {}),
-        lean: moving ? (galloping ? 1.8 : 0.4) : (base.lean ?? 0),
+        right: CHAIR_LEG,
+        left: CHAIR_LEG,
+        rightArm: ON_KNEES,
+        leftArm: ON_KNEES,
+        lean: 0.6,
         hipShift: 0,
-        tilt: moving ? 0 : (base.tilt ?? 0),
-        twist: moving ? 0 : (base.twist ?? 0),
+        tilt: 0,
+        twist: 0,
       }
-    : base;
+    : seat
+      ? {
+          ...base,
+          right: RIDING_LEG(seat.girth),
+          left: RIDING_LEG(seat.girth),
+          ...(moving ? { rightArm: REINS, leftArm: REINS } : {}),
+          lean: moving ? (galloping ? 1.8 : 0.4) : (base.lean ?? 0),
+          hipShift: 0,
+          tilt: moving ? 0 : (base.tilt ?? 0),
+          twist: moving ? 0 : (base.twist ?? 0),
+        }
+      : base;
   const k = build.stature;
   const hipShift = pose.hipShift ?? 0;
   const twist = pose.twist ?? 0;

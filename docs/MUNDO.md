@@ -173,7 +173,37 @@ donde llegan los caminos.
   los lados de cada puerta; las torres alumbran de noche.
 - **Castillo** (capital): muralla propia con cuatro torres, patio con pozo y estandartes, y la
   torre del homenaje con piso de mármol, braseros y el **trono**.
-- **Afuera:** la caballeriza con su corral, huertas con un aljibe y el **cementerio**.
+- **Afuera:** la caballeriza, la casa del leñador, huertas con un aljibe y el **cementerio**.
+- **La capital** es grande (88 × 78 adentro de la muralla) y la cruza un **río hondo** de oeste a
+  este, entre el barrio del castillo y la plaza: no se vadea, se pasa por el **puente** de la
+  avenida (ancho, con baranda y faroles) o por dos puentes de tablones. El río pasa bajo la
+  muralla entre dos torres y afuera sigue: cuesta arriba hasta una vertiente y cuesta abajo hasta
+  el mar (afuera ya es poco profundo).
+
+### Negocios e interiores
+
+Cada negocio está armado por dentro según el oficio:
+
+| Negocio         | Adentro                                                                     |
+| --------------- | --------------------------------------------------------------------------- |
+| Taberna         | toneles detrás del mostrador, mesas con sillas, hogar encendido y un banco  |
+| Banco           | mostrador, cofres en las esquinas, alfombra, candelabro y biblioteca        |
+| Herrería        | forja, yunque, armero con lanzas y espadas, maniquíes con armadura          |
+| Tienda de magia | bibliotecas y estantes de frascos en las paredes, mesa de alquimia, caldero |
+| Carpintería     | banco de carpintero con serrucho, caballete, pilas de tablas y leños        |
+| Caballeriza     | establo de piso de tierra con fardos de paja, bebederos, palenques, corral  |
+| Leñador         | cabaña de troncos y patio con pilas de leños, tocón con el hacha, caballete |
+
+El **leñador** (camisa a cuadros y tiradores) vende hachas, troncos y tablas; el **carpintero**
+vende serruchos, tablas y escudos de madera. Las casas tienen cama, mesa con sillas, cofre y, a
+veces, hogar, biblioteca o alfombra. El **castillo** tiene el salón del trono con alfombra roja
+hasta el trono, candelabros, armaduras en fila, la biblioteca del rey y el tesoro; el comedor con
+la mesa larga y sus sillas, y la barraca de la guardia con camas y armeros.
+
+**Sentarse:** quieto sobre una silla, un banco, una banqueta o el trono, el personaje se sienta
+mirando hacia donde mira el asiento (piernas juntas, rodillas dobladas y las manos sobre las
+rodillas, distinto de ir montado). Al moverse, pelear o entrar en modo guerra se levanta.
+
 - **Cementerio** (uno por ciudad): reja de hierro, tumbas en hileras, una cripta y árboles secos.
   No protege: viven ahí **zombis** (lentos pero tercos, se curan solos), **necrófagos** (rápidos,
   con garras que envenenan), **esqueletos** y un **espectro** (flota, lanza hechizos y resiste la

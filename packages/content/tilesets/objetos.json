@@ -3,10 +3,10 @@
   "name": "objetos",
   "tilewidth": 136,
   "tileheight": 168,
-  "tilecount": 88,
-  "columns": 88,
+  "tilecount": 120,
+  "columns": 120,
   "image": "objetos.png",
-  "imagewidth": 11968,
+  "imagewidth": 16320,
   "imageheight": 168,
   "tileoffset": {
     "x": -46,
@@ -890,6 +890,326 @@
           "name": "static",
           "type": "string",
           "value": "fountain"
+        }
+      ]
+    },
+    {
+      "id": 88,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "hay-bale"
+        }
+      ]
+    },
+    {
+      "id": 89,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "hay-pile"
+        }
+      ]
+    },
+    {
+      "id": 90,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "hitching-post"
+        }
+      ]
+    },
+    {
+      "id": 91,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "water-trough"
+        }
+      ]
+    },
+    {
+      "id": 92,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "stump-axe"
+        }
+      ]
+    },
+    {
+      "id": 93,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "log-pile"
+        }
+      ]
+    },
+    {
+      "id": 94,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "workbench"
+        }
+      ]
+    },
+    {
+      "id": 95,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "alchemy-table"
+        }
+      ]
+    },
+    {
+      "id": 96,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "bookshelf-x"
+        }
+      ]
+    },
+    {
+      "id": 97,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "bookshelf-y"
+        }
+      ]
+    },
+    {
+      "id": 98,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "potion-shelf-x"
+        }
+      ]
+    },
+    {
+      "id": 99,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "potion-shelf-y"
+        }
+      ]
+    },
+    {
+      "id": 100,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "cauldron"
+        }
+      ]
+    },
+    {
+      "id": 101,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "table"
+        }
+      ]
+    },
+    {
+      "id": 102,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "stool"
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "counter"
+        }
+      ]
+    },
+    {
+      "id": 104,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "chest"
+        }
+      ]
+    },
+    {
+      "id": 105,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "weapon-rack"
+        }
+      ]
+    },
+    {
+      "id": 106,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "armor-stand"
+        }
+      ]
+    },
+    {
+      "id": 107,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "bed"
+        }
+      ]
+    },
+    {
+      "id": 108,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "hearth"
+        }
+      ]
+    },
+    {
+      "id": 109,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "keg"
+        }
+      ]
+    },
+    {
+      "id": 110,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "chair-n"
+        }
+      ]
+    },
+    {
+      "id": 111,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "chair-e"
+        }
+      ]
+    },
+    {
+      "id": 112,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "chair-s"
+        }
+      ]
+    },
+    {
+      "id": 113,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "chair-w"
+        }
+      ]
+    },
+    {
+      "id": 114,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "bench-x"
+        }
+      ]
+    },
+    {
+      "id": 115,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "bench-y"
+        }
+      ]
+    },
+    {
+      "id": 116,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "sawhorse"
+        }
+      ]
+    },
+    {
+      "id": 117,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "plank-stack"
+        }
+      ]
+    },
+    {
+      "id": 118,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "carpet"
+        }
+      ]
+    },
+    {
+      "id": 119,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "candelabra"
         }
       ]
     }

@@ -2,6 +2,8 @@
  * Objetos fijos del mundo (árboles, rocas, paredes…), como los "statics"
  * de UO. Cada uno ocupa un tile; los que bloquean impiden pasar por él.
  */
+import { Direction } from '../geometry/direction';
+
 export const STATIC_KINDS = [
   'oak',
   'pine',
@@ -92,6 +94,39 @@ export const STATIC_KINDS = [
   'banner',
   'throne',
   'fountain',
+  // Interiores y oficios
+  'hay-bale',
+  'hay-pile',
+  'hitching-post',
+  'water-trough',
+  'stump-axe',
+  'log-pile',
+  'workbench',
+  'alchemy-table',
+  'bookshelf-x',
+  'bookshelf-y',
+  'potion-shelf-x',
+  'potion-shelf-y',
+  'cauldron',
+  'table',
+  'stool',
+  'counter',
+  'chest',
+  'weapon-rack',
+  'armor-stand',
+  'bed',
+  'hearth',
+  'keg',
+  'chair-n',
+  'chair-e',
+  'chair-s',
+  'chair-w',
+  'bench-x',
+  'bench-y',
+  'sawhorse',
+  'plank-stack',
+  'carpet',
+  'candelabra',
 ] as const;
 
 export type StaticKind = (typeof STATIC_KINDS)[number];
@@ -116,6 +151,21 @@ const define = (
   lightRadius = 0,
   footprint = 1,
 ): StaticDefinition => ({ kind, name, blocking, lightRadius, footprint });
+
+/**
+ * Asientos: al quedarse quieto sobre uno, el personaje se sienta mirando
+ * hacia donde mira el asiento (`any`: hacia donde venía mirando).
+ */
+export const SEATS: Readonly<Partial<Record<StaticKind, Direction | 'any'>>> = {
+  'chair-n': Direction.North,
+  'chair-e': Direction.East,
+  'chair-s': Direction.South,
+  'chair-w': Direction.West,
+  'bench-x': Direction.South,
+  'bench-y': Direction.East,
+  stool: 'any',
+  throne: Direction.SouthEast,
+};
 
 export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   oak: define('oak', 'roble', true),
@@ -204,8 +254,40 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   crypt: define('crypt', 'cripta', true, 0, 2),
   stall: define('stall', 'puesto del mercado', true),
   banner: define('banner', 'estandarte', true),
-  throne: define('throne', 'trono', true),
+  throne: define('throne', 'trono', false),
   fountain: define('fountain', 'fuente', true, 0, 2),
+  'hay-bale': define('hay-bale', 'fardo de paja', true),
+  'hay-pile': define('hay-pile', 'paja', false),
+  'hitching-post': define('hitching-post', 'palenque', true),
+  'water-trough': define('water-trough', 'bebedero', true),
+  'stump-axe': define('stump-axe', 'tocón con un hacha', true),
+  'log-pile': define('log-pile', 'pila de leños', true),
+  workbench: define('workbench', 'banco de carpintero', true),
+  'alchemy-table': define('alchemy-table', 'mesa de alquimia', true),
+  'bookshelf-x': define('bookshelf-x', 'biblioteca', true),
+  'bookshelf-y': define('bookshelf-y', 'biblioteca', true),
+  'potion-shelf-x': define('potion-shelf-x', 'estante de frascos', true),
+  'potion-shelf-y': define('potion-shelf-y', 'estante de frascos', true),
+  cauldron: define('cauldron', 'caldero', true, 2),
+  table: define('table', 'mesa', true),
+  stool: define('stool', 'banqueta', false),
+  counter: define('counter', 'mostrador', true),
+  chest: define('chest', 'cofre', true),
+  'weapon-rack': define('weapon-rack', 'armero', true),
+  'armor-stand': define('armor-stand', 'maniquí con armadura', true),
+  bed: define('bed', 'cama', true),
+  hearth: define('hearth', 'hogar', true, 4),
+  keg: define('keg', 'tonel', true),
+  'chair-n': define('chair-n', 'silla', false),
+  'chair-e': define('chair-e', 'silla', false),
+  'chair-s': define('chair-s', 'silla', false),
+  'chair-w': define('chair-w', 'silla', false),
+  'bench-x': define('bench-x', 'banco', false),
+  'bench-y': define('bench-y', 'banco', false),
+  sawhorse: define('sawhorse', 'caballete con un serrucho', true),
+  'plank-stack': define('plank-stack', 'pila de tablas', true),
+  carpet: define('carpet', 'alfombra', false),
+  candelabra: define('candelabra', 'candelabro', true, 4),
 };
 
 export function isStaticKind(value: unknown): value is StaticKind {

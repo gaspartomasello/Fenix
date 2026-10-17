@@ -13,7 +13,7 @@ import {
   type CharacterFrame,
 } from '@fenix/art';
 import { Container, Graphics, Sprite, Text } from 'pixi.js';
-import type { Notoriety } from '@fenix/shared';
+import type { Direction, Notoriety, Position } from '@fenix/shared';
 import { COMBAT_TEXT_MS, type CombatText, type Entity } from '../core/entity';
 import { Fidgets, attackFrame, castFrame, stepFrame, type AttackStyle } from './animation';
 import { characterDepth, corpseDepth } from './depth';
@@ -55,6 +55,8 @@ export interface CharacterViewState {
   readonly targeted: boolean;
   /** Uno mismo escondido: se ve translúcido (los demás no lo ven). */
   readonly hidden?: boolean;
+  /** El asiento del tile donde está (silla, banco, trono): quieto, se sienta. */
+  readonly seat?: Direction | 'any' | undefined;
 }
 
 /** Representación visual de un personaje o criatura: sombra, sprite, nombre, vida y textos. */
@@ -243,8 +245,17 @@ export class CharacterView {
     this.nameLabel.visible = !lying;
     this.container.zIndex = lying ? corpseDepth(position) : characterDepth(position);
 
-    const frame =
-      this.entity.dead && this.entity.body !== 'human' ? 'idle' : this.currentFrame(now);
+    const sitting = state.seat !== undefined && this.canSit(now);
+    const frame: CharacterFrame = sitting
+      ? 'sit'
+      : this.entity.dead && this.entity.body !== 'human'
+        ? 'idle'
+        : this.currentFrame(now);
+    // Sentado mira hacia donde mira el asiento.
+    const direction =
+      sitting && state.seat !== 'any' && state.seat !== undefined
+        ? state.seat
+        : this.entity.direction;
     this.syncLayout();
     // Un fantasma no va montado (al morir se cae de la montura).
     this.sprite.texture =
@@ -253,7 +264,7 @@ export class CharacterView {
         : this.entity.body === 'human'
           ? this.textures.character(
               this.entity.appearance,
-              this.entity.direction,
+              direction,
               frame,
               this.entity.equipment,
               this.entity.npc,
@@ -389,6 +400,24 @@ export class CharacterView {
     }
     if (guard) return 'guard';
     return fidget ?? 'idle';
+  }
+
+  /** Se sienta una persona viva, a pie, quieta y sin pelear. */
+  private canSit(now: number): boolean {
+    const entity = this.entity;
+    return (
+      entity.body === 'human' &&
+      !entity.dead &&
+      entity.mount === null &&
+      !entity.war &&
+      entity.actionAt(now) === null &&
+      entity.stepProgress(now) === null
+    );
+  }
+
+  /** El tile donde está (para saber si hay un asiento). */
+  get tile(): Position {
+    return this.entity.position;
   }
 
   /** En guardia: una persona viva, a pie y en modo guerra. */

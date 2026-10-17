@@ -56,6 +56,15 @@ export interface MapRegion {
   }[];
   /** Criaturas que viven en el plano (los no-muertos del cementerio de una ciudad). */
   readonly lairs?: readonly { readonly kind: CreatureKind; readonly position: Position }[];
+  /**
+   * Por dónde entra (`in`) y sale (`out`) un río que cruza el plano: el
+   * continente lo sigue cuesta arriba hasta una vertiente y cuesta abajo hasta el mar.
+   */
+  readonly rivers?: readonly {
+    readonly x: number;
+    readonly y: number;
+    readonly flow: 'in' | 'out';
+  }[];
 }
 
 const FLIP_FLAGS = 0xf0000000;

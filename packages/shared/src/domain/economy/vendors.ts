@@ -2,7 +2,15 @@ import type { ItemKind } from '../items/item-catalog';
 import { SPELLS, SPELL_KEYS } from '../magic/spell-catalog';
 
 /** Personajes del pueblo que comercian o guardan cosas. */
-export const NPC_ROLES = ['blacksmith', 'mage', 'innkeeper', 'banker', 'stablemaster'] as const;
+export const NPC_ROLES = [
+  'blacksmith',
+  'mage',
+  'innkeeper',
+  'banker',
+  'stablemaster',
+  'woodcutter',
+  'carpenter',
+] as const;
 export type NpcRole = (typeof NPC_ROLES)[number];
 
 export interface VendorOffer {
@@ -179,6 +187,20 @@ export const VENDORS: Readonly<Record<NpcRole, VendorDefinition>> = {
     greeting: 'Caballos mansos y bien herrados, y algún bicho raro.',
     sells: [],
     buys: [],
+  },
+  woodcutter: {
+    role: 'woodcutter',
+    name: 'Bruno el leñador',
+    greeting: 'Leña seca y tablas derechas. ¿Necesitás un hacha?',
+    sells: offers({ axe: 70, logs: 4, boards: 6 }),
+    buys: offers({ logs: 2, boards: 3 }),
+  },
+  carpenter: {
+    role: 'carpenter',
+    name: 'Anacleto el carpintero',
+    greeting: 'Si es de madera, lo hago. Tablas, escudos, lo que pidas.',
+    sells: offers({ saw: 25, boards: 6, 'wooden-shield': 60 }),
+    buys: offers({ logs: 2, boards: 4 }),
   },
 };
 
