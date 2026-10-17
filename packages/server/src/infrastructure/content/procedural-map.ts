@@ -743,7 +743,11 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
   const passes: Position[] = [];
   const signs: SignData[] = [];
   const placed = towns.map((t) => ({
-    name: t.plan.map.regions[0]?.name ?? 'pueblo',
+    // El nombre del pueblo (no el de su cementerio, que también es una región del plano).
+    name:
+      t.plan.map.regions.find((r) => !r.name.startsWith('Cementerio de '))?.name ??
+      t.plan.map.regions[0]?.name ??
+      'pueblo',
     x: t.x,
     y: t.y,
     width: t.plan.map.width,

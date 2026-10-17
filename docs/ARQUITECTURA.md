@@ -439,6 +439,17 @@ cofre y unas ruinas viejas. Lo generan `generateCrypt` y `generateSewer` (`under
 `world-builder` los pone uno debajo del otro al este de la cueva, cada uno con su región
 oscura (`dungeon: true`), sus criaturas y dos teletransportes (bajar y volver por la escalera).
 
+### Humanos hostiles y puertos
+
+Además de las bestias, hay gente que ataca: **bárbaros** (en un campamento con empalizada
+en la nieve), **piratas** y **corsarios** (en una cala de la costa, con su barco pirata
+amarrado) y **bandoleros** (en una guarida del bosque, cerca de los caminos). Son criaturas
+del catálogo con cuerpo de persona: `human-foe-art` los dibuja con el mismo rig que a los
+jugadores, con su ropa y sus armas. Puerto Ceniza y Puerto Brasa tienen un muelle en la
+costa más cercana (`harbor` en `places.ts`): un tablado que entra al mar con postes y un
+barco mercante amarrado (estático de 3 × 3 tiles sobre el agua). Los lugares con `near`
+ahora sí se ubican cerca de su pueblo (antes el pueblo tomaba el nombre de su cementerio).
+
 ### Persistencia
 
 Un personaje se guarda como datos planos (`SavedCharacter`, en `domain/persistence`):

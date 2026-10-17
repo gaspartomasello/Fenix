@@ -194,6 +194,10 @@ export const STATIC_KINDS = [
   'sarcophagus',
   'sewer-grate',
   'cobweb',
+  // Puertos: barcos amarrados (ocupan 3 × 3 tiles de agua)
+  'ship',
+  'pirate-ship',
+  'pier-post',
 ] as const;
 
 export type StaticKind = (typeof STATIC_KINDS)[number];
@@ -441,6 +445,9 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   sarcophagus: define('sarcophagus', 'sarcófago', true),
   'sewer-grate': define('sewer-grate', 'reja de la alcantarilla', false),
   cobweb: define('cobweb', 'telaraña', false),
+  ship: define('ship', 'barco mercante', true, 4, 3),
+  'pirate-ship': define('pirate-ship', 'barco pirata', true, 4, 3),
+  'pier-post': define('pier-post', 'poste del muelle', true),
   'door-x': define('door-x', 'puerta', true),
   'door-y': define('door-y', 'puerta', true),
   'door-x-open': define('door-x-open', 'puerta abierta', false),

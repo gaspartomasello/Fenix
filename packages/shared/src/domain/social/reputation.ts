@@ -34,6 +34,10 @@ export const CREATURE_FAME: Readonly<Record<string, number>> = {
   ghoul: 45,
   wraith: 60,
   troll: 70,
+  barbarian: 45,
+  pirate: 40,
+  corsair: 65,
+  brigand: 30,
   lich: 200,
   dragon: 1000,
   // Fauna (del bestiario, en la misma escala)

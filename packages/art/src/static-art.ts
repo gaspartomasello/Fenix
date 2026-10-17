@@ -595,6 +595,76 @@ const cobweb: Model = (c, variant) => {
     }
 };
 
+/**
+ * Barco amarrado (3 × 3 tiles de agua): casco de tablas que se hunde en el
+ * agua, cubierta con borda, dos mástiles con velas recogidas a medias, el
+ * bauprés adelante, un farol en la popa y la bandera arriba. El pirata
+ * tiene casco oscuro, velas negras y bandera con calavera.
+ */
+function ship(pirate: boolean): Model {
+  return (c) => {
+    const along = axesAlong([1, 0, 0]);
+    const hullWood = pirate ? ramp([64, 44, 34]) : ramp([128, 84, 48]);
+    const stripe = pirate ? ramp([120, 30, 30]) : ramp([196, 170, 90]);
+    const hull = clipping((s) => {
+      if (s.p[1] < 0) return null;
+      if (Math.abs(s.p[1] - 13) < 1.2) return tone(stripe, s.light);
+      return tone(hullWood, s.light, Math.floor(s.p[1] / 3) % 2 ? -1 : 0);
+    });
+    // Casco: largo a lo ancho del tile, con proa afinada.
+    c.ellipsoid([0, 6, 0], along, [22, 18, 66], hull);
+    c.ellipsoid([40, 10, 0], along, [15, 14, 34], hull);
+    // Cubierta y borda.
+    const deck = planks(ramp([170, 130, 84]), 2, 2);
+    c.box([0, 23, 0], along, [17, 1.2, 58], deck);
+    for (const side of [1, -1]) c.box([0, 26, side * 17], along, [1, 2.6, 58], solid(hullWood, 1));
+    // Castillo de popa.
+    c.box([-46, 30, 0], along, [17, 7, 14], hull);
+    c.box([-46, 38, 0], along, [17, 1, 14], deck);
+    // Bauprés.
+    c.limb([66, 26, 0], [96, 42, 0], 1.6, 0.8, solid(WOOD));
+    // Mástiles y velas.
+    const sail = pirate ? ramp([40, 38, 40]) : ramp([232, 226, 206]);
+    for (const [x, h] of [
+      [14, 118],
+      [-18, 100],
+    ] as const) {
+      c.limb([x, 23, 0], [x, h, 0], 2.2, 1.6, solid(WOOD));
+      c.limb([x, h - 30, -24], [x, h - 30, 24], 1, 1, solid(WOOD));
+      // Vela: un paño apenas inflado colgando de la verga.
+      c.polygon(
+        [
+          [x + 2, h - 30, -22],
+          [x + 2, h - 30, 22],
+          [x + 7, h - 70, 20],
+          [x + 7, h - 70, -20],
+        ],
+        (s) => tone(sail, 0.45 + s.light * 0.55, Math.abs(s.p[2]) < 1 ? -1 : 0),
+      );
+    }
+    // Bandera arriba del palo mayor.
+    const flag = pirate ? ramp([30, 28, 30]) : ramp([170, 40, 40]);
+    c.polygon(
+      [
+        [14, 118, 0],
+        [14, 108, 0],
+        [-2, 111, 1],
+        [-2, 117, 1],
+      ],
+      solid(flag),
+    );
+    if (pirate) c.sphere([5, 113, 1.5], 1.6, solid(ramp([230, 226, 214])));
+    // Farol de popa.
+    c.sphere([-60, 42, 0], 2.4, glowing(ramp([255, 200, 100])));
+  };
+}
+
+/** Poste de madera del muelle, con un cabo enrollado. */
+const pierPost: Model = (c) => {
+  c.limb([0, -4, 0], [0, 20, 0], 3, 2.6, solid(WOOD));
+  c.ellipsoid([0, 14, 0], UP, [3.8, 1.6, 3.8], solid(ramp([196, 176, 130])));
+};
+
 /** Estalagmita: un cono de roca que sube del suelo. */
 const stalagmite: Model = (c, variant) => {
   const material = caveRock(variant * 5 + 2);
@@ -2336,6 +2406,15 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   sarcophagus: { model: sarcophagus, shadow: [18, 8] },
   'sewer-grate': { model: sewerGrate },
   cobweb: { model: cobweb },
+  ship: {
+    model: ship(false),
+    frame: { width: 260, height: 250, ground: { x: 130, y: 196 } },
+  },
+  'pirate-ship': {
+    model: ship(true),
+    frame: { width: 260, height: 250, ground: { x: 130, y: 196 } },
+  },
+  'pier-post': { model: pierPost, shadow: [6, 3] },
   bones: { model: bones },
   stalagmite: { model: stalagmite, shadow: [9, 4] },
   ceibo: tree('ceibo'),

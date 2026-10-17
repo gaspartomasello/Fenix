@@ -57,6 +57,10 @@ interface Site {
   readonly random: SeededRandom;
   ground(x: number, y: number, terrain: Terrain): void;
   put(x: number, y: number, kind: StaticKind): void;
+  /** ¿Es mar abierto? */
+  ocean(x: number, y: number): boolean;
+  /** Pone algo sobre el agua sin secarla (un barco amarrado). */
+  moor(x: number, y: number, kind: StaticKind): void;
 }
 
 /**
@@ -251,7 +255,168 @@ const PLACES: readonly PlaceSpec[] = [
       }
     },
   },
+  {
+    name: 'Muelle de Puerto Ceniza',
+    biomes: ['beach', 'grassland', 'forest', 'meadow', 'plains'],
+    radius: 5,
+    from: 8,
+    to: 22,
+    coast: true,
+    creatures: [],
+    build(site) {
+      harbor(site, 'ship');
+    },
+  },
+  {
+    name: 'Muelle de Puerto Brasa',
+    biomes: [
+      'beach',
+      'badlands',
+      'desert',
+      'savanna',
+      'grassland',
+      'wasteland',
+      'plains',
+      'foothill',
+      'jungle',
+      'forest',
+      'meadow',
+    ],
+    radius: 5,
+    from: 6,
+    to: 32,
+    near: 'Puerto Brasa',
+    coast: true,
+    creatures: [],
+    build(site) {
+      harbor(site, 'ship');
+    },
+  },
+  {
+    name: 'Cala de los Piratas',
+    biomes: ['beach', 'jungle', 'grassland', 'forest', 'savanna', 'plains'],
+    radius: 6,
+    from: 110,
+    to: 420,
+    coast: true,
+    creatures: [
+      ['pirate', 5],
+      ['corsair', 2],
+    ],
+    build(site) {
+      const { x, y } = site.center;
+      disk(site, 5, Terrain.Sand);
+      harbor(site, 'pirate-ship');
+      site.put(x, y, 'campfire');
+      site.put(x - 3, y - 2, 'tent');
+      site.put(x + 2, y - 3, 'tent');
+      site.put(x - 2, y + 3, 'chest');
+      site.put(x + 3, y + 2, 'keg');
+      site.put(x + 4, y + 1, 'barrel');
+      site.put(x - 4, y + 1, 'crate');
+      site.put(x + 1, y + 4, 'bones');
+    },
+  },
+  {
+    name: 'Campamento Bárbaro',
+    biomes: ['snow', 'tundra', 'foothill'],
+    radius: 6,
+    from: 70,
+    to: 320,
+    creatures: [['barbarian', 6]],
+    build(site) {
+      const { x, y } = site.center;
+      disk(site, 5, Terrain.Dirt);
+      site.put(x, y, 'campfire');
+      for (const [dx, dy] of [
+        [-3, -2],
+        [2, -3],
+        [3, 2],
+        [-2, 3],
+      ] as const)
+        site.put(x + dx, y + dy, 'tent');
+      // Empalizada de troncos con una entrada al sur.
+      for (let d = -5; d <= 5; d++) {
+        site.put(x + d, y - 6, 'palisade-x');
+        if (Math.abs(d) > 1) site.put(x + d, y + 6, 'palisade-x');
+        site.put(x - 6, y + d, 'palisade-y');
+        site.put(x + 6, y + d, 'palisade-y');
+      }
+      site.put(x - 1, y - 1, 'bones');
+      site.put(x + 4, y - 4, 'log-pile');
+      site.put(x - 4, y + 4, 'stump-axe');
+    },
+  },
+  {
+    name: 'Guarida de Bandoleros',
+    biomes: ['forest', 'grassland', 'plains', 'meadow'],
+    radius: 5,
+    from: 30,
+    to: 140,
+    creatures: [['brigand', 5]],
+    build(site) {
+      const { x, y } = site.center;
+      disk(site, 4, Terrain.Dirt);
+      site.put(x, y, 'campfire');
+      site.put(x - 2, y - 2, 'tent');
+      site.put(x + 2, y - 2, 'tent');
+      site.put(x + 3, y + 2, 'chest');
+      site.put(x - 3, y + 2, 'crate');
+      site.put(x, y + 3, 'barrel');
+      for (const [dx, dy] of [
+        [-5, -4],
+        [5, -3],
+        [-4, 5],
+        [5, 4],
+      ] as const)
+        site.put(x + dx, y + dy, 'oak');
+    },
+  },
 ];
+
+/**
+ * Un muelle: desde la orilla más cercana, un tablado de dos de ancho que
+ * entra al mar, con postes a los costados, cajones y barriles, y el barco
+ * amarrado al lado de la punta.
+ */
+function harbor(site: Site, kind: 'ship' | 'pirate-ship'): void {
+  const { x, y } = site.center;
+  // La dirección del mar: hacia el tile de mar más cercano.
+  let sea: { x: number; y: number } | null = null;
+  for (let r = 1; r <= site.radius + 8 && !sea; r++)
+    for (let dy = -r; dy <= r && !sea; dy++)
+      for (let dx = -r; dx <= r && !sea; dx++)
+        if (Math.max(Math.abs(dx), Math.abs(dy)) === r && site.ocean(x + dx, y + dy))
+          sea = { x: dx, y: dy };
+  if (!sea) return;
+  const step =
+    Math.abs(sea.x) >= Math.abs(sea.y)
+      ? { x: Math.sign(sea.x), y: 0 }
+      : { x: 0, y: Math.sign(sea.y) };
+  const side = { x: step.y === 0 ? 0 : 1, y: step.x === 0 ? 0 : 1 };
+  // El tablado: desde el centro hasta 6 tiles dentro del agua.
+  let wet = 0;
+  let end = { x, y };
+  for (let i = 0; i < site.radius + 16 && wet < 6; i++) {
+    const px = x + step.x * i;
+    const py = y + step.y * i;
+    if (site.ocean(px, py)) wet++;
+    for (const k of [0, 1]) site.ground(px + side.x * k, py + side.y * k, Terrain.Wood);
+    end = { x: px, y: py };
+    if (wet > 0 && i % 3 === 0) {
+      site.moor(px - side.x, py - side.y, 'pier-post');
+      site.moor(px + side.x * 2, py + side.y * 2, 'pier-post');
+    }
+  }
+  // El barco, al costado de la punta (sus 3 × 3 tiles en el agua).
+  const shipAt = { x: end.x - step.x * 2 + side.x * 3, y: end.y - step.y * 2 + side.y * 3 };
+  site.moor(shipAt.x, shipAt.y, kind);
+  // Mercadería en tierra, junto al arranque del muelle.
+  site.put(x - side.x * 2, y - side.y * 2, 'crate');
+  site.put(x - side.x * 2 - step.x, y - side.y * 2 - step.y, 'barrel');
+  site.put(x + side.x * 3, y + side.y * 3, 'keg');
+  site.put(x + side.x * 3 - step.x, y + side.y * 3 - step.y, 'lamp');
+}
 
 /** Un patio en ruinas: muros de piedra caídos a medias, escombros y huesos. */
 function ruin(site: Site, half: number, broken: number): void {
@@ -463,7 +628,8 @@ export function populateContinent(continent: Continent, seed: number): Populated
 
   for (const spec of PLACES) {
     const origin = (spec.near && townAt(spec.near)) || capital;
-    const center = findSite(spec, origin);
+    // Si cerca del pueblo pedido no hay lugar, se busca desde la capital.
+    const center = findSite(spec, origin) ?? (origin !== capital ? findSite(spec, capital) : null);
     if (!center) continue;
     taken.push({ ...center, r: spec.radius + 6 });
     const site: Site = {
@@ -479,6 +645,12 @@ export function populateContinent(continent: Continent, seed: number): Populated
         if (!free(x, y)) return;
         if (isWater(terrain[index(x, y)])) terrain[index(x, y)] = Terrain.Dirt;
         statics.set(index(x, y), { kind, x, y });
+      },
+      ocean(x, y) {
+        return free(x, y) && continent.biomes[index(x, y)] === 'ocean';
+      },
+      moor(x, y, kind) {
+        if (free(x, y)) statics.set(index(x, y), { kind, x, y });
       },
     };
     // Se despeja el lugar antes de construir.

@@ -59,6 +59,10 @@ const POSES: Readonly<Partial<Record<CreatureKind, CorpsePose>>> = {
   daemon: { fall: 'back', angle: BACK, center: 30, rest: 4.5 },
   lizardman: { fall: 'back', angle: BACK, center: 30, rest: 4 },
   zombie: { fall: 'back', angle: BACK, center: 30, rest: 3 },
+  barbarian: { fall: 'back', angle: BACK, center: 30, rest: 3 },
+  pirate: { fall: 'back', angle: BACK, center: 30, rest: 3 },
+  corsair: { fall: 'back', angle: BACK, center: 30, rest: 3 },
+  brigand: { fall: 'back', angle: BACK, center: 30, rest: 3 },
   ghoul: { fall: 'back', angle: BACK, center: 28, rest: 3 },
   'earth-elemental': { fall: 'back', angle: BACK, center: 30, rest: 5 },
 };
