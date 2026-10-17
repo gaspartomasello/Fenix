@@ -1,12 +1,17 @@
-import { STARTING_SKILLS, SKILL_KEYS } from '@fenix/shared';
+import { STARTING_SKILLS, SKILL_KEYS, skillGainAmount } from '@fenix/shared';
 import { describe, expect, it } from 'vitest';
 import { SkillSet } from './skill-set';
 
 describe('SkillSet', () => {
-  it('sube de a 0,1 cuando sale la tirada', () => {
+  it('sube cuando sale la tirada: rápido al principio, de a 0,1 cerca del máximo', () => {
     const skills = new SkillSet(STARTING_SKILLS);
     expect(skills.tryGain('magery', () => 0)).toBe(true);
-    expect(skills.get('magery')).toBe(STARTING_SKILLS.magery + 1);
+    expect(skills.get('magery')).toBe(
+      STARTING_SKILLS.magery + skillGainAmount(STARTING_SKILLS.magery),
+    );
+    const expert = new SkillSet({ ...STARTING_SKILLS, magery: 900 });
+    expert.tryGain('magery', () => 0);
+    expect(expert.get('magery')).toBe(901);
     expect(skills.tryGain('magery', () => 0.99)).toBe(false);
   });
 

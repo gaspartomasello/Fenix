@@ -1,4 +1,11 @@
-import { DEFAULT_APPEARANCE, Direction, Terrain, TileMap, type EntityId } from '@fenix/shared';
+import {
+  DEFAULT_APPEARANCE,
+  Direction,
+  Terrain,
+  TileMap,
+  skillGainAmount,
+  type EntityId,
+} from '@fenix/shared';
 import { describe, expect, it } from 'vitest';
 import { Creature, RESPAWN_MS } from '../domain/creatures/creature';
 import { EMPTY_CORPSE_MS } from './corpses';
@@ -203,7 +210,7 @@ describe('ciclo del juego: combate', () => {
       targetId: 'rata',
     });
     expect(rat.combat.current.hits).toBeLessThan(14);
-    expect(player.skills.get('magery')).toBe(magery + 1);
+    expect(player.skills.get('magery')).toBe(magery + skillGainAmount(magery));
   });
 
   it('se cura a sí mismo', () => {

@@ -41,12 +41,12 @@ export const SKILL_STATS: Readonly<
 export const STAT_CAP = 100;
 export const STAT_TOTAL_CAP = 225;
 /** Usos de habilidades que tienen que pasar entre una subida de atributo y la siguiente. */
-export const STAT_GAIN_MIN_USES = 15;
+export const STAT_GAIN_MIN_USES = 6;
 
 /** Probabilidad de que el atributo suba al usar la habilidad: menos cuanto más alto está. */
 export function statGainChance(value: number, primary: boolean): number {
   if (value >= STAT_CAP) return 0;
-  const chance = 0.06 * (1 - value / (STAT_CAP * 1.25));
+  const chance = 0.15 * (1 - value / (STAT_CAP * 1.25));
   return primary ? chance : chance / 2;
 }
 
