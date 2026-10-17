@@ -39,7 +39,16 @@ import {
 /** Criaturas de la isla y la mazmorra (además de rata, lobo y esqueleto). */
 export type MonsterKind = Extract<
   CreatureKind,
-  'giant-spider' | 'orc' | 'troll' | 'skeleton-mage' | 'lich' | 'dragon' | 'lizardman'
+  | 'giant-spider'
+  | 'orc'
+  | 'troll'
+  | 'skeleton-mage'
+  | 'lich'
+  | 'dragon'
+  | 'lizardman'
+  | 'zombie'
+  | 'ghoul'
+  | 'wraith'
 >;
 
 export function isMonsterKind(kind: CreatureKind): kind is MonsterKind {
@@ -50,7 +59,10 @@ export function isMonsterKind(kind: CreatureKind): kind is MonsterKind {
     kind === 'skeleton-mage' ||
     kind === 'lich' ||
     kind === 'dragon' ||
-    kind === 'lizardman'
+    kind === 'lizardman' ||
+    kind === 'zombie' ||
+    kind === 'ghoul' ||
+    kind === 'wraith'
   );
 }
 
@@ -89,6 +101,9 @@ const ZOOM: Readonly<Record<MonsterKind, number>> = {
   lich: 1.18,
   dragon: 1.35,
   lizardman: 1.1,
+  zombie: 1.06,
+  ghoul: 1.08,
+  wraith: 1.15,
 };
 
 export function drawMonsterFrame(
@@ -121,6 +136,15 @@ export function drawMonsterFrame(
       break;
     case 'lizardman':
       drawLizardman(canvas, humanoidRig(frame, true));
+      break;
+    case 'zombie':
+      drawZombie(canvas, humanoidRig(frame, false));
+      break;
+    case 'ghoul':
+      drawGhoul(canvas, humanoidRig(frame, false));
+      break;
+    case 'wraith':
+      drawWraith(canvas, humanoidRig(frame, false), frame);
       break;
   }
   return canvas.toImage(OUTLINE);
@@ -467,6 +491,232 @@ function drawLich(c: VolumeCanvas, rig: Rig): void {
       solid(ramp([40, 30, 50]), 1),
     );
   staff(c, rig, ramp([120, 220, 255]));
+}
+
+// ── No-muertos del cementerio ───────────────────────────────────────
+
+/**
+ * Zombi: carne gris verdosa con manchas, ropa hecha jirones, los brazos
+ * estirados hacia adelante, la cabeza ladeada, los ojos hundidos y blancos.
+ */
+function drawZombie(c: VolumeCanvas, rig: Rig): void {
+  const rot = ramp([124, 140, 104]);
+  const skin: Material = (s) => {
+    const n = noise(Math.floor(s.p[0] * 0.8), Math.floor(s.p[1] * 0.8), Math.floor(s.p[2] * 0.8));
+    return n > 0.8 ? tone(ramp([92, 70, 62]), s.light) : tone(rot, s.light, n < 0.15 ? -1 : 0);
+  };
+  const rags: Material = (s) =>
+    tone(
+      ramp([96, 84, 66]),
+      s.light,
+      noise(Math.floor(s.p[0]), Math.floor(s.p[1])) > 0.75 ? -1 : 0,
+    );
+  const pants = solid(ramp([62, 58, 64]));
+  for (const side of [1, -1] as const) {
+    const leg = rig.legs[side];
+    c.limb(leg.hip, leg.knee, 2.5, 2.1, pants);
+    c.limb(leg.knee, leg.ankle, 1.8, 1.5, side === 1 ? skin : pants);
+    c.ellipsoid(
+      lerp(leg.ankle, leg.toe, 0.5),
+      axesAlong(sub(leg.toe, leg.ankle)),
+      [1.6, 1.1, 2.8],
+      skin,
+    );
+  }
+  const chest = rig.chest;
+  c.ellipsoid(rig.pelvis.at([0, 0.5, 0]), rig.pelvis.axes, [4.6, 3.2, 3.2], pants);
+  c.ellipsoid(chest.at([0, 0.5, 0.6]), chest.axes, [5.4, 6.4, 3.6], skin);
+  // Camisa rota: cubre la mitad del pecho y cuelga en tiras.
+  c.ellipsoid(
+    chest.at([0, 0, 0.4]),
+    chest.axes,
+    [5.7, 6.2, 3.9],
+    clipping((sample) => {
+      const local = chest.local(sample.p);
+      if (local[0] > 1.5 && local[1] > -2) return null;
+      if (local[1] < -4 && Math.sin(local[0] * 2.4) > 0.2) return null;
+      return rags(sample);
+    }),
+  );
+  // Brazos estirados hacia adelante, con las manos colgando.
+  for (const side of [1, -1] as const) {
+    const shoulder = rig.arms[side].shoulder;
+    const elbow = chest.at([side * 5.2, 1.6, 6.4]);
+    const hand = chest.at([side * 4.6, 0.6 + side * 0.8, 12.4]);
+    c.limb(shoulder, elbow, 1.9, 1.6, side === -1 ? rags : skin);
+    c.limb(elbow, hand, 1.6, 1.3, skin);
+    c.ellipsoid(add(hand, chest.dir([0, -0.8, 0.8])), chest.axes, [1.3, 1.6, 1.4], skin);
+  }
+  // Cabeza ladeada, pelo ralo y ojos blancos hundidos.
+  const head = rig.head;
+  c.limb(rig.neck, head.at([0.5, -2.5, 0.4]), 1.5, 1.4, skin);
+  const tilt = head.at([0.8, 0, 0.2]);
+  c.ellipsoid(tilt, axesAlong(head.dir([0, 0, 1]), head.dir([0.25, 1, 0])), [3.5, 4.2, 3.8], skin);
+  c.ellipsoid(add(tilt, head.dir([0, -2.4, 1.6])), head.axes, [2.4, 1.4, 2], skin);
+  for (const side of [1, -1] as const) {
+    c.decal(
+      add(tilt, head.dir([side * 1.4, 0.6, 3.5])),
+      head.dir([side * 0.3, 0, 1]),
+      [36, 30, 28],
+      2,
+      1,
+    );
+    c.decal(
+      add(tilt, head.dir([side * 1.4, 0.6, 3.7])),
+      head.dir([side * 0.3, 0, 1]),
+      [236, 236, 210],
+      1,
+      1,
+    );
+  }
+  c.decal(add(tilt, head.dir([0, -2.2, 3.4])), head.dir([0, -0.3, 1]), [40, 20, 20], 2, 1);
+  for (let i = 0; i < 6; i++) {
+    const a = i * 1.1;
+    const root = add(tilt, head.dir([Math.cos(a) * 2.4, 3.6, Math.sin(a) * 2.4 - 0.6]));
+    c.limb(
+      root,
+      add(root, head.dir([Math.cos(a) * 1.2, -1.6, -1])),
+      0.5,
+      0.2,
+      solid(ramp([50, 44, 40])),
+    );
+  }
+}
+
+/**
+ * Necrófago: encorvado y flaco, piel gris violácea pegada a las costillas,
+ * garras largas, cabeza calva alargada con orejas puntudas, boca ancha con
+ * dientes y ojos amarillos que brillan.
+ */
+function drawGhoul(c: VolumeCanvas, rig: Rig): void {
+  const grey = ramp([130, 118, 132]);
+  const flesh = brute(c, rig, grey, 0.72, true);
+  const chest = rig.chest;
+  // Costillas marcadas.
+  for (let i = 0; i < 4; i++)
+    c.ellipsoid(
+      chest.at([0, 2 - i * 1.8, 3.2]),
+      chest.axes,
+      [4.2 - i * 0.3, 0.45, 0.8],
+      solid(grey, 1),
+    );
+  // Taparrabos de trapo.
+  c.ellipsoid(
+    rig.pelvis.at([0, -2.4, 0]),
+    rig.pelvis.axes,
+    [4.4, 2.6, 3.4],
+    solid(ramp([70, 62, 54])),
+  );
+  // Garras.
+  const claw = solid(ramp([226, 216, 190]));
+  for (const side of [1, -1] as const) {
+    const hand = add(rig.arms[side].hand, [0, -3, 0]);
+    for (const k of [-1, 0, 1])
+      c.limb(
+        add(hand, chest.dir([k * 0.9, -0.6, 1])),
+        add(hand, chest.dir([k * 1.1, -2.4, 3.6])),
+        0.45,
+        0.1,
+        claw,
+      );
+  }
+  // Cabeza calva y alargada, hacia adelante.
+  const head = rig.head;
+  const skull = head.at([0, -0.6, 1.6]);
+  c.limb(rig.neck, skull, 1.8, 1.6, flesh);
+  c.ellipsoid(skull, axesAlong(head.dir([0, 0.35, 1])), [3.4, 3.6, 4.6], flesh);
+  c.ellipsoid(add(skull, head.dir([0, -2.6, 2.6])), head.axes, [2.8, 1.6, 2.4], flesh);
+  // Boca ancha con dientes.
+  c.decal(add(skull, head.dir([0, -2.6, 4.9])), head.dir([0, -0.2, 1]), [40, 16, 18], 3, 1);
+  for (const k of [-1.2, -0.4, 0.4, 1.2])
+    c.limb(
+      add(skull, head.dir([k, -2.2, 4.6])),
+      add(skull, head.dir([k, -3, 4.8])),
+      0.35,
+      0.1,
+      claw,
+    );
+  for (const side of [1, -1] as const) {
+    c.decal(
+      add(skull, head.dir([side * 1.5, 0.6, 4.5])),
+      head.dir([side * 0.3, 0, 1]),
+      [255, 210, 60],
+      1,
+      1,
+    );
+    c.limb(
+      add(skull, head.dir([side * 3, 1, -0.5])),
+      add(skull, head.dir([side * 5.6, 3.4, -2])),
+      1,
+      0.15,
+      flesh,
+    );
+  }
+}
+
+/**
+ * Espectro: una túnica negra azulada hecha jirones que flota sin pies, con
+ * una capucha vacía donde solo brillan dos ojos celestes, y manos huesudas
+ * de dedos largos. Sube y baja despacio.
+ */
+function drawWraith(c: VolumeCanvas, rig: Rig, frame: CharacterFrame): void {
+  const step = gait(frame, 1);
+  const float = 3 + step.lift * 0.6;
+  const up = (p: Vec3): Vec3 => add(p, [0, float, 0]);
+  const cloth = ramp([52, 58, 82]);
+  const fabric: Material = (s) =>
+    tone(cloth, s.light, Math.sin(s.p[0] * 1.1 + s.p[2]) > 0.65 ? -1 : 0);
+  // Túnica: se ensancha hacia abajo y termina en jirones que no tocan el suelo.
+  const top = rig.pelvis.origin[1] + 2;
+  for (let y = top; y >= 4; y -= 1) {
+    const t = (top - y) / Math.max(1, top - 4);
+    c.ellipsoid(
+      up([rig.pelvis.origin[0], y, rig.pelvis.origin[2] - 1.2 * t]),
+      rig.pelvis.axes,
+      [5 + t * 3.4, 1.4, 4 + t * 2.8],
+      fabric,
+    );
+  }
+  for (let i = 0; i < 9; i++) {
+    const a = (i / 9) * Math.PI * 2;
+    const root = up([
+      rig.pelvis.origin[0] + Math.cos(a) * 7,
+      5,
+      rig.pelvis.origin[2] + Math.sin(a) * 5.6 - 1.2,
+    ]);
+    c.limb(
+      root,
+      add(root, [Math.cos(a) * 1.2, -3 - (i % 3), Math.sin(a) * 1.2 - 1]),
+      1.6,
+      0.2,
+      fabric,
+    );
+  }
+  const chest = rig.chest;
+  c.ellipsoid(up(chest.at([0, 0.5, 0])), chest.axes, [5.6, 7, 3.8], fabric);
+  // Brazos con mangas anchas y manos de hueso con dedos largos.
+  const bone = solid(ramp([206, 204, 196]));
+  for (const side of [1, -1] as const) {
+    const arm = rig.arms[side];
+    c.limb(up(arm.shoulder), up(arm.elbow), 2.4, 2.8, fabric);
+    c.limb(up(arm.elbow), up(arm.hand), 2.8, 3.6, fabric);
+    const hand = up(add(arm.hand, scale(arm.weaponDir, 1.6)));
+    for (const k of [-1, 0, 1])
+      c.limb(
+        hand,
+        add(hand, add(scale(arm.weaponDir, 3), chest.dir([k * 0.8, -1, 0]))),
+        0.4,
+        0.15,
+        bone,
+      );
+  }
+  // Capucha vacía: oscuridad adentro y dos ojos que brillan.
+  const head = rig.head;
+  c.ellipsoid(up(head.at([0, 0.6, -0.8])), head.axes, [5, 5.8, 5.4], solid(cloth, -1));
+  c.ellipsoid(up(head.at([0, 0, 1.6])), head.axes, [3.4, 4, 3.4], solid(ramp([10, 10, 16])));
+  c.limb(up(head.at([0, 4, -3])), up(head.at([0, 1, -7])), 2.4, 0.3, solid(cloth, -1));
+  for (const side of [1, -1] as const)
+    c.decal(up(head.at([side * 1.3, 0.4, 4.9])), head.dir([0, 0, 1]), [150, 230, 255], 1, 1);
 }
 
 // ── Dragón ──────────────────────────────────────────────────────────

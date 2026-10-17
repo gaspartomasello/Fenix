@@ -108,8 +108,8 @@ const PLACES: readonly PlaceSpec[] = [
     name: 'Torre Hueca',
     biomes: ['swamp'],
     radius: 6,
-    from: 24,
-    to: 50,
+    from: 30,
+    to: 64,
     near: 'Junco Verde',
     creatures: [
       ['lich', 1],
@@ -128,8 +128,8 @@ const PLACES: readonly PlaceSpec[] = [
     name: 'Cementerio Viejo',
     biomes: ['grassland', 'forest', 'meadow', 'plains'],
     radius: 6,
-    from: 22,
-    to: 48,
+    from: 40,
+    to: 72,
     creatures: [['skeleton', 5]],
     build(site) {
       const { x, y } = site.center;
@@ -604,6 +604,16 @@ export function populateContinent(continent: Continent, seed: number): Populated
     }
   }
 
+  // Los senderos y lugares recortan montañas: no quedan picos sueltos.
+  for (let pass = 0; pass < 3; pass++)
+    for (const [i, s] of statics) {
+      if (s.kind !== 'mountain') continue;
+      let around = 0;
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++)
+          if ((dx || dy) && statics.get(index(s.x + dx, s.y + dy))?.kind === 'mountain') around++;
+      if (around < 2) statics.delete(i);
+    }
   const populated = new TileMap({
     width,
     height,
@@ -613,7 +623,7 @@ export function populateContinent(continent: Continent, seed: number): Populated
     signs: map.signs.filter((s) => statics.get(index(s.x, s.y))?.kind === 'sign'),
     ...(map.toData().heights ? { heights: map.toData().heights } : {}),
   });
-  homes.push(...biomeCreatures(populated));
+  homes.push(...biomeCreatures(populated), ...continent.townCreatures);
   return { ...continent, map: populated, places, caveEntrance, homes };
 
   /** Un lugar del bioma pedido, a la distancia pedida y lejos de los demás. */

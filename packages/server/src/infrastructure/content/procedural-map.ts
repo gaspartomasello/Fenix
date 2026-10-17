@@ -1,5 +1,6 @@
 import {
   isWater,
+  type CreatureKind,
   type NpcRole,
   Terrain,
   TileMap,
@@ -82,6 +83,8 @@ export interface Continent extends GeneratedWorld {
   readonly roads: ReadonlySet<number>;
   /** Tiles de camino que pasan junto a una cordillera. */
   readonly passes: readonly Position[];
+  /** Criaturas que viven dentro de los pueblos (los cementerios). */
+  readonly townCreatures: readonly { readonly kind: CreatureKind; readonly home: Position }[];
 }
 
 /** Suelos naturales que se entreveran en los bordes (los pisos y el agua no). */
@@ -317,13 +320,15 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     for (const t of towns) {
       if (t.plan.climate !== 'mountain') continue;
       const d = Math.hypot(x - t.cx, y - t.cy);
-      if (d < 18 || d > 34) continue;
+      // El arco empieza un poco afuera del pueblo, sea del tamaño que sea.
+      const inner = Math.max(t.plan.map.width, t.plan.map.height) / 2 + 3;
+      if (d < inner || d > inner + 16) continue;
       const capital = towns.find((c) => c.plan.capital) ?? t;
       const toCapital = Math.atan2(capital.cy - t.cy, capital.cx - t.cx);
       const angle = Math.atan2(y - t.cy, x - t.cx);
       const gap = Math.abs(Math.atan2(Math.sin(angle - toCapital), Math.cos(angle - toCapital)));
       if (gap < 0.9) continue;
-      best = Math.max(best, 1 - Math.abs(d - 26) / 8);
+      best = Math.max(best, 1 - Math.abs(d - inner - 8) / 8);
     }
     return best;
   }
@@ -616,6 +621,7 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
   }
   const items: PlacedItem[] = [];
   const npcs: { role: NpcRole; position: Position; name?: string }[] = [];
+  const townCreatures: { kind: CreatureKind; home: Position }[] = [];
   let spawnPoint: Position = { x: Math.floor(width / 2), y: Math.floor(height / 2) };
   for (const { plan, x: ox, y: oy } of towns) {
     const town = plan.map;
@@ -633,6 +639,12 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     npcs.push(
       ...town.npcs.map((n) => ({ ...n, position: { x: n.position.x + ox, y: n.position.y + oy } })),
     );
+    townCreatures.push(
+      ...(town.lairs ?? []).map((l) => ({
+        kind: l.kind,
+        home: { x: l.position.x + ox, y: l.position.y + oy },
+      })),
+    );
     items.push(
       ...town.items.map((it) => ({
         ...it,
@@ -640,6 +652,15 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
       })),
     );
   }
+  // Los pueblos recortan las montañas de alrededor: no quedan picos sueltos.
+  for (let pass = 0; pass < 3; pass++)
+    for (const [i, s] of statics) {
+      if (s.kind !== 'mountain') continue;
+      const around = neighbors8(s.x, s.y).filter(
+        ([nx, ny]) => statics.get(index(nx, ny))?.kind === 'mountain',
+      ).length;
+      if (around < 2) statics.delete(i);
+    }
   if (towns.length === 0) {
     // Sin pueblos: una plaza empedrada en el centro, sobre tierra firme.
     const c = spawnPoint;
@@ -870,7 +891,7 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     signs,
     heights,
   });
-  return { map, spawnPoint, items, npcs, biomes, towns: placed, roads, passes };
+  return { map, spawnPoint, items, npcs, biomes, towns: placed, roads, passes, townCreatures };
 
   function neighbors4(x: number, y: number): [number, number][] {
     return (
@@ -1198,6 +1219,8 @@ function interpolate(keys: readonly (readonly [number, number])[], t: number): n
 
 /** Dónde va la ciudad de la isla grande (fracción del mapa), frente a la entrada de las Tierras de Ceniza. */
 export const ISLAND_CITY: Position = { x: 0.79, y: 0.55 };
+/** El refugio de los bandidos: en la Malvina del oeste. */
+export const BANDIT_ISLAND: Position = { x: 0.675, y: 0.872 };
 
 /** Un lóbulo de isla: una elipse girada, en tiles. */
 interface Lobe {

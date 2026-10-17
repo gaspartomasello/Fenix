@@ -3,10 +3,10 @@
   "name": "objetos",
   "tilewidth": 136,
   "tileheight": 168,
-  "tilecount": 61,
-  "columns": 61,
+  "tilecount": 88,
+  "columns": 88,
   "image": "objetos.png",
-  "imagewidth": 8296,
+  "imagewidth": 11968,
   "imageheight": 168,
   "tileoffset": {
     "x": -46,
@@ -620,6 +620,276 @@
           "name": "static",
           "type": "string",
           "value": "bamboo"
+        }
+      ]
+    },
+    {
+      "id": 61,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "log-wall-x"
+        }
+      ]
+    },
+    {
+      "id": 62,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "log-wall-y"
+        }
+      ]
+    },
+    {
+      "id": 63,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "log-wall-corner"
+        }
+      ]
+    },
+    {
+      "id": 64,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "log-wall-post"
+        }
+      ]
+    },
+    {
+      "id": 65,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "plank-wall-x"
+        }
+      ]
+    },
+    {
+      "id": 66,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "plank-wall-y"
+        }
+      ]
+    },
+    {
+      "id": 67,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "plank-wall-corner"
+        }
+      ]
+    },
+    {
+      "id": 68,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "plank-wall-post"
+        }
+      ]
+    },
+    {
+      "id": 69,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "basalt-wall-x"
+        }
+      ]
+    },
+    {
+      "id": 70,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "basalt-wall-y"
+        }
+      ]
+    },
+    {
+      "id": 71,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "basalt-wall-corner"
+        }
+      ]
+    },
+    {
+      "id": 72,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "basalt-wall-post"
+        }
+      ]
+    },
+    {
+      "id": 73,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "rampart-x"
+        }
+      ]
+    },
+    {
+      "id": 74,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "rampart-y"
+        }
+      ]
+    },
+    {
+      "id": 75,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "rampart-corner"
+        }
+      ]
+    },
+    {
+      "id": 76,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "rampart-post"
+        }
+      ]
+    },
+    {
+      "id": 77,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "tower"
+        }
+      ]
+    },
+    {
+      "id": 78,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "palisade-x"
+        }
+      ]
+    },
+    {
+      "id": 79,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "palisade-y"
+        }
+      ]
+    },
+    {
+      "id": 80,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "palisade-post"
+        }
+      ]
+    },
+    {
+      "id": 81,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "iron-fence-x"
+        }
+      ]
+    },
+    {
+      "id": 82,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "iron-fence-y"
+        }
+      ]
+    },
+    {
+      "id": 83,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "crypt"
+        }
+      ]
+    },
+    {
+      "id": 84,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "stall"
+        }
+      ]
+    },
+    {
+      "id": 85,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "banner"
+        }
+      ]
+    },
+    {
+      "id": 86,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "throne"
+        }
+      ]
+    },
+    {
+      "id": 87,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "fountain"
         }
       ]
     }

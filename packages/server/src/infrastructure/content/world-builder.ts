@@ -1,4 +1,3 @@
-import { TILESETS, TOWN_MAPS } from '@fenix/content';
 import {
   Terrain,
   TileMap,
@@ -14,19 +13,19 @@ import { SeededRandom } from '../system/seeded-random';
 import { generateDungeon, type DungeonRoom } from './dungeon-map';
 import { populateContinent, type Place } from './places';
 import {
+  BANDIT_ISLAND,
   ISLAND_CITY,
   generateIslandMap,
   type GeneratedWorld,
   type TownPlan,
 } from './procedural-map';
-import type { MapRegion } from './tiled-map-loader';
-import { loadTiledMap } from './tiled-map-loader';
+import { buildCity } from './city-builder';
 
 /**
  * Versión de la forma del mundo: si cambia, los personajes guardados en el
  * mundo anterior aparecen en la capital (su posición vieja ya no sirve).
  */
-const WORLD_VERSION = 2;
+const WORLD_VERSION = 3;
 
 export interface WorldBuildOptions {
   /** Ancho del continente (y alto, si no se da `height`). */
@@ -70,56 +69,106 @@ const LAIR_LEVELS: readonly { upTo: number; kinds: readonly CreatureKind[]; coun
 ];
 
 /**
- * Los pueblos del continente. En el continente alargado, la capital queda en
- * el norte templado cerca de la costa este, Roca Alta al pie de la cordillera
- * del oeste y Junco Verde más al sur, en lo bajo y húmedo. En uno cuadrado:
- * la capital al centro, Roca Alta al noroeste, Junco Verde al este.
+ * Las ciudades del continente, cada una con el estilo de su región. En el
+ * continente alargado, la capital queda en el norte templado cerca de la
+ * costa este, Roca Alta al pie de la cordillera del oeste y Junco Verde más
+ * al sur, en lo bajo y húmedo; Puerto Brasa en la isla grande, frente a las
+ * Tierras de Ceniza, y el refugio de los bandidos en la Malvina del oeste.
+ * En uno cuadrado: la capital al centro, Roca Alta al noroeste, Junco Verde
+ * al este.
  */
-function townPlans(width: number, height: number): TownPlan[] {
-  const load = (name: keyof typeof TOWN_MAPS) => loadTiledMap(name, TOWN_MAPS[name], TILESETS);
+function townPlans(width: number, height: number, seed: number): TownPlan[] {
   const elongated = height > width * 1.2;
+  const big = Math.min(width, height) >= MIN_SIZE_FOR_ALL_TOWNS;
   const plans: TownPlan[] = [
     {
-      map: load('puerto-ceniza'),
+      map: buildCity({
+        name: 'Puerto Ceniza',
+        style: 'capital',
+        seed: seed + 100,
+        size: big ? 'large' : 'medium',
+        starterItems: true,
+      }),
       at: elongated ? { x: 0.6, y: 0.27 } : { x: 0.5, y: 0.55 },
       climate: 'temperate',
       capital: true,
     },
   ];
-  if (Math.min(width, height) >= MIN_SIZE_FOR_ALL_TOWNS) {
+  if (big) {
     plans.push(
       {
-        map: load('roca-alta'),
+        map: buildCity({
+          name: 'Roca Alta',
+          style: 'mountain',
+          seed: seed + 101,
+          size: 'medium',
+          people: {
+            blacksmith: 'Anselmo el herrero',
+            banker: 'Rosaura la banquera',
+            innkeeper: 'Fermín el tabernero',
+            mage: 'Ercilia la maga',
+            stablemaster: 'Odón el caballerizo',
+          },
+        }),
         at: elongated ? { x: 0.36, y: 0.215 } : { x: 0.27, y: 0.3 },
         climate: 'mountain',
       },
       {
-        map: load('junco-verde'),
+        map: buildCity({
+          name: 'Junco Verde',
+          style: 'swamp',
+          seed: seed + 102,
+          size: 'medium',
+          people: {
+            mage: 'Clementina la hechicera',
+            innkeeper: 'Ramiro el tabernero',
+            blacksmith: 'Dalmiro el herrero',
+            banker: 'Eulalia la banquera',
+            stablemaster: 'Nicanor el caballerizo',
+          },
+        }),
         at: elongated ? { x: 0.5, y: 0.39 } : { x: 0.77, y: 0.5 },
         climate: 'swamp',
       },
     );
-    // La ciudad de la isla grande, frente a la entrada de las Tierras de Ceniza.
     if (elongated)
-      plans.push({
-        map: renamed(load('roca-alta'), 'Puerto Brasa'),
-        at: ISLAND_CITY,
-        climate: 'temperate',
-      });
+      plans.push(
+        // La ciudad de la isla grande, frente a la entrada de las Tierras de Ceniza.
+        {
+          map: buildCity({
+            name: 'Puerto Brasa',
+            style: 'volcanic',
+            seed: seed + 103,
+            size: 'medium',
+            people: {
+              blacksmith: 'Cosme el herrero',
+              mage: 'Brígida la maga',
+              innkeeper: 'Teodoro el tabernero',
+              banker: 'Leonor la banquera',
+              stablemaster: 'Lisandro el caballerizo',
+            },
+          }),
+          at: ISLAND_CITY,
+          climate: 'temperate',
+        },
+        // Los bandidos, en una isla lejos de todo: ahí no hay ley.
+        {
+          map: buildCity({
+            name: 'Refugio de los Bandidos',
+            style: 'bandit',
+            seed: seed + 104,
+            size: 'small',
+            people: {
+              innkeeper: 'Ruperto el contrabandista',
+              blacksmith: 'Tuerto el herrero',
+            },
+          }),
+          at: BANDIT_ISLAND,
+          climate: 'temperate',
+        },
+      );
   }
   return plans;
-}
-
-/**
- * Un pueblo de Tiled con otro nombre (y su gente con nombres genéricos), para
- * usar el mismo plano en otro lugar hasta que tenga uno propio.
- */
-function renamed(map: MapRegion, name: string): MapRegion {
-  return {
-    ...map,
-    regions: map.regions.map((r, i) => (i === 0 ? { ...r, name } : r)),
-    npcs: map.npcs.map(({ role, position }) => ({ role, position })),
-  };
 }
 
 /** Arma el mapa completo: continente con pueblos y lugares, y la mazmorra al este. */
@@ -130,7 +179,7 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
       width: size,
       height: landHeight,
       seed,
-      towns: townPlans(size, landHeight),
+      towns: townPlans(size, landHeight, seed),
     }),
     seed,
   );
