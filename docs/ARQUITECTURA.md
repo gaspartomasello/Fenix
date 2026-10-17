@@ -450,6 +450,19 @@ costa más cercana (`harbor` en `places.ts`): un tablado que entra al mar con po
 barco mercante amarrado (estático de 3 × 3 tiles sobre el agua). Los lugares con `near`
 ahora sí se ubican cerca de su pueblo (antes el pueblo tomaba el nombre de su cementerio).
 
+### Vestimenta y tinturas
+
+Hay ropa de tela y cuero para cada parte del cuerpo: camisas, camisa fina, jubón, vestido,
+pollera, pantalón corto, sombreros (de paja, con pluma, tricornio), pañuelo, sandalias,
+zapatos, botas altas y capa de piel. Las vende Rosa la sastra (`tailor`), que también vende
+tinturas y la tina. Lo que es `dyeable` se tiñe: con la tina en la mochila, cada teñida gasta
+una tintura y cambia `Item.hue` (uno de los 15 colores de `DYE_HUES`). El color viaja en los
+íconos (`ItemSnapshot.hue`), en lo que ven los demás (`MobileSnapshot.hues` y
+`playerEquipment.hues`, por lugar del cuerpo) y se guarda con el personaje;
+`drawCharacterFrame` lo recibe y lo usa en lugar del color de catálogo. La armadura de hueso
+(yelmo de calavera, pechera y perneras) no es de metal: deja meditar y lanzar hechizos. La
+dejan esqueletos, magos esqueléticos y liches, y la maga vende el yelmo.
+
 ### Persistencia
 
 Un personaje se guarda como datos planos (`SavedCharacter`, en `domain/persistence`):

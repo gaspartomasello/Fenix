@@ -36,7 +36,12 @@ export class WorldPaperdolls {
     if (!entity) return;
     this.viewer.show(
       id,
-      { appearance: entity.appearance, role: entity.npc, equipment: entity.equipment },
+      {
+        appearance: entity.appearance,
+        role: entity.npc,
+        equipment: entity.equipment,
+        hues: entity.hues,
+      },
       {
         name: entity.name,
         title: null,

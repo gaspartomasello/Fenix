@@ -23,11 +23,15 @@ export type EntityId = string;
 
 /** Lo que se ve puesto un personaje: qué objeto hay en cada lugar del cuerpo. */
 export type EquipmentLook = Partial<Readonly<Record<EquipmentSlot, ItemKind>>>;
+/** Color teñido de lo que tiene puesto, por lugar (lo que no está, con su color de siempre). */
+export type EquipmentHues = Partial<Readonly<Record<EquipmentSlot, number>>>;
 
 /** Lo que un cliente necesita saber de otro jugador para mostrarlo. */
 export interface MobileSnapshot {
   readonly id: EntityId;
   readonly name: string;
+  /** Colores teñidos de la ropa puesta. */
+  readonly hues?: EquipmentHues;
   readonly position: Position;
   readonly direction: Direction;
   readonly appearance: Appearance;
@@ -59,6 +63,8 @@ export interface ItemSnapshot {
   readonly mark?: RuneMark;
   /** Libro con título: para mostrarlo al pasar el mouse. */
   readonly bookTitle?: string;
+  /** Teñido: su color. */
+  readonly hue?: number;
 }
 
 /** Lugar grabado en una runa con Marcar. */
@@ -297,6 +303,13 @@ export interface ReadBookRequest {
   readonly itemId: EntityId;
 }
 
+/** Teñir una prenda propia con la tina de tintura (gasta una tintura). */
+export interface DyeRequest {
+  readonly type: 'dye';
+  readonly itemId: EntityId;
+  readonly hue: number;
+}
+
 /** Guardar una hoja (y el título) de un libro propio. De a una, para que el mensaje sea chico. */
 export interface WriteBookRequest {
   readonly type: 'writeBook';
@@ -365,6 +378,7 @@ export type ClientMessage =
   | AcceptQuestRequest
   | AbandonQuestRequest
   | WriteBookRequest
+  | DyeRequest
   | OpenCorpseRequest
   | LootAllRequest
   | BuyMountRequest
@@ -466,6 +480,7 @@ export interface PlayerEquipmentMessage {
   readonly type: 'playerEquipment';
   readonly id: EntityId;
   readonly equipment: EquipmentLook;
+  readonly hues?: EquipmentHues;
 }
 
 /** Vida, maná y energía propios. */

@@ -31,6 +31,7 @@ import { LeaveWorld } from './use-cases/leave-world';
 import { GameMaster } from './use-cases/game-master';
 import { TownLife } from './use-cases/town-life';
 import { Books } from './use-cases/books';
+import { Dyeing } from './use-cases/dyeing';
 import { Quests } from './use-cases/quests';
 import { Containers } from './use-cases/containers';
 import { MovePlayer } from './use-cases/move-player';
@@ -65,6 +66,7 @@ export class GameApplication {
   private readonly townLife: TownLife;
   private readonly containers: Containers;
   private readonly books: Books;
+  private readonly dyeing: Dyeing;
   private readonly quests: Quests;
   private readonly movePlayer: MovePlayer;
   private readonly sendChat: SendChat;
@@ -185,6 +187,7 @@ export class GameApplication {
     this.containers = new Containers(world, clock, ids, random, notifications, notifier);
     this.useItem.openContainer = (playerId, id) => this.containers.openFor(playerId, id);
     this.books = new Books(world, notifications, notifier);
+    this.dyeing = new Dyeing(world, notifications, notifier);
     this.useItem.openBook = (playerId, id) => this.books.read(playerId, id);
     this.quests = new Quests(world, clock, ids, notifications, notifier);
     this.townLife = new TownLife(
@@ -335,6 +338,9 @@ export class GameApplication {
         break;
       case 'abandonQuest':
         this.quests.abandon(playerId, message.giver);
+        break;
+      case 'dye':
+        this.dyeing.dye(playerId, message.itemId, message.hue);
         break;
       case 'readBook':
         this.books.read(playerId, message.itemId);

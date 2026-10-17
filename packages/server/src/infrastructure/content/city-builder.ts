@@ -686,10 +686,10 @@ export function buildCity(spec: CitySpec): City {
   const shops: NpcRole[] = style.lawless
     ? ['innkeeper', 'blacksmith']
     : spec.size === 'large'
-      ? ['innkeeper', 'banker', 'blacksmith', 'mage', 'provisioner', 'carpenter']
+      ? ['innkeeper', 'banker', 'blacksmith', 'mage', 'provisioner', 'tailor', 'carpenter']
       : spec.size === 'small'
         ? ['innkeeper', 'banker', 'blacksmith', 'mage']
-        : ['innkeeper', 'banker', 'blacksmith', 'mage', 'provisioner'];
+        : ['innkeeper', 'banker', 'blacksmith', 'mage', 'provisioner', 'tailor'];
   const houses: Room[] = [];
   for (const lot of lots) {
     const house = building(plan, style, lot, cx, cy, random);
@@ -1385,6 +1385,18 @@ function furnishShop(plan: Plan, role: NpcRole, room: Room, random: SeededRandom
       put(room.x0, room.y1, 'barrel');
       put(room.x1, room.y1, 'chest');
       alongWalls(plan, room, 'bookshelf-x', null, 3);
+      break;
+    }
+    case 'tailor': {
+      // Sastrería: mesa de corte, maniquíes con ropa, rollos de tela y una alfombra.
+      put(spot.x - 1, spot.y + 1, 'table');
+      put(spot.x + 1, spot.y + 1, 'table');
+      put(room.x1, room.y0, 'armor-stand');
+      put(room.x1 - 1, room.y0, 'armor-stand');
+      put(room.x0, room.y0, 'crate');
+      put(room.x0, room.y1, 'chest');
+      put(room.x1, room.y1, 'stool');
+      put(spot.x, spot.y - 1, 'carpet');
       break;
     }
     case 'carpenter': {

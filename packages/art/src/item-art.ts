@@ -431,6 +431,163 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
   emerald: gems([40, 180, 90]),
   amethyst: gems([150, 70, 200]),
   diamond: gems([230, 240, 250]),
+  shirt(c, color) {
+    tunic(c, (s) => tone(color, s.light, Math.abs(s.p[0]) < 0.3 ? -1 : 0));
+  },
+  'fancy-shirt'(c, color) {
+    tunic(c, (s) =>
+      Math.abs(s.p[0]) < 0.6 && Math.round(s.p[2]) % 2 === 0
+        ? tone(GOLD, s.light)
+        : tone(color, s.light),
+    );
+  },
+  doublet(c, color) {
+    tunic(c, (s) =>
+      Math.abs(s.p[0]) < 0.4 ? tone(GOLD, s.light) : tone(color, s.light, (s.x + s.y) % 3 ? 0 : -1),
+    );
+  },
+  dress(c, color) {
+    // Vestido largo doblado: corpiño angosto y falda ancha.
+    c.ellipsoid([0, 1, -2.6], lying(0), [3, 1.1, 2.6], solid(color));
+    c.ellipsoid([0, 1, 2.4], lying(0), [5.6, 1.1, 4.4], (s) =>
+      tone(color, s.light, Math.sin(s.p[0] * 1.6) > 0.7 ? -1 : 0),
+    );
+    c.ellipsoid([0, 1.6, -4.4], lying(0), [1.4, 0.5, 0.8], solid(ramp([40, 30, 26])));
+  },
+  skirt(c, color) {
+    c.ellipsoid([0, 1, 0.8], lying(0), [5.4, 1.1, 4.6], (s) =>
+      tone(color, s.light, Math.sin(s.p[0] * 1.6) > 0.7 ? -1 : 0),
+    );
+    c.ellipsoid([0, 1.4, -3.4], lying(0), [3.4, 0.7, 0.9], solid(color, -1));
+  },
+  'short-pants'(c, color) {
+    c.ellipsoid([0, 0.9, -2.4], lying(0), [3.8, 1, 1.7], solid(color));
+    for (const side of [1, -1])
+      c.limb([side * 1.9, 0.9, -1.6], [side * 2.4, 0.9, 2], 1.9, 1.7, solid(color));
+  },
+  'straw-hat'(c, color) {
+    const weave: Material = (s) => tone(color, s.light, (s.x + s.y) % 2 ? -1 : 0);
+    c.ellipsoid([0, 0.5, 0], lying(0), [6.6, 0.5, 6.6], weave);
+    c.limb([0, 0.6, 0], [0, 3.8, 0], 3.4, 3, weave);
+  },
+  'feathered-hat'(c, color) {
+    c.ellipsoid([0, 0.5, 0], lying(0), [6.2, 0.5, 6.2], solid(color));
+    c.limb([0, 0.6, 0], [0, 3.6, 0], 3.4, 3, (s) =>
+      Math.abs(s.p[1] - 1.4) < 0.4 ? tone(GOLD, s.light) : tone(color, s.light),
+    );
+    c.limb([2.6, 2.6, 0], [5.6, 7, -2.6], 0.9, 0.2, solid(ramp([230, 226, 214])));
+  },
+  tricorne(c, color) {
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2 + Math.PI / 2;
+      c.limb(
+        [Math.cos(a), 1, Math.sin(a)],
+        [Math.cos(a) * 5.6, 1.8, Math.sin(a) * 5.6],
+        1.6,
+        0.4,
+        solid(color),
+      );
+    }
+    c.limb([0, 0.6, 0], [0, 3.2, 0], 3.4, 3, solid(color, 1));
+  },
+  bandana(c, color) {
+    // Pañuelo doblado en triángulo.
+    c.polygon(
+      [
+        [-5, 0.5, -2],
+        [5, 0.5, -2],
+        [0, 0.5, 4.5],
+      ],
+      (s) =>
+        tone(
+          color,
+          s.light,
+          (Math.round(s.p[0] * 0.8) + Math.round(s.p[2] * 0.8)) % 3 === 0 ? 1 : 0,
+        ),
+    );
+  },
+  sandals(c, color) {
+    for (const side of [1, -1]) {
+      const x = side * 2.4;
+      c.ellipsoid([x, 0.5, 0.6], lying(0), [1.6, 0.4, 3], solid(color));
+      for (const z of [-0.8, 1.6])
+        c.limb([x - 1.4, 1, z], [x + 1.4, 1, z], 0.35, 0.35, solid(color, -1));
+    }
+  },
+  shoes(c, color) {
+    for (const side of [1, -1]) {
+      const x = side * 2.4;
+      c.ellipsoid([x, 1, 0.8], lying(0), [1.6, 1.1, 2.8], solid(color));
+      c.limb([x, 1.4, -1.4], [x, 2.4, -1.6], 1.4, 1.4, solid(color));
+    }
+  },
+  'thigh-boots'(c, color) {
+    for (const side of [1, -1]) {
+      const x = side * 2.4;
+      c.limb([x, 1, -0.6], [x, 8.4, -1], 1.5, 1.8, solid(color));
+      c.ellipsoid([x, 1, 1.2], lying(0), [1.6, 1, 2.8], solid(color));
+      c.ellipsoid([x, 8.4, -1], lying(0), [2, 0.5, 2], solid(color, 1));
+    }
+  },
+  'fur-cape'(c, color) {
+    c.ellipsoid([0, 1, 0.6], lying(0), [5.4, 1.2, 5.6], (s) =>
+      tone(color, s.light, noise(Math.floor(s.p[0] * 2), Math.floor(s.p[2] * 2)) > 0.7 ? 1 : 0),
+    );
+    c.ellipsoid([0, 1.8, -4.4], lying(0), [4, 1.2, 1.6], solid(ramp([226, 214, 196])));
+  },
+  'bone-helm'(c) {
+    const bone = ramp([226, 218, 196]);
+    c.ellipsoid(
+      [0, 0.4, 0],
+      lying(0),
+      [4.2, 4.2, 4.6],
+      clipping((s) => (s.p[1] < 0 ? null : tone(bone, s.light))),
+    );
+    for (const side of [1, -1]) {
+      c.ellipsoid([side * 1.6, 2.6, 4], lying(0), [1, 1, 0.5], solid(ramp([26, 20, 18])));
+      c.limb([side * 3, 3.4, -0.4], [side * 5, 6.2, -1.4], 0.7, 0.2, solid(bone, -1));
+    }
+    c.ellipsoid([0, 0.6, 4.2], lying(0), [2, 0.6, 0.5], solid(ramp([120, 108, 92])));
+  },
+  'bone-armor'(c) {
+    const bone = ramp([226, 218, 196]);
+    tunic(c, (s) =>
+      Math.abs(s.p[0]) < 0.6 || (s.p[2] + 20) % 2 < 1.1
+        ? tone(bone, s.light)
+        : tone(ramp([70, 50, 36]), s.light),
+    );
+  },
+  'bone-leggings'(c) {
+    const bone = ramp([226, 218, 196]);
+    legs(c, (s) =>
+      Math.round(s.p[2]) % 3 === 0 ? tone(ramp([70, 50, 36]), s.light) : tone(bone, s.light),
+    );
+  },
+  dyes(c) {
+    // Tres frasquitos de colores.
+    for (const [x, z, rgb] of [
+      [-2.4, 1, [190, 40, 40]],
+      [0.6, -1.4, [40, 80, 190]],
+      [2.4, 1.6, [220, 190, 50]],
+    ] as const) {
+      c.limb([x, 0, z], [x, 3.4, z], 1.3, 1.2, (s) =>
+        s.light > 0.85 ? [240, 240, 250] : tone(ramp(rgb), s.light),
+      );
+      c.limb([x, 3.4, z], [x, 4.4, z], 0.6, 0.6, solid(ramp([150, 110, 70])));
+    }
+  },
+  'dye-tub'(c) {
+    // Tina de madera con aros y el agua de color adentro.
+    const wood = ramp([140, 96, 56]);
+    c.limb([0, 0, 0], [0, 3.6, 0], 4.6, 5, (s) =>
+      Math.abs(s.p[1] - 0.8) < 0.4 || Math.abs(s.p[1] - 2.8) < 0.4
+        ? tone(DARK_STEEL, s.light)
+        : tone(wood, s.light),
+    );
+    c.ellipsoid([0, 3.5, 0], lying(0), [4.3, 0.3, 4.3], (s) =>
+      tone(ramp([60, 90, 170]), s.light, (s.x + s.y) % 4 ? 0 : 1),
+    );
+  },
   dagger(c) {
     blade(c, [-1, 0.6, 1.2], [4.6, 0.6, -1.6], 1);
     hilt(c, [-1, 0.6, 1.2], normalize([5.6, 0, -2.8]), 3, 1.8);
@@ -1090,7 +1247,12 @@ function coins(c: VolumeCanvas, count: number): void {
 }
 
 /** Ícono de un objeto: en el suelo o, más grande, en las ventanas. */
-export function drawItem(kind: ItemKind, style: ItemStyle = 'ground', amount = 1): PixelImage {
+export function drawItem(
+  kind: ItemKind,
+  style: ItemStyle = 'ground',
+  amount = 1,
+  hue?: number,
+): PixelImage {
   const camera = new Camera(
     0.45,
     ITEM_ART_SIZE / 2,
@@ -1100,7 +1262,8 @@ export function drawItem(kind: ItemKind, style: ItemStyle = 'ground', amount = 1
   );
   const canvas = new VolumeCanvas(ITEM_ART_SIZE, ITEM_ART_SIZE, camera);
   const definition = ITEMS[kind];
-  const color = ramp(definition.color === undefined ? [128, 128, 128] : hexToRgb(definition.color));
+  const base = hue ?? definition.color;
+  const color = ramp(base === undefined ? [128, 128, 128] : hexToRgb(base));
   if (kind === 'gold') coins(canvas, GOLD_PILES[itemVariant(kind, amount)]?.coins ?? 7);
   else if (definition.spell)
     scroll(canvas, ramp(CIRCLE_RIBBON[SPELLS[definition.spell].circle - 1] ?? [200, 60, 50]));

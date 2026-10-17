@@ -5,6 +5,7 @@ import {
   type Body,
   type Direction,
   type EntityId,
+  type EquipmentHues,
   type EquipmentLook,
   type NpcRole,
   type MobileSnapshot,
@@ -76,6 +77,7 @@ export class Entity {
   private _stepCount = 0;
   private _overhead: OverheadText[] = [];
   private _equipment: EquipmentLook;
+  private _hues: EquipmentHues;
   readonly body: Body;
   /** Oficio si es un personaje del pueblo. */
   readonly npc: NpcRole | null;
@@ -99,6 +101,7 @@ export class Entity {
     this._position = snapshot.position;
     this._direction = snapshot.direction;
     this._equipment = snapshot.equipment;
+    this._hues = snapshot.hues ?? {};
     this.body = snapshot.body;
     this.npc = snapshot.npc;
     this._health = snapshot.health;
@@ -219,8 +222,14 @@ export class Entity {
     return this._equipment;
   }
 
-  setEquipment(equipment: EquipmentLook): void {
+  /** Colores teñidos de lo que tiene puesto. */
+  get hues(): EquipmentHues {
+    return this._hues;
+  }
+
+  setEquipment(equipment: EquipmentLook, hues: EquipmentHues = {}): void {
     this._equipment = equipment;
+    this._hues = hues;
   }
 
   /** Tile lógico actual (destino del paso en curso). */

@@ -2,6 +2,7 @@ import {
   ITEMS,
   type Appearance,
   type Direction,
+  type EquipmentHues,
   type EquipmentLook,
   type ItemKind,
   type MountKind,
@@ -68,11 +69,26 @@ export const OUTLINE: Rgb = [24, 17, 14];
 
 // ── Colores ─────────────────────────────────────────────────────────
 
-/** Color de un objeto puesto, si tiene. */
+/** Colores teñidos del personaje que se está dibujando (por lugar del cuerpo). */
+let dyed: EquipmentHues = {};
+
+/** Color de un objeto puesto, si tiene (teñido, si lo tiñeron). */
 function wornColor(kind: ItemKind | undefined): Rgb | null {
-  const color = kind ? ITEMS[kind].color : undefined;
+  if (!kind) return null;
+  const slot = ITEMS[kind].slot;
+  const hue = slot ? dyed[slot] : undefined;
+  const color = hue ?? ITEMS[kind].color;
   return color === undefined ? null : hexToRgb(color);
 }
+
+/** Ropa de tela del torso: tiñe la camisa (las mangas y el faldón). */
+const SHIRTS: ReadonlySet<ItemKind> = new Set<ItemKind>([
+  'shirt',
+  'fancy-shirt',
+  'doublet',
+  'dress',
+]);
+const BONE = ramp([226, 218, 196]);
 
 const WOOD = ramp([118, 78, 44]);
 const LEATHER_DARK = ramp([92, 60, 36]);
@@ -92,8 +108,8 @@ function paletteFor(appearance: Appearance, equipment: EquipmentLook): Palette {
   return {
     skin: ramp(hexToRgb(appearance.skinTone)),
     cloth: ramp(
-      equipment.torso === 'robe'
-        ? (wornColor('robe') ?? [58, 42, 106])
+      equipment.torso === 'robe' || (equipment.torso && SHIRTS.has(equipment.torso))
+        ? (wornColor(equipment.torso) ?? [58, 42, 106])
         : hexToRgb(appearance.clothHue),
     ),
     hair: ramp(hexToRgb(appearance.hairHue)),
@@ -153,6 +169,24 @@ export function drawCharacterFrame(
   role: NpcRole | null = null,
   mount: MountKind | null = null,
   canvasFor: CanvasFactory = spriteCanvas,
+  hues: EquipmentHues = {},
+): PixelImage {
+  dyed = hues;
+  try {
+    return drawFigure(appearance, direction, frame, equipment, role, mount, canvasFor);
+  } finally {
+    dyed = {};
+  }
+}
+
+function drawFigure(
+  appearance: Appearance,
+  direction: Direction,
+  frame: CharacterFrame,
+  equipment: EquipmentLook,
+  role: NpcRole | null,
+  mount: MountKind | null,
+  canvasFor: CanvasFactory,
 ): PixelImage {
   // Montado: lienzo más grande, la montura primero y el jinete sentado en ella.
   const layout = mount ? mountLayout(mount) : null;
@@ -162,7 +196,7 @@ export function drawCharacterFrame(
   const ride = mount ? drawMount(canvas, mount, frame) : null;
   const female = appearance.gender === 'female';
   const outfit = role ? (OUTFITS[role] ?? null) : null;
-  const robed = outfit === 'robe' || equipment.torso === 'robe';
+  const robed = outfit === 'robe' || equipment.torso === 'robe' || equipment.torso === 'dress';
   const leftWeapon = heldInLeftHand(equipment.rightHand);
   const figure: Figure = {
     rig: humanoidRig(
@@ -175,7 +209,7 @@ export function drawCharacterFrame(
     equipment,
     outfit,
     female,
-    skirt: female && !equipment.legs && !robed,
+    skirt: (female && !equipment.legs && !robed) || (equipment.legs === 'skirt' && !robed),
     robed,
     metalTorso:
       equipment.torso === 'chainmail' ||
@@ -194,15 +228,21 @@ export function drawCharacterFrame(
     facialHair: female ? 'none' : (appearance.facialHair ?? 'none'),
     female,
     headgear:
-      headgear === 'iron-helmet' || headgear === 'chain-coif'
-        ? 'helmet'
-        : headgear === 'plate-helm'
-          ? 'plate-helm'
-          : headgear === 'wizard-hat' || (!headgear && outfit === 'robe')
-            ? 'wizard'
-            : headgear
-              ? 'cap'
-              : null,
+      headgear === 'straw-hat' || headgear === 'feathered-hat' || headgear === 'tricorne'
+        ? headgear
+        : headgear === 'bandana'
+          ? 'bandana'
+          : headgear === 'bone-helm'
+            ? 'skull'
+            : headgear === 'iron-helmet' || headgear === 'chain-coif'
+              ? 'helmet'
+              : headgear === 'plate-helm'
+                ? 'plate-helm'
+                : headgear === 'wizard-hat' || (!headgear && outfit === 'robe')
+                  ? 'wizard'
+                  : headgear
+                    ? 'cap'
+                    : null,
     capColor: ramp(wornColor(headgear) ?? [122, 78, 42]),
     hatColor:
       headgear === 'wizard-hat' ? ramp(wornColor(headgear) ?? [58, 42, 106]) : figure.palette.cloth,
@@ -224,16 +264,31 @@ function drawLegs(
 ): void {
   const thick = female ? 0.9 : 1;
   const plate = equipment.legs === 'plate-legs';
+  const bone = equipment.legs === 'bone-leggings';
   const leather = equipment.legs === 'leather-leggings';
+  const shorts = equipment.legs === 'short-pants';
+  // Alto del calzado sobre el tobillo: sandalias y zapatos bajos, botas altas hasta la rodilla.
+  const feet = equipment.feet;
+  const shoeHeight =
+    feet === 'sandals' ? 0.6 : feet === 'shoes' ? 1.6 : feet === 'thigh-boots' ? 0 : 6;
   for (const side of [1, -1] as const) {
     const leg = rig.legs[side];
     // Pantalón (o piernas, bajo la pollera) hasta la caña de la bota; bota con borde claro.
     // Las grebas de placas son de metal con rodillera; las perneras, cuero con costuras.
     const legMaterial: Material = (s) => {
       // La bota llega hasta 6 px sobre el tobillo (de pie o montado).
-      const bootTop = leg.ankle[1] + 6;
+      const bootTop = feet === 'thigh-boots' ? leg.knee[1] + 1.5 : leg.ankle[1] + shoeHeight;
       if (s.p[1] < bootTop && !(plate && !equipment.feet))
         return tone(p.boots, s.light, s.p[1] > bootTop - 1 ? 1 : 0);
+      // Sandalias: tiras sobre el pie descalzo.
+      if (feet === 'sandals' && s.p[1] < leg.ankle[1] + 2) return tone(p.skin, s.light);
+      if (shorts && s.p[1] < leg.knee[1] - 0.5) return tone(p.skin, s.light);
+      if (bone) {
+        // Placas de hueso atadas, con la rodilla de calavera.
+        const nearKnee = Math.hypot(...sub(s.p, leg.knee)) < 2.6;
+        if (nearKnee) return tone(BONE, s.light + 0.1, 1);
+        return Math.round(s.p[1]) % 3 === 0 ? tone(LEATHER_DARK, s.light) : tone(BONE, s.light);
+      }
       if (plate) {
         const nearKnee = Math.hypot(...sub(s.p, leg.knee)) < 2.6;
         return nearKnee ? tone(STEEL, s.light + 0.2, 1) : metal(STEEL)(s);
@@ -260,7 +315,9 @@ function drawLegs(
         : rig.legs[1].knee[1] - 1;
     const top = rig.pelvis.origin[1] + 1;
     const flare = robed ? 3.2 : 2.2;
-    const fabric: Material = (s) => tone(p.cloth, s.light, Math.sin(s.p[0] * 0.9) > 0.6 ? -1 : 0);
+    const skirtCloth = equipment.legs === 'skirt' && !robed ? p.pants : p.cloth;
+    const fabric: Material = (s) =>
+      tone(skirtCloth, s.light, Math.sin(s.p[0] * 0.9) > 0.6 ? -1 : 0);
     // La tela sigue a las rodillas: se corre y se abre cuando las piernas se separan.
     const knees = lerp(rig.legs[1].knee, rig.legs[-1].knee, 0.5);
     const kneeGap = Math.abs(rig.legs[1].knee[2] - rig.legs[-1].knee[2]);
@@ -307,6 +364,11 @@ function torsoMaterial({ rig, palette: p, equipment, outfit, female, robed }: Fi
       if (front && Math.abs(local[0]) < 0.5) return tone(STEEL, s.light + 0.25, 1);
       if (band < 0.12) return tone(STEEL, s.light - 0.25, -1);
       return metal(STEEL)(s);
+    }
+    if (armor === 'bone-armor' && y > -4) {
+      // Costillar de hueso sobre cuero oscuro, con el esternón al medio.
+      if (front && Math.abs(local[0]) < 0.6) return tone(BONE, s.light + 0.15, 1);
+      return ((y + 20) % 2.4) / 2.4 < 0.55 ? tone(BONE, s.light) : tone(LEATHER_DARK, s.light);
     }
     if (armor === 'ringmail' && y > -4) {
       // Anillas cosidas en hileras sobre cuero.
@@ -788,8 +850,6 @@ function drawBow(canvas: VolumeCanvas, rig: Rig): void {
 }
 
 // ── Esqueleto (la criatura) ─────────────────────────────────────────
-
-const BONE = ramp([226, 218, 196]);
 
 /** Esqueleto: huesos finos, costillas con huecos, calavera y una espada. */
 export function drawSkeletonFrame(

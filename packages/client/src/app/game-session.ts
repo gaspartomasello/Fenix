@@ -29,11 +29,13 @@ import {
   VENDOR_RANGE,
   isMerchant,
   reputationTitle,
+  type ItemSnapshot,
   type NpcRole,
 } from '@fenix/shared';
 import type { ItemActions } from '../ui/backpack-window';
 import { BankWindow } from '../ui/bank-window';
 import { BookWindow } from '../ui/book-window';
+import { DyeWindow } from '../ui/dye-window';
 import { QuestJournal, QuestOfferWindow } from '../ui/quest-windows';
 import { ContainerWindow } from '../ui/container-window';
 import { CorpseWindow } from '../ui/corpse-window';
@@ -485,6 +487,18 @@ export class GameSession {
     const self = this.game.self;
     if (!self) return [];
     const done = (): void => banner.hide();
+    const dyeWindow = new DyeWindow((itemId, hue) => this.game.dye(itemId, hue));
+    this.hosts.ui.append(dyeWindow.window.element);
+    const carried = (): { items: ItemSnapshot[]; dyes: number } => {
+      const { backpack, equipment } = this.game.inventory;
+      const dyes = backpack.filter((i) => i.kind === 'dyes').reduce((n, i) => n + i.amount, 0);
+      return { items: [...equipment, ...backpack], dyes };
+    };
+    this.game.on('inventoryChanged', () => {
+      if (!dyeWindow.window.visible) return;
+      const { items, dyes } = carried();
+      dyeWindow.update(items, dyes);
+    });
     // Doble clic: algunos objetos abren ventanas o piden elegir un objetivo en vez de avisar al servidor.
     const actions = {
       ...worldItems.actions,
@@ -495,6 +509,11 @@ export class GameSession {
           case 'spellbook':
             magic.spellbook.window.show();
             return;
+          case 'dye': {
+            const { items, dyes } = carried();
+            dyeWindow.open(items, dyes);
+            return;
+          }
           case 'craft':
             if (definition.crafts && isCraftSkill(definition.crafts))
               economy.crafting.open(definition.crafts);

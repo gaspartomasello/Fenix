@@ -60,6 +60,8 @@ export interface PaperdollLook {
   readonly appearance: Appearance;
   readonly role: NpcRole | null;
   readonly equipment: Readonly<Partial<Record<EquipmentSlot, ItemKind>>>;
+  /** Colores teñidos, por lugar. */
+  readonly hues?: Readonly<Partial<Record<EquipmentSlot, number>>>;
 }
 
 /** Cómo se interactúa con los casilleros y el dibujo (solo en la ventana propia). */
@@ -173,6 +175,9 @@ export class PaperdollView {
       'idle',
       equipment,
       look.role,
+      null,
+      undefined,
+      look.hues ?? {},
     );
     this.artWidth = full.width;
     // La silueta de cada objeto: lo que cambia en el dibujo al sacárselo.
@@ -185,6 +190,9 @@ export class PaperdollView {
         'idle',
         { ...equipment, [slot]: undefined },
         look.role,
+        null,
+        undefined,
+        look.hues ?? {},
       );
       this.masks.set(slot, difference(full, without));
     }
@@ -203,7 +211,8 @@ export class PaperdollView {
       box.title = kind ? `${SLOT_LABELS[slot]}: ${describeItem(kind)}` : SLOT_LABELS[slot];
       box.classList.toggle('paperdoll-slot--filled', kind !== undefined);
       if (kind) {
-        box.append(el('img', { attrs: { src: itemIconUrl(kind), alt: '', draggable: 'false' } }));
+        const src = itemIconUrl(kind, 1, look.hues?.[slot]);
+        box.append(el('img', { attrs: { src, alt: '', draggable: 'false' } }));
       }
     }
   }

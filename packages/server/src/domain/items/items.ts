@@ -12,6 +12,7 @@ import {
   inViewRange,
   withinReach,
   type EntityId,
+  type EquipmentHues,
   type EquipmentLook,
   type EquipmentSlot,
   type ItemDestination,
@@ -181,6 +182,15 @@ export class Items {
       if (item.location.type === 'equipment') look[item.location.slot] = item.kind;
     }
     return look;
+  }
+
+  /** Colores teñidos de lo que tiene puesto. */
+  huesOf(ownerId: EntityId): EquipmentHues {
+    const hues: Partial<Record<EquipmentSlot, number>> = {};
+    for (const item of this.equipmentOf(ownerId))
+      if (item.location.type === 'equipment' && item.hue !== null)
+        hues[item.location.slot] = item.hue;
+    return hues;
   }
 
   /** Cuántas unidades de un tipo tiene alguien en la mochila. */
@@ -421,6 +431,7 @@ export class Items {
       case 'container':
       case 'book':
       case 'music':
+      case 'dye':
         // Se resuelven en otros casos de uso (o en el cliente): acá no hay nada que hacer.
         return { ok: true, changes };
       case 'none': {

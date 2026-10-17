@@ -90,6 +90,16 @@ const LOOKS: Readonly<Record<NpcRole, { appearance: Appearance; equipment: Equip
     },
     equipment: { legs: 'trousers', feet: 'boots', leftHand: 'lantern' },
   },
+  tailor: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      clothHue: CLOTH_HUES[4] ?? DEFAULT_APPEARANCE.clothHue,
+      gender: 'female',
+      hairStyle: 'bun',
+      hairHue: 0x2b1d0e,
+    },
+    equipment: { torso: 'dress', feet: 'shoes', head: 'feathered-hat' },
+  },
   // Los vecinos cambian de aspecto (ver TOWNSFOLK); este es el de base.
   townsfolk: { appearance: DEFAULT_APPEARANCE, equipment: { legs: 'trousers' } },
   guard: {

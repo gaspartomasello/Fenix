@@ -17,6 +17,7 @@ import {
   type Appearance,
   type CreatureKind,
   type Direction,
+  type EquipmentHues,
   type EquipmentLook,
   type ItemKind,
   type MountKind,
@@ -84,9 +85,10 @@ export class TextureCache {
     equipment: EquipmentLook,
     role: NpcRole | null = null,
     mount: MountKind | null = null,
+    hues: EquipmentHues = {},
   ): Texture {
     return this.fromEntry(
-      this.characterEntry(appearance, direction, frame, equipment, role, mount),
+      this.characterEntry(appearance, direction, frame, equipment, role, mount, hues),
     );
   }
 
@@ -112,9 +114,10 @@ export class TextureCache {
     equipment: EquipmentLook,
     role: NpcRole | null,
     mount: MountKind | null,
+    hues: EquipmentHues = {},
   ): void {
     for (const frame of frames)
-      this.prepare(this.characterEntry(appearance, direction, frame, equipment, role, mount));
+      this.prepare(this.characterEntry(appearance, direction, frame, equipment, role, mount, hues));
   }
 
   /** Pide de antemano cuadros de una criatura. */
@@ -154,8 +157,11 @@ export class TextureCache {
     equipment: EquipmentLook,
     role: NpcRole | null,
     mount: MountKind | null,
+    hues: EquipmentHues = {},
   ): Entry {
-    const worn = EQUIPMENT_SLOTS.map((slot) => equipment[slot] ?? '').join(',');
+    const worn = EQUIPMENT_SLOTS.map(
+      (slot) => `${equipment[slot] ?? ''}${hues[slot] !== undefined ? `#${hues[slot]}` : ''}`,
+    ).join(',');
     const look = [
       appearance.gender ?? '',
       appearance.clothHue,
@@ -167,7 +173,8 @@ export class TextureCache {
     ].join(':');
     return {
       key: `c:${look}:${direction}:${frame}:${worn}:${mount ?? ''}`,
-      draw: () => drawCharacterFrame(appearance, direction, frame, equipment, role, mount),
+      draw: () =>
+        drawCharacterFrame(appearance, direction, frame, equipment, role, mount, undefined, hues),
     };
   }
 

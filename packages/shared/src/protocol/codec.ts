@@ -3,6 +3,7 @@ import { PASSWORD_MAX_LENGTH } from '../domain/character/password';
 import { isEquipmentSlot } from '../domain/items/equipment';
 import { isItemKind } from '../domain/items/item-catalog';
 import { BOOK_PAGES, cleanBookPage, cleanBookTitle } from '../domain/items/books';
+import { isDyeHue } from '../domain/items/dyes';
 import { isSpellKey } from '../domain/magic/spell-catalog';
 import { isActiveSkill } from '../domain/skills/stealth';
 import { isMountKind } from '../domain/mounts/mount-catalog';
@@ -248,6 +249,10 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
     case 'abandonQuest':
       if (typeof data.giver === 'string' && data.giver.length <= 60)
         return { ok: true, message: { type: 'abandonQuest', giver: data.giver } };
+      break;
+    case 'dye':
+      if (isId(data.itemId) && typeof data.hue === 'number' && isDyeHue(data.hue))
+        return { ok: true, message: { type: 'dye', itemId: data.itemId, hue: data.hue } };
       break;
     case 'readBook':
       if (isId(data.itemId))

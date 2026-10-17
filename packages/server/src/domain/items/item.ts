@@ -41,11 +41,15 @@ export class Item {
   /** Libro: lo que tiene escrito (null si nunca se escribió). */
   book: BookText | null = null;
 
+  /** Teñido: su color (null: el de siempre). */
+  hue: number | null = null;
+
   /** Lo que el cliente ve además de tipo y cantidad. */
-  private get extra(): { mark?: RuneMark; bookTitle?: string } {
+  private get extra(): { mark?: RuneMark; bookTitle?: string; hue?: number } {
     return {
       ...(this.mark ? { mark: this.mark } : {}),
       ...(this.book?.title ? { bookTitle: this.book.title } : {}),
+      ...(this.hue !== null ? { hue: this.hue } : {}),
     };
   }
 

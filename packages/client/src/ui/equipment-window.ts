@@ -46,6 +46,9 @@ export class EquipmentWindow {
       appearance: this.appearance,
       role: null,
       equipment: Object.fromEntries(equipment.map((item) => [item.slot, item.kind])),
+      hues: Object.fromEntries(
+        equipment.flatMap((item) => (item.hue !== undefined ? [[item.slot, item.hue]] : [])),
+      ),
     });
   }
 
@@ -63,7 +66,7 @@ export class EquipmentWindow {
     this.drag.begin(
       {
         id: item.id,
-        iconUrl: itemIconUrl(item.kind),
+        iconUrl: itemIconUrl(item.kind, 1, item.hue),
         // Al arrastrarlo se lo saca de encima del personaje (vuelve si no se suelta en otro lado).
         lift: () => {
           this.paint(this.equipment.filter((other) => other.id !== item.id));

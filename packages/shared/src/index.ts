@@ -15,6 +15,7 @@ export * from './domain/items/equipment';
 export * from './domain/items/item-catalog';
 export * from './domain/items/item-rules';
 export * from './domain/items/books';
+export * from './domain/items/dyes';
 export * from './domain/combat/vitals';
 export * from './domain/combat/weapons';
 export * from './domain/combat/combat-rules';
