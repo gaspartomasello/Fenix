@@ -14,6 +14,8 @@ export interface ServerConfig {
   readonly dataDir: string;
   /** Personajes de prueba (todo al máximo), separados por coma en TEST_CHARACTERS. */
   readonly testCharacters: readonly string[];
+  /** Administradores del juego, separados por coma en ADMINS. */
+  readonly admins: readonly string[];
 }
 
 function intFromEnv(name: string, fallback: number): number {
@@ -40,6 +42,10 @@ export function loadConfig(defaultClientDist: string): ServerConfig {
     startHour: intFromEnv('START_HOUR', 8),
     dataDir: process.env.DATA_DIR ?? 'data',
     testCharacters: (process.env.TEST_CHARACTERS ?? '')
+      .split(',')
+      .map((name) => name.trim())
+      .filter(Boolean),
+    admins: (process.env.ADMINS ?? '')
       .split(',')
       .map((name) => name.trim())
       .filter(Boolean),

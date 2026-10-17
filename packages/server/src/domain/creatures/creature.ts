@@ -42,6 +42,8 @@ export class Creature implements Mobile {
   /** Vida recuperada en fracciones, hasta juntar un punto (regeneración). */
   regenCarry = 0;
   lastTickAt = 0;
+  /** Creada por un administrador: al morir no reaparece (se va del mundo). */
+  temporary = false;
   /** Montura: hasta cuándo no se vuelve a avisar al dueño que la atacan. */
   ownerWarnedUntil = 0;
   /** Invocada: jugador que la llamó (pelea para él) y cuándo se desvanece. */

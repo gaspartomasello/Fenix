@@ -64,4 +64,28 @@ describe('comandos del chat', () => {
   it('/invul activa o desactiva la invulnerabilidad', () => {
     expect(parseChatInput('/invul')).toEqual({ kind: 'invulnerable' });
   });
+
+  it('entiende los comandos del administrador del juego', () => {
+    expect(parseChatInput('/crear lobo gris 3')).toEqual({
+      kind: 'gm',
+      command: { kind: 'summon', creature: 'lobo gris', amount: 3, tame: false },
+    });
+    expect(parseChatInput('/invocar dragón')).toEqual({
+      kind: 'gm',
+      command: { kind: 'summon', creature: 'dragón', amount: 1, tame: true },
+    });
+    expect(parseChatInput('/objeto oro 1000')).toEqual({
+      kind: 'gm',
+      command: { kind: 'item', item: 'oro', amount: 1000 },
+    });
+    expect(parseChatInput('/matar')).toEqual({ kind: 'gmTarget', action: 'slay' });
+    expect(parseChatInput('/curar Ana')).toEqual({
+      kind: 'gm',
+      command: { kind: 'heal', name: 'Ana' },
+    });
+    expect(parseChatInput('/limpiar')).toEqual({
+      kind: 'gm',
+      command: { kind: 'clear', radius: 12 },
+    });
+  });
 });

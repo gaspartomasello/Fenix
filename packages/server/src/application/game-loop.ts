@@ -339,8 +339,8 @@ export class GameLoop {
     if (!creature.combat.isDead) this.tickEffects(creature, now);
     if (creature.combat.isDead) {
       if (creature.despawnAt !== null && now >= creature.despawnAt) {
-        // Las invocaciones no reaparecen: se van del mundo.
-        if (creature.ownerId) {
+        // Las invocaciones y las que creó un administrador no reaparecen: se van del mundo.
+        if (creature.ownerId || creature.temporary) {
           this.dismiss(creature);
           return;
         }
@@ -441,6 +441,14 @@ export class GameLoop {
       type: 'system',
       text: `¡${capitalize(article + attacker.name)} ataca a tu ${pet.name}!`,
     });
+  }
+
+  /** Mata al instante (un administrador del juego), como si lo hubiera matado `by`. */
+  slay(victim: Mobile, by: Mobile, now: number): void {
+    if (victim.combat.isDead) return;
+    victim.combat.takeDamage(victim.combat.current.hits);
+    this.mobiles.broadcastHealth(victim);
+    this.handleKill(by, victim, now);
   }
 
   dismiss(creature: Creature): void {

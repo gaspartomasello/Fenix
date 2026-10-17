@@ -36,6 +36,7 @@ function main(): void {
     characters,
     passwords: new ScryptPasswordHasher(),
     testCharacters: config.testCharacters,
+    admins: config.admins,
   });
 
   const stopTicker = startTicker(

@@ -57,6 +57,16 @@ export class MountActions {
     );
   }
 
+  /**
+   * Da una montura sin pasar por la caballeriza (un administrador del juego).
+   * Devuelve false si ya tiene una.
+   */
+  grant(player: Player, kind: MountKind): boolean {
+    if (player.mount || this.world.petOf(player.id)) return false;
+    this.place(player, kind);
+    return true;
+  }
+
   /** Subirse a la montura propia, si está al lado. */
   mount(playerId: EntityId, petId: EntityId): void {
     const player = this.world.get(playerId);

@@ -357,6 +357,17 @@ chat las pinta en celeste y en verde, como en UO.
 - **Cambio de mundo**: `World.mapId` (tamaño y semilla) se guarda con el personaje; si el mundo
   cambió, el personaje aparece en la capital en vez de en su lugar viejo.
 
+### Administrador del juego
+
+`use-cases/game-master.ts` (mensaje `gm`, con el comando adentro). Son administradores los
+nombres de `ADMINS` y los personajes de prueba (`TEST_CHARACTERS`; en el modo solo, Gaspar); el
+servidor lo revisa en cada comando. Desde el chat: `/crear criatura [n]` (salvajes, marcadas
+`temporary`: al morir no reaparecen), `/invocar criatura [n]` (lo siguen y pelean para él),
+`/criaturas`, `/objeto nombre [n]`, `/montura tipo`, `/matar` (al blanco), `/curar` y
+`/resucitar` (por nombre, al blanco o a uno mismo), `/traer nombre`, `/irjunto nombre`,
+`/limpiar [radio]` (saca las criaturas creadas cerca) y `/anuncio texto`. Los nombres se buscan
+sin mayúsculas ni tildes: igual, que empiece así o que lo contenga.
+
 ### Persistencia
 
 Un personaje se guarda como datos planos (`SavedCharacter`, en `domain/persistence`):

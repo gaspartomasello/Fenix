@@ -1,5 +1,5 @@
 import type { ActiveSkill } from '@fenix/shared';
-import type { ChatChannel, SocialCommand } from '@fenix/shared';
+import type { ChatChannel, GmCommand, SocialCommand } from '@fenix/shared';
 
 /** Lo que significa una línea escrita en el chat. */
 export type ChatInput =
@@ -28,6 +28,10 @@ export type ChatInput =
   | { readonly kind: 'goto'; readonly place: string }
   /** `/invul`: volverse invulnerable o dejar de serlo (solo personajes de prueba). */
   | { readonly kind: 'invulnerable' }
+  /** Comandos del administrador del juego (el servidor revisa que lo sea). */
+  | { readonly kind: 'gm'; readonly command: GmCommand }
+  /** `/matar`, y `/curar` o `/resucitar` sin nombre: sobre el blanco elegido. */
+  | { readonly kind: 'gmTarget'; readonly action: 'slay' | 'heal' | 'resurrect' }
   | { readonly kind: 'help' }
   | { readonly kind: 'error'; readonly text: string };
 
@@ -49,6 +53,14 @@ export const CHAT_HELP = [
   '/hora 22 — cambiar la hora del mundo (solo personajes de prueba)',
   '/cueva o /cueva fondo — ir a la mazmorra (solo personajes de prueba)',
   '/invul — volverte invulnerable (nombre amarillo) o dejar de serlo (solo personajes de prueba)',
+  'Administrador del juego:',
+  '/crear criatura [cantidad] — hacer aparecer criaturas salvajes al lado (/criaturas, la lista)',
+  '/invocar criatura [cantidad] — criaturas que te siguen y pelean para vos',
+  '/objeto nombre [cantidad] — crear objetos en tu mochila',
+  '/montura tipo — darte una montura',
+  '/matar — matar a tu blanco; /curar y /resucitar [nombre] — a tu blanco, a alguien o a vos',
+  '/traer nombre — traer a alguien a tu lado; /irjunto nombre — ir hasta alguien',
+  '/limpiar [radio] — sacar las criaturas creadas cerca; /anuncio texto — avisar a todos',
   '/ir lugar — ir a un pueblo o lugar con nombre, o a unas coordenadas (/ir 120 300); /ir solo, la lista (solo personajes de prueba)',
 ] as const;
 
@@ -109,10 +121,69 @@ export function parseChatInput(raw: string): ChatInput {
     case 'invul':
     case 'invulnerable':
       return { kind: 'invulnerable' };
+    case 'crear':
+    case 'invocar': {
+      const { text, amount } = withAmount(rest);
+      return text
+        ? {
+            kind: 'gm',
+            command: {
+              kind: 'summon',
+              creature: text,
+              amount: Math.min(amount, 20),
+              tame: word.toLocaleLowerCase() === 'invocar',
+            },
+          }
+        : needs('la criatura (por ejemplo: /crear dragón)');
+    }
+    case 'criaturas':
+      return { kind: 'gm', command: { kind: 'creatures' } };
+    case 'objeto': {
+      const { text, amount } = withAmount(rest);
+      return text
+        ? { kind: 'gm', command: { kind: 'item', item: text, amount } }
+        : needs('el objeto (por ejemplo: /objeto oro 1000)');
+    }
+    case 'montura':
+      return args
+        ? { kind: 'gm', command: { kind: 'mount', mount: args } }
+        : needs('la montura (por ejemplo: /montura elefante)');
+    case 'matar':
+      return { kind: 'gmTarget', action: 'slay' };
+    case 'curar':
+      return args
+        ? { kind: 'gm', command: { kind: 'heal', name: args } }
+        : { kind: 'gmTarget', action: 'heal' };
+    case 'resucitar':
+      return args
+        ? { kind: 'gm', command: { kind: 'resurrect', name: args } }
+        : { kind: 'gmTarget', action: 'resurrect' };
+    case 'traer':
+      return args ? { kind: 'gm', command: { kind: 'bring', name: args } } : needs('el nombre');
+    case 'irjunto':
+    case 'ira':
+      return args ? { kind: 'gm', command: { kind: 'goTo', name: args } } : needs('el nombre');
+    case 'limpiar': {
+      const radius = Number(args || 12);
+      return Number.isInteger(radius) && radius >= 1 && radius <= 30
+        ? { kind: 'gm', command: { kind: 'clear', radius } }
+        : needs('un radio de 1 a 30 tiles');
+    }
+    case 'anuncio':
+      return args ? { kind: 'gm', command: { kind: 'announce', text: args } } : needs('el texto');
     case 'ayuda':
     case '?':
       return { kind: 'help' };
     default:
       return { kind: 'error', text: `No conozco el comando /${word}. Escribí /ayuda.` };
   }
+}
+
+/** "lobo gris 3" → nombre "lobo gris" y cantidad 3 (1 si no hay número al final). */
+function withAmount(words: readonly string[]): { text: string; amount: number } {
+  const last = words[words.length - 1] ?? '';
+  const amount = /^\d+$/.test(last) ? Number(last) : NaN;
+  return Number.isInteger(amount) && amount >= 1
+    ? { text: words.slice(0, -1).join(' '), amount }
+    : { text: words.join(' '), amount: 1 };
 }
