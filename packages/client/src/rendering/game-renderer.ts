@@ -1,4 +1,10 @@
-import type { EntityId, GroundItemSnapshot, Position, TileMap } from '@fenix/shared';
+import {
+  STATIC_CONTAINERS,
+  type EntityId,
+  type GroundItemSnapshot,
+  type Position,
+  type TileMap,
+} from '@fenix/shared';
 import { Application, Container, Rectangle } from 'pixi.js';
 // Evita `eval` en Pixi: necesario en páginas con Content Security Policy estricta.
 import 'pixi.js/unsafe-eval';
@@ -57,6 +63,8 @@ export class GameRenderer {
     return null;
   }, this.ground);
   private zoomIndex = 0;
+  private containerMap: TileMap | null = null;
+  private containerTiles = new Set<string>();
   private readonly unsubscribe: (() => void)[] = [];
 
   private constructor(private readonly game: ClientGame) {}
@@ -111,6 +119,26 @@ export class GameRenderer {
     for (const lift of [0, 14, 28, 42]) {
       const tile = this.screenToTile({ x: point.x, y: point.y + lift * this.zoom });
       if (map.doorAt(tile)) return tile;
+    }
+    return null;
+  }
+
+  /**
+   * El mueble que guarda cosas (cofre, barril, biblioteca…) bajo un punto de
+   * la pantalla: el del tile o uno un poco más adelante (sube sobre su tile).
+   */
+  containerAt(point: ScreenPoint): Position | null {
+    const map = this.game.map;
+    if (!map) return null;
+    if (this.containerMap !== map) {
+      this.containerMap = map;
+      this.containerTiles = new Set(
+        map.statics.filter((s) => STATIC_CONTAINERS[s.kind]).map((s) => `${s.x},${s.y}`),
+      );
+    }
+    for (const lift of [0, 14, 28]) {
+      const tile = this.screenToTile({ x: point.x, y: point.y + lift * this.zoom });
+      if (this.containerTiles.has(`${tile.x},${tile.y}`)) return tile;
     }
     return null;
   }

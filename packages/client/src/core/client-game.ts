@@ -1,4 +1,5 @@
 import {
+  ITEMS,
   type ActiveSkill,
   CREATURES,
   SPELLS,
@@ -14,6 +15,7 @@ import {
   sanitizeChatText,
   type Attributes,
   type BackpackItemSnapshot,
+  type ContainerLook,
   type EffectKind,
   type EffectSnapshot,
   type Position,
@@ -93,11 +95,25 @@ export interface ClientGameEvents extends Record<string, unknown> {
    * `opened` es true cuando llega la respuesta al doble clic propio.
    */
   corpseChanged: { corpse: CorpseContents | null; opened: boolean };
+  /** Cambió un recipiente abierto (`container` null: se cerró). */
+  containerChanged: {
+    containerId: string;
+    container: ContainerContents | null;
+    opened: boolean;
+  };
   /** Una puerta se abrió o se cerró. */
   doorChanged: { position: Position; open: boolean };
 }
 
 /** Lo que hay en el cuerpo que se está revisando. */
+/** Lo que hay en un recipiente abierto (una bolsa o un mueble). */
+export interface ContainerContents {
+  readonly containerId: string;
+  readonly name: string;
+  readonly look: ContainerLook;
+  readonly items: readonly BackpackItemSnapshot[];
+}
+
 export interface CorpseContents {
   readonly corpseId: EntityId;
   readonly name: string;
@@ -148,6 +164,8 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   private _hidden = false;
   private _effects: EffectsState | null = null;
   private _corpse: CorpseContents | null = null;
+  private readonly _containers = new Map<string, ContainerContents>();
+  private readonly containersRequested = new Set<string>();
   private corpseRequested: EntityId | null = null;
 
   constructor(
@@ -232,6 +250,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       this._inventory.backpack.find((i) => i.id === itemId) ??
       this._inventory.bank.find((i) => i.id === itemId) ??
       this._corpse?.items.find((i) => i.id === itemId) ??
+      [...this._containers.values()].flatMap((c) => c.items).find((i) => i.id === itemId) ??
       this._inventory.equipment.find((i) => i.id === itemId)
     );
   }
@@ -444,6 +463,18 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     this.gateway.send({ type: 'useDoor', position });
   }
 
+  /** Abrir un mueble que guarda cosas (`static:x:y`); las bolsas se abren con doble clic. */
+  openContainer(containerId: string): void {
+    if (!this.self) return;
+    this.containersRequested.add(containerId);
+    this.gateway.send({ type: 'openContainer', containerId });
+  }
+
+  /** Doble clic sobre una bolsa: el servidor la abre (se espera su ventana). */
+  expectContainer(containerId: string): void {
+    this.containersRequested.add(containerId);
+  }
+
   openCorpse(corpseId: EntityId): void {
     if (!this.self) return;
     this.corpseRequested = corpseId;
@@ -519,7 +550,11 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
 
   /** Doble clic sobre un objeto. */
   useItem(itemId: EntityId): void {
-    if (this.self) this.gateway.send({ type: 'useItem', itemId });
+    if (!this.self) return;
+    // Una bolsa se abre: se espera su ventana.
+    const item = this.findItem(itemId);
+    if (item && ITEMS[item.kind].capacity) this.containersRequested.add(itemId);
+    this.gateway.send({ type: 'useItem', itemId });
   }
 
   /** Mantenimiento por frame: vence textos sobre las cabezas. */
@@ -615,6 +650,26 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this.emit('corpseChanged', { corpse: this._corpse, opened });
         break;
       }
+      case 'container': {
+        const opened = this.containersRequested.delete(message.containerId);
+        const container = {
+          containerId: message.containerId,
+          name: message.name,
+          look: message.look,
+          items: message.items,
+        };
+        this._containers.set(message.containerId, container);
+        this.emit('containerChanged', { containerId: message.containerId, container, opened });
+        break;
+      }
+      case 'containerClosed':
+        this._containers.delete(message.containerId);
+        this.emit('containerChanged', {
+          containerId: message.containerId,
+          container: null,
+          opened: false,
+        });
+        break;
       case 'corpseClosed':
         if (this._corpse?.corpseId !== message.corpseId) break;
         this._corpse = null;

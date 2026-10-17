@@ -5,6 +5,11 @@ import { el } from './dom';
 export type DropTarget =
   | { readonly kind: 'backpack'; readonly position: { x: number; y: number } }
   | { readonly kind: 'bank'; readonly position: { x: number; y: number } }
+  | {
+      readonly kind: 'container';
+      readonly containerId: string;
+      readonly position: { x: number; y: number };
+    }
   | { readonly kind: 'slot'; readonly slot: EquipmentSlot }
   /** El personaje en la ventana de equipo: el objeto va a su lugar del cuerpo. */
   | { readonly kind: 'paperdoll' }
@@ -137,6 +142,20 @@ function resolveTarget(clientX: number, clientY: number): DropTarget | null {
           y: Math.round(clientY - rect.top - ICON_HALF),
         },
       };
+    }
+    case 'container': {
+      const rect = zone.getBoundingClientRect();
+      const containerId = zone.dataset.container;
+      return containerId
+        ? {
+            kind: 'container',
+            containerId,
+            position: {
+              x: Math.round(clientX - rect.left - ICON_HALF),
+              y: Math.round(clientY - rect.top - ICON_HALF),
+            },
+          }
+        : null;
     }
     case 'slot':
       return zone.dataset.slot ? { kind: 'slot', slot: zone.dataset.slot as EquipmentSlot } : null;

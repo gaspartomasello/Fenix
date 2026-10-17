@@ -34,6 +34,8 @@ export function destinationFor(
       return { type: 'backpack', position: target.position };
     case 'bank':
       return { type: 'bank', position: target.position };
+    case 'container':
+      return { type: 'container', containerId: target.containerId, position: target.position };
     case 'slot':
       return { type: 'equipment', slot: target.slot };
     case 'world':

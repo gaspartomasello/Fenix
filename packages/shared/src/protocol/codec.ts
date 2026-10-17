@@ -68,6 +68,12 @@ function asDestination(value: unknown): ItemDestination | null {
       const position = asPosition(v.position);
       return position ? { type: 'bank', position } : null;
     }
+    case 'container': {
+      if (typeof v.containerId !== 'string' || v.containerId.length > 64) return null;
+      if (v.position === undefined) return { type: 'container', containerId: v.containerId };
+      const position = asPosition(v.position);
+      return position ? { type: 'container', containerId: v.containerId, position } : null;
+    }
     default:
       return null;
   }
@@ -230,6 +236,10 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       break;
     case 'toggleInvulnerable':
       return { ok: true, message: { type: 'toggleInvulnerable' } };
+    case 'openContainer':
+      if (typeof data.containerId === 'string' && data.containerId.length <= 64)
+        return { ok: true, message: { type: 'openContainer', containerId: data.containerId } };
+      break;
     case 'gm': {
       const command = parseGmCommand(data.command);
       if (command) return { ok: true, message: { type: 'gm', command } };
@@ -276,6 +286,8 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
 
 const SERVER_TYPE_FLAGS: Readonly<Record<ServerMessageType, true>> = {
   welcome: true,
+  container: true,
+  containerClosed: true,
   joinRejected: true,
   mobileAppeared: true,
   mobileDisappeared: true,

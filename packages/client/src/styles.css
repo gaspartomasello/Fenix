@@ -2112,3 +2112,35 @@ body {
   column-gap: 0.75rem;
   max-height: none;
 }
+
+/* Recipientes: cada uno con su madera, su cuero o su estante. */
+.container-area[data-look='chest'] {
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.18) 0 2px, transparent 2px 46px),
+    linear-gradient(#6b4524, #4a2f18);
+  border: 3px solid #8a6a2a;
+}
+.container-area[data-look='barrel'],
+.container-area[data-look='crate'],
+.container-area[data-look='box'] {
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 2px, transparent 2px 30px),
+    linear-gradient(#8a6038, #5e3e22);
+}
+.container-area[data-look='bookshelf'],
+.container-area[data-look='shelf'] {
+  background:
+    repeating-linear-gradient(0deg, #3a2414 0 6px, transparent 6px 54px),
+    linear-gradient(#5a3a20, #3e2814);
+}
+.container-area[data-look='bag'] {
+  background:
+    radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.08), transparent 60%),
+    linear-gradient(#7a5434, #523620);
+  border-radius: 24px;
+}
+.container-empty {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}

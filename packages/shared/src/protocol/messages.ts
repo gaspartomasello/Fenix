@@ -8,6 +8,7 @@ import type { EffectSnapshot } from '../domain/magic/effects';
 import type { Body } from '../domain/creatures/creature-catalog';
 import type { NpcRole } from '../domain/economy/vendors';
 import type { MountKind } from '../domain/mounts/mount-catalog';
+import type { ContainerLook } from '../domain/world/statics';
 import type { ChatChannel, SocialCommand } from '../domain/social/groups';
 import type { Notoriety } from '../domain/social/reputation';
 import type { SpellKey } from '../domain/magic/spell-catalog';
@@ -83,7 +84,9 @@ export type ItemDestination =
   | { readonly type: 'ground'; readonly position: Position }
   | { readonly type: 'backpack'; readonly position?: Position }
   | { readonly type: 'bank'; readonly position?: Position }
-  | { readonly type: 'equipment'; readonly slot: EquipmentSlot };
+  | { readonly type: 'equipment'; readonly slot: EquipmentSlot }
+  /** Adentro de un recipiente: una bolsa (su id) o un mueble (`static:x:y`). */
+  | { readonly type: 'container'; readonly containerId: string; readonly position?: Position };
 
 // ── Cliente → Servidor ────────────────────────────────────────────────
 
@@ -279,6 +282,12 @@ export interface OpenCorpseRequest {
   readonly corpseId: EntityId;
 }
 
+/** Abrir un mueble que guarda cosas (un cofre, un barril…), con doble clic. */
+export interface OpenContainerRequest {
+  readonly type: 'openContainer';
+  readonly containerId: string;
+}
+
 /** Pasar todo lo que hay en un cuerpo a la mochila. */
 export interface LootAllRequest {
   readonly type: 'lootAll';
@@ -314,6 +323,7 @@ export type ClientMessage =
   | TestTravelRequest
   | ToggleInvulnerableRequest
   | GmRequest
+  | OpenContainerRequest
   | OpenCorpseRequest
   | LootAllRequest
   | BuyMountRequest
@@ -563,6 +573,22 @@ export interface CorpseMessage {
   readonly items: readonly BackpackItemSnapshot[];
 }
 
+/** Lo que hay en un recipiente abierto (se reenvía cuando cambia). */
+export interface ContainerMessage {
+  readonly type: 'container';
+  readonly containerId: string;
+  /** "cofre", "bolsa"… */
+  readonly name: string;
+  readonly look: ContainerLook;
+  readonly items: readonly BackpackItemSnapshot[];
+}
+
+/** El recipiente ya no se puede ver (el jugador se alejó o se lo llevaron). */
+export interface ContainerClosedMessage {
+  readonly type: 'containerClosed';
+  readonly containerId: string;
+}
+
 /** El cuerpo ya no se puede revisar (se deshizo o el jugador se alejó). */
 export interface CorpseClosedMessage {
   readonly type: 'corpseClosed';
@@ -578,6 +604,8 @@ export interface SystemMessage {
 
 export type ServerMessage =
   | WelcomeMessage
+  | ContainerMessage
+  | ContainerClosedMessage
   | JoinRejectedMessage
   | MobileAppearedMessage
   | MobileDisappearedMessage

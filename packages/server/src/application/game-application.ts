@@ -30,6 +30,7 @@ import { JoinWorld, type JoinWorldResult } from './use-cases/join-world';
 import { LeaveWorld } from './use-cases/leave-world';
 import { GameMaster } from './use-cases/game-master';
 import { TownLife } from './use-cases/town-life';
+import { Containers } from './use-cases/containers';
 import { MovePlayer } from './use-cases/move-player';
 import { SendChat } from './use-cases/send-chat';
 import { SocialActions } from './use-cases/social-actions';
@@ -60,6 +61,7 @@ export class GameApplication {
   private readonly leaveWorld: LeaveWorld;
   private readonly gameMaster: GameMaster;
   private readonly townLife: TownLife;
+  private readonly containers: Containers;
   private readonly movePlayer: MovePlayer;
   private readonly sendChat: SendChat;
   private readonly moveItem: MoveItem;
@@ -176,6 +178,8 @@ export class GameApplication {
       },
       (name) => isTestCharacter(name, [...testCharacters, ...admins]),
     );
+    this.containers = new Containers(world, clock, ids, random, notifications, notifier);
+    this.useItem.openContainer = (playerId, id) => this.containers.openFor(playerId, id);
     this.townLife = new TownLife(
       world,
       this.mobiles,
@@ -209,6 +213,7 @@ export class GameApplication {
   tick(now: number): void {
     this.loop.tick(now);
     this.townLife.tick(now);
+    this.containers.tick(now);
     this.persistence.autosave(now);
   }
 
@@ -312,6 +317,9 @@ export class GameApplication {
         break;
       case 'toggleInvulnerable':
         this.toggleInvulnerable(playerId);
+        break;
+      case 'openContainer':
+        this.containers.openFor(playerId, message.containerId);
         break;
       case 'gm':
         this.gameMaster.execute(playerId, message.command);
@@ -477,6 +485,7 @@ export class GameApplication {
       if (pet) this.loop.dismiss(pet);
     }
     this.corpses.forget(playerId);
+    this.containers.forget(playerId);
     this.leaveWorld.execute(playerId);
   }
 }

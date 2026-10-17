@@ -87,6 +87,29 @@ function hilt(c: VolumeCanvas, at: Vec3, dir: Vec3, length: number, guard: numbe
 
 type Model = (c: VolumeCanvas, color: Ramp) => void;
 
+/** Una bolsa: el cuerpo redondeado, el cuello fruncido y el cordón. */
+function sack(c: VolumeCanvas, leather: Ramp, radius: number, height: number): void {
+  const hide: Material = (s) =>
+    tone(
+      leather,
+      s.light,
+      noise(Math.floor(s.p[0] * 1.5), Math.floor(s.p[1] * 1.5)) > 0.85 ? -1 : 0,
+    );
+  c.ellipsoid(
+    [0, height * 0.45, 0],
+    axesAlong([1, 0, 0]),
+    [radius, height * 0.5, radius * 0.85],
+    hide,
+  );
+  c.limb([0, height * 0.85, 0], [0, height * 1.15, 0], radius * 0.35, radius * 0.5, hide);
+  c.ellipsoid(
+    [0, height * 0.88, 0],
+    axesAlong([1, 0, 0]),
+    [radius * 0.42, 0.35, radius * 0.42],
+    solid(ramp([70, 46, 30])),
+  );
+}
+
 const MODELS: Readonly<Record<BaseItemKind, Model>> = {
   gold(c) {
     coins(c, 7);
@@ -115,6 +138,22 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     const glass = ramp([176, 196, 204]);
     c.sphere([0, 3, 0], 3, (s) => (s.light > 0.85 ? [240, 248, 252] : tone(glass, s.light, -1)));
     c.limb([0, 5.2, 0], [0, 8, 0], 1.1, 0.9, (s) => tone(glass, s.light));
+  },
+  // Bolsas de cuero atadas con un cordón, y una caja de tablas con tapa.
+  bag(c) {
+    sack(c, ramp([150, 104, 60]), 4.4, 5.2);
+  },
+  pouch(c) {
+    sack(c, ramp([120, 76, 46]), 3, 3.6);
+  },
+  'wooden-box'(c) {
+    const wood = ramp([150, 108, 64]);
+    const plank: Material = (s) =>
+      tone(wood, s.light, Math.abs(((s.p[1] + 20) % 2.2) - 1.1) < 0.18 ? -1 : 0);
+    c.box([0, 2.6, 0], axesAlong([1, 0, 0]), [5, 2.6, 3.6], plank);
+    c.box([0, 5.5, 0], axesAlong([1, 0, 0]), [5.3, 0.4, 3.9], solid(ramp([120, 84, 48])));
+    for (const x of [-4.6, 4.6])
+      c.box([x, 2.8, 0], axesAlong([1, 0, 0]), [0.35, 2.8, 3.7], solid(ramp([70, 70, 76])));
   },
   'raw-fish'(c) {
     fish(c, ramp([150, 170, 182]));

@@ -9,6 +9,9 @@ import type { EconomyActions } from './economy-actions';
 
 /** Doble clic sobre un objeto, o usarlo sobre alguien (vendas). */
 export class UseItem {
+  /** Lo arma la aplicación: abrir una bolsa o una caja. */
+  openContainer: (playerId: EntityId, containerId: string) => void = () => {};
+
   constructor(
     private readonly world: World,
     private readonly clock: Clock,
@@ -34,6 +37,11 @@ export class UseItem {
     const item = this.world.items.get(itemId);
     if (item?.kind === 'iron-ore' && item.ownerId() === playerId) {
       this.economy.smelt(playerId);
+      return;
+    }
+    // Doble clic sobre una bolsa: se abre.
+    if (item && ITEMS[item.kind].capacity) {
+      this.openContainer(playerId, itemId);
       return;
     }
     const result = this.world.items.use(player, itemId);

@@ -1,5 +1,7 @@
 import {
   BACKPACK_AREA,
+  STATIC_CONTAINERS,
+  staticContainerAt,
   CORPSE_AREA,
   ITEM_ICON_SIZE,
   ITEMS,
@@ -37,6 +39,8 @@ export interface ItemChanges {
   readonly looks: Set<EntityId>;
   /** Cuerpos cuyo contenido cambió. */
   readonly corpses: Set<EntityId>;
+  /** Recipientes (bolsas y muebles) cuyo contenido cambió. */
+  readonly containers: Set<string>;
   /** Mensaje para quien actuó. */
   message?: string;
   /** Lo que se comió o tomó: su efecto lo aplica `consumables.ts`. */
@@ -51,6 +55,7 @@ export const emptyChanges = (): ItemChanges => ({
   inventories: new Set(),
   looks: new Set(),
   corpses: new Set(),
+  containers: new Set(),
 });
 
 const fail = (reason: string): ItemResult => ({ ok: false, reason });
@@ -207,7 +212,13 @@ export class Items {
 
   /** Borra todo lo que lleva un jugador (todavía no hay persistencia). */
   removeOwnedBy(ownerId: EntityId): void {
-    for (const item of this.all()) if (item.ownerId() === ownerId) this.byId.delete(item.id);
+    for (const item of this.all())
+      if (item.ownerId() === ownerId) {
+        // Lo que lleva adentro de sus bolsas se va con ellas.
+        if (ITEMS[item.kind].capacity)
+          for (const inner of this.descendantsOf(item.id)) this.byId.delete(inner.id);
+        this.byId.delete(item.id);
+      }
   }
 
   /**
@@ -253,7 +264,133 @@ export class Items {
         return { ok: true, changes };
       case 'equipment':
         return this.equip(actor.id, item, to.slot, changes);
+      case 'container':
+        return this.putInContainer(
+          actor,
+          item,
+          to.containerId,
+          to.position,
+          map,
+          nearBanker,
+          changes,
+        );
     }
+  }
+
+  /** Lo que hay adentro de un recipiente (una bolsa o un mueble). */
+  contentsOf(containerId: string): Item[] {
+    return this.all().filter(
+      (i) => i.location.type === 'container' && i.location.containerId === containerId,
+    );
+  }
+
+  /** Todo lo que hay adentro, también en las bolsas de adentro. */
+  descendantsOf(containerId: string): Item[] {
+    const out: Item[] = [];
+    for (const item of this.contentsOf(containerId)) {
+      out.push(item);
+      if (ITEMS[item.kind].capacity) out.push(...this.descendantsOf(item.id));
+    }
+    return out;
+  }
+
+  /**
+   * Dónde está, en definitiva, un recipiente: un mueble del mapa, o el lugar
+   * de la bolsa de más afuera (la mochila de alguien, el suelo, un cuerpo…).
+   */
+  rootOf(containerId: string): ItemLocation | { type: 'static'; at: Position } | null {
+    let id = containerId;
+    for (let depth = 0; depth < 10; depth++) {
+      const at = staticContainerAt(id);
+      if (at) return { type: 'static', at };
+      const bag = this.byId.get(id);
+      if (!bag || !ITEMS[bag.kind].capacity) return null;
+      if (bag.location.type !== 'container') return bag.location;
+      id = bag.location.containerId;
+    }
+    return null;
+  }
+
+  /** ¿Puede `actor` ver y tocar lo de adentro de este recipiente? (null: sí; si no, el motivo). */
+  containerAccess(actor: ItemActor, containerId: string, nearBanker = false): string | null {
+    const root = this.rootOf(containerId);
+    if (!root) return 'Eso ya no está.';
+    switch (root.type) {
+      case 'static':
+        return withinReach(actor.position, root.at) ? null : 'Está demasiado lejos.';
+      case 'ground':
+        return withinReach(actor.position, root.position) ? null : 'Está demasiado lejos.';
+      case 'corpse':
+        return withinReach(actor.position, root.at) ? null : 'El cuerpo está demasiado lejos.';
+      case 'bank':
+        if (root.ownerId !== actor.id) return 'Eso no es tuyo.';
+        return nearBanker ? null : 'Para usar el banco tenés que estar cerca de la banquera.';
+      case 'container':
+        return 'Eso ya no está.';
+      default:
+        return root.ownerId === actor.id ? null : 'Eso no es tuyo.';
+    }
+  }
+
+  private putInContainer(
+    actor: ItemActor,
+    item: Item,
+    containerId: string,
+    position: Position | undefined,
+    map: TileMap,
+    nearBanker: boolean,
+    changes: ItemChanges,
+  ): ItemResult {
+    const access = this.containerAccess(actor, containerId, nearBanker);
+    if (access) return fail(access);
+    const capacity = this.capacityOf(containerId, map);
+    if (!capacity) return fail('Eso no guarda cosas.');
+    // Una bolsa no entra en sí misma (ni en una bolsa que lleva adentro).
+    for (let id: string | null = containerId; id;) {
+      if (id === item.id) return fail('No podés meter una bolsa adentro de sí misma.');
+      const parent = this.byId.get(id);
+      id = parent?.location.type === 'container' ? parent.location.containerId : null;
+    }
+    const inside = this.contentsOf(containerId);
+    const already = item.location.type === 'container' && item.location.containerId === containerId;
+    if (already) {
+      if (position)
+        this.relocate(
+          item,
+          { type: 'container', containerId, position: clampToBackpack(position) },
+          changes,
+        );
+      return { ok: true, changes };
+    }
+    if (ITEMS[item.kind].stackable) {
+      const stack = inside.find((i) => i.kind === item.kind && i.amount + item.amount <= MAX_STACK);
+      if (stack) {
+        this.detach(item, changes);
+        this.byId.delete(item.id);
+        stack.amount += item.amount;
+        changes.containers.add(containerId);
+        return { ok: true, changes };
+      }
+    }
+    if (inside.length >= capacity) return fail('Ya no entra nada más ahí.');
+    const spot = position
+      ? clampToBackpack(position)
+      : this.gridSpot(inside.map((i) => i.location));
+    this.relocate(item, { type: 'container', containerId, position: spot }, changes);
+    return { ok: true, changes };
+  }
+
+  /** Cuántos objetos entran en un recipiente (0 si no es uno). */
+  capacityOf(containerId: string, map: TileMap): number {
+    const at = staticContainerAt(containerId);
+    if (at) {
+      const placed = map.statics.find(
+        (s) => s.x === at.x && s.y === at.y && STATIC_CONTAINERS[s.kind],
+      );
+      return placed ? (STATIC_CONTAINERS[placed.kind]?.capacity ?? 0) : 0;
+    }
+    const bag = this.byId.get(containerId);
+    return bag ? (ITEMS[bag.kind].capacity ?? 0) : 0;
   }
 
   /** Doble clic: comer, beber, ponerse o sacarse algo. */
@@ -281,6 +418,7 @@ export class Items {
       case 'smelt':
       case 'bandage':
       case 'scroll':
+      case 'container':
         // Se resuelven en otros casos de uso (o en el cliente): acá no hay nada que hacer.
         return { ok: true, changes };
       case 'none': {
@@ -310,6 +448,8 @@ export class Items {
         ? null
         : 'El cuerpo está demasiado lejos.';
     }
+    if (item.location.type === 'container')
+      return this.containerAccess(actor, item.location.containerId, true);
     return item.location.ownerId === actor.id ? null : 'Eso no es tuyo.';
   }
 
@@ -431,14 +571,23 @@ export class Items {
       changes.corpses.add(location.corpseId);
       return;
     }
+    if (location.type === 'container') {
+      changes.containers.add(location.containerId);
+      return;
+    }
     changes.inventories.add(location.ownerId);
     if (location.type === 'equipment') changes.looks.add(location.ownerId);
   }
 
   /** Primer casillero libre de la mochila, en una grilla del tamaño de un ícono. */
   freeSpot(ownerId: EntityId): Position {
-    const taken = this.backpackOf(ownerId).map((i) =>
-      i.location.type === 'backpack' ? i.location.position : null,
+    return this.gridSpot(this.backpackOf(ownerId).map((i) => i.location));
+  }
+
+  /** Primer casillero libre entre los lugares ya ocupados (mochila o recipiente). */
+  gridSpot(locations: readonly ItemLocation[]): Position {
+    const taken = locations.map((l) =>
+      'position' in l && l.type !== 'ground' ? l.position : null,
     );
     const columns = Math.floor(BACKPACK_AREA.width / ITEM_ICON_SIZE);
     const rows = Math.floor(BACKPACK_AREA.height / ITEM_ICON_SIZE);

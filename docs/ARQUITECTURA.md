@@ -378,6 +378,18 @@ servidor lo revisa en cada comando. Desde el chat: `/crear criatura [n]` (salvaj
 `/limpiar [radio]` (saca las criaturas creadas cerca) y `/anuncio texto`. Los nombres se buscan
 sin mayúsculas ni tildes: igual, que empiece así o que lo contenga.
 
+### Recipientes
+
+Como en UO, hay cosas que guardan cosas: bolsas, saquitos y cajas que se llevan en la
+mochila (`capacity` en el catálogo) y muebles del mundo (cofres, barriles, toneles,
+cajones, bibliotecas y estantes; ver `STATIC_CONTAINERS`). Un objeto puede estar
+`{ type: 'container', containerId }`: el id de una bolsa o `static:x:y` para un mueble.
+`Containers` (caso de uso) abre con doble clic si se está a dos pasos o menos (o si la
+bolsa es propia), llena los muebles la primera vez y los repone a la media hora de quedar
+vacíos, reenvía el contenido cuando cambia y cierra la ventana de quien se aleja. Las
+bolsas se guardan con todo lo de adentro (`SavedItem.contents`) y no se puede meter una
+bolsa dentro de sí misma.
+
 ### Persistencia
 
 Un personaje se guarda como datos planos (`SavedCharacter`, en `domain/persistence`):
