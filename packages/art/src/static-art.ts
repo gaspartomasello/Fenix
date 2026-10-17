@@ -2379,6 +2379,115 @@ function tree(species: TreeSpecies): StaticSpec {
   return { model: (c, variant) => drawTree(c, species, variant), shadow: TREE_SHADOWS[species] };
 }
 
+// ── Escaleras para subir y bajar de piso ──────────────────────────────
+
+/** Peldaños que suben hacia el fondo del tile (contra la pared de atrás). */
+function steps(c: VolumeCanvas, count: number, rise: number, material: Material): void {
+  const depth = (2 * H) / count;
+  for (let i = 0; i < count; i++) {
+    const top = (i + 1) * rise;
+    c.box([0, top / 2, H - (i + 0.5) * depth], UP, [H - 3, top / 2, depth / 2], material);
+  }
+}
+
+/** Escalera de madera: peldaños de tablas entre dos zancas y un pasamanos. */
+const stairsWood: Model = (c) => {
+  const wood = planks(WOOD, 0, 3);
+  steps(c, 6, 6, wood);
+  for (const x of [-H + 2, H - 2]) {
+    c.limb([x, 3, H], [x, 37, -H], 1.6, 1.6, solid(DARK_WOOD));
+    c.limb([x, 3, H - 1], [x, 14, H - 1], 0.9, 0.9, solid(DARK_WOOD));
+    c.limb([x, 14, H - 1], [x, 48, -H + 1], 0.8, 0.8, solid(DARK_WOOD, 1));
+  }
+};
+
+/** Escalera de piedra: bloques macizos en hiladas, con una baranda baja de piedra. */
+const stairsStone: Model = (c) => {
+  steps(c, 6, 6, masonry(0));
+  for (const x of [-H + 1.5, H - 1.5]) {
+    for (let i = 0; i < 6; i++) {
+      const z = H - (i + 0.5) * ((2 * H) / 6);
+      c.box([x, (i + 1) * 3 + 3, z], UP, [1.6, (i + 1) * 3 + 3, (2 * H) / 12], masonry(2));
+    }
+  }
+};
+
+/** Escalera de caracol: una columna con peldaños en abanico que suben girando. */
+const spiralStairs: Model = (c) => {
+  const stone = masonry(0);
+  const iron = metal(IRON);
+  cylinder(c, [0, 0, 0], 66, () => 2.6, solid(ramp([118, 110, 98])));
+  const count = 11;
+  const angle = (i: number): number => Math.PI * 0.7 - (i / count) * Math.PI * 1.6;
+  for (let i = 0; i < count; i++) {
+    const a = angle(i);
+    const y = 3 + i * 6;
+    const dir: Vec3 = [Math.cos(a), 0, Math.sin(a)];
+    c.box([dir[0] * 8, y, dir[2] * 8], axesAlong(dir), [2.6, 1, 6], stone);
+    c.limb(
+      [dir[0] * 13.5, y, dir[2] * 13.5],
+      [dir[0] * 13.5, y + 11, dir[2] * 13.5],
+      0.5,
+      0.5,
+      iron,
+    );
+    if (i > 0) {
+      const p = angle(i - 1);
+      c.limb(
+        [Math.cos(p) * 13.5, y + 5, Math.sin(p) * 13.5],
+        [dir[0] * 13.5, y + 11, dir[2] * 13.5],
+        0.55,
+        0.55,
+        iron,
+      );
+    }
+  }
+};
+
+/** Escalera de mano: apoyada contra la pared de atrás, sube hasta una abertura en el techo. */
+const ladderUp: Model = (c) => {
+  const wood = planks(WOOD, 1);
+  c.box([0, 62, -H + 3], UP, [9, 1.2, 5], solid(ramp([24, 20, 18])));
+  for (const x of [-6, 6]) c.limb([x, 0, 2], [x, 62, -H + 4], 1.4, 1.2, wood);
+  for (let i = 1; i <= 9; i++) {
+    const t = i / 10;
+    const z = 2 + t * (-H + 2);
+    c.limb([-6, t * 62, z], [6, t * 62, z], 0.9, 0.9, solid(WOOD, 1));
+  }
+};
+
+/** Bajada: el hueco de la escalera en el piso, con los peldaños que se pierden abajo y una baranda. */
+const stairHole: Model = (c) => {
+  c.box([0, 0.3, 0], UP, [H - 2, 0.4, H - 2], solid(ramp([18, 15, 13])));
+  for (let i = 0; i < 4; i++) {
+    const z = H - 5 - i * 6;
+    c.box([0, 0.6, z], UP, [H - 5, 0.3, 2.6], (s) => tone(WOOD, s.light * (0.8 - i * 0.18), 0));
+  }
+  // Baranda en el fondo y los costados (adelante queda abierto: por ahí se baja).
+  const rail = solid(DARK_WOOD);
+  for (const [x, z] of [
+    [-H + 1, -H + 1],
+    [H - 1, -H + 1],
+    [-H + 1, 2],
+    [H - 1, 2],
+  ] as const)
+    c.limb([x, 0, z], [x, 14, z], 1, 1, rail);
+  c.limb([-H + 1, 13, -H + 1], [H - 1, 13, -H + 1], 0.9, 0.9, rail);
+  c.limb([-H + 1, 13, -H + 1], [-H + 1, 13, 2], 0.9, 0.9, rail);
+  c.limb([H - 1, 13, -H + 1], [H - 1, 13, 2], 0.9, 0.9, rail);
+};
+
+/** Trampilla: una tapa de madera levantada contra la pared y el hueco oscuro con la escalera. */
+const trapdoor: Model = (c) => {
+  c.box([0, 0.3, 3], UP, [12, 0.4, 11], solid(ramp([18, 15, 13])));
+  for (const x of [-6, 6]) c.limb([x, 0.5, 13], [x, 0.5, -6], 1, 1, solid(WOOD, -1));
+  for (let z = -4; z <= 12; z += 4) c.limb([-6, 0.6, z], [6, 0.6, z], 0.7, 0.7, solid(WOOD));
+  const lid = planks(WOOD, 0, 3);
+  const back = axesAlong([0, 0.25, -1]);
+  c.box([0, 12, -10], back, [12.5, 12, 1.4], lid);
+  c.sphere([0, 12, -8.4], 1.6, metal(IRON));
+};
+
 const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   oak: tree('oak'),
   pine: tree('pine'),
@@ -2405,6 +2514,12 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   brazier: { model: brazier, shadow: [9, 4] },
   sarcophagus: { model: sarcophagus, shadow: [18, 8] },
   'sewer-grate': { model: sewerGrate },
+  'stairs-wood': { model: stairsWood },
+  'stairs-stone': { model: stairsStone },
+  'spiral-stairs': { model: spiralStairs, shadow: [16, 7] },
+  'ladder-up': { model: ladderUp },
+  'stair-hole': { model: stairHole },
+  trapdoor: { model: trapdoor },
   cobweb: { model: cobweb },
   ship: {
     model: ship(false),

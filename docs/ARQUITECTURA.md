@@ -442,6 +442,30 @@ cofre y unas ruinas viejas. Lo generan `generateCrypt` y `generateSewer` (`under
 `world-builder` los pone uno debajo del otro al este de la cueva, cada uno con su región
 oscura (`dungeon: true`), sus criaturas y dos teletransportes (bajar y volver por la escalera).
 
+### Pisos altos y línea de visión
+
+Algunos edificios tienen pisos altos, como en UO: la posada (un piso con cuartos), la torre
+del mago (dos pisos con escalera de caracol: biblioteca y observatorio) y algunas casas (escalera
+de madera o de mano). `city-builder` pone la escalera en el rincón del cuarto más lejos de la
+puerta y anota la subida (`Ascent`); `generateFloors` (`upper-floors.ts`) arma cada piso del
+mismo tamaño que la planta baja, con sus paredes, ventanas y muebles, la bajada (`stair-hole`)
+justo arriba de la escalera de abajo y, si sigue, otra escalera en la punta más lejana.
+`world-builder` pone los pisos en columnas a la derecha de todo, separados por roca (se ve
+negro, como el vacío), cada uno con su región (`floor: 1, 2…`, con luz de día y protegida
+como el pueblo) y los teletransportes de subir y bajar. Tipos de escalera: de madera, de
+piedra, de caracol, de mano, la bajada y la trampilla.
+
+La **línea de visión** (`hasLineOfSight`, `shared/domain/rules/line-of-sight.ts`) recorre la
+recta entre dos tiles: la tapan las paredes y sus ventanas, las puertas cerradas, las rejas,
+murallas, empalizadas, torres, la roca y las montañas (`blocksSight`); los árboles, las cercas
+bajas y los muebles no. Tampoco se ve entre niveles distintos (`TileMap.levelAt`). Se usa en:
+
+- hechizos: a alguien de otro piso no se le puede apuntar; si al terminar de conjurar algo
+  tapa al objetivo, el hechizo falla (y el maná y los reactivos se pierden);
+- golpes y flechas: no atraviesan paredes ni rejas;
+- criaturas: sin ver al objetivo no le tiran hechizos ni fuego (se acercan), y si se esconde
+  detrás de una pared mientras conjuran, el hechizo se pierde.
+
 ### Humanos hostiles y puertos
 
 Además de las bestias, hay gente que ataca: **bárbaros** (en un campamento con empalizada

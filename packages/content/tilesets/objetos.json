@@ -3,10 +3,10 @@
   "name": "objetos",
   "tilewidth": 136,
   "tileheight": 168,
-  "tilecount": 185,
-  "columns": 185,
+  "tilecount": 191,
+  "columns": 191,
   "image": "objetos.png",
-  "imagewidth": 25160,
+  "imagewidth": 25976,
   "imageheight": 168,
   "tileoffset": {
     "x": -46,
@@ -1860,6 +1860,66 @@
           "name": "static",
           "type": "string",
           "value": "pier-post"
+        }
+      ]
+    },
+    {
+      "id": 185,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "stairs-wood"
+        }
+      ]
+    },
+    {
+      "id": 186,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "stairs-stone"
+        }
+      ]
+    },
+    {
+      "id": 187,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "spiral-stairs"
+        }
+      ]
+    },
+    {
+      "id": 188,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "ladder-up"
+        }
+      ]
+    },
+    {
+      "id": 189,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "stair-hole"
+        }
+      ]
+    },
+    {
+      "id": 190,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "trapdoor"
         }
       ]
     }

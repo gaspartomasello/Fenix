@@ -8,6 +8,7 @@ export * from './domain/rules/movement';
 export * from './domain/rules/chat';
 export * from './domain/rules/daylight';
 export * from './domain/rules/visibility';
+export * from './domain/rules/line-of-sight';
 export * from './domain/character/appearance';
 export * from './domain/character/name';
 export * from './domain/character/password';

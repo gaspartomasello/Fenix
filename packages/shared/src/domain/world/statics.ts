@@ -198,6 +198,13 @@ export const STATIC_KINDS = [
   'ship',
   'pirate-ship',
   'pier-post',
+  // Pisos altos: escaleras para subir y bajar
+  'stairs-wood',
+  'stairs-stone',
+  'spiral-stairs',
+  'ladder-up',
+  'stair-hole',
+  'trapdoor',
 ] as const;
 
 export type StaticKind = (typeof STATIC_KINDS)[number];
@@ -222,6 +229,19 @@ const define = (
   lightRadius = 0,
   footprint = 1,
 ): StaticDefinition => ({ kind, name, blocking, lightRadius, footprint });
+
+/**
+ * Lo que tapa la vista: paredes (y sus ventanas), puertas cerradas, rejas,
+ * murallas, empalizadas, torres, montañas y peñascos. Detrás de eso no se
+ * apunta ni llega un hechizo o una flecha. Los árboles, las cercas bajas y
+ * los muebles no tapan.
+ */
+const SIGHT_BLOCKERS =
+  /(^|-)wall(-|$)|window|rampart|palisade|iron-fence|door|^tower$|^crypt$|^mountain$|^crag|^boulder$|^lighthouse$/;
+
+export function blocksSight(kind: StaticKind): boolean {
+  return SIGHT_BLOCKERS.test(kind);
+}
 
 /**
  * Asientos: al quedarse quieto sobre uno, el personaje se sienta mirando
@@ -444,6 +464,12 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   candelabra: define('candelabra', 'candelabro', true, 4),
   sarcophagus: define('sarcophagus', 'sarcófago', true),
   'sewer-grate': define('sewer-grate', 'reja de la alcantarilla', false),
+  'stairs-wood': define('stairs-wood', 'escalera de madera', false),
+  'stairs-stone': define('stairs-stone', 'escalera de piedra', false),
+  'spiral-stairs': define('spiral-stairs', 'escalera de caracol', false),
+  'ladder-up': define('ladder-up', 'escalera de mano', false),
+  'stair-hole': define('stair-hole', 'bajada al piso de abajo', false),
+  trapdoor: define('trapdoor', 'trampilla', false),
   cobweb: define('cobweb', 'telaraña', false),
   ship: define('ship', 'barco mercante', true, 4, 3),
   'pirate-ship': define('pirate-ship', 'barco pirata', true, 4, 3),

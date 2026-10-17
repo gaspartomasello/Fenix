@@ -13,6 +13,7 @@ import {
 } from '@fenix/shared';
 import { SeededRandom } from '../system/seeded-random';
 import type { Descent, MapRegion, PlacedItem } from './tiled-map-loader';
+import type { Ascent, FloorUse } from './upper-floors';
 
 /** Nombres de los vecinos. */
 const TOWNSFOLK_NAMES = [
@@ -278,6 +279,8 @@ class Plan {
   readonly lairs: { kind: CreatureKind; position: Position }[] = [];
   /** Bajadas a lugares bajo tierra: la puerta de la cripta y la reja de la alcantarilla. */
   readonly descents: Descent[] = [];
+  /** Subidas a pisos altos (la posada, la torre del mago, algunas casas). */
+  readonly ascents: Ascent[] = [];
   /** Objetos que van encima de otro en el mismo tile (una biblioteca contra la pared). */
   readonly decor: StaticPlacement[] = [];
   /** Por dónde entra y sale el río del plano (el continente lo sigue afuera). */
@@ -542,6 +545,7 @@ class Plan {
       lairs: this.lairs,
       rivers: this.rivers,
       descents: this.descents,
+      ascents: this.ascents,
     };
   }
 }
@@ -713,6 +717,10 @@ export function buildCity(spec: CitySpec): City {
       houses.find((h) => !shopRooms.includes(h));
     if (!room) break;
     shopRooms.push(room);
+    if (!style.lawless && role === 'innkeeper')
+      upstairs(plan, spec, style, room, 'inn', 'la posada', 1, stoneStairs(style));
+    if (!style.lawless && role === 'mage')
+      upstairs(plan, spec, style, room, 'mage', 'la torre del mago', 2, 'spiral-stairs');
     const spot = furnishShop(plan, role, room, random);
     // El banco tiene puerta de hierro.
     if (role === 'banker' && plan.statics.get(room.door.y * plan.width + room.door.x) === 'door-x')
@@ -734,7 +742,16 @@ export function buildCity(spec: CitySpec): City {
       }
     });
   }
-  for (const home of homes.slice(spec.starterItems ? 1 : 0)) furnishHome(plan, home, random, style);
+  // Algunas casas tienen un piso alto, con escalera de madera o de mano.
+  let twoStorey = spec.size === 'large' ? 3 : spec.size === 'medium' ? 2 : 1;
+  for (const home of homes.slice(spec.starterItems ? 1 : 0)) {
+    if (!style.lawless && twoStorey > 0 && roomy(home)) {
+      const small = home.x1 - home.x0 < 5;
+      upstairs(plan, spec, style, home, 'home', 'una casa', 1, small ? 'ladder-up' : 'stairs-wood');
+      twoStorey--;
+    }
+    furnishHome(plan, home, random, style);
+  }
   // Faroles a lo largo de las avenidas (en el refugio, solo las fogatas de las carpas).
   for (let t = 4; !style.lawless && t < Math.max(width, height); t += 7) {
     for (const [x, y] of [
@@ -1279,6 +1296,63 @@ function building(
     northWall: house.y0,
     westWall: house.x0,
   };
+}
+
+/** La escalera de las casas de piedra es de piedra; la de las demás, de madera. */
+function stoneStairs(style: Style): StaticKind {
+  return style.walls === STONE || style.walls === BASALT ? 'stairs-stone' : 'stairs-wood';
+}
+
+/**
+ * Pone la escalera de un edificio con pisos altos, en el rincón del cuarto
+ * más lejos de la puerta (antes de amueblarlo, así los muebles la esquivan),
+ * y anota la subida para armar los pisos en otro lugar del mapa.
+ */
+function upstairs(
+  plan: Plan,
+  spec: CitySpec,
+  style: Style,
+  room: Room,
+  use: FloorUse,
+  building: string,
+  floors: number,
+  stairs: StaticKind,
+): void {
+  const keep = reserved(room);
+  const corners: Position[] = [
+    { x: room.x0, y: room.y0 },
+    { x: room.x1, y: room.y0 },
+    { x: room.x0, y: room.y1 },
+    { x: room.x1, y: room.y1 },
+  ].sort((a, b) => distance(b, room.entry) - distance(a, room.entry));
+  for (const at of corners) {
+    if (keep.has(`${at.x},${at.y}`) || !plan.isFree(at.x, at.y)) continue;
+    const back = [
+      { x: at.x + 1, y: at.y },
+      { x: at.x - 1, y: at.y },
+      { x: at.x, y: at.y + 1 },
+      { x: at.x, y: at.y - 1 },
+    ].find((p) => inRect(room, p.x, p.y) && plan.isFree(p.x, p.y));
+    if (!back) continue;
+    plan.put(at.x, at.y, stairs);
+    // El lugar donde se aparece al bajar queda libre: se marca con una alfombra que no tapa.
+    plan.put(back.x, back.y, 'carpet');
+    plan.ascents.push({
+      town: spec.name,
+      building,
+      use,
+      stairs,
+      position: at,
+      back,
+      width: room.x1 - room.x0 + 1,
+      height: room.y1 - room.y0 + 1,
+      offset: { x: at.x - room.x0, y: at.y - room.y0 },
+      walls: style.walls,
+      floor: style.floor,
+      floors,
+    });
+    return;
+  }
 }
 
 /** Tiles del piso que no hay que tapar: la entrada y el camino hasta el centro. */

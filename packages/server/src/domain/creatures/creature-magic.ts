@@ -7,6 +7,7 @@ import {
   resistChance,
   rollSpellPower,
   spellDurationMs,
+  hasLineOfSight,
   tileDistance,
   type SpellKey,
 } from '@fenix/shared';
@@ -35,6 +36,8 @@ export function startCreatureCast(
   target: Mobile,
   now: number,
   random: () => number,
+  /** ¿Ve al objetivo? Sin verlo solo puede curarse. */
+  visible = true,
 ): SpellKey | null {
   const spells = creature.definition.abilities?.spells;
   if (!spells || creature.pendingCast || now < creature.nextSpellAt) return null;
@@ -42,6 +45,7 @@ export function startCreatureCast(
   const distance = tileDistance(creature.position, target.position);
   if (distance > spells.range + 3) return null;
   const healing = spells.heal && creature.combat.health < 0.4 ? spells.heal : null;
+  if (!healing && !visible) return null;
   const spell = healing ?? spells.attack[Math.floor(random() * spells.attack.length)];
   if (!spell) return null;
   // Sin maná no hay hechizo: pelea cuerpo a cuerpo hasta recuperarlo.
@@ -73,6 +77,8 @@ export function resolveCreatureCast(
   if (!target || target.combat.isDead || tileDistance(target.position, creature.position) > 12)
     return null;
   const harmful = target !== creature;
+  // Si se escondió detrás de una pared mientras conjuraba, el hechizo se pierde.
+  if (harmful && !hasLineOfSight(world.map, creature.position, target.position)) return null;
   const resisted = harmful && random() < resistChance(magicResistOf(target), spell.circle);
   const result = (amount: number, killed: boolean, effectsChanged: boolean) => ({
     spell: pending.spell,
