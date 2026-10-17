@@ -105,7 +105,7 @@ function paletteFor(appearance: Appearance, equipment: EquipmentLook): Palette {
 
 /** Ropa de trabajo de los personajes del pueblo. */
 type Outfit = 'apron' | 'robe' | 'innkeeper' | 'vest' | 'woodcutter';
-const OUTFITS: Readonly<Record<NpcRole, Outfit>> = {
+const OUTFITS: Readonly<Partial<Record<NpcRole, Outfit>>> = {
   blacksmith: 'apron',
   mage: 'robe',
   innkeeper: 'innkeeper',
@@ -160,7 +160,7 @@ export function drawCharacterFrame(
     : spriteCanvas(CHARACTER_ART_WIDTH, CHARACTER_ART_HEIGHT, cameraFor(direction));
   const ride = mount ? drawMount(canvas, mount, frame) : null;
   const female = appearance.gender === 'female';
-  const outfit = role ? OUTFITS[role] : null;
+  const outfit = role ? (OUTFITS[role] ?? null) : null;
   const robed = outfit === 'robe' || equipment.torso === 'robe';
   const leftWeapon = heldInLeftHand(equipment.rightHand);
   const figure: Figure = {

@@ -10,6 +10,9 @@ export const NPC_ROLES = [
   'stablemaster',
   'woodcutter',
   'carpenter',
+  // Gente del pueblo que no comercia: vecinos que caminan y guardias.
+  'townsfolk',
+  'guard',
 ] as const;
 export type NpcRole = (typeof NPC_ROLES)[number];
 
@@ -202,6 +205,52 @@ export const VENDORS: Readonly<Record<NpcRole, VendorDefinition>> = {
     sells: offers({ saw: 25, boards: 6, 'wooden-shield': 60 }),
     buys: offers({ logs: 2, boards: 4 }),
   },
+  townsfolk: {
+    role: 'townsfolk',
+    name: 'vecino',
+    greeting: 'Buen día.',
+    sells: [],
+    buys: [],
+  },
+  guard: {
+    role: 'guard',
+    name: 'guardia',
+    greeting: 'Que haya paz en la ciudad.',
+    sells: [],
+    buys: [],
+  },
+};
+
+/** ¿Comercia (o guarda cosas)? Con los demás solo se charla. */
+export function isMerchant(role: NpcRole): boolean {
+  return (
+    role === 'banker' ||
+    role === 'stablemaster' ||
+    VENDORS[role].sells.length > 0 ||
+    VENDORS[role].buys.length > 0
+  );
+}
+
+/** Lo que dice cada uno al hablarle (una frase al azar). */
+export const NPC_CHATTER: Readonly<Partial<Record<NpcRole, readonly string[]>>> = {
+  townsfolk: [
+    'Buen día, forastero.',
+    'Dicen que en las Tierras de Ceniza vive un dragón enorme.',
+    'Cuidado con los caminos de noche: salen los lobos.',
+    'El herrero de la plaza tiene el mejor acero.',
+    'Mi abuelo minaba en las montañas del oeste.',
+    'Si te lastiman, el santuario de la plaza te devuelve la vida.',
+    '¿Viste el castillo? Dicen que el rey nunca sale.',
+    'En el cementerio, de noche, se oyen pasos.',
+    'Los bandidos tienen su refugio en una isla del sur.',
+    'Hace frío para esta época, ¿no?',
+  ],
+  guard: [
+    'Circulá, ciudadano.',
+    'Mientras yo esté acá, nadie va a romper la paz.',
+    'Los criminales no son bienvenidos en la ciudad.',
+    'Si ves a alguien sospechoso, avisá a la guardia.',
+  ],
 };
 
 /** Distancia a la que se puede comerciar o usar el banco. */

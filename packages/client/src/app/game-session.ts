@@ -22,7 +22,15 @@ import { SpellbookWindow } from '../ui/spellbook-window';
 import { TargetingBanner } from '../ui/targeting-banner';
 import { VitalsPanel } from '../ui/vitals-panel';
 import { EffectsBar } from '../ui/effects-bar';
-import { ITEMS, VENDORS, VENDOR_RANGE, reputationTitle, type NpcRole } from '@fenix/shared';
+import {
+  ITEMS,
+  NPC_CHATTER,
+  VENDORS,
+  VENDOR_RANGE,
+  isMerchant,
+  reputationTitle,
+  type NpcRole,
+} from '@fenix/shared';
 import type { ItemActions } from '../ui/backpack-window';
 import { BankWindow } from '../ui/bank-window';
 import { CorpseWindow } from '../ui/corpse-window';
@@ -258,6 +266,13 @@ export class GameSession {
         this.hosts.ui.append(bank.window.element);
       },
       openNpc: (id, role) => {
+        // Con los vecinos y los guardias se charla: dicen una frase.
+        if (!isMerchant(role)) {
+          const lines = NPC_CHATTER[role] ?? [VENDORS[role].greeting];
+          const line = lines[Math.floor(Math.random() * lines.length)] ?? VENDORS[role].greeting;
+          this.game.notify(`${this.game.entity(id)?.name ?? VENDORS[role].name}: ${line}`);
+          return;
+        }
         if (!this.game.isNear(id, VENDOR_RANGE)) {
           this.game.notify(
             `Acercate a ${VENDORS[role].name} para ${role === 'banker' ? 'usar el banco' : 'comerciar'}.`,

@@ -29,6 +29,7 @@ import { UseItem } from './use-cases/use-item';
 import { JoinWorld, type JoinWorldResult } from './use-cases/join-world';
 import { LeaveWorld } from './use-cases/leave-world';
 import { GameMaster } from './use-cases/game-master';
+import { TownLife } from './use-cases/town-life';
 import { MovePlayer } from './use-cases/move-player';
 import { SendChat } from './use-cases/send-chat';
 import { SocialActions } from './use-cases/social-actions';
@@ -58,6 +59,7 @@ export class GameApplication {
   private readonly joinWorld: JoinWorld;
   private readonly leaveWorld: LeaveWorld;
   private readonly gameMaster: GameMaster;
+  private readonly townLife: TownLife;
   private readonly movePlayer: MovePlayer;
   private readonly sendChat: SendChat;
   private readonly moveItem: MoveItem;
@@ -174,6 +176,13 @@ export class GameApplication {
       },
       (name) => isTestCharacter(name, [...testCharacters, ...admins]),
     );
+    this.townLife = new TownLife(
+      world,
+      this.mobiles,
+      notifier,
+      () => random.next(),
+      (victim, by, now) => this.loop.slay(victim, by, now),
+    );
     this.loop = new GameLoop(
       world,
       this.mobiles,
@@ -199,6 +208,7 @@ export class GameApplication {
   /** Avanza el mundo: criaturas, golpes, regeneración. La infraestructura lo llama seguido. */
   tick(now: number): void {
     this.loop.tick(now);
+    this.townLife.tick(now);
     this.persistence.autosave(now);
   }
 

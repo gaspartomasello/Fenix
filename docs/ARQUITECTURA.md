@@ -357,6 +357,16 @@ chat las pinta en celeste y en verde, como en UO.
 - **Cambio de mundo**: `World.mapId` (tamaño y semilla) se guarda con el personaje; si el mundo
   cambió, el personaje aparece en la capital en vez de en su lugar viejo.
 
+### Vida en las ciudades
+
+`use-cases/town-life.ts`: los vecinos (`townsfolk`, con aspectos distintos según el nombre)
+pasean cerca de su casa con pausas, y los guardias (`guard`) patrullan su puesto. Solo se mueven
+si hay algún jugador cerca. Un guardia que ve a un criminal, un asesino o una fiera dentro de la
+zona protegida le grita "¡Alto ahí!" y a los 2,5 s aparece a su lado y lo ajusticia (no toca las
+criaturas creadas por un administrador). Con los que no comercian se charla: al hacer clic dicen
+una frase de `NPC_CHATTER`. `city-builder` los pone: vecinos por las avenidas y guardias en las
+puertas y la plaza (no en el refugio de los bandidos).
+
 ### Administrador del juego
 
 `use-cases/game-master.ts` (mensaje `gm`, con el comando adentro). Son administradores los

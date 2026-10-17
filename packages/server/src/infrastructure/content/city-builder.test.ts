@@ -1,4 +1,4 @@
-import { DOORS, SEATS, STATICS, TileMap, Terrain, type Position } from '@fenix/shared';
+import { DOORS, SEATS, STATICS, TileMap, Terrain, isMerchant, type Position } from '@fenix/shared';
 import { describe, expect, it } from 'vitest';
 import { buildCity, type City, type CityStyle } from './city-builder';
 
@@ -61,7 +61,15 @@ describe('buildCity', () => {
     expect(spawn).not.toBeNull();
     if (!spawn) return;
     const walk = reachable(map, spawn);
-    expect(capital.npcs.map((n) => n.role).sort()).toEqual(
+    // Además de los comerciantes, la capital tiene vecinos que pasean y guardias.
+    expect(capital.npcs.filter((n) => n.role === 'townsfolk').length).toBeGreaterThanOrEqual(6);
+    expect(capital.npcs.filter((n) => n.role === 'guard').length).toBeGreaterThanOrEqual(6);
+    expect(
+      capital.npcs
+        .filter((n) => isMerchant(n.role))
+        .map((n) => n.role)
+        .sort(),
+    ).toEqual(
       [
         'banker',
         'blacksmith',

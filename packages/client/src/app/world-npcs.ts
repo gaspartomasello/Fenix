@@ -1,4 +1,4 @@
-import type { NpcRole } from '@fenix/shared';
+import { isMerchant, type NpcRole } from '@fenix/shared';
 import type { ClientGame } from '../core/client-game';
 import type { GameRenderer } from '../rendering/game-renderer';
 import type { WorldTooltip } from '../ui/world-tooltip';
@@ -42,7 +42,12 @@ export class WorldNpcs {
     const id = this.renderer.npcAt(this.local(e));
     const npc = id ? this.game.entity(id) : undefined;
     if (!npc) return;
-    const action = npc.npc === 'banker' ? 'clic para abrir el banco' : 'clic para comerciar';
+    const action =
+      npc.npc === 'banker'
+        ? 'clic para abrir el banco'
+        : npc.npc && !isMerchant(npc.npc)
+          ? 'clic para hablar'
+          : 'clic para comerciar';
     this.tooltip.show(`${npc.name} · ${action}`, e.clientX, e.clientY);
   }
 
