@@ -29,6 +29,7 @@ export * from './domain/magic/spell-catalog';
 export * from './domain/magic/effects';
 export * from './domain/economy/vendors';
 export * from './domain/economy/crafting';
+export * from './domain/quests/quests';
 export * from './domain/social/reputation';
 export * from './domain/social/groups';
 export * from './protocol/messages';

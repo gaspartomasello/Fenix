@@ -2296,3 +2296,72 @@ body {
     min-height: 196px;
   }
 }
+
+/* ── Misiones ── */
+.quest-window {
+  width: min(380px, calc(100vw - 16px));
+}
+
+.quest-offer p,
+.quest-item p {
+  margin: 0 0 8px;
+}
+
+.quest-giver {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.quest-story {
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.quest-goal {
+  color: var(--color-accent);
+}
+
+.quest-reward,
+.quest-meta {
+  color: var(--color-system);
+  font-size: 0.85rem;
+}
+
+.quest-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.quest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 50vh;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.quest-item {
+  padding: 8px;
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius);
+}
+
+.quest-item.quest-done {
+  border-color: var(--color-system);
+}
+
+.quest-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.quest-abandon {
+  font-size: 0.75rem;
+}

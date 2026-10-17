@@ -419,6 +419,13 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
       c.sphere([a, 2.4, b], 0.7, metal(GOLD));
     }
   },
+  letter(c) {
+    // Papel doblado con un sello de lacre rojo.
+    c.box([0, 0.5, 0], lying(0.4), [4.4, 0.35, 3.2], (s) =>
+      tone(PAPER, s.light, Math.abs(s.p[0] * 0.9 - s.p[2] * 0.4) < 0.25 ? -1 : 0),
+    );
+    c.sphere([0.4, 1, 0.2], 1.1, (s) => tone(ramp([170, 30, 30]), s.light));
+  },
   'black-pearl'(c) {
     for (const at of [
       [-1.5, 1.2, 0.5],

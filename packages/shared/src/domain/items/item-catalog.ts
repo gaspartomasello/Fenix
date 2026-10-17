@@ -53,6 +53,7 @@ export const BASE_ITEM_KINDS = [
   // Magia
   'spellbook',
   'book',
+  'letter',
   'blank-scroll',
   'rune',
   'moongate',
@@ -251,6 +252,8 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
     use: 'spellbook',
   },
   book: { name: 'libro', plural: 'libros', article: 'un', use: 'book' },
+  // Carta de una misión: se lee como un libro y se entrega a quien va dirigida.
+  letter: { name: 'carta sellada', plural: 'cartas selladas', article: 'una', use: 'book' },
   'blank-scroll': {
     name: 'pergamino en blanco',
     plural: 'pergaminos en blanco',

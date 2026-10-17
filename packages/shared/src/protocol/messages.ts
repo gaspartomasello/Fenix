@@ -17,6 +17,7 @@ import type { ActiveSkill } from '../domain/skills/stealth';
 import type { WorldTime } from '../domain/rules/daylight';
 import type { MoveMode } from '../domain/rules/movement';
 import type { CompactMapData } from '../domain/world/map-codec';
+import type { Quest, QuestProgress } from '../domain/quests/quests';
 
 export type EntityId = string;
 
@@ -305,6 +306,24 @@ export interface WriteBookRequest {
   readonly text: string;
 }
 
+/** Hablar con un vecino: puede ofrecer una misión, recibir una carta o pagar una terminada. */
+export interface TalkNpcRequest {
+  readonly type: 'talkNpc';
+  readonly npcId: EntityId;
+}
+
+/** Aceptar la misión que ofrece un vecino. */
+export interface AcceptQuestRequest {
+  readonly type: 'acceptQuest';
+  readonly npcId: EntityId;
+}
+
+/** Dejar una misión (se nombra por quien la dio). */
+export interface AbandonQuestRequest {
+  readonly type: 'abandonQuest';
+  readonly giver: string;
+}
+
 /** Pasar todo lo que hay en un cuerpo a la mochila. */
 export interface LootAllRequest {
   readonly type: 'lootAll';
@@ -342,6 +361,9 @@ export type ClientMessage =
   | GmRequest
   | OpenContainerRequest
   | ReadBookRequest
+  | TalkNpcRequest
+  | AcceptQuestRequest
+  | AbandonQuestRequest
   | WriteBookRequest
   | OpenCorpseRequest
   | LootAllRequest
@@ -612,6 +634,19 @@ export interface BookMessage {
   readonly writable: boolean;
 }
 
+/** Un vecino ofrece una misión: se acepta o no. */
+export interface QuestOfferMessage {
+  readonly type: 'questOffer';
+  readonly npcId: EntityId;
+  readonly quest: Quest;
+}
+
+/** Las misiones aceptadas, con lo que se lleva hecho (se reenvía cuando cambia). */
+export interface QuestsMessage {
+  readonly type: 'quests';
+  readonly quests: readonly QuestProgress[];
+}
+
 /** El recipiente ya no se puede ver (el jugador se alejó o se lo llevaron). */
 export interface ContainerClosedMessage {
   readonly type: 'containerClosed';
@@ -636,6 +671,8 @@ export type ServerMessage =
   | ContainerMessage
   | ContainerClosedMessage
   | BookMessage
+  | QuestOfferMessage
+  | QuestsMessage
   | JoinRejectedMessage
   | MobileAppearedMessage
   | MobileDisappearedMessage
