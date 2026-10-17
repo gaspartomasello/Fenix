@@ -3,10 +3,10 @@
   "name": "objetos",
   "tilewidth": 136,
   "tileheight": 168,
-  "tilecount": 179,
-  "columns": 179,
+  "tilecount": 182,
+  "columns": 182,
   "image": "objetos.png",
-  "imagewidth": 24344,
+  "imagewidth": 24752,
   "imageheight": 168,
   "tileoffset": {
     "x": -46,
@@ -1800,6 +1800,36 @@
           "name": "static",
           "type": "string",
           "value": "basalt-window-y"
+        }
+      ]
+    },
+    {
+      "id": 179,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "sarcophagus"
+        }
+      ]
+    },
+    {
+      "id": 180,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "sewer-grate"
+        }
+      ]
+    },
+    {
+      "id": 181,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "cobweb"
         }
       ]
     }

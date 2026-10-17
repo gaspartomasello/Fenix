@@ -427,6 +427,18 @@ bolsas e instrumentos, y compra gemas. La ventana de la tienda muestra el daño,
 cuánto alimenta cada objeto, separa los estantes (armas, armaduras, comida, otros) en las
 tiendas grandes, calcula el total al comprar varios y tiene «Vender todo».
 
+### Bajo tierra: criptas y alcantarilla
+
+Los cementerios son más grandes y tienen más no-muertos. Frente a la puerta de cada
+cripta hay una bajada (`Descent`, la arma `city-builder`) que lleva a una cripta
+subterránea: un pasillo de baldosas oscuras con nichos (sarcófago y un muerto que se
+levanta en cada uno) y una sala al fondo con el señor de la cripta (un liche en la capital) y
+un cofre. La capital tiene además una reja de alcantarilla en una calle del suroeste: abajo
+hay canales de agua sucia con veredas y puentes, nidos de ratas, una guarida de orcos con un
+cofre y unas ruinas viejas. Lo generan `generateCrypt` y `generateSewer` (`underground.ts`);
+`world-builder` los pone uno debajo del otro al este de la cueva, cada uno con su región
+oscura (`dungeon: true`), sus criaturas y dos teletransportes (bajar y volver por la escalera).
+
 ### Persistencia
 
 Un personaje se guarda como datos planos (`SavedCharacter`, en `domain/persistence`):

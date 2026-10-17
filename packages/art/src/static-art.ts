@@ -540,6 +540,61 @@ const bones: Model = (c, variant) => {
   for (const x of [1.8, 4.2]) c.sphere([x, 3.4, 4.8], 0.8, solid(ramp([30, 26, 22])));
 };
 
+/** Sarcófago de piedra: caja tallada con tapa y una figura yacente apenas marcada. */
+const sarcophagus: Model = (c, variant) => {
+  const stone = rocky(ramp([132, 128, 124]), variant * 7 + 3);
+  const facing = axesAlong([1, 0, 1]);
+  c.box([0, 5, 0], facing, [8, 5, 15], stone);
+  c.box([0, 11, 0], facing, [9, 1.4, 16], rocky(ramp([150, 146, 140]), variant + 11));
+  // La figura de la tapa: cabeza y manos cruzadas.
+  const relief = solid(ramp([118, 114, 110]));
+  c.sphere([-7 * Math.SQRT1_2, 13, -7 * Math.SQRT1_2], 2.4, relief);
+  c.ellipsoid([1, 13, 1], facing, [3, 1, 6], relief);
+};
+
+/** Reja de la alcantarilla: un aro de hierro en el piso con barrotes y oscuridad abajo. */
+const sewerGrate: Model = (c) => {
+  c.ellipsoid([0, 0.3, 0], UP, [10, 0.4, 10], solid(ramp([20, 18, 18])));
+  const iron = metal(IRON);
+  c.ellipsoid(
+    [0, 0.8, 0],
+    UP,
+    [11, 0.6, 11],
+    clipping((s) => (Math.hypot(s.p[0], s.p[2]) > 9 ? iron(s) : null)),
+  );
+  for (let k = -6; k <= 6; k += 3) {
+    const half = Math.sqrt(Math.max(0, 81 - k * k));
+    c.limb([k, 1, -half], [k, 1, half], 0.8, 0.8, iron);
+  }
+};
+
+/** Telaraña en un rincón: hilos finos que brillan apenas. */
+const cobweb: Model = (c, variant) => {
+  const silk = solid(ramp([214, 214, 220]));
+  const top: Vec3 = [-H + 2, 26, -H + 2];
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 5) * (Math.PI / 2);
+    c.limb(
+      top,
+      [-H + 2 + Math.cos(a) * 16, 26 - Math.sin(a) * 18 - variant * 2, -H + 2 + Math.sin(a) * 4],
+      0.25,
+      0.2,
+      silk,
+    );
+  }
+  for (const r of [5, 10, 14])
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * (Math.PI / 2);
+      const b = ((i + 1) / 5) * (Math.PI / 2);
+      const at = (t: number): Vec3 => [
+        -H + 2 + Math.cos(t) * r,
+        26 - Math.sin(t) * r * 1.1,
+        -H + 2 + Math.sin(t) * r * 0.25,
+      ];
+      c.limb(at(a), at(b), 0.2, 0.2, silk);
+    }
+};
+
 /** Estalagmita: un cono de roca que sube del suelo. */
 const stalagmite: Model = (c, variant) => {
   const material = caveRock(variant * 5 + 2);
@@ -2278,6 +2333,9 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   'cave-entrance': { model: caveEntrance, shadow: [34, 14] },
   ladder: { model: ladder },
   brazier: { model: brazier, shadow: [9, 4] },
+  sarcophagus: { model: sarcophagus, shadow: [18, 8] },
+  'sewer-grate': { model: sewerGrate },
+  cobweb: { model: cobweb },
   bones: { model: bones },
   stalagmite: { model: stalagmite, shadow: [9, 4] },
   ceibo: tree('ceibo'),

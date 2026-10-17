@@ -12,7 +12,7 @@ import {
   type StaticPlacement,
 } from '@fenix/shared';
 import { SeededRandom } from '../system/seeded-random';
-import type { MapRegion, PlacedItem } from './tiled-map-loader';
+import type { Descent, MapRegion, PlacedItem } from './tiled-map-loader';
 
 /** Nombres de los vecinos. */
 const TOWNSFOLK_NAMES = [
@@ -222,16 +222,29 @@ const STYLES: Readonly<Record<CityStyle, Style>> = {
 
 /** Medidas: el área de adentro de la muralla y lo que queda afuera (este y sur, para el cementerio). */
 const SIZES = {
-  large: { inner: [88, 78], near: 5, far: 18 },
-  medium: { inner: [36, 30], near: 3, far: 13 },
-  small: { inner: [26, 24], near: 3, far: 11 },
+  large: { inner: [88, 78], near: 5, far: 24 },
+  medium: { inner: [36, 30], near: 3, far: 18 },
+  small: { inner: [26, 24], near: 3, far: 15 },
 } as const;
 
 /** Quién vive en el cementerio según el tamaño de la ciudad. */
 const GRAVEYARD: Readonly<Record<'large' | 'medium' | 'small', readonly CreatureKind[]>> = {
-  large: ['zombie', 'zombie', 'zombie', 'ghoul', 'ghoul', 'skeleton', 'skeleton', 'wraith'],
-  medium: ['zombie', 'zombie', 'ghoul', 'skeleton', 'wraith'],
-  small: ['zombie', 'skeleton', 'ghoul'],
+  large: [
+    'zombie',
+    'zombie',
+    'zombie',
+    'zombie',
+    'ghoul',
+    'ghoul',
+    'skeleton',
+    'skeleton',
+    'skeleton',
+    'wraith',
+    'wraith',
+    'skeleton-mage',
+  ],
+  medium: ['zombie', 'zombie', 'zombie', 'ghoul', 'skeleton', 'skeleton', 'wraith'],
+  small: ['zombie', 'zombie', 'skeleton', 'ghoul'],
 };
 
 /** Lo que los recién llegados encuentran en el depósito de la capital. */
@@ -263,6 +276,8 @@ class Plan {
   readonly npcs: { role: NpcRole; position: Position; name?: string }[] = [];
   readonly items: PlacedItem[] = [];
   readonly lairs: { kind: CreatureKind; position: Position }[] = [];
+  /** Bajadas a lugares bajo tierra: la puerta de la cripta y la reja de la alcantarilla. */
+  readonly descents: Descent[] = [];
   /** Objetos que van encima de otro en el mismo tile (una biblioteca contra la pared). */
   readonly decor: StaticPlacement[] = [];
   /** Por dónde entra y sale el río del plano (el continente lo sigue afuera). */
@@ -526,6 +541,7 @@ class Plan {
       npcs: this.npcs,
       lairs: this.lairs,
       rivers: this.rivers,
+      descents: this.descents,
     };
   }
 }
@@ -810,6 +826,27 @@ export function buildCity(spec: CitySpec): City {
     height: innerH + 3,
     ...(style.lawless ? { wild: true } : {}),
   });
+  // La capital tiene alcantarillas: se baja por una reja en una calle del suroeste.
+  if (spec.size === 'large' && !style.lawless) {
+    const corner = { x: inner.x0 + 3, y: inner.y1 - 3 };
+    const candidates: Position[] = [];
+    for (let y = inner.y0 + 2; y <= inner.y1 - 2; y++)
+      for (let x = inner.x0 + 2; x <= inner.x1 - 2; x++)
+        if (
+          plan.terrain[y * width + x] === style.street &&
+          free(x, y) &&
+          // Al volver se aparece en diagonal a la reja: tiene que ser calle libre.
+          plan.terrain[(y + 1) * width + x + 1] === style.street &&
+          free(x + 1, y + 1)
+        )
+          candidates.push({ x, y });
+    candidates.sort((a, b) => distance(a, corner) - distance(b, corner));
+    const grate = candidates[0];
+    if (grate) {
+      plan.put(grate.x, grate.y, 'sewer-grate');
+      plan.descents.push({ kind: 'sewer', position: grate, town: spec.name, size: spec.size });
+    }
+  }
   return plan.toCity(regions, spec.style === 'capital' || spec.starterItems ? spawn : null, spawn);
 }
 
@@ -1403,18 +1440,26 @@ function buildGraveyard(plan: Plan, r: Rect, spec: CitySpec, random: SeededRando
       : { x: 'iron-fence-x', y: 'iron-fence-y', corner: 'iron-fence-x', post: 'iron-fence-y' };
   plan.enclose(inside, fence, [gate]);
   plan.big(inside.x1 - 2, inside.y0 + 1, 'crypt');
+  // Frente a la puerta de la cripta se baja (el camino hasta ahí queda libre).
+  const door = { x: inside.x1, y: inside.y0 + 3 };
+  const path = (x: number, y: number): boolean =>
+    y === gate.y || (x === door.x && y >= door.y) || (y === door.y && x >= door.x - 1);
   for (let y = inside.y0 + 2; y <= inside.y1 - 1; y += 2)
     for (let x = inside.x0 + 2; x <= inside.x1 - 1; x += 2) {
-      if (!plan.isFree(x, y) || !plan.isFree(x + 1, y)) continue;
+      if (!plan.isFree(x, y) || !plan.isFree(x + 1, y) || path(x, y) || path(x + 1, y)) continue;
       const roll = random.next();
       if (roll < 0.62) plan.put(x, y, 'gravestone');
-      else if (roll < 0.7) plan.put(x, y, 'dead-tree');
-      else if (roll < 0.78) plan.put(x, y, 'bones');
+      else if (roll < 0.68) plan.put(x, y, 'dead-tree');
+      else if (roll < 0.76) plan.put(x, y, 'bones');
+      else if (roll < 0.8) plan.put(x, y, 'sarcophagus');
     }
+  plan.clear(door.x, door.y);
+  plan.descents.push({ kind: 'crypt', position: door, town: spec.name, size: spec.size });
   // Los no-muertos viven entre las tumbas.
   const open: Position[] = [];
   for (let y = inside.y0 + 1; y <= inside.y1; y++)
-    for (let x = inside.x0 + 1; x <= inside.x1; x++) if (plan.isFree(x, y)) open.push({ x, y });
+    for (let x = inside.x0 + 1; x <= inside.x1; x++)
+      if (plan.isFree(x, y) && !(x === door.x && y === door.y)) open.push({ x, y });
   for (const [i, kind] of GRAVEYARD[spec.size].entries()) {
     const spot = open[Math.floor(((i + 0.5) / GRAVEYARD[spec.size].length) * open.length)];
     if (spot) plan.lairs.push({ kind, position: spot });
