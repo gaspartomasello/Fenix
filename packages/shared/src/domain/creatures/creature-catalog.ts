@@ -53,6 +53,12 @@ export interface CreatureDefinition {
   readonly maxHits: number;
   readonly strength: number;
   readonly dexterity: number;
+  /**
+   * Inteligencia: su maná, como el de un jugador. Solo la tienen las que
+   * lanzan hechizos; cada hechizo gasta lo mismo que a un jugador y el maná
+   * se recupera de a poco (sin maná, pelean cuerpo a cuerpo).
+   */
+  readonly intelligence?: number;
   readonly armor: number;
   /** Habilidad de pelea, en décimas. */
   readonly skill: number;
@@ -426,6 +432,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     maxHits: 50,
     strength: 30,
     dexterity: 55,
+    intelligence: 45,
     armor: 12,
     skill: 600,
     weapon: {
@@ -440,7 +447,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     humanoid: true,
     summoned: false,
     abilities: {
-      spells: { attack: ['harm', 'magic-arrow'], magery: 500, cooldownMs: 4200, range: 4 },
+      spells: { attack: ['harm', 'magic-arrow'], magery: 500, cooldownMs: 5500, range: 4 },
       magicResist: 700,
     },
     loot: [
@@ -456,6 +463,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     maxHits: 50,
     strength: 30,
     dexterity: 40,
+    intelligence: 60,
     armor: 8,
     skill: 400,
     weapon: { name: 'bastón', minDamage: 2, maxDamage: 6, swingMs: 2400, skill: 'mace-fighting' },
@@ -467,7 +475,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       spells: {
         attack: ['magic-arrow', 'harm', 'fireball'],
         magery: 600,
-        cooldownMs: 3200,
+        cooldownMs: 6000,
         range: 5,
       },
       magicResist: 600,
@@ -493,6 +501,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     maxHits: 160,
     strength: 60,
     dexterity: 60,
+    intelligence: 160,
     armor: 20,
     skill: 650,
     weapon: {
@@ -511,7 +520,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
         attack: ['lightning', 'poison', 'paralyze', 'mana-drain', 'energy-bolt'],
         heal: 'greater-heal',
         magery: 900,
-        cooldownMs: 2800,
+        cooldownMs: 4000,
         range: 6,
       },
       magicResist: 850,
