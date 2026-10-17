@@ -166,9 +166,21 @@ export function formatSkill(tenths: number): string {
 }
 
 /**
- * Probabilidad de subir 0,1 al usar una habilidad: alta al principio y cada
- * vez más baja cerca del máximo.
+ * Probabilidad de subir al usar una habilidad: casi segura al principio y
+ * más baja cerca del máximo, pero nunca imposible (no es tan exigente como
+ * el UO original: se llega a gran maestro jugando, no en meses).
  */
 export function skillGainChance(tenths: number): number {
-  return Math.max(0.02, 0.6 * (1 - tenths / SKILL_MAX));
+  return Math.max(SKILL_GAIN_FLOOR, 0.9 * (1 - tenths / SKILL_MAX));
+}
+
+/** La chance más baja de subir (ya cerca de 100). */
+export const SKILL_GAIN_FLOOR = 0.15;
+
+/** Cuánto sube (en décimas) cada vez: más rápido al principio. */
+export function skillGainAmount(tenths: number): number {
+  if (tenths < 300) return 5;
+  if (tenths < 600) return 3;
+  if (tenths < 850) return 2;
+  return 1;
 }

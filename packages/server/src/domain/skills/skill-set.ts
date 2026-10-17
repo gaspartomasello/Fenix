@@ -2,6 +2,7 @@ import {
   SKILL_KEYS,
   SKILL_MAX,
   SKILL_TOTAL_CAP,
+  skillGainAmount,
   skillGainChance,
   type SkillKey,
   type SkillValues,
@@ -42,7 +43,8 @@ export class SkillSet {
     const value = this.values[key];
     if (value >= SKILL_MAX || this.total >= SKILL_TOTAL_CAP) return false;
     if (random() >= skillGainChance(value)) return false;
-    this.values[key] = value + 1;
+    const room = Math.min(SKILL_MAX - value, SKILL_TOTAL_CAP - this.total);
+    this.values[key] = value + Math.min(skillGainAmount(value), room);
     return true;
   }
 }

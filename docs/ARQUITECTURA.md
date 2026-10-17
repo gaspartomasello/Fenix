@@ -25,17 +25,17 @@ una capa que no debe, el lint falla.
 
 Código que cliente y servidor deben compartir exactamente. No tiene dependencias externas.
 
-| Módulo                              | Contenido                                                              |
-| ----------------------------------- | ---------------------------------------------------------------------- |
-| `domain/geometry`                   | `Position`, `Direction` (numeración de UO), pasos y distancias         |
-| `domain/world`                      | `Terrain`, `TileMap`                                                   |
-| `domain/rules`                      | Movimiento (`canStep`, tiempos de paso), chat (límites, limpieza)      |
-| `domain/character`                  | Apariencia y validación de nombres                                     |
-| `domain/items`                      | Catálogo de objetos, lugares del equipo, alcance y límites de mochila  |
-| `domain/combat`, `domain/creatures` | Vitales, armas, armaduras, golpe y daño; catálogo de criaturas y botín |
-| `domain/skills`, `domain/magic`     | Habilidades (suben de a 0,1 con tope total) y hechizos con reactivos   |
-| `domain/economy`                    | Comerciantes y precios, recursos por objeto fijo, recetas de herrería  |
-| `protocol`                          | Mensajes cliente↔servidor tipados y su codec con validación            |
+| Módulo                              | Contenido                                                                                                |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `domain/geometry`                   | `Position`, `Direction` (numeración de UO), pasos y distancias                                           |
+| `domain/world`                      | `Terrain`, `TileMap`                                                                                     |
+| `domain/rules`                      | Movimiento (`canStep`, tiempos de paso), chat (límites, limpieza)                                        |
+| `domain/character`                  | Apariencia y validación de nombres                                                                       |
+| `domain/items`                      | Catálogo de objetos, lugares del equipo, alcance y límites de mochila                                    |
+| `domain/combat`, `domain/creatures` | Vitales, armas, armaduras, golpe y daño; catálogo de criaturas y botín                                   |
+| `domain/skills`, `domain/magic`     | Habilidades (suben rápido al principio y de a 0,1 cerca de 100, con tope total) y hechizos con reactivos |
+| `domain/economy`                    | Comerciantes y precios, recursos por objeto fijo, recetas de herrería                                    |
+| `protocol`                          | Mensajes cliente↔servidor tipados y su codec con validación                                              |
 
 Que `canStep` sea compartido es clave: el cliente predice con la **misma regla** que valida el
 servidor, por eso las correcciones son raras.

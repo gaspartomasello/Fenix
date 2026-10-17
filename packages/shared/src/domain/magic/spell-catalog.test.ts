@@ -58,6 +58,6 @@ describe('magia y habilidades', () => {
   it('formatea habilidades y cuesta más subirlas cerca del máximo', () => {
     expect(formatSkill(312)).toBe('31.2');
     expect(skillGainChance(0)).toBeGreaterThan(skillGainChance(900));
-    expect(skillGainChance(1000)).toBe(0.02);
+    expect(skillGainChance(1000)).toBe(0.15);
   });
 });
