@@ -365,14 +365,24 @@ export class GameApplication {
         .replace(/[\u0300-\u036f]/g, '')
         .toLocaleLowerCase()
         .trim();
+    // También coordenadas: "/ir 120 300" (para revisar el mapa).
+    const coords = /^(\d+)[\s,]+(\d+)$/.exec(name.trim());
+    if (coords) return this.walkableNear(Number(coords[1]), Number(coords[2]), 30);
     const wanted = plain(name);
     const region = this.world.map.regions.find(
       (r) => !r.dungeon && plain(r.name).startsWith(wanted),
     );
     if (!region) return undefined;
-    const cx = region.x + Math.floor(region.width / 2);
-    const cy = region.y + Math.floor(region.height / 2);
-    for (let r = 0; r <= Math.max(region.width, region.height); r++)
+    return this.walkableNear(
+      region.x + Math.floor(region.width / 2),
+      region.y + Math.floor(region.height / 2),
+      Math.max(region.width, region.height),
+    );
+  }
+
+  /** El tile caminable más cercano a (cx, cy), buscando en cuadrados crecientes. */
+  private walkableNear(cx: number, cy: number, reach: number): Position | undefined {
+    for (let r = 0; r <= reach; r++)
       for (let dy = -r; dy <= r; dy++)
         for (let dx = -r; dx <= r; dx++) {
           const spot = { x: cx + dx, y: cy + dy };

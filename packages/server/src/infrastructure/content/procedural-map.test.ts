@@ -1,4 +1,4 @@
-import { Terrain, type Position, type TileMap } from '@fenix/shared';
+import { STATICS, Terrain, type Position, type TileMap } from '@fenix/shared';
 import { describe, expect, it } from 'vitest';
 import { generateIslandMap } from './procedural-map';
 import { buildWorld, createWorld } from './world-builder';
@@ -74,6 +74,64 @@ describe('buildWorld: el continente', () => {
     const snowRows = map.statics.filter((s) => s.kind === 'snow-pine').map((s) => s.y);
     const cactusRows = map.statics.filter((s) => s.kind === 'cactus').map((s) => s.y);
     expect(Math.max(...snowRows)).toBeLessThan(Math.min(...cactusRows));
+  });
+
+  it('tiene tundra, selva, sabana, tierra roja, prados, salinas, orillas y vegetación propia', () => {
+    const terrains = new Set<Terrain | undefined>();
+    for (let y = 0; y < 320; y++)
+      for (let x = 0; x < 320; x++) terrains.add(map.terrainAt({ x, y }));
+    for (const t of [
+      Terrain.Tundra,
+      Terrain.Jungle,
+      Terrain.DryGrass,
+      Terrain.Clay,
+      Terrain.Meadow,
+      Terrain.ShallowWater,
+      Terrain.Corrupted,
+      Terrain.Ruins,
+      Terrain.OldRoad,
+      Terrain.Lava,
+      Terrain.Ash,
+    ])
+      expect(terrains.has(t), String(t)).toBe(true);
+    const kinds = new Set(map.statics.map((s) => s.kind));
+    for (const kind of [
+      'palm',
+      'jungle-tree',
+      'birch',
+      'acacia',
+      'tall-grass',
+      'fern',
+      'mushrooms',
+      'wildflowers',
+      'peyote',
+      'jungle-plant',
+      'tundra-shrub',
+    ] as const)
+      expect(kinds.has(kind), kind).toBe(true);
+  });
+
+  it('hay llanuras abiertas de pasto, sin árboles, para construir', () => {
+    // Una zona de 9×9 de pasto o prado sin nada que bloquee, fuera de pueblos y caminos.
+    const blocked = new Set(
+      map.statics.filter((s) => STATICS[s.kind].blocking).map((s) => `${s.x},${s.y}`),
+    );
+    let found = false;
+    for (let y = 10; y < 310 && !found; y += 3)
+      for (let x = 10; x < 310 && !found; x += 3) {
+        let ok = true;
+        for (let dy = 0; dy < 9 && ok; dy++)
+          for (let dx = 0; dx < 9 && ok; dx++) {
+            const p = { x: x + dx, y: y + dy };
+            const t = map.terrainAt(p);
+            ok =
+              (t === Terrain.Grass || t === Terrain.Meadow) &&
+              !blocked.has(`${p.x},${p.y}`) &&
+              !map.regionAt(p);
+          }
+        found = ok;
+      }
+    expect(found).toBe(true);
   });
 
   it('a la salida de los pueblos los caminos van empedrados', () => {

@@ -46,7 +46,7 @@ export const CHAT_HELP = [
   '/mirar — buscar a los escondidos cerca (habilidad Mirar)',
   '/hora 22 — cambiar la hora del mundo (solo personajes de prueba)',
   '/cueva o /cueva fondo — ir a la mazmorra (solo personajes de prueba)',
-  '/ir lugar — ir a un pueblo o lugar con nombre; /ir solo, la lista (solo personajes de prueba)',
+  '/ir lugar — ir a un pueblo o lugar con nombre, o a unas coordenadas (/ir 120 300); /ir solo, la lista (solo personajes de prueba)',
 ] as const;
 
 /** Interpreta una línea del chat: texto común o un comando que empieza con "/". */

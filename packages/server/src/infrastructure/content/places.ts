@@ -1,5 +1,7 @@
 import {
+  TERRAINS,
   Terrain,
+  isWater,
   TileMap,
   type CreatureKind,
   type Position,
@@ -42,6 +44,8 @@ interface PlaceSpec {
   /** Cerca de otro pueblo en vez de la capital. */
   readonly near?: string;
   readonly build: Plan;
+  /** Se llega por un camino antiguo del imperio (empedrado gastado), no por un sendero. */
+  readonly oldRoad?: boolean;
   readonly creatures: readonly (readonly [CreatureKind, number])[];
 }
 
@@ -61,7 +65,7 @@ interface Site {
 const PLACES: readonly PlaceSpec[] = [
   {
     name: 'Campamento de los Colmillos',
-    biomes: ['forest', 'grassland'],
+    biomes: ['forest', 'grassland', 'meadow', 'savanna'],
     radius: 6,
     from: 38,
     to: 80,
@@ -112,14 +116,17 @@ const PLACES: readonly PlaceSpec[] = [
       ['skeleton-mage', 2],
       ['skeleton', 2],
     ],
+    oldRoad: true,
     build(site) {
+      // La tierra alrededor de la torre del liche está corrompida.
+      corrupt(site, 6);
       ruin(site, 4, 0.45);
       site.put(site.center.x, site.center.y, 'brazier');
     },
   },
   {
     name: 'Cementerio Viejo',
-    biomes: ['grassland', 'forest'],
+    biomes: ['grassland', 'forest', 'meadow', 'plains'],
     radius: 6,
     from: 22,
     to: 48,
@@ -146,7 +153,7 @@ const PLACES: readonly PlaceSpec[] = [
   },
   {
     name: 'Faro del Cabo',
-    biomes: ['beach', 'grassland', 'forest'],
+    biomes: ['beach', 'grassland', 'forest', 'meadow', 'plains'],
     radius: 2,
     from: 40,
     to: 160,
@@ -163,7 +170,7 @@ const PLACES: readonly PlaceSpec[] = [
   },
   {
     name: 'Refugio Helado',
-    biomes: ['snow'],
+    biomes: ['snow', 'tundra'],
     radius: 4,
     from: 50,
     to: 220,
@@ -190,8 +197,39 @@ const PLACES: readonly PlaceSpec[] = [
     },
   },
   {
+    name: 'Cráter Humeante',
+    biomes: ['badlands', 'desert', 'foothill', 'savanna'],
+    radius: 7,
+    from: 50,
+    to: 200,
+    creatures: [
+      ['troll', 2],
+      ['orc', 2],
+    ],
+    build(site) {
+      // Un cráter de ceniza con una laguna de lava en el centro.
+      const { x, y } = site.center;
+      for (let dy = -7; dy <= 7; dy++)
+        for (let dx = -7; dx <= 7; dx++) {
+          const d = Math.hypot(dx, dy) + site.random.next() * 1.6;
+          if (d <= 3.6) site.ground(x + dx, y + dy, Terrain.Lava);
+          else if (d <= 7) site.ground(x + dx, y + dy, Terrain.Ash);
+        }
+      for (let i = 0; i < 7; i++) {
+        const a = site.random.next() * Math.PI * 2;
+        const r = 4 + site.random.next() * 2.5;
+        site.put(
+          x + Math.round(Math.cos(a) * r),
+          y + Math.round(Math.sin(a) * r),
+          i % 3 === 0 ? 'dead-tree' : 'boulder',
+        );
+      }
+    },
+  },
+  {
     name: 'Ruinas del Sol',
-    biomes: ['desert'],
+    biomes: ['desert', 'badlands'],
+    oldRoad: true,
     radius: 6,
     from: 40,
     to: 180,
@@ -216,8 +254,9 @@ const PLACES: readonly PlaceSpec[] = [
 /** Un patio en ruinas: muros de piedra caídos a medias, escombros y huesos. */
 function ruin(site: Site, half: number, broken: number): void {
   const { x, y } = site.center;
+  // Losas de mármol antiguo, rotas, y columnas en pie o caídas.
   for (let dy = -half; dy <= half; dy++)
-    for (let dx = -half; dx <= half; dx++) site.ground(x + dx, y + dy, Terrain.Stone);
+    for (let dx = -half; dx <= half; dx++) site.ground(x + dx, y + dy, Terrain.Ruins);
   const wall = (wx: number, wy: number, kind: StaticKind): void => {
     site.put(wx, wy, site.random.next() < broken ? 'rubble' : kind);
   };
@@ -228,11 +267,28 @@ function ruin(site: Site, half: number, broken: number): void {
     if (d !== 0) wall(x + half + 1, y + d, 'wall-y');
   }
   site.put(x - half, y - half, 'wall-corner');
+  for (const [dx, dy] of [
+    [-2, -2],
+    [2, -2],
+    [-2, 2],
+    [2, 2],
+  ] as const)
+    site.put(x + dx, y + dy, site.random.next() < 0.5 ? 'column' : 'fallen-column');
   for (let i = 0; i < 4; i++) {
     const rx = x + Math.round((site.random.next() - 0.5) * (half * 2 - 2));
     const ry = y + Math.round((site.random.next() - 0.5) * (half * 2 - 2));
     site.put(rx, ry, i % 2 ? 'bones' : 'rubble');
   }
+}
+
+/** Tierra corrupta en un círculo irregular (alrededor de lugares malditos). */
+function corrupt(site: Site, radius: number): void {
+  const { x, y } = site.center;
+  for (let dy = -radius; dy <= radius; dy++)
+    for (let dx = -radius; dx <= radius; dx++) {
+      const d = Math.hypot(dx, dy) + site.random.next() * 1.5;
+      if (d <= radius) site.ground(x + dx, y + dy, Terrain.Corrupted);
+    }
 }
 
 function disk(site: Site, radius: number, terrain: Terrain): void {
@@ -274,7 +330,35 @@ const BIOME_CREATURES: Readonly<
     ['troll', 1],
     ['orc', 1],
   ],
+  tundra: [
+    ['wolf', 1.6],
+    ['troll', 0.3],
+  ],
+  jungle: [
+    ['giant-spider', 2.2],
+    ['orc', 0.6],
+  ],
+  savanna: [
+    ['wolf', 0.8],
+    ['rat', 0.6],
+  ],
+  badlands: [
+    ['skeleton', 1],
+    ['giant-spider', 0.8],
+  ],
+  meadow: [['rat', 1]],
+  plains: [['rat', 0.6]],
 };
+
+/** Dónde puede abrirse la boca de la cueva. */
+const CAVE_GROUND: ReadonlySet<Terrain> = new Set<Terrain>([
+  Terrain.Grass,
+  Terrain.Dirt,
+  Terrain.Snow,
+  Terrain.Meadow,
+  Terrain.Tundra,
+  Terrain.DryGrass,
+]);
 
 /** Sin criaturas a menos de esta distancia de un pueblo. */
 const QUIET_RADIUS = 14;
@@ -302,6 +386,7 @@ export function populateContinent(continent: Continent, seed: number): Populated
   }));
   const regions: RegionData[] = [...map.regions];
   const places: Place[] = [];
+  const oldRoads = new Set<string>();
   const homes: { kind: CreatureKind; home: Position }[] = [];
 
   const free = (x: number, y: number): boolean => x > 1 && y > 1 && x < width - 2 && y < height - 2;
@@ -322,7 +407,7 @@ export function populateContinent(continent: Continent, seed: number): Populated
       },
       put(x, y, kind) {
         if (!free(x, y)) return;
-        if (terrain[index(x, y)] === Terrain.Water) terrain[index(x, y)] = Terrain.Dirt;
+        if (isWater(terrain[index(x, y)])) terrain[index(x, y)] = Terrain.Dirt;
         statics.set(index(x, y), { kind, x, y });
       },
     };
@@ -345,6 +430,7 @@ export function populateContinent(continent: Continent, seed: number): Populated
     );
     homes.push(...creatures);
     places.push({ name: spec.name, region, center, creatures });
+    if (spec.oldRoad) oldRoads.add(spec.name);
   }
 
   // Paso de montaña: donde un camino cruza la cordillera.
@@ -382,17 +468,27 @@ export function populateContinent(continent: Continent, seed: number): Populated
     for (let dx = -1; dx <= 1; dx++)
       statics.delete(index(caveEntrance.x + dx, caveEntrance.y + dy));
   statics.set(index(caveEntrance.x, caveEntrance.y), { kind: 'cave-entrance', ...caveEntrance });
+  // La tierra se corrompe alrededor de la boca de la mazmorra.
+  for (let dy = -4; dy <= 4; dy++)
+    for (let dx = -4; dx <= 4; dx++) {
+      const x = caveEntrance.x + dx;
+      const y = caveEntrance.y + dy;
+      if (!free(x, y) || Math.hypot(dx, dy) + random.next() * 1.4 > 4.2) continue;
+      if (isWater(terrain[index(x, y)])) continue;
+      terrain[index(x, y)] = Terrain.Corrupted;
+    }
 
   // Senderos: de cada lugar (y de la cueva) hasta el camino más cercano.
   const roads = new Set(continent.roads);
-  for (const place of places) trail(place.center, place.region);
+  for (const place of places)
+    trail(place.center, place.region, oldRoads.has(place.name) ? Terrain.OldRoad : undefined);
   trail({ x: caveEntrance.x, y: caveEntrance.y + 2 });
 
   /**
    * Un sendero de tierra de dos tiles de ancho desde `from` hasta que toca un
    * camino o un pueblo; dentro del lugar no se toca nada.
    */
-  function trail(from: Position, inside?: RegionData): void {
+  function trail(from: Position, inside?: RegionData, surface?: Terrain): void {
     const target = continent.towns
       .map((t) => ({ x: t.x + Math.floor(t.width / 2), y: t.y + Math.floor(t.height / 2) }))
       .sort(
@@ -412,7 +508,7 @@ export function populateContinent(continent: Continent, seed: number): Populated
         const biome = continent.biomes[i];
         if (biome === 'ocean') return Infinity;
         if (statics.get(i)?.kind === 'mountain') return 40;
-        if (terrain[i] === Terrain.Water) return 12;
+        if (isWater(terrain[i])) return 12;
         if (biome === 'swamp') return 2;
         return 1;
       },
@@ -435,9 +531,9 @@ export function populateContinent(continent: Continent, seed: number): Populated
         const j = index(x, y);
         if (continent.biomes[j] === 'ocean') continue;
         terrain[j] =
-          terrain[j] === Terrain.Water || terrain[j] === Terrain.Wood
+          isWater(terrain[j]) || terrain[j] === Terrain.Wood
             ? Terrain.Wood
-            : trailGround(terrain[j]);
+            : (surface ?? trailGround(terrain[j]));
         const kind = statics.get(j)?.kind;
         if (kind !== 'cave-entrance' && kind !== 'sign') statics.delete(j);
       }
@@ -473,8 +569,7 @@ export function populateContinent(continent: Continent, seed: number): Populated
           const i = index(x + dx, y + dy);
           const biome = continent.biomes[i];
           if (biome === 'mountain' || biome === 'ocean' || continent.roads.has(i)) ok = false;
-          else if (!spec.coast && !spec.biomes.includes('swamp') && terrain[i] === Terrain.Water)
-            ok = false;
+          else if (!spec.coast && !spec.biomes.includes('swamp') && isWater(terrain[i])) ok = false;
           else if (map.regionAt({ x: x + dx, y: y + dy })) ok = false;
         }
       }
@@ -498,7 +593,8 @@ export function populateContinent(continent: Continent, seed: number): Populated
       const y = center.y + Math.round((random.next() - 0.5) * radius * 2);
       const i = index(x, y);
       const kind = statics.get(i)?.kind;
-      if (terrain[i] !== Terrain.Water && terrain[i] !== Terrain.Rock && !kind) return { x, y };
+      const ground = terrain[i];
+      if (ground !== undefined && TERRAINS[ground].walkable && !kind) return { x, y };
     }
     return center;
   }
@@ -525,9 +621,7 @@ export function populateContinent(continent: Continent, seed: number): Populated
           for (let dx = -2; dx <= 2 && ok; dx++) {
             const t = terrain[index(x + dx, y + dy)];
             const biome = continent.biomes[index(x + dx, y + dy)];
-            ok =
-              (t === Terrain.Grass || t === Terrain.Dirt || t === Terrain.Snow) &&
-              biome !== 'mountain';
+            ok = t !== undefined && CAVE_GROUND.has(t) && biome !== 'mountain';
             if (map.regionAt({ x: x + dx, y: y + dy })) ok = false;
           }
         if (ok) return { x, y };

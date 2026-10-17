@@ -1,4 +1,5 @@
 import {
+  isWater,
   type NpcRole,
   Terrain,
   TileMap,
@@ -33,7 +34,13 @@ export type Biome =
   | 'foothill'
   | 'swamp'
   | 'desert'
-  | 'snow';
+  | 'snow'
+  | 'tundra'
+  | 'jungle'
+  | 'savanna'
+  | 'badlands'
+  | 'meadow'
+  | 'plains';
 
 /** Clima que se le pide al terreno alrededor de un pueblo. */
 export type TownClimate = 'temperate' | 'mountain' | 'swamp';
@@ -144,6 +151,13 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
   const conifers = new ValueNoise(seed + 8, 20);
   const puddles = new ValueNoise(seed + 9, 5);
   const patches = new ValueNoise(seed + 10, 7);
+  // Llanuras abiertas (sin árboles, para construir), prados y tierras rojas dentro de los biomas.
+  const openness = new ValueNoise(seed + 12, Math.max(10, size / 9));
+  const meadows = new ValueNoise(seed + 13, Math.max(8, size / 12));
+  const reds = new ValueNoise(seed + 14, Math.max(8, size / 10));
+  // Matices del suelo: que los verdes no sean todos iguales.
+  const greens = new ValueNoise(seed + 15, 6);
+  const salts = new ValueNoise(seed + 16, Math.max(6, size / 14));
 
   const elevation = new Float32Array(total);
   const biomes: Biome[] = new Array<Biome>(total).fill('ocean');
@@ -188,9 +202,12 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
         biome = 'mountain';
       else if (marsh > 0 && marsh + (wet - 0.5) * 0.4 > 0.06) biome = 'swamp';
       else if (cold > 0.8) biome = 'snow';
-      else if (cold < 0.27 && wet < 0.62) biome = 'desert';
+      else if (cold > 0.7) biome = 'tundra';
+      else if (cold < 0.27 && wet > 0.64) biome = 'jungle';
+      else if (cold < 0.27) biome = reds.at(x, y) > 0.68 ? 'badlands' : 'desert';
+      else if (cold < 0.38 && wet < 0.52) biome = 'savanna';
       else if (wet > 0.66 && e < SEA + 0.2 + townInfluence(x, y, 'swamp') * 0.35) biome = 'swamp';
-      else biome = forests.at(x, y) > 0.68 ? 'forest' : 'grassland';
+      else biome = temperate(x, y);
       biomes[i] = biome;
     }
   }
@@ -206,7 +223,7 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
       const i = index(x, y);
       if (biomes[i] !== 'mountain') continue;
       const kept = core[i] || neighbors8(x, y).some(([nx, ny]) => core[index(nx, ny)]);
-      if (!kept) biomes[i] = (forests.at(x, y) > 0.68 ? 'forest' : 'grassland') as Biome;
+      if (!kept) biomes[i] = temperate(x, y);
     }
   }
   // El suelo de cada bioma, antes de marcar el pie de las montañas (que conserva el suyo).
@@ -220,6 +237,14 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
       if (neighbors8(x, y).some(([nx, ny]) => biomes[index(nx, ny)] === 'mountain'))
         biomes[i] = 'foothill';
     }
+  }
+
+  /** Tierras templadas: bosque, llanura abierta (sin árboles), prado o pradera. */
+  function temperate(x: number, y: number): Biome {
+    if (forests.at(x, y) > 0.68) return 'forest';
+    if (openness.at(x, y) > 0.64) return 'plains';
+    if (meadows.at(x, y) > 0.66) return 'meadow';
+    return 'grassland';
   }
 
   /** Alrededor del pueblo de montaña, un arco de cordillera abierto hacia la capital. */
@@ -245,9 +270,24 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const i = index(x, y);
-      if (biomes[i] === 'swamp' && puddles.at(x, y) > 0.7) terrain[i] = Terrain.Water;
-      else if (biomes[i] === 'grassland' && patches.at(x, y) > 0.9) terrain[i] = Terrain.Dirt;
-      else if (biomes[i] === 'desert' && patches.at(x, y) > 0.88) terrain[i] = Terrain.Dirt;
+      const biome = biomes[i];
+      const p = patches.at(x, y);
+      const g = greens.at(x, y);
+      if (biome === 'swamp' && puddles.at(x, y) > 0.7) terrain[i] = Terrain.Water;
+      else if (biome === 'swamp' && puddles.at(x, y) > 0.6) terrain[i] = Terrain.Mud;
+      else if ((biome === 'grassland' || biome === 'plains') && p > 0.9) terrain[i] = Terrain.Dirt;
+      else if (biome === 'grassland' && g > 0.7) terrain[i] = Terrain.Meadow;
+      else if ((biome === 'grassland' || biome === 'forest') && g < 0.22)
+        terrain[i] = Terrain.DryGrass;
+      else if (biome === 'meadow' && g < 0.3) terrain[i] = Terrain.Grass;
+      else if (biome === 'forest' && g > 0.76) terrain[i] = Terrain.Jungle;
+      else if (biome === 'desert' && p > 0.88) terrain[i] = Terrain.Dirt;
+      else if (biome === 'desert' && reds.at(x, y) > 0.6) terrain[i] = Terrain.Clay;
+      else if (biome === 'desert' && salts.at(x, y) > 0.78) terrain[i] = Terrain.Salt;
+      else if (biome === 'foothill' && p > 0.55) terrain[i] = Terrain.Gravel;
+      else if (biome === 'savanna' && g > 0.72) terrain[i] = Terrain.Grass;
+      else if (biome === 'tundra' && g > 0.74) terrain[i] = Terrain.Snow;
+      else if (biome === 'snow' && g < 0.18) terrain[i] = Terrain.Tundra;
     }
   }
 
@@ -311,8 +351,27 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     if (x < 1 || y < 1 || x >= width - 1 || y >= height - 1 || inTown(x, y, 1)) return;
     const i = index(x, y);
     if (biomes[i] === 'mountain') return;
-    terrain[i] = Terrain.Water;
+    // En el frío, los ríos están congelados (se pueden cruzar).
+    terrain[i] = biomes[i] === 'snow' ? Terrain.Ice : Terrain.Water;
     river[i] = 1;
+  }
+
+  // ── Orillas: el mar cerca de la costa es poco profundo (los barcos navegan más afuera) ──
+  const SHORE = 2;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = index(x, y);
+      if (terrain[i] !== Terrain.Water || biomes[i] !== 'ocean') continue;
+      let near = false;
+      for (let dy = -SHORE; dy <= SHORE && !near; dy++)
+        for (let dx = -SHORE; dx <= SHORE && !near; dx++) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+          if (biomes[index(nx, ny)] !== 'ocean') near = true;
+        }
+      if (near) terrain[i] = Terrain.ShallowWater;
+    }
   }
 
   // ── Vegetación y rocas ──
@@ -321,12 +380,12 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     statics.set(index(x, y), { kind, x, y });
   };
   const nearWater = (x: number, y: number): boolean =>
-    neighbors8(x, y).some(([nx, ny]) => terrain[index(nx, ny)] === Terrain.Water);
+    neighbors8(x, y).some(([nx, ny]) => isWater(terrain[index(nx, ny)]));
   for (let y = 1; y < height - 1; y++) {
     for (let x = 1; x < width - 1; x++) {
       const i = index(x, y);
       const biome = biomes[i] ?? 'ocean';
-      if (terrain[i] === Terrain.Water) continue;
+      if (isWater(terrain[i])) continue;
       const roll = hash(seed, x, y);
       const pick = hash(seed + 11, x, y);
       if (biome === 'mountain') {
@@ -434,7 +493,7 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     if (roads.has(i)) return 0.3;
     const biome = biomes[i];
     if (biome === 'ocean') return Infinity;
-    if (terrain[i] === Terrain.Water) return river[i] ? 14 : 30;
+    if (isWater(terrain[i])) return river[i] ? 14 : 30;
     if (biome === 'mountain') return 70;
     if (biome === 'swamp') return 3;
     if (biome === 'forest' || biome === 'foothill' || biome === 'snow') return 1.25;
@@ -457,7 +516,7 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
           passes.push({ x: px, y: py });
         // Sobre el agua, un puente de tablones; cerca de los pueblos, empedrado.
         terrain[i] =
-          terrain[i] === Terrain.Water || terrain[i] === Terrain.Wood
+          isWater(terrain[i]) || terrain[i] === Terrain.Wood
             ? Terrain.Wood
             : nearTownEdge(px, py) <= PAVED_NEAR_TOWN
               ? Terrain.Stone
@@ -500,7 +559,7 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
       const x = at.x + dx;
       const y = at.y + dy;
       const i = index(x, y);
-      if (roads.has(i) || inTown(x, y) || terrain[i] === Terrain.Water) continue;
+      if (roads.has(i) || inTown(x, y) || isWater(terrain[i])) continue;
       place(x, y, 'sign');
       signs.push({ x, y, text: `Camino a ${destination}` });
       return;
@@ -555,6 +614,16 @@ function terrainOf(biome: Biome): Terrain {
       return Terrain.Snow;
     case 'swamp':
       return Terrain.Swamp;
+    case 'tundra':
+      return Terrain.Tundra;
+    case 'jungle':
+      return Terrain.Jungle;
+    case 'savanna':
+      return Terrain.DryGrass;
+    case 'badlands':
+      return Terrain.Clay;
+    case 'meadow':
+      return Terrain.Meadow;
     default:
       return Terrain.Grass;
   }
@@ -587,44 +656,114 @@ function vegetation(
   conifer: number,
   wet: boolean,
 ): StaticKind | null {
+  // Las plantas chicas del suelo varían con `pick`: así cada zona tiene su mezcla.
+  const choose = (kinds: readonly StaticKind[]): StaticKind =>
+    kinds[Math.floor(pick * kinds.length)] ?? kinds[0] ?? 'bush';
   switch (biome) {
     case 'beach':
-      return roll < 0.004 ? 'rock' : null;
+      if (roll < 0.004) return 'rock';
+      if (roll < 0.008) return 'pebbles';
+      return null;
     case 'foothill':
-      if (roll < 0.025) return 'rock';
+      if (roll < 0.025) return choose(['rock', 'boulder', 'mossy-rock']);
       if (roll < 0.06) return 'pine';
+      if (roll < 0.075) return 'pebbles';
       return null;
     case 'snow':
       // Bosquecillos con claros, no una pared de pinos.
       if (forest > 0.62 && roll < 0.2) return 'snow-pine';
       if (roll < 0.015) return 'snow-pine';
       if (roll < 0.018) return 'rock';
+      if (roll < 0.022) return 'tundra-shrub';
+      return null;
+    case 'tundra':
+      if (forest > 0.66 && roll < 0.14) return pick < 0.6 ? 'birch' : 'snow-pine';
+      if (roll < 0.008) return 'birch';
+      if (roll < 0.03) return 'tundra-shrub';
+      if (roll < 0.04) return choose(['mossy-rock', 'boulder', 'pebbles']);
+      if (roll < 0.06) return 'tall-grass';
       return null;
     case 'desert':
       if (ground === Terrain.Dirt) return roll < 0.006 ? 'rock' : null;
+      if (wet && roll < 0.2) return 'palm';
       if (roll < 0.012) return 'cactus';
-      if (roll < 0.015) return 'rock';
-      if (roll < 0.017) return 'dead-tree';
+      if (roll < 0.02) return 'peyote';
+      if (roll < 0.024) return choose(['rock', 'boulder']);
+      if (roll < 0.03) return 'dry-shrub';
+      if (roll < 0.032) return 'dead-tree';
+      return null;
+    case 'badlands':
+      if (roll < 0.02) return 'boulder';
+      if (roll < 0.03) return 'peyote';
+      if (roll < 0.045) return 'dry-shrub';
+      if (roll < 0.05) return 'dead-tree';
+      return null;
+    case 'savanna':
+      if (wet && roll < 0.08) return 'palm';
+      if (roll < 0.012) return 'acacia';
+      if (roll < 0.07) return 'tall-grass';
+      if (roll < 0.085) return 'dry-shrub';
+      if (roll < 0.09) return choose(['boulder', 'rock']);
+      return null;
+    case 'jungle':
+      // Selva cerrada: árboles altos, palmeras, helechos y plantas de hojas grandes.
+      if (roll < 0.16) return pick < 0.65 ? 'jungle-tree' : 'palm';
+      if (roll < 0.26) return 'jungle-plant';
+      if (roll < 0.34) return 'fern';
+      if (roll < 0.36) return 'mushrooms';
+      if (roll < 0.37) return 'mossy-rock';
       return null;
     case 'swamp':
       if (roll < 0.07) return 'reeds';
       if (roll < 0.09) return 'willow';
       if (roll < 0.105) return 'dead-tree';
+      if (roll < 0.12) return 'mushrooms';
+      if (roll < 0.14) return 'fern';
+      return null;
+    case 'plains':
+      // Llanura abierta: sin árboles (lugar para casas), solo pasto, yuyos y florcitas.
+      if (roll < 0.012) return 'tall-grass';
+      if (roll < 0.02) return 'weeds';
+      if (roll < 0.026) return 'wildflowers';
+      if (roll < 0.027) return 'pebbles';
+      return null;
+    case 'meadow':
+      if (roll < 0.004) return loneTree(pick);
+      if (roll < 0.03) return 'wildflowers';
+      if (roll < 0.045) return 'flowers';
+      if (roll < 0.07) return 'tall-grass';
+      if (roll < 0.08) return 'weeds';
       return null;
     case 'grassland':
     case 'forest': {
-      if (ground === Terrain.Dirt) return roll < 0.004 ? 'rock' : null;
-      if (wet) return roll < 0.05 ? (pick < 0.55 ? 'willow' : 'ceibo') : null;
+      if (ground === Terrain.Dirt) return roll < 0.004 ? 'rock' : roll < 0.01 ? 'pebbles' : null;
+      if (wet)
+        return roll < 0.05 ? (pick < 0.55 ? 'willow' : 'ceibo') : roll < 0.09 ? 'reeds' : null;
       if (biome === 'forest') {
         // Bosque abierto: árboles con espacio entre ellos para pasar.
-        if (roll < 0.2) return conifer > 0.55 ? 'pine' : pick < 0.05 ? 'dead-tree' : 'oak';
+        if (roll < 0.2)
+          return conifer > 0.55
+            ? 'pine'
+            : pick < 0.05
+              ? 'dead-tree'
+              : pick < 0.14
+                ? 'birch'
+                : 'oak';
         if (roll < 0.23) return 'bush';
+        if (roll < 0.26) return 'fern';
+        if (roll < 0.275) return 'mushrooms';
+        if (roll < 0.285) return 'mossy-rock';
+        if (roll < 0.3) return 'weeds';
         return null;
       }
       if (roll < 0.014) return conifer > 0.55 ? 'pine' : loneTree(pick);
       if (roll < 0.024) return 'bush';
       if (roll < 0.04) return 'flowers';
       if (roll < 0.042) return 'rock';
+      if (roll < 0.062) return 'tall-grass';
+      if (roll < 0.08) return 'weeds';
+      if (roll < 0.09) return 'wildflowers';
+      if (roll < 0.093) return 'pebbles';
       return null;
     }
     default:
