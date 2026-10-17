@@ -142,7 +142,7 @@ export class Player implements Mobile {
 
   /**
    * Usar una habilidad entrena sus atributos, como en UO: sube de a un punto,
-   * no muy seguido, hasta 100 cada uno y 225 entre los tres.
+   * no muy seguido, hasta 120 cada uno y 235 entre los tres.
    */
   private trainAttributes(skill: SkillKey, random: () => number): void {
     this.usesSinceStatGain += 1;

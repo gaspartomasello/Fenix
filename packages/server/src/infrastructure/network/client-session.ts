@@ -1,14 +1,24 @@
-import { decodeClientMessage, encodeMessage, type EntityId } from '@fenix/shared';
+import {
+  decodeClientMessage,
+  encodeMessage,
+  type ClientMessage,
+  type EntityId,
+  type ServerMessage,
+} from '@fenix/shared';
 import type { GameApplication } from '../../application/game-application';
+import type { AccountRecord } from '../../application/ports';
+import type { JoinWorldResult } from '../../application/use-cases/join-world';
 import type { Outbound, SessionRegistry } from './session-registry';
 
 /**
  * Ciclo de vida de un cliente conectado, independiente del transporte:
- * ingreso, mensajes dentro del mundo y salida. Lo usan tanto el servidor
- * WebSocket como el servidor embebido del modo solo.
+ * entrar a la cuenta, elegir o crear un personaje, mensajes dentro del mundo
+ * y salida. Lo usan tanto el servidor WebSocket como el servidor embebido
+ * del modo solo.
  */
 export class ClientSession {
   private playerId: EntityId | null = null;
+  private account: AccountRecord | null = null;
 
   constructor(
     private readonly app: GameApplication,
@@ -26,16 +36,7 @@ export class ClientSession {
       this.app.handle(this.playerId, message);
       return;
     }
-    if (message.type !== 'join') return;
-
-    const result = this.app.join(message);
-    if (!result.ok) {
-      this.outbound.send(encodeMessage({ type: 'joinRejected', reason: result.reason }));
-      return;
-    }
-    this.playerId = result.playerId;
-    this.sessions.bind(result.playerId, this.outbound);
-    this.app.announceJoin(result.playerId);
+    this.beforeWorld(message);
   }
 
   close(): void {
@@ -43,5 +44,58 @@ export class ClientSession {
     this.sessions.unbind(this.playerId);
     this.app.leave(this.playerId);
     this.playerId = null;
+  }
+
+  /** Antes de entrar al mundo: la cuenta, la lista de personajes y la creación. */
+  private beforeWorld(message: ClientMessage): void {
+    const accounts = this.app.accounts;
+    switch (message.type) {
+      case 'join':
+        // Entrada directa con un personaje (sin cuenta), como antes de las cuentas.
+        this.enter(this.app.join(message));
+        return;
+      case 'login': {
+        const result = accounts.login(message.account, message.password, message.create);
+        if (!result.ok) return this.reject(result.reason);
+        this.account = result.account;
+        this.send(accounts.describe(result.account));
+        return;
+      }
+      case 'createCharacter':
+        if (this.account) this.enter(accounts.createCharacter(this.account, message.creation));
+        return;
+      case 'play':
+        if (this.account) this.enter(accounts.play(this.account, message.name));
+        return;
+      case 'deleteCharacter': {
+        if (!this.account) return;
+        const result = accounts.deleteCharacter(
+          this.account,
+          message.name,
+          this.app.isOnline(message.name),
+        );
+        if (!result.ok) return this.reject(result.reason);
+        this.account = result.account;
+        this.send(accounts.describe(result.account));
+        return;
+      }
+      default:
+        return;
+    }
+  }
+
+  private enter(result: JoinWorldResult): void {
+    if (!result.ok) return this.reject(result.reason);
+    this.playerId = result.playerId;
+    this.sessions.bind(result.playerId, this.outbound);
+    this.app.announceJoin(result.playerId);
+  }
+
+  private reject(reason: string): void {
+    this.send({ type: 'joinRejected', reason });
+  }
+
+  private send(message: ServerMessage): void {
+    this.outbound.send(encodeMessage(message));
   }
 }

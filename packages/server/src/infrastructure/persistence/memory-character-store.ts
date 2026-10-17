@@ -17,7 +17,15 @@ export class MemoryCharacterStore implements CharacterStore {
 
   save(character: SavedCharacter): void {
     this.characters.set(key(character.name), character);
+    this.changed();
   }
+
+  remove(name: string): void {
+    if (this.characters.delete(key(name))) this.changed();
+  }
+
+  /** Algo cambió: los almacenes que escriben a disco o al navegador lo guardan. */
+  protected changed(): void {}
 
   all(): SavedCharacter[] {
     return [...this.characters.values()];

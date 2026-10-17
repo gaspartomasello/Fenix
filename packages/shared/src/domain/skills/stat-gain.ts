@@ -38,8 +38,8 @@ export const SKILL_STATS: Readonly<
 };
 
 /** Tope de cada atributo y de la suma de los tres. */
-export const STAT_CAP = 100;
-export const STAT_TOTAL_CAP = 225;
+export const STAT_CAP = 120;
+export const STAT_TOTAL_CAP = 235;
 /** Usos de habilidades que tienen que pasar entre una subida de atributo y la siguiente. */
 export const STAT_GAIN_MIN_USES = 6;
 

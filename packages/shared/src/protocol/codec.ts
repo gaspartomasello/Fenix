@@ -1,5 +1,6 @@
 import { isAppearance } from '../domain/character/appearance';
 import { PASSWORD_MAX_LENGTH } from '../domain/character/password';
+import { validateCreation } from '../domain/character/creation';
 import { isEquipmentSlot } from '../domain/items/equipment';
 import { isItemKind } from '../domain/items/item-catalog';
 import { BOOK_PAGES, cleanBookPage, cleanBookTitle } from '../domain/items/books';
@@ -108,6 +109,32 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
           message: isString(data.password) ? { ...base, password: data.password } : base,
         };
       }
+      break;
+    case 'login':
+      if (
+        isString(data.account) &&
+        data.account.length <= 40 &&
+        typeof data.create === 'boolean' &&
+        (data.password === undefined ||
+          (isString(data.password) && data.password.length <= PASSWORD_MAX_LENGTH))
+      ) {
+        const base = { type: 'login', account: data.account, create: data.create } as const;
+        return {
+          ok: true,
+          message: isString(data.password) ? { ...base, password: data.password } : base,
+        };
+      }
+      break;
+    case 'createCharacter': {
+      const creation = validateCreation(data.creation);
+      if (creation.ok)
+        return { ok: true, message: { type: 'createCharacter', creation: creation.creation } };
+      break;
+    }
+    case 'play':
+    case 'deleteCharacter':
+      if (isString(data.name) && data.name.length <= 40)
+        return { ok: true, message: { type: data.type, name: data.name } };
       break;
     case 'move':
       if (isDirection(data.direction) && isMoveMode(data.mode) && isSeq(data.seq)) {
@@ -366,6 +393,7 @@ const SERVER_TYPE_FLAGS: Readonly<Record<ServerMessageType, true>> = {
   questOffer: true,
   quests: true,
   joinRejected: true,
+  account: true,
   mobileAppeared: true,
   mobileDisappeared: true,
   mobileMoved: true,

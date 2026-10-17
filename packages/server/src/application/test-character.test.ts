@@ -42,11 +42,11 @@ describe('personaje de prueba', () => {
     expect(gaspar.skills.get('magery')).toBe(1000);
     expect(gaspar.skills.get('cooking')).toBe(1000);
     expect(gaspar.combat.baseAttributes).toEqual({
-      strength: 100,
-      dexterity: 100,
-      intelligence: 100,
+      strength: 120,
+      dexterity: 120,
+      intelligence: 120,
     });
-    expect(gaspar.combat.current.mana).toBe(100);
+    expect(gaspar.combat.current.mana).toBe(120);
     expect(world.items.countInBackpack(gaspar.id, 'gold')).toBe(999_999);
     expect(world.items.countInBackpack(gaspar.id, 'nightshade')).toBe(1000);
   });

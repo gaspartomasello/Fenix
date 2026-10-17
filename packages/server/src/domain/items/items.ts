@@ -105,7 +105,7 @@ export class Items {
   ): boolean {
     if (ITEMS[kind].stackable) {
       const stack = this.backpackOf(ownerId).find(
-        (i) => i.kind === kind && i.amount + amount <= MAX_STACK,
+        (i) => i.kind === kind && !i.newbie && i.amount + amount <= MAX_STACK,
       );
       if (stack) {
         stack.amount += amount;
@@ -258,6 +258,11 @@ export class Items {
       return fail('Para usar el banco tenés que estar cerca de la banquera.');
     }
 
+    if (item.newbie) {
+      const refusal = this.newbieRefusal(actor, to);
+      if (refusal) return fail(refusal);
+    }
+
     const changes = emptyChanges();
     switch (to.type) {
       case 'ground': {
@@ -293,6 +298,18 @@ export class Items {
           changes,
         );
     }
+  }
+
+  /** El equipo inicial solo va entre las cosas de su dueño: mochila, equipo, banco y sus bolsas. */
+  private newbieRefusal(actor: ItemActor, to: ItemDestination): string | null {
+    if (to.type === 'ground') return 'Es tu equipo inicial: no lo podés tirar.';
+    if (to.type !== 'container') return null;
+    const root = this.rootOf(to.containerId);
+    const own =
+      root !== null &&
+      (root.type === 'backpack' || root.type === 'bank' || root.type === 'equipment') &&
+      root.ownerId === actor.id;
+    return own ? null : 'Es tu equipo inicial: solo lo podés guardar entre tus cosas.';
   }
 
   /** Lo que hay adentro de un recipiente (una bolsa o un mueble). */
@@ -381,7 +398,10 @@ export class Items {
       return { ok: true, changes };
     }
     if (ITEMS[item.kind].stackable) {
-      const stack = inside.find((i) => i.kind === item.kind && i.amount + item.amount <= MAX_STACK);
+      const stack = inside.find(
+        (i) =>
+          i.kind === item.kind && i.newbie === item.newbie && i.amount + item.amount <= MAX_STACK,
+      );
       if (stack) {
         this.detach(item, changes);
         this.byId.delete(item.id);
@@ -513,7 +533,8 @@ export class Items {
 
     if (ITEMS[item.kind].stackable) {
       const stack = this.backpackOf(ownerId).find(
-        (i) => i.kind === item.kind && i.amount + item.amount <= MAX_STACK,
+        (i) =>
+          i.kind === item.kind && i.newbie === item.newbie && i.amount + item.amount <= MAX_STACK,
       );
       if (stack) {
         this.detach(item, changes);

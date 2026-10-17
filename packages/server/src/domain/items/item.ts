@@ -52,9 +52,17 @@ export class Item {
   /** Maqueta de un barco ya botado alguna vez: su nombre, casco y permisos. */
   ship: ShipRecord | null = null;
 
+  /**
+   * Equipo inicial (como el "newbie" de UO): las armas, el libro y los
+   * reactivos con los que empieza. No se tira, no se da, no se vende y no
+   * queda en el cuerpo al morir.
+   */
+  newbie = false;
+
   /** Lo que el cliente ve además de tipo y cantidad. */
-  private get extra(): { mark?: RuneMark; bookTitle?: string; hue?: number } {
+  private get extra(): { mark?: RuneMark; bookTitle?: string; hue?: number; newbie?: true } {
     return {
+      ...(this.newbie ? { newbie: true as const } : {}),
       ...(this.mark ? { mark: this.mark } : {}),
       ...(this.book?.title ? { bookTitle: this.book.title } : {}),
       ...(this.hue !== null ? { hue: this.hue } : {}),

@@ -44,6 +44,10 @@ export function startCreatureCast(
   const healing = spells.heal && creature.combat.health < 0.4 ? spells.heal : null;
   const spell = healing ?? spells.attack[Math.floor(random() * spells.attack.length)];
   if (!spell) return null;
+  // Sin maná no hay hechizo: pelea cuerpo a cuerpo hasta recuperarlo.
+  const cost = SPELLS[spell].mana;
+  if (creature.combat.current.mana < cost) return null;
+  creature.combat.spendMana(cost);
   creature.pendingCast = {
     spell,
     targetId: healing ? creature.id : target.id,
@@ -53,7 +57,7 @@ export function startCreatureCast(
   return spell;
 }
 
-/** Resuelve el hechizo de la criatura (las criaturas no fallan, pero se puede resistir). */
+/** Resuelve el hechizo de la criatura (si no la interrumpieron con un golpe; se puede resistir). */
 export function resolveCreatureCast(
   creature: Creature,
   world: World,

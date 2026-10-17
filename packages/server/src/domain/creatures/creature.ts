@@ -41,6 +41,8 @@ export class Creature implements Mobile {
   nextBreathAt = 0;
   /** Vida recuperada en fracciones, hasta juntar un punto (regeneración). */
   regenCarry = 0;
+  /** Maná recuperado en fracciones, hasta juntar un punto. */
+  manaCarry = 0;
   lastTickAt = 0;
   /** Creada por un administrador: al morir no reaparece (se va del mundo). */
   temporary = false;
@@ -98,8 +100,8 @@ export class Creature implements Mobile {
 
   private freshCombatant(): Combatant {
     const { strength, dexterity, maxHits, abilities } = this.definition;
-    // Las que saben magia tienen maná (para que les puedan drenar).
-    const intelligence = abilities?.spells ? 60 : 0;
+    // Las que saben magia tienen el maná de su catálogo: lo gastan al lanzar.
+    const intelligence = abilities?.spells ? (this.definition.intelligence ?? 40) : 0;
     return new Combatant({ strength, dexterity, intelligence }, maxHits);
   }
 }
