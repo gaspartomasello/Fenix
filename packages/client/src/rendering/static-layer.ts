@@ -63,6 +63,7 @@ interface Chunk {
   readonly placements: readonly StaticPlacement[];
   readonly bounds: Rectangle;
   sprites: { sprite: Sprite; placement: StaticPlacement }[] | null;
+  visible: boolean;
 }
 
 /**
@@ -87,27 +88,71 @@ export class StaticLayer {
       list.push(placement);
     }
     for (const placements of byChunk.values()) {
-      this.chunks.push({ placements, bounds: boundsOf(placements, ground), sprites: null });
+      this.chunks.push({
+        placements,
+        bounds: boundsOf(placements, ground),
+        sprites: null,
+        visible: false,
+      });
     }
   }
 
   /**
-   * Crea o destruye sprites según lo visible y vuelve translúcido lo que tapa
-   * a alguno de `focuses` (uno mismo primero y quienes estén cerca).
+   * Crea, oculta o destruye sprites según lo visible y vuelve translúcido lo
+   * que tapa a alguno de `focuses` (uno mismo primero y quienes estén cerca).
+   * Los bloques cercanos (dentro de `near`) se preparan de antemano, de a uno
+   * por cuadro; los que salen de la pantalla se ocultan y recién se destruyen
+   * lejos (fuera de `far`), así ir y volver no rearma nada.
    */
-  update(view: Rectangle, focuses: readonly FractionalPosition[]): void {
+  update(
+    view: Rectangle,
+    focuses: readonly FractionalPosition[],
+    near: Rectangle = view,
+    far: Rectangle = near,
+  ): void {
+    let next: Chunk | null = null;
     for (const chunk of this.chunks) {
       const visible = chunk.bounds.intersects(view);
       if (visible && !chunk.sprites) this.show(chunk);
-      if (!visible && chunk.sprites) this.hide(chunk);
+      if (!chunk.sprites) {
+        if (!next && chunk.bounds.intersects(near)) next = chunk;
+        continue;
+      }
+      if (!visible && !chunk.bounds.intersects(far)) {
+        this.hide(chunk);
+        continue;
+      }
+      if (chunk.visible !== visible) this.setVisible(chunk, visible);
+    }
+    if (next && this.prepare(next)) {
+      this.show(next);
+      this.setVisible(next, false);
     }
     this.fadeOccluders(focuses);
+  }
+
+  /** Pide las texturas de un bloque; devuelve si ya están todas dibujadas. */
+  private prepare(chunk: Chunk): boolean {
+    let ready = true;
+    for (const placement of chunk.placements) {
+      const kind = this.map.isDoorOpen(placement) ? DOORS[placement.kind] : undefined;
+      if (
+        !this.textures.prepareStatic(kind ?? placement.kind, variantFor(placement.x, placement.y))
+      )
+        ready = false;
+    }
+    return ready;
+  }
+
+  private setVisible(chunk: Chunk, visible: boolean): void {
+    chunk.visible = visible;
+    for (const { sprite } of chunk.sprites ?? []) sprite.visible = visible;
   }
 
   /** Objetos visibles que emiten luz, con su radio en tiles. */
   *visibleLights(): Generator<{ placement: StaticPlacement; radius: number }> {
     for (const chunk of this.chunks) {
-      if (!chunk.sprites) continue;
+      if (!chunk.visible) continue;
       for (const placement of chunk.placements) {
         const radius = STATICS[placement.kind].lightRadius;
         if (radius > 0) yield { placement, radius };
@@ -131,6 +176,7 @@ export class StaticLayer {
       this.target.addChild(sprite);
       return { sprite, placement };
     });
+    chunk.visible = true;
   }
 
   /** La textura de un objeto: las puertas abiertas se ven abiertas. */
@@ -150,13 +196,14 @@ export class StaticLayer {
   private hide(chunk: Chunk): void {
     chunk.sprites?.forEach(({ sprite }) => sprite.destroy());
     chunk.sprites = null;
+    chunk.visible = false;
   }
 
   /** Lo que está delante del personaje y se superpone con él se vuelve translúcido. */
   private fadeOccluders(focuses: readonly FractionalPosition[]): void {
     const boxes = focuses.map((f) => ({ screen: this.ground.toScreen(f), depth: depthOf(f) }));
     for (const chunk of this.chunks) {
-      if (!chunk.sprites) continue;
+      if (!chunk.sprites || !chunk.visible) continue;
       for (const { sprite, placement } of chunk.sprites) {
         if (LOW_STATICS.has(placement.kind)) continue;
         const depth = depthOf(front(placement));
