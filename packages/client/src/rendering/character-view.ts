@@ -269,6 +269,7 @@ export class CharacterView {
               this.entity.equipment,
               this.entity.npc,
               this.entity.dead ? null : this.entity.mount,
+              this.entity.hues,
             )
           : this.textures.creature(this.entity.body, this.entity.direction, frame);
     this.applyDeathLook();
@@ -305,7 +306,7 @@ export class CharacterView {
       this.textures.prepareCreature(entity.body, entity.direction, frames);
       return;
     }
-    const worn = Object.values(entity.equipment).join(',');
+    const worn = `${Object.values(entity.equipment).join(',')}|${Object.values(entity.hues).join(',')}`;
     const key = `${entity.direction}:${running}:${guard}:${entity.mount ?? ''}:${worn}`;
     if (key === this.preparedCycle) return;
     this.preparedCycle = key;
@@ -316,6 +317,7 @@ export class CharacterView {
       entity.equipment,
       entity.npc,
       entity.mount,
+      entity.hues,
     );
   }
 

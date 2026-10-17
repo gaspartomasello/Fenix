@@ -482,6 +482,11 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     this.gateway.send({ type: 'openContainer', containerId });
   }
 
+  /** Teñir una prenda propia. */
+  dye(itemId: EntityId, hue: number): void {
+    this.gateway.send({ type: 'dye', itemId, hue });
+  }
+
   /** Hablar con un vecino (misiones). */
   talkNpc(npcId: EntityId): void {
     this.gateway.send({ type: 'talkNpc', npcId });
@@ -802,7 +807,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         break;
       }
       case 'playerEquipment':
-        this.entities.get(message.id)?.setEquipment(message.equipment);
+        this.entities.get(message.id)?.setEquipment(message.equipment, message.hues);
         break;
       case 'mountChanged':
         this.entities.get(message.id)?.setMount(message.mount);

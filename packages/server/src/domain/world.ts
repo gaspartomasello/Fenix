@@ -184,6 +184,7 @@ export class World {
       return {
         ...mobile.toSnapshot(),
         equipment: this.items.lookOf(mobile.id),
+        hues: this.items.huesOf(mobile.id),
         guildTag: this.guilds.of(mobile.name)?.tag ?? null,
       };
     }

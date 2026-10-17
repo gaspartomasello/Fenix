@@ -67,6 +67,28 @@ export const BASE_ITEM_KINDS = [
   'leather-leggings',
   'plate-legs',
   'boots',
+  // Ropa: camisas, vestidos, polleras, sombreros y calzado
+  'shirt',
+  'fancy-shirt',
+  'doublet',
+  'dress',
+  'skirt',
+  'short-pants',
+  'straw-hat',
+  'feathered-hat',
+  'tricorne',
+  'bandana',
+  'sandals',
+  'shoes',
+  'thigh-boots',
+  'fur-cape',
+  // Armadura de hueso: no es de metal (deja meditar y lanzar hechizos)
+  'bone-helm',
+  'bone-armor',
+  'bone-leggings',
+  // Tinturas
+  'dyes',
+  'dye-tub',
   // Magia
   'spellbook',
   'book',
@@ -141,6 +163,7 @@ export type ItemUse =
   | 'container'
   | 'book'
   | 'music'
+  | 'dye'
   | 'none';
 
 /** Lo que hace una poción al tomarla. */
@@ -175,6 +198,8 @@ export interface ItemDefinition {
   readonly capacity?: number;
   /** Luz que da llevándolo en la mano (radio en tiles). */
   readonly light?: number;
+  /** Se puede teñir (tela y cuero). */
+  readonly dyeable?: boolean;
 }
 
 type Spec = Omit<ItemDefinition, 'kind' | 'stackable' | 'use'> &
@@ -267,19 +292,19 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
   buckler: wear('rodela', 'rodelas', 'una', 'leftHand', 0x9aa0a8),
   'metal-shield': wear('escudo de metal', 'escudos de metal', 'un', 'leftHand', 0xa8aeb6),
   'chain-coif': wear('capucha de malla', 'capuchas de malla', 'una', 'head', 0x8e949c),
-  'leather-cap': wear('gorro de cuero', 'gorros de cuero', 'un', 'head', 0x7a4e2a),
+  'leather-cap': cloth('gorro de cuero', 'gorros de cuero', 'un', 'head', 0x7a4e2a),
   'iron-helmet': wear('yelmo de hierro', 'yelmos de hierro', 'un', 'head', 0x9aa0a8),
   'plate-helm': wear('yelmo cerrado', 'yelmos cerrados', 'un', 'head', 0xa8aeb6),
-  'wizard-hat': wear('sombrero de mago', 'sombreros de mago', 'un', 'head', 0x3a2a6a),
-  'leather-armor': wear('pechera de cuero', 'pecheras de cuero', 'una', 'torso', 0x7a4e2a),
-  'studded-leather': wear('pechera tachonada', 'pecheras tachonadas', 'una', 'torso', 0x5e3c22),
+  'wizard-hat': cloth('sombrero de mago', 'sombreros de mago', 'un', 'head', 0x3a2a6a),
+  'leather-armor': cloth('pechera de cuero', 'pecheras de cuero', 'una', 'torso', 0x7a4e2a),
+  'studded-leather': cloth('pechera tachonada', 'pecheras tachonadas', 'una', 'torso', 0x5e3c22),
   chainmail: wear('cota de malla', 'cotas de malla', 'una', 'torso', 0x8e949c),
   ringmail: wear('cota de anillas', 'cotas de anillas', 'una', 'torso', 0x7e848c),
   'plate-chest': wear('peto de placas', 'petos de placas', 'un', 'torso', 0xa8aeb6),
-  robe: wear('túnica', 'túnicas', 'una', 'torso', 0x3a2a6a),
-  cloak: wear('capa', 'capas', 'una', 'cloak', 0x7a1f2a),
-  trousers: wear('pantalón', 'pantalones', 'un', 'legs', 0x3a4a6a),
-  'leather-leggings': wear(
+  robe: cloth('túnica', 'túnicas', 'una', 'torso', 0x3a2a6a),
+  cloak: cloth('capa', 'capas', 'una', 'cloak', 0x7a1f2a),
+  trousers: cloth('pantalón', 'pantalones', 'un', 'legs', 0x3a4a6a),
+  'leather-leggings': cloth(
     'par de perneras de cuero',
     'pares de perneras de cuero',
     'un',
@@ -293,7 +318,32 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
     'legs',
     0xa8aeb6,
   ),
-  boots: wear('par de botas', 'pares de botas', 'un', 'feet', 0x3a2a1c),
+  boots: cloth('par de botas', 'pares de botas', 'un', 'feet', 0x3a2a1c),
+  shirt: cloth('camisa', 'camisas', 'una', 'torso', 0xd8d0c0),
+  'fancy-shirt': cloth('camisa fina', 'camisas finas', 'una', 'torso', 0x8a2a4a),
+  doublet: cloth('jubón', 'jubones', 'un', 'torso', 0x2a4a7a),
+  dress: cloth('vestido', 'vestidos', 'un', 'torso', 0x6a2a6a),
+  skirt: cloth('pollera', 'polleras', 'una', 'legs', 0x5a3a2a),
+  'short-pants': cloth('pantalón corto', 'pantalones cortos', 'un', 'legs', 0x5a5a3a),
+  'straw-hat': cloth('sombrero de paja', 'sombreros de paja', 'un', 'head', 0xd8b86a),
+  'feathered-hat': cloth('sombrero con pluma', 'sombreros con pluma', 'un', 'head', 0x2a3a6a),
+  tricorne: cloth('tricornio', 'tricornios', 'un', 'head', 0x2a2626),
+  bandana: cloth('pañuelo', 'pañuelos', 'un', 'head', 0xb02a2a),
+  sandals: cloth('par de sandalias', 'pares de sandalias', 'un', 'feet', 0x8a5a2e),
+  shoes: cloth('par de zapatos', 'pares de zapatos', 'un', 'feet', 0x2a1c14),
+  'thigh-boots': cloth('par de botas altas', 'pares de botas altas', 'un', 'feet', 0x3a2418),
+  'fur-cape': cloth('capa de piel', 'capas de piel', 'una', 'cloak', 0x8a6a4a),
+  'bone-helm': wear('yelmo de calavera', 'yelmos de calavera', 'un', 'head', 0xe2dac4),
+  'bone-armor': wear('pechera de hueso', 'pecheras de hueso', 'una', 'torso', 0xe2dac4),
+  'bone-leggings': wear(
+    'par de perneras de hueso',
+    'pares de perneras de hueso',
+    'un',
+    'legs',
+    0xe2dac4,
+  ),
+  dyes: { name: 'tintura', plural: 'tinturas', article: 'una', stackable: true },
+  'dye-tub': { name: 'tina de tintura', plural: 'tinas de tintura', article: 'una', use: 'dye' },
 
   spellbook: {
     name: 'libro de hechizos',
@@ -364,6 +414,15 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
   hides: { name: 'piel', plural: 'pieles', article: 'una', stackable: true },
 };
 
+function cloth(
+  name: string,
+  plural: string,
+  article: 'un' | 'una',
+  slot: EquipmentSlot,
+  color: number,
+): Spec {
+  return { ...wear(name, plural, article, slot, color), dyeable: true };
+}
 function food(name: string, plural: string, article: 'un' | 'una', amount: number): Spec {
   return { name, plural, article, stackable: true, use: 'eat', food: amount };
 }

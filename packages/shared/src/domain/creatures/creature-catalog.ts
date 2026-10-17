@@ -167,6 +167,9 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     humanoid: true,
     summoned: false,
     loot: [
+      { kind: 'bone-helm', chance: 0.04 },
+      { kind: 'bone-armor', chance: 0.03 },
+      { kind: 'bone-leggings', chance: 0.03 },
       { kind: 'scimitar', chance: 0.05 },
       { kind: 'chain-coif', chance: 0.05 },
       { kind: 'gold', chance: 1, amount: [15, 40] },
@@ -301,6 +304,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     humanoid: true,
     summoned: false,
     loot: [
+      { kind: 'fur-cape', chance: 0.12 },
       { kind: 'gold', chance: 1, amount: [30, 70] },
       { kind: 'war-axe', chance: 0.1 },
       { kind: 'leather-armor', chance: 0.1 },
@@ -330,6 +334,8 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     humanoid: true,
     summoned: false,
     loot: [
+      { kind: 'bandana', chance: 0.2 },
+      { kind: 'tricorne', chance: 0.05 },
       { kind: 'gold', chance: 1, amount: [25, 60] },
       { kind: 'scimitar', chance: 0.12 },
       { kind: 'wine', chance: 0.3 },
@@ -358,6 +364,8 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     humanoid: true,
     summoned: false,
     loot: [
+      { kind: 'tricorne', chance: 0.12 },
+      { kind: 'thigh-boots', chance: 0.1 },
       { kind: 'gold', chance: 1, amount: [50, 120] },
       { kind: 'longsword', chance: 0.1 },
       { kind: 'cloak', chance: 0.15 },
@@ -465,6 +473,8 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       magicResist: 600,
     },
     loot: [
+      { kind: 'bone-helm', chance: 0.1 },
+      { kind: 'bone-armor', chance: 0.06 },
       { kind: 'sapphire', chance: 0.15 },
       { kind: 'quarterstaff', chance: 0.08 },
       { kind: 'gold', chance: 1, amount: [30, 70] },
@@ -507,6 +517,9 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       magicResist: 850,
     },
     loot: [
+      { kind: 'bone-armor', chance: 0.2 },
+      { kind: 'bone-leggings', chance: 0.2 },
+      { kind: 'bone-helm', chance: 0.2 },
       { kind: 'sapphire', chance: 0.4, amount: [1, 3] },
       { kind: 'diamond', chance: 0.15 },
       { kind: 'gold', chance: 1, amount: [150, 320] },

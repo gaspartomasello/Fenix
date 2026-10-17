@@ -80,6 +80,7 @@ export class ItemNotifications {
       type: 'playerEquipment',
       id: ownerId,
       equipment: this.world.items.lookOf(ownerId),
+      hues: this.world.items.huesOf(ownerId),
     });
   }
 

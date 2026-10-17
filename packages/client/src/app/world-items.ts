@@ -54,7 +54,7 @@ export class WorldItems {
     this.drag.begin(
       {
         id: item.id,
-        iconUrl: itemIconUrl(item.kind, item.amount),
+        iconUrl: itemIconUrl(item.kind, item.amount, item.hue),
         lift: () => this.renderer.liftGroundItem(item.id),
         onDrop: (target) => {
           const to = destinationFor(target, this.actions, item.kind);

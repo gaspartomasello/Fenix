@@ -34,7 +34,11 @@ export class BankWindow {
           { className: 'item-icon', attrs: { type: 'button', title: label, 'aria-label': label } },
           [
             el('img', {
-              attrs: { src: itemIconUrl(item.kind, item.amount), alt: '', draggable: 'false' },
+              attrs: {
+                src: itemIconUrl(item.kind, item.amount, item.hue),
+                alt: '',
+                draggable: 'false',
+              },
             }),
           ],
         );
@@ -50,7 +54,7 @@ export class BankWindow {
           this.drag.begin(
             {
               id: item.id,
-              iconUrl: itemIconUrl(item.kind, item.amount),
+              iconUrl: itemIconUrl(item.kind, item.amount, item.hue),
               lift: liftElement(icon),
               onDrop: (target) => {
                 const to = destinationFor(target, this.actions, item.kind);

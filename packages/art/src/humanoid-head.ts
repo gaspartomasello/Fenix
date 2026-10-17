@@ -84,7 +84,17 @@ export interface HeadLook {
   readonly hairStyle: HairStyle;
   readonly facialHair: FacialHair;
   readonly female: boolean;
-  readonly headgear: 'cap' | 'helmet' | 'plate-helm' | 'wizard' | null;
+  readonly headgear:
+    | 'cap'
+    | 'helmet'
+    | 'plate-helm'
+    | 'wizard'
+    | 'straw-hat'
+    | 'feathered-hat'
+    | 'tricorne'
+    | 'bandana'
+    | 'skull'
+    | null;
   readonly capColor: Ramp;
   readonly hatColor: Ramp;
 }
@@ -118,7 +128,11 @@ export function drawHumanHead(
   head.decal([0, -3, 4.3], [0, -0.2, 1], look.female ? LIPS : tone(look.skin, 0.15), 2, 1);
 
   const underHat =
-    look.headgear === 'cap' || look.headgear === 'helmet' || look.headgear === 'plate-helm';
+    look.headgear === 'cap' ||
+    look.headgear === 'helmet' ||
+    look.headgear === 'plate-helm' ||
+    look.headgear === 'bandana' ||
+    look.headgear === 'skull';
   drawHair(head, look.hair, look.hairStyle, underHat);
   drawFacialHair(head, look.hair, look.facialHair);
 
@@ -126,6 +140,71 @@ export function drawHumanHead(
   else if (look.headgear === 'plate-helm') drawPlateHelm(head);
   else if (look.headgear === 'cap') drawCap(head, look.capColor);
   else if (look.headgear === 'wizard') drawWizardHat(head, look.hatColor);
+  else if (look.headgear === 'straw-hat') drawWideHat(head, look.capColor, 'straw');
+  else if (look.headgear === 'feathered-hat') drawWideHat(head, look.capColor, 'feather');
+  else if (look.headgear === 'tricorne') drawWideHat(head, look.capColor, 'tricorne');
+  else if (look.headgear === 'bandana') drawBandana(head, look.capColor);
+  else if (look.headgear === 'skull') drawBoneHelm(head);
+}
+
+/** Sombrero de ala ancha: de paja (con trenzado), con pluma o tricornio (el ala doblada). */
+function drawWideHat(head: HeadParts, color: Ramp, style: 'straw' | 'feather' | 'tricorne'): void {
+  const weave: Material = (s) =>
+    style === 'straw' ? tone(color, s.light, (s.x + s.y) % 2 ? -1 : 0) : tone(color, s.light);
+  if (style === 'tricorne') {
+    // Tres puntas: el ala levantada en tres lados.
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2 + Math.PI / 2;
+      head.limb(
+        [Math.cos(a) * 1.5, 3.6, Math.sin(a) * 1.5],
+        [Math.cos(a) * 6.4, 4.6, Math.sin(a) * 6.4],
+        1.8,
+        0.5,
+        weave,
+      );
+    }
+    head.ellipsoid([0, 3.6, 0], [5.6, 0.8, 5.6], weave);
+  } else head.ellipsoid([0, 3.4, 0], [7.4, 0.6, 7.4], weave);
+  head.limb([0, 3.6, 0], [0, 7.4, -0.4], 4.4, 3.8, weave);
+  if (style === 'feather')
+    head.limb([3.6, 5.4, -1], [6, 11.5, -4.5], 0.9, 0.2, solid(ramp([230, 226, 214])));
+  if (style !== 'straw') {
+    const band = head.at([0, 4.4, 0])[1];
+    head.limb([0, 4, 0], [0, 4.8, 0], 4.5, 4.5, (s) =>
+      Math.abs(s.p[1] - band) < 0.5 ? tone(GOLD, s.light) : weave(s),
+    );
+  }
+}
+
+/** Pañuelo atado a la cabeza, con el nudo y las puntas atrás. */
+function drawBandana(head: HeadParts, cloth: Ramp): void {
+  head.ellipsoid(
+    [0, 1.4, -0.4],
+    [4.6, 5.1, 5.1],
+    head.masked((n) => n[1] > 0.18, solid(cloth)),
+  );
+  head.ellipsoid([0, 1.2, -4.8], [1.2, 1, 0.9], solid(cloth, -1));
+  head.limb([0, 0.8, -5.2], [0.8, -2.6, -6], 0.7, 0.3, solid(cloth, -1));
+  head.limb([0, 0.8, -5.2], [-0.8, -2.8, -5.6], 0.7, 0.3, solid(cloth, -1));
+}
+
+/** Yelmo de calavera: un cráneo de hueso sobre la cabeza, con cuencas y cuernitos. */
+function drawBoneHelm(head: HeadParts): void {
+  const bone = ramp([226, 218, 196]);
+  head.ellipsoid(
+    [0, 1.2, -0.2],
+    [5, 5.6, 5.5],
+    head.masked(
+      (n) => !(n[2] > 0.5 && n[1] < 0.2),
+      (s) => tone(bone, s.light),
+    ),
+  );
+  for (const side of [1, -1] as const) {
+    head.decal([side * 1.7, 2.9, 5.1], [side * 0.3, 0.2, 1], [26, 20, 18], 2, 2);
+    head.limb([side * 3.6, 4.4, -0.5], [side * 5.8, 7.6, -1.6], 0.8, 0.2, solid(bone, -1));
+  }
+  // Dientes de la calavera sobre la frente.
+  head.decal([0, 1.6, 5.4], [0, 0, 1], [120, 108, 92], 3, 1);
 }
 
 /**
