@@ -1,7 +1,6 @@
-import { terrainBaseColor } from '@fenix/art';
-import { STATICS, type StaticKind, type TileMap } from '@fenix/shared';
 import type { ClientGame } from '../core/client-game';
 import { el } from './dom';
+import { mapPicture } from './map-picture';
 
 /** Lado del minimapa en pantalla (pixeles CSS). */
 const SIZE = 196;
@@ -9,41 +8,16 @@ const SIZE = 196;
 const ZOOMS = [1.2, 2, 3.2] as const;
 const STORAGE_KEY = 'fenix.minimapa';
 
-/** Color de cada objeto fijo en el minimapa (los que no figuran no se dibujan). */
-function staticColor(kind: StaticKind): string | null {
-  if (kind === 'mountain') return '#7d756b';
-  if (
-    kind === 'rock' ||
-    kind === 'rubble' ||
-    kind === 'gravestone' ||
-    kind === 'boulder' ||
-    kind === 'mossy-rock'
-  )
-    return '#8d8a84';
-  if (kind === 'column' || kind === 'fallen-column') return '#d8d2c4';
-  if (kind === 'palm' || kind === 'acacia') return '#4f7a34';
-  if (kind === 'birch') return '#7c9a4a';
-  if (kind.startsWith('wall') || kind === 'lighthouse') return '#c9c2b4';
-  if (kind === 'tent') return '#c49a62';
-  if (kind === 'lamp' || kind === 'campfire' || kind === 'brazier' || kind === 'shrine')
-    return '#ffd36b';
-  if (kind === 'cave-entrance') return '#1b1410';
-  if (kind === 'reeds' || kind === 'flowers' || kind === 'bush') return null;
-  // Árboles y cactus: verde oscuro.
-  return STATICS[kind].blocking ? '#2c5a2c' : null;
-}
-
 /**
  * Minimapa: el mundo visto desde arriba, girado como la vista isométrica
  * (arriba en el minimapa es arriba en la pantalla), centrado en uno mismo.
- * Muestra a la gente cerca y los nombres de pueblos y lugares. Se abre y se
- * cierra con su botón, la tecla M o el clic derecho; la rueda acerca o aleja.
+ * Muestra a la gente cerca y los nombres de pueblos y lugares. La tecla M (o
+ * su botón) pasa del minimapa al mapa del mundo y después lo cierra; el clic
+ * derecho lo cierra y la rueda acerca o aleja.
  */
 export class Minimap {
   readonly element: HTMLElement;
   private readonly canvas: HTMLCanvasElement;
-  private base: HTMLCanvasElement | null = null;
-  private baseMap: TileMap | null = null;
   private zoom = 1;
   private timer: number | null = null;
 
@@ -93,6 +67,11 @@ export class Minimap {
     this.setOpen(!this.open);
   }
 
+  /** Abre o cierra (lo recuerda para la próxima vez). */
+  show(open: boolean): void {
+    this.setOpen(open);
+  }
+
   destroy(): void {
     if (this.timer !== null) window.clearInterval(this.timer);
     this.element.remove();
@@ -112,39 +91,6 @@ export class Minimap {
       window.clearInterval(this.timer);
       this.timer = null;
     }
-  }
-
-  /** Un pixel por tile: terreno y objetos, hecho una sola vez por mapa. */
-  private baseFor(map: TileMap): HTMLCanvasElement {
-    if (this.base && this.baseMap === map) return this.base;
-    const canvas = document.createElement('canvas');
-    canvas.width = map.width;
-    canvas.height = map.height;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      const image = ctx.createImageData(map.width, map.height);
-      for (let y = 0; y < map.height; y++) {
-        for (let x = 0; x < map.width; x++) {
-          const terrain = map.terrainAt({ x, y });
-          const [r, g, b] = terrain === undefined ? [0, 0, 0] : terrainBaseColor(terrain);
-          const o = (y * map.width + x) * 4;
-          image.data[o] = r;
-          image.data[o + 1] = g;
-          image.data[o + 2] = b;
-          image.data[o + 3] = 255;
-        }
-      }
-      ctx.putImageData(image, 0, 0);
-      for (const s of map.statics) {
-        const color = staticColor(s.kind);
-        if (!color) continue;
-        ctx.fillStyle = color;
-        ctx.fillRect(s.x, s.y, 1, 1);
-      }
-    }
-    this.base = canvas;
-    this.baseMap = map;
-    return canvas;
   }
 
   private draw(): void {
@@ -167,7 +113,7 @@ export class Minimap {
     ctx.imageSmoothingEnabled = false;
     const [ox, oy] = project(0, 0);
     ctx.setTransform(k * ratio, k * ratio, -k * ratio, k * ratio, ox * ratio, oy * ratio);
-    ctx.drawImage(this.baseFor(map), 0, 0);
+    ctx.drawImage(mapPicture(map), 0, 0);
     ctx.restore();
 
     // Gente cerca: criaturas en rojo, gente del pueblo en amarillo, jugadores en celeste.

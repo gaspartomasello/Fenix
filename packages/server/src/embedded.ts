@@ -48,8 +48,8 @@ export function createEmbeddedServer(options: EmbeddedServerOptions = {}): Embed
   const ids = new UuidGenerator();
   const world = createWorld(
     {
-      size: options.mapSize ?? 1000,
-      height: options.mapHeight ?? options.mapSize ?? 1400,
+      size: options.mapSize ?? 1400,
+      height: options.mapHeight ?? options.mapSize ?? 2000,
       seed: options.mapSeed ?? 1997,
     },
     ids,

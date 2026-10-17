@@ -521,11 +521,11 @@ const STYLES: Readonly<Record<Terrain, TerrainStyle>> = {
   },
   [Terrain.ShallowWater]: {
     varies: true,
-    base: [70, 140, 160],
+    base: [104, 180, 202],
     paint(u, v, seed) {
       // Agua de orilla: turquesa y clara, se ve el fondo de arena y piedritas.
       const depth = fbm(u, v, seed, 2, 3);
-      let color = mix([62, 128, 150], [106, 176, 182], depth);
+      let color = mix([84, 160, 190], [132, 200, 216], depth);
       if (periodicNoise(u, v, 10, seed + 5) > 0.84) color = mix(color, [176, 186, 150], 0.35);
       const wave = periodicNoise(u * 1.3 + v * 0.4, v, 6, seed + 9);
       if (Math.abs(wave - 0.5) < 0.025) color = mix(color, [214, 240, 244], 0.65);
@@ -587,6 +587,65 @@ const STYLES: Readonly<Record<Terrain, TerrainStyle>> = {
       if (pebble < 0.25) color = shade(color, 0.78);
       else if (pebble > 0.8) color = shade(color, 1.12);
       return color;
+    },
+  },
+  // ── Transiciones: dos suelos mezclados, como en el Age of Empires ──
+  [Terrain.SnowyGrass]: {
+    varies: true,
+    base: [150, 178, 150],
+    paint(u, v, seed) {
+      // Pasto con nieve en los pozos: manchones blancos de borde irregular y briznas asomando.
+      const grass = STYLES[Terrain.Grass].paint(u, v, seed + 3);
+      const snow = STYLES[Terrain.Snow].paint(u, v, seed + 5);
+      const cover = fbm(u, v, seed + 11, 3, 3) + (periodicNoise(u, v, 14, seed + 13) - 0.5) * 0.18;
+      if (cover > 0.56) return snow;
+      if (cover > 0.5) return mix(grass, snow, 0.55);
+      return shade(mix(grass, [160, 176, 168], 0.18), 1.02);
+    },
+  },
+  [Terrain.SandyGrass]: {
+    varies: true,
+    base: [164, 168, 100],
+    paint(u, v, seed) {
+      // Arena con matas de pasto: el pasto en manchas, ralo en los bordes.
+      const sand = STYLES[Terrain.Sand].paint(u, v, seed + 3);
+      const grass = STYLES[Terrain.DryGrass].paint(u, v, seed + 5);
+      const tuft = fbm(u, v, seed + 17, 3, 3);
+      const blade = periodicNoise(u, v * 0.4, 20, seed + 19);
+      if (tuft > 0.55 || (tuft > 0.44 && blade > 0.6)) return mix(grass, [92, 132, 60], 0.3);
+      if (blade > 0.86) return mix(sand, [120, 140, 70], 0.6);
+      return sand;
+    },
+  },
+  [Terrain.Leaves]: {
+    varies: true,
+    base: [104, 94, 52],
+    paint(u, v, seed) {
+      // Hojarasca de bosque: tierra oscura cubierta de hojas secas, ocres y alguna verde.
+      const tone = fbm(u, v, seed, 3, 2);
+      let color = mix([70, 58, 34], [112, 92, 52], tone);
+      const leaf = periodicNoise(u, v, 16, seed + 3);
+      const hue = periodicNoise(u, v, 7, seed + 7);
+      if (leaf > 0.62) {
+        const tint: Rgb = hue < 0.35 ? [168, 112, 44] : hue < 0.7 ? [140, 120, 52] : [92, 118, 46];
+        color = mix(color, tint, 0.55 + (leaf - 0.62) * 1.2);
+      } else if (leaf < 0.2) color = shade(color, 0.82);
+      if (fbm(u, v, seed + 21, 2, 2) > 0.68) color = mix(color, [74, 112, 46], 0.4);
+      return color;
+    },
+  },
+  [Terrain.SparseGrass]: {
+    varies: true,
+    base: [112, 116, 64],
+    paint(u, v, seed) {
+      // Pasto ralo: tierra con matas de pasto (entre el pasto y la tierra o la piedra).
+      const dirt = STYLES[Terrain.Dirt].paint(u, v, seed + 3);
+      const grass = STYLES[Terrain.Grass].paint(u, v, seed + 5);
+      const tuft = fbm(u, v, seed + 23, 3, 3);
+      const blade = periodicNoise(u, v * 0.4, 22, seed + 29);
+      if (tuft > 0.52) return grass;
+      if (tuft > 0.4 && blade > 0.55) return mix(grass, dirt, 0.25);
+      return dirt;
     },
   },
 };

@@ -7,7 +7,8 @@ import type { Entity, FractionalPosition } from '../core/entity';
 import { CharacterView } from './character-view';
 import { EffectsLayer } from './effects-layer';
 import { ItemLayer } from './item-layer';
-import { renderResolution, screenToTile, tileToScreen, type ScreenPoint } from './iso';
+import { Ground } from './ground';
+import { renderResolution, type ScreenPoint } from './iso';
 import { Lighting } from './lighting';
 import { StaticLayer } from './static-layer';
 import { TerrainLayer } from './terrain-layer';
@@ -39,16 +40,18 @@ export class GameRenderer {
   /** Terreno y entidades: lo que se oscurece de noche. */
   private readonly scene = new Container();
   private readonly entityLayer = new Container({ sortableChildren: true });
-  private readonly lighting = new Lighting(this.textures);
+  /** Las lomas del terreno: todo lo que se dibuja sobre el suelo sube con ellas. */
+  private readonly ground = new Ground();
+  private readonly lighting = new Lighting(this.textures, this.ground);
   private readonly views = new Map<EntityId, CharacterView>();
   private terrain: TerrainLayer | null = null;
   private statics: StaticLayer | null = null;
-  private readonly groundItems = new ItemLayer(this.textures, this.entityLayer);
+  private readonly groundItems = new ItemLayer(this.textures, this.entityLayer, this.ground);
   private readonly effects = new EffectsLayer((id, now) => {
     for (const entity of this.game.allEntities())
       if (entity.id === id) return entity.renderPosition(now);
     return null;
-  });
+  }, this.ground);
   private zoomIndex = 0;
   private readonly unsubscribe: (() => void)[] = [];
 
@@ -74,7 +77,7 @@ export class GameRenderer {
 
   /** Tile del mundo bajo un punto de la pantalla (relativo al canvas). */
   screenToTile(point: ScreenPoint): Position {
-    const tile = screenToTile(this.toWorld(point));
+    const tile = this.ground.pick(this.toWorld(point));
     return { x: Math.round(tile.x), y: Math.round(tile.y) };
   }
 
@@ -289,8 +292,9 @@ export class GameRenderer {
     this.statics?.destroy();
     this.terrain?.destroy();
     this.scene.removeChildren();
-    this.terrain = new TerrainLayer(map, this.textures);
-    this.statics = new StaticLayer(map, this.textures, this.entityLayer);
+    this.ground.setMap(map);
+    this.terrain = new TerrainLayer(map, this.textures, this.ground);
+    this.statics = new StaticLayer(map, this.textures, this.entityLayer, this.ground);
     this.scene.addChild(this.terrain.container, this.entityLayer);
   }
 
@@ -300,6 +304,7 @@ export class GameRenderer {
       entity,
       this.textures,
       entity.id === this.game.self?.id,
+      this.ground,
       this.game.isOwnPet(entity.id),
     );
     this.views.set(entity.id, view);
@@ -308,7 +313,7 @@ export class GameRenderer {
 
   /** Centra la cámara y devuelve el rectángulo visible en coordenadas del mundo. */
   private updateCamera(focus: { x: number; y: number }): Rectangle {
-    const center = tileToScreen(focus);
+    const center = this.ground.toScreen(focus);
     const { width, height } = this.app.screen;
     const zoom = this.zoom;
     const offsetX = Math.round(width / 2 - center.x * zoom);

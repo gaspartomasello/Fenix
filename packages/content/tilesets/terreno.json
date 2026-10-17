@@ -3,10 +3,10 @@
   "name": "terreno",
   "tilewidth": 44,
   "tileheight": 44,
-  "tilecount": 32,
-  "columns": 32,
+  "tilecount": 36,
+  "columns": 36,
   "image": "terreno.png",
-  "imagewidth": 1408,
+  "imagewidth": 1584,
   "imageheight": 44,
   "tiles": [
     {
@@ -326,6 +326,46 @@
           "name": "terrain",
           "type": "string",
           "value": "gravel"
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "properties": [
+        {
+          "name": "terrain",
+          "type": "string",
+          "value": "snowy-grass"
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "properties": [
+        {
+          "name": "terrain",
+          "type": "string",
+          "value": "sandy-grass"
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "properties": [
+        {
+          "name": "terrain",
+          "type": "string",
+          "value": "leaves"
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "properties": [
+        {
+          "name": "terrain",
+          "type": "string",
+          "value": "sparse-grass"
         }
       ]
     }

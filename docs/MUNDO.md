@@ -1,11 +1,11 @@
 # El mundo de Fenix
 
-Cómo está armado el mundo abierto: biomas, terrenos, objetos del suelo y el plan para llevarlo a
-1000 × 1000. Todo el arte es procedural (`@fenix/art`), sin nada de UO.
+Cómo está armado el mundo abierto: biomas, terrenos, objetos del suelo, lomas y agua. Todo el arte
+es procedural (`@fenix/art`), sin nada de UO.
 
 ## Forma del mundo
 
-El continente mide **1000 × 1400** tiles (`MAP_SIZE` × `MAP_HEIGHT`) y es alargado de norte a sur,
+El continente mide **1400 × 2000** tiles (`MAP_SIZE` × `MAP_HEIGHT`) y es alargado de norte a sur,
 mezcla de América y Britannia:
 
 - **Norte**: una masa ancha y templada con bahías, golfos, un gran golfo interior al oeste y
@@ -15,12 +15,43 @@ mezcla de América y Britannia:
 - **Sur**: otra masa con selva grande, desiertos, tierra roja y sabana, que se enfría hacia la
   punta.
 - **Cordillera** a lo largo de la costa oeste, cortada por pasos.
-- **Mares abiertos** a los dos lados, con unas 25 islas (algunas grandes, para explorar y para
-  los barcos que vendrán) y agua poco profunda junto a las costas.
+- **Mares abiertos** a los dos lados, con unas 35 islas (algunas grandes, para explorar y para
+  los barcos que vendrán).
 
 Las costas se tuercen con ruido (nada queda redondo) y el clima depende de la latitud: frío
 arriba, templado donde está la capital, caluroso en el istmo y fresco en la punta sur. Un mapa
 cuadrado (los de prueba) usa la isla redonda de antes.
+
+## Agua
+
+- **Agua celeste (poco profunda)**: se camina, a pie o a caballo. Bordea las costas en una franja
+  de ancho desparejo; los ríos y los charcos del pantano son de agua celeste (se vadean) y los
+  lagos chicos también.
+- **Agua azul (profunda)**: no se camina. Es el mar abierto y el centro de los lagos grandes;
+  ahí van a navegar los barcos.
+
+## Lomas
+
+Como en el Age of Empires, el suelo tiene **alturas suaves**: colinas y valles con laderas
+sombreadas (la luz viene de arriba a la izquierda). Es solo visual, todo se camina igual. El mar y
+la costa quedan abajo y los pueblos son planos.
+
+## Transiciones
+
+Entre un suelo y otro no hay un corte: el borde se tuerce y se entrevera unos tiles (manchas de
+uno dentro del otro) y, entre suelos muy distintos, aparece uno mezclado:
+
+- **pasto nevado** entre el pasto (o la tundra) y la nieve;
+- **pasto con arena** entre el pasto y la arena o las salinas;
+- **pasto ralo** entre el pasto y la tierra, la grava o la tierra roja.
+
+En los bosques espesos el suelo es de **hojarasca**.
+
+## Caminos
+
+Los caminos entre pueblos y los senderos a los lugares se trazan buscando el paso más barato
+(rodean montañas y agua) y después se curvan: pasan por puntos corridos al costado y se unen con
+una curva suave, así serpentean en vez de ir en línea recta.
 
 ## Biomas
 
@@ -60,13 +91,17 @@ Especiales: **tierra corrupta** (negra y violeta, alrededor de la boca de la maz
 malditos), suelo de cueva y roca.
 
 Los pisos van de a una losa por tile (cuadriculado); los terrenos naturales se mezclan con el
-vecino con un borde irregular (transiciones como las de UO). No hay alturas ni rampas (el mundo es
-plano).
+vecino con un borde irregular. Naturales nuevos de transición: pasto nevado, pasto con arena,
+pasto ralo y hojarasca.
 
 ## Objetos nuevos del suelo
 
-Árboles: palmera, árbol de la selva (con raíces tablares y lianas), abedul y acacia, que se suman
-al roble, pino, ceibo, gomero, sauce, álamo y árbol seco.
+Árboles: palmera, árbol de la selva (con raíces tablares y lianas), abedul, acacia, **arce de
+otoño** (rojo, naranja o dorado, en manchas de los bosques), **ciprés**, **baobab** (sabana) y
+**bambú** (selva, junto al agua), que se suman al roble, pino, ceibo, gomero, sauce, álamo y árbol
+seco.
+
+El **faro** es grande: ocupa 2 × 2 tiles y es mucho más alto que una persona.
 
 Plantas: pastizal (verde, pajizo o mezclado), yuyos, helecho, hongos, florcitas, peyote, matorral
 seco, planta de hojas grandes y mata de tundra. Piedras: piedritas, peñasco (granito, arenisca o
@@ -79,16 +114,23 @@ piedra oscura) y piedra con musgo. Ruinas: columna antigua (entera o quebrada) y
 - **Cráter Humeante** (tierras secas): laguna de lava en un cráter de ceniza, con trolls y orcos.
 - La **boca de la Cueva del Lamento** tiene tierra corrupta alrededor.
 
+**Mapa:** la tecla M (o el botón Mapa) abre el minimapa; la segunda vez, el **mapa del mundo**
+entero con los nombres de pueblos y lugares y un punto que late donde está uno; la tercera, lo
+cierra.
+
 Para recorrer el mapa con el personaje de prueba: `/ir 120 300` (coordenadas) o `/ir Torre`.
 
 ## Plan (por etapas)
 
 1. **Etapa 24:** arte de biomas, terrenos y vegetación.
-2. **Etapa 25:** el continente de 1000 × 1400 (arriba), con islas, cordillera y caminos que
+2. **Etapa 25:** el continente de 1000 × 1400, con islas, cordillera y caminos que
    serpentean; mapa compacto por la red; criaturas que duermen lejos de los jugadores; índice
    espacial; los personajes guardados en el mundo anterior aparecen en la capital.
-3. **Etapa 26:** ciudades: capital grande amurallada con castillo del líder y **puerto con muelle**;
+3. **Etapa 26:** mapa pulido: 1400 × 2000, agua celeste que se camina, transiciones graduales,
+   lomas, caminos curvos, árboles nuevos y faro grande.
+4. **Etapa 27:** ciudades: capital grande amurallada con castillo del líder y **puerto con muelle**;
    guarida de bandidos en una isla, sin guardias; pueblos con estilo propio (adobe, madera, piedra,
    chozas) y pisos de damero o baldosas; gente del pueblo que camina y guardias; más pueblos.
-4. Más adelante: **búsqueda de tesoros** (mapas, excavar, cofres con guardianes, en las islas) y
+5. Más adelante: fauna según el terreno (pájaros, serpientes, escorpiones, cocodrilos, hombres
+   lagarto, camello como montura), **búsqueda de tesoros** (mapas, excavar, cofres con guardianes, en las islas) y
    **barcos con combate naval** (combate entre jugadores en el mar).

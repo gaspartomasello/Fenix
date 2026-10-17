@@ -1,7 +1,7 @@
 import { SPELLS, type EntityId, type SpellKey } from '@fenix/shared';
 import { Container, Graphics } from 'pixi.js';
 import type { FractionalPosition } from '../core/entity';
-import { tileToScreen } from './iso';
+import type { Ground } from './ground';
 
 /** Altura del pecho sobre los pies: de ahí salen y ahí llegan los hechizos. */
 const CHEST_Y = 40;
@@ -80,6 +80,7 @@ export class EffectsLayer {
 
   constructor(
     private readonly positionOf: (id: EntityId, now: number) => FractionalPosition | null,
+    private readonly ground: Ground,
   ) {
     this.container.addChild(this.graphics);
   }
@@ -101,8 +102,8 @@ export class EffectsLayer {
       const target = this.positionOf(effect.targetId, now);
       const caster = this.positionOf(effect.casterId, now) ?? target;
       if (!target || !caster) continue;
-      const to = chest(target);
-      const from = chest(caster);
+      const to = chest(this.ground, target);
+      const from = chest(this.ground, caster);
 
       switch (visual.style) {
         case 'projectile':
@@ -145,8 +146,8 @@ export class EffectsLayer {
   }
 }
 
-function chest(position: FractionalPosition): { x: number; y: number } {
-  const screen = tileToScreen(position);
+function chest(ground: Ground, position: FractionalPosition): { x: number; y: number } {
+  const screen = ground.toScreen(position);
   return { x: screen.x, y: screen.y - CHEST_Y };
 }
 

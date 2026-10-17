@@ -435,6 +435,51 @@ body {
   cursor: zoom-in;
 }
 
+/* Mapa del mundo: el continente entero sobre el juego (segunda vez que se aprieta M). */
+.world-map {
+  position: absolute;
+  inset: 0;
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 10, 16, 0.62);
+  cursor: pointer;
+}
+
+.world-map[hidden] {
+  display: none;
+}
+
+.world-map-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px 6px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
+}
+
+.world-map-title {
+  font:
+    700 15px Georgia,
+    serif;
+  letter-spacing: 0.04em;
+}
+
+.world-map-canvas {
+  display: block;
+  border-radius: calc(var(--radius) - 2px);
+}
+
+.world-map-hint {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
 .hud-buttons {
   position: absolute;
   right: 12px;

@@ -3,10 +3,10 @@
   "name": "objetos",
   "tilewidth": 136,
   "tileheight": 168,
-  "tilecount": 57,
-  "columns": 57,
+  "tilecount": 61,
+  "columns": 61,
   "image": "objetos.png",
-  "imagewidth": 7752,
+  "imagewidth": 8296,
   "imageheight": 168,
   "tileoffset": {
     "x": -46,
@@ -580,6 +580,46 @@
           "name": "static",
           "type": "string",
           "value": "fallen-column"
+        }
+      ]
+    },
+    {
+      "id": 57,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "maple"
+        }
+      ]
+    },
+    {
+      "id": 58,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "cypress"
+        }
+      ]
+    },
+    {
+      "id": 59,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "baobab"
+        }
+      ]
+    },
+    {
+      "id": 60,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "bamboo"
         }
       ]
     }

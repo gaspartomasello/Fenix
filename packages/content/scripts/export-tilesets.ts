@@ -12,7 +12,10 @@ import {
   PixelImage,
   STATIC_ART_HEIGHT,
   STATIC_ART_WIDTH,
+  STATIC_GROUND,
+  staticFrame,
   TERRAIN_ART_SIZE,
+  type StaticFrame,
 } from '@fenix/art';
 import { ALL_TERRAINS, STATIC_KINDS, TERRAINS } from '@fenix/shared';
 import { TILED, type TiledTileset } from '../src/tiled-format';
@@ -34,6 +37,23 @@ function sheet(images: readonly PixelImage[], width: number, height: number): Pi
       }
     }
   });
+  return out;
+}
+
+/**
+ * Los objetos grandes (el faro) tienen su propio lienzo: en el tileset van
+ * recortados al lienzo de siempre, con el punto de apoyo en el mismo lugar.
+ */
+function standardFrame(image: PixelImage, frame: StaticFrame): PixelImage {
+  if (frame.width === STATIC_ART_WIDTH && frame.height === STATIC_ART_HEIGHT) return image;
+  const out = new PixelImage(STATIC_ART_WIDTH, STATIC_ART_HEIGHT);
+  const dx = frame.ground.x - STATIC_GROUND.x;
+  const dy = frame.ground.y - STATIC_GROUND.y;
+  for (let y = 0; y < STATIC_ART_HEIGHT; y++)
+    for (let x = 0; x < STATIC_ART_WIDTH; x++) {
+      const alpha = image.alphaAt(x + dx, y + dy);
+      if (alpha > 0) out.set(x, y, image.colorAt(x + dx, y + dy), alpha);
+    }
   return out;
 }
 
@@ -78,7 +98,7 @@ await writeTileset(
 // Los objetos son más anchos que un tile: se corren para quedar centrados.
 await writeTileset(
   'objetos',
-  STATIC_KINDS.map((kind) => drawStatic(kind, 0)),
+  STATIC_KINDS.map((kind) => standardFrame(drawStatic(kind, 0), staticFrame(kind))),
   { width: STATIC_ART_WIDTH, height: STATIC_ART_HEIGHT },
   TILED.staticProperty,
   STATIC_KINDS,

@@ -21,6 +21,19 @@ describe('mapa compacto', () => {
     expect(decoded.regions).toEqual(data.regions);
   });
 
+  it('las alturas viajan con el mapa', () => {
+    const data = {
+      width: 2,
+      height: 2,
+      terrain: [0, 0, 0, 0].map((t) => t as Terrain),
+      statics: [],
+      regions: [],
+      teleporters: [],
+      heights: [0, 3, 7, 12],
+    };
+    expect(decodeMap(encodeMap(data)).heights).toEqual([0, 3, 7, 12]);
+  });
+
   it('un mapa grande ocupa un byte por tile', () => {
     const big = {
       width: 1000,

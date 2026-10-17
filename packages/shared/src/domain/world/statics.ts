@@ -60,6 +60,10 @@ export const STATIC_KINDS = [
   'tundra-shrub',
   'column',
   'fallen-column',
+  'maple',
+  'cypress',
+  'baobab',
+  'bamboo',
 ] as const;
 
 export type StaticKind = (typeof STATIC_KINDS)[number];
@@ -70,6 +74,11 @@ export interface StaticDefinition {
   readonly blocking: boolean;
   /** Radio de luz que emite de noche, en tiles (0 = no ilumina). */
   readonly lightRadius: number;
+  /**
+   * Lado de la base en tiles (1 = un tile). Un objeto grande ocupa desde su
+   * tile hacia +x y +y (el faro, 2 × 2).
+   */
+  readonly footprint: number;
 }
 
 const define = (
@@ -77,7 +86,8 @@ const define = (
   name: string,
   blocking: boolean,
   lightRadius = 0,
-): StaticDefinition => ({ kind, name, blocking, lightRadius });
+  footprint = 1,
+): StaticDefinition => ({ kind, name, blocking, lightRadius, footprint });
 
 export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   oak: define('oak', 'roble', true),
@@ -115,7 +125,7 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   tent: define('tent', 'carpa', true),
   campfire: define('campfire', 'fogata', true, 4),
   gravestone: define('gravestone', 'lápida', true),
-  lighthouse: define('lighthouse', 'faro', true, 9),
+  lighthouse: define('lighthouse', 'faro', true, 12, 2),
   rubble: define('rubble', 'escombros', false),
   reeds: define('reeds', 'juncos', false),
   'snow-pine': define('snow-pine', 'pino nevado', true),
@@ -137,6 +147,10 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   'tundra-shrub': define('tundra-shrub', 'mata de tundra', false),
   column: define('column', 'columna antigua', true),
   'fallen-column': define('fallen-column', 'columna caída', true),
+  maple: define('maple', 'arce', true),
+  cypress: define('cypress', 'ciprés', true),
+  baobab: define('baobab', 'baobab', true),
+  bamboo: define('bamboo', 'bambú', true),
 };
 
 export function isStaticKind(value: unknown): value is StaticKind {

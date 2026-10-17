@@ -339,6 +339,13 @@ chat las pinta en celeste y en verde, como en UO.
 - **Mapa compacto** (`encodeMap` / `decodeMap`, en `@fenix/shared`): el mapa del mensaje de
   bienvenida viaja como bytes en base64 (uno por tile de terreno, cinco por objeto fijo).
 - **Caminos**: el A\* busca primero en una ventana alrededor de los extremos.
+- **Lomas** (`TileMapData.heights`): cada tile tiene una altura en escalones (un byte, viaja en
+  el mapa compacto). Solo se ve: todo se camina igual. En el cliente, `Ground` (en `rendering`)
+  sube cada cosa según la altura interpolada entre las esquinas del tile; `TerrainLayer` dibuja
+  las laderas como mallas de dos triángulos y las sombrea según la pendiente; el clic busca el
+  tile mirando las lomas (`Ground.pick`).
+- **Objetos grandes**: `StaticDefinition.footprint` (el faro ocupa 2 × 2 tiles y bloquea los
+  cuatro) y un lienzo propio en el arte (`staticFrame`).
 - **Cambio de mundo**: `World.mapId` (tamaño y semilla) se guarda con el personaje; si el mundo
   cambió, el personaje aparece en la capital en vez de en su lugar viejo.
 
