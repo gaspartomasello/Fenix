@@ -74,6 +74,8 @@ export class TileMap {
   /** Puertas por tile, y cuáles están abiertas (lo único del mapa que cambia). */
   private readonly doors = new Map<number, StaticKind>();
   private readonly openDoors = new Set<number>();
+  /** Muros mágicos que cierran el paso un rato (piedra, energía). */
+  private readonly barriers = new Set<number>();
 
   constructor(data: TileMapInit) {
     if (data.terrain.length !== data.width * data.height) {
@@ -159,11 +161,20 @@ export class TileMap {
     return [...this.openDoors].map((i) => ({ x: i % this.width, y: Math.floor(i / this.width) }));
   }
 
+  /** Levanta o saca un muro mágico en el tile. */
+  setBarrier(position: Position, on: boolean): void {
+    if (!this.contains(position)) return;
+    const i = position.y * this.width + position.x;
+    if (on) this.barriers.add(i);
+    else this.barriers.delete(i);
+  }
+
   /** Transitable: terreno caminable y sin objetos que bloqueen (una puerta abierta no bloquea). */
   isWalkable(position: Position): boolean {
     const terrain = this.terrainAt(position);
     if (terrain === undefined || !TERRAINS[terrain].walkable) return false;
     const i = position.y * this.width + position.x;
+    if (this.barriers.has(i)) return false;
     return this.blocked[i] === 0 || this.openDoors.has(i);
   }
 

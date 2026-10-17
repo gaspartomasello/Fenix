@@ -18,7 +18,10 @@ import {
   spellSuccessChance,
   summonDurationMs,
   tileDistance,
+  STATIC_CONTAINERS,
+  staticContainerId,
   type EntityId,
+  type FieldKind,
   type ItemKind,
   type Position,
   type SpellKey,
@@ -156,9 +159,16 @@ export function startCast(
         return fail('Ya tenés demasiadas criaturas invocadas.');
       if (tileDistance(request.position, player.position) > SPELL_RANGE)
         return fail('Está demasiado lejos.');
-      // Revelar va a cualquier lugar; para ir o invocar, tiene que estar libre.
-      if (
-        spell.effect.kind !== 'reveal' &&
+      const kind = spell.effect.kind;
+      if (kind === 'trap') {
+        // La trampa va en un cofre o mueble del mundo.
+        if (!staticContainerAt(request.position, world))
+          return fail('Elegí un cofre, un barril o un mueble que guarde cosas.');
+      } else if (kind === 'field') {
+        if (!world.map.isWalkable(request.position)) return fail('No se puede levantar ahí.');
+      } else if (
+        // Revelar va a cualquier lugar; para ir o invocar, tiene que estar libre.
+        kind !== 'reveal' &&
         (!world.map.isWalkable(request.position) || world.isOccupied(request.position, player.id))
       )
         return fail('No podés ir ahí.');
@@ -214,6 +224,10 @@ export type CastOutcome =
       gate?: { from: Position; to: Position };
       /** El objetivo volvió a la vida. */
       revived?: boolean;
+      /** Muro o campo a levantar: de qué, dónde y desde dónde se lanzó (lo hace el ciclo del juego). */
+      field?: { kind: FieldKind; at: Position; from: Position };
+      /** Trampa puesta o sacada en un mueble (lo hace el caso de uso de los recipientes). */
+      trap?: { containerId: string; armed: boolean };
     };
 
 /** Un hechizo lanzado que todavía no cayó. */
@@ -390,6 +404,80 @@ export function resolveCast(
       }
       return success({ areaHits: hits });
     }
+    case 'field': {
+      const at = pending.position;
+      if (!at) return { kind: 'lost-target' };
+      return success({ field: { kind: effect.field, at, from: player.position } });
+    }
+    case 'trap': {
+      const at = pending.position;
+      const placed = at ? staticContainerAt(at, world) : undefined;
+      if (!at || !placed) return { kind: 'lost-target' };
+      return success({ trap: { containerId: staticContainerId(at), armed: effect.armed } });
+    }
+    case 'area-cure':
+    case 'area-protection': {
+      const changed: Mobile[] = [];
+      let cured = 0;
+      for (const mobile of world.mobilesNear(player.position)) {
+        if (mobile.combat.isDead || mobile instanceof Npc) continue;
+        if (tileDistance(mobile.position, player.position) > effect.radius) continue;
+        // Aliados: uno mismo, las personas cercanas y las criaturas propias.
+        const ally =
+          mobile === player ||
+          mobile instanceof Player ||
+          (mobile instanceof Creature && mobile.ownerId === player.id);
+        if (!ally) continue;
+        if (effect.kind === 'area-protection') {
+          mobile.combat.applyEffect('protection', PROTECTION_ARMOR, spellDurationMs(magery), now);
+          changed.push(mobile);
+        } else {
+          const poison = mobile.combat.effect('poison');
+          if (poison && random() < cureChance(magery / 1000, poison.amount)) {
+            mobile.combat.removeEffect('poison');
+            changed.push(mobile);
+            cured += 1;
+          }
+        }
+      }
+      return success({
+        effectsChanged: changed,
+        message:
+          effect.kind === 'area-protection'
+            ? `Protegiste a ${changed.length === 1 ? 'vos mismo' : `${changed.length} aliados`}.`
+            : cured > 0
+              ? `Sacaste el veneno a ${cured}.`
+              : 'Nadie cerca estaba envenenado.',
+      });
+    }
+    case 'burst':
+    case 'burst-curse': {
+      const hits: AreaHit[] = [];
+      const changed: Mobile[] = [];
+      for (const mobile of world.mobilesNear(target.position)) {
+        if (mobile === player || mobile instanceof Npc || mobile.combat.isDead) continue;
+        if (tileDistance(mobile.position, target.position) > effect.radius) continue;
+        if (mobile instanceof Creature && mobile.ownerId === player.id) continue;
+        if (mobile !== target && mobile instanceof Player && pvpRefusal(player, mobile, world))
+          continue;
+        const held = random() < resistChance(magicResistOf(mobile), spell.circle);
+        if (effect.kind === 'burst-curse') {
+          const amount = -attributeModifier(magery);
+          const ms = spellDurationMs(magery);
+          for (const attribute of ['strength', 'dexterity', 'intelligence'] as const)
+            mobile.combat.applyEffect(attribute, amount, held ? Math.round(ms / 2) : ms, now);
+          provoke(mobile, player);
+          changed.push(mobile);
+          continue;
+        }
+        const rolled = Math.round(rollSpellPower(spell, magery, random) * damageBonus);
+        const amount = held ? Math.max(1, Math.round(rolled / 2)) : rolled;
+        const killed = mobile.combat.takeDamage(amount);
+        if (!killed) provoke(mobile, player);
+        hits.push({ target: mobile, amount, killed, resisted: held });
+      }
+      return success({ areaHits: hits, effectsChanged: changed });
+    }
     case 'resurrect':
       target.combat.resurrect(RESURRECTION_HEALTH, now);
       return success({ revived: true });
@@ -420,6 +508,11 @@ export function resolveCast(
       });
     }
   }
+}
+
+/** El mueble que guarda cosas en ese tile, si hay. */
+function staticContainerAt(at: Position, world: World): boolean {
+  return world.map.statics.some((s) => s.x === at.x && s.y === at.y && !!STATIC_CONTAINERS[s.kind]);
 }
 
 /** Un hechizo dañino hace que la criatura se dé vuelta contra quien lo lanzó. */

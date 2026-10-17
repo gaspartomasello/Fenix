@@ -1,4 +1,5 @@
 import {
+  FIELDS,
   ITEMS,
   type ActiveSkill,
   CREATURES,
@@ -115,6 +116,11 @@ export interface ClientGameEvents extends Record<string, unknown> {
 }
 
 /** Lo que hay en el cuerpo que se está revisando. */
+/** ¿Es un muro mágico que cierra el paso? */
+function isBarrierItem(kind: string): boolean {
+  return Object.values(FIELDS).some((f) => f.barrier && f.item === kind);
+}
+
 /** Un libro abierto: lo que tiene escrito y si se puede escribir. */
 export type BookContents = Omit<BookMessage, 'type'>;
 
@@ -727,8 +733,16 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this.emit('corpseChanged', { corpse: null, opened: false });
         break;
       case 'groundItems':
-        for (const id of message.removed) this.ground.delete(id);
-        for (const item of message.added) this.ground.set(item.id, item);
+        // Los muros mágicos (piedra, energía) cierran el paso: también para moverse sin esperar al servidor.
+        for (const id of message.removed) {
+          const gone = this.ground.get(id);
+          if (gone && isBarrierItem(gone.kind)) this._map?.setBarrier(gone.position, false);
+          this.ground.delete(id);
+        }
+        for (const item of message.added) {
+          this.ground.set(item.id, item);
+          if (isBarrierItem(item.kind)) this._map?.setBarrier(item.position, true);
+        }
         this.emit('groundItemsChanged', { added: message.added, removed: message.removed });
         break;
       case 'inventory':

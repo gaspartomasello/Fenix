@@ -995,6 +995,66 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
       return tone(ramp([60, 130, 240]), 0.55 + 0.25 * swirl + 0.2 * (1 - r));
     });
   },
+  'field-stone'(c) {
+    // Bloque de piedra tosca, alto, que ocupa el tile.
+    const stone = ramp([138, 132, 124]);
+    c.box([0, 7, 0], lying(0.2), [5.6, 7, 4.8], (s) =>
+      tone(
+        stone,
+        s.light,
+        noise(Math.floor(s.p[0] / 2), Math.floor(s.p[1] / 2), Math.floor(s.p[2] / 2)) > 0.7
+          ? -1
+          : 0,
+      ),
+    );
+    c.box([1, 15, -1], lying(0.6), [3.6, 2, 3.2], (s) => tone(stone, s.light, 1));
+  },
+  'field-fire'(c) {
+    for (const [x, z, h] of [
+      [-2.4, 0.8, 11],
+      [1.8, -1.2, 14],
+      [0.2, 2.2, 9],
+    ] as const) {
+      c.limb([x, 0, z], [x * 0.6, h, z * 0.6], 2.6, 0.3, (s) =>
+        tone(
+          s.p[1] > h * 0.6 ? ramp([255, 230, 140]) : ramp([255, 130, 40]),
+          0.75 + s.light * 0.25,
+        ),
+      );
+    }
+    c.ellipsoid([0, 0.6, 0], lying(0), [4.6, 0.6, 4.6], solid(ramp([90, 40, 20])));
+  },
+  'field-poison'(c) {
+    for (const [x, y, z, r] of [
+      [-2, 3, 1, 2.6],
+      [1.8, 6, -1, 2.2],
+      [0, 9.5, 0.6, 1.8],
+      [2, 2, 2, 1.6],
+    ] as const)
+      c.sphere([x, y, z], r, (s) =>
+        tone(ramp([110, 210, 80]), 0.55 + s.light * 0.45, s.light > 0.85 ? 1 : 0),
+      );
+  },
+  'field-paralyze'(c) {
+    // Agujas de hielo que brillan.
+    for (const [x, z, h, a] of [
+      [-2, 1, 12, 0.2],
+      [2, -1, 14, -0.2],
+      [0, 2, 9, 0.4],
+      [1, -2.4, 10, -0.5],
+    ] as const)
+      c.limb([x, 0, z], [x + a * 4, h, z - a * 2], 1.4, 0.2, (s) =>
+        tone(ramp([170, 240, 255]), 0.7 + s.light * 0.3, s.light > 0.9 ? 1 : 0),
+      );
+  },
+  'field-energy'(c) {
+    // Columna de energía azul con chispas.
+    c.limb([0, 0, 0], [0, 18, 0], 3.6, 3, (s) => {
+      const swirl = Math.sin(s.p[1] * 1.3 + Math.atan2(s.p[2], s.p[0]) * 3);
+      return tone(ramp([120, 170, 255]), 0.6 + 0.25 * swirl + 0.15 * s.light);
+    });
+    for (const y of [4, 10, 15]) c.sphere([2.6, y, 1], 0.8, solid(ramp([240, 250, 255])));
+  },
   'blood-moss'(c) {
     for (let i = 0; i < 8; i++) {
       const at: Vec3 = [(noise(i, 4) - 0.5) * 4.4, 1 + noise(i, 5) * 1.2, (noise(i, 6) - 0.5) * 4];
