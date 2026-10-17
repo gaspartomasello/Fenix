@@ -5,6 +5,14 @@ import {
   isCreatureKind,
   isDyeHue,
   isTreasureLevel,
+  DEFAULT_SHIP_SECURITY,
+  MAX_SHIP_MANIFEST,
+  SHIPS,
+  SHIP_DEEDS,
+  isShipKind,
+  isShipLevel,
+  isShipName,
+  type ShipLevel,
   type TreasureMark,
   type QuestGoal,
   type QuestProgress,
@@ -33,6 +41,7 @@ import {
   type SkillValues,
 } from '@fenix/shared';
 import { Creature } from '../creatures/creature';
+import type { ShipRecord } from '../ships/ship';
 import type { Player } from '../player';
 import type { World } from '../world';
 
@@ -55,6 +64,8 @@ export interface SavedItem {
   readonly hue?: number;
   /** Mapa del tesoro: dónde está enterrado. */
   readonly treasure?: TreasureMark;
+  /** Maqueta de barco: el barco que guarda. */
+  readonly ship?: ShipRecord;
   /** Bolsa o caja: lo que lleva adentro (con su lugar en la ventana). */
   readonly contents?: readonly SavedItem[];
 }
@@ -117,35 +128,38 @@ export function captureCharacter(
       murders: player.reputation.murders,
     },
     guild: guild ? { name: guild.name, tag: guild.tag } : null,
-    items: owned.flatMap((item): SavedItem[] => {
-      const { location } = item;
-      const mark = {
-        ...(item.mark ? { mark: item.mark } : {}),
-        ...(item.book ? { book: item.book } : {}),
-        ...(item.hue !== null ? { hue: item.hue } : {}),
-        ...(item.treasure ? { treasure: item.treasure } : {}),
-        ...(ITEMS[item.kind].capacity ? { contents: savedContents(world, item.id) } : {}),
-      };
-      if (location.type === 'equipment')
-        return [
-          {
-            kind: item.kind,
-            amount: item.amount,
-            location: { type: 'equipment', slot: location.slot },
-            ...mark,
-          },
-        ];
-      if (location.type === 'backpack' || location.type === 'bank')
-        return [
-          {
-            kind: item.kind,
-            amount: item.amount,
-            location: { type: location.type, position: location.position },
-            ...mark,
-          },
-        ];
-      return [];
-    }),
+    items: owned
+      .flatMap((item): SavedItem[] => {
+        const { location } = item;
+        const mark = {
+          ...(item.mark ? { mark: item.mark } : {}),
+          ...(item.book ? { book: item.book } : {}),
+          ...(item.hue !== null ? { hue: item.hue } : {}),
+          ...(item.treasure ? { treasure: item.treasure } : {}),
+          ...(item.ship ? { ship: item.ship } : {}),
+          ...(ITEMS[item.kind].capacity ? { contents: savedContents(world, item.id) } : {}),
+        };
+        if (location.type === 'equipment')
+          return [
+            {
+              kind: item.kind,
+              amount: item.amount,
+              location: { type: 'equipment', slot: location.slot },
+              ...mark,
+            },
+          ];
+        if (location.type === 'backpack' || location.type === 'bank')
+          return [
+            {
+              kind: item.kind,
+              amount: item.amount,
+              location: { type: location.type, position: location.position },
+              ...mark,
+            },
+          ];
+        return [];
+      })
+      .concat(shipDeeds(world, player.name)),
     ...(player.quests.length > 0 ? { quests: player.quests } : {}),
     mount: player.mount
       ? { kind: player.mount, riding: true }
@@ -153,6 +167,22 @@ export function captureCharacter(
         ? { kind: petKind, riding: false }
         : null,
   };
+}
+
+/**
+ * Los barcos que el personaje tiene en el agua se guardan como su maqueta en
+ * el banco: si el servidor se reinicia, el barco no se pierde. Al volver a
+ * entrar, si el barco sigue en el agua, la maqueta repetida se descarta.
+ */
+function shipDeeds(world: World, owner: string): SavedItem[] {
+  return [...world.ships.values()]
+    .filter((ship) => ship.owner === owner)
+    .map((ship) => ({
+      kind: SHIP_DEEDS[ship.kind],
+      amount: 1,
+      location: { type: 'bank', position: { x: 0, y: 0 } },
+      ship: ship.record(),
+    }));
 }
 
 // ── Lectura defensiva: los datos vienen de un archivo o del navegador ──
@@ -205,12 +235,36 @@ function savedContents(world: World, containerId: string, depth = 0): SavedItem[
         ...(inner.book ? { book: inner.book } : {}),
         ...(inner.hue !== null ? { hue: inner.hue } : {}),
         ...(inner.treasure ? { treasure: inner.treasure } : {}),
+        ...(inner.ship ? { ship: inner.ship } : {}),
         ...(ITEMS[inner.kind].capacity
           ? { contents: savedContents(world, inner.id, depth + 1) }
           : {}),
       },
     ];
   });
+}
+
+function parseShipRecord(value: unknown): ShipRecord | undefined {
+  if (!isObject(value) || typeof value.id !== 'string' || !isShipKind(value.kind)) return undefined;
+  if (!isShipName(value.name) || !isNumber(value.hits)) return undefined;
+  const security = isObject(value.security) ? value.security : {};
+  const level = (v: unknown, fallback: ShipLevel): ShipLevel => (isShipLevel(v) ? v : fallback);
+  const manifest: Record<string, ShipLevel> = {};
+  if (isObject(security.manifest))
+    for (const [name, v] of Object.entries(security.manifest).slice(0, MAX_SHIP_MANIFEST))
+      if (isShipLevel(v) && name.length <= 30) manifest[name.toLowerCase()] = v;
+  return {
+    id: value.id.slice(0, 40),
+    kind: value.kind,
+    name: value.name.trim(),
+    hits: Math.max(1, Math.min(SHIPS[value.kind].maxHits, Math.round(value.hits))),
+    security: {
+      manifest,
+      everyone: level(security.everyone, DEFAULT_SHIP_SECURITY.everyone),
+      party: level(security.party, DEFAULT_SHIP_SECURITY.party),
+      guild: level(security.guild, DEFAULT_SHIP_SECURITY.guild),
+    },
+  };
 }
 
 function parseTreasure(value: unknown): TreasureMark | undefined {
@@ -232,11 +286,13 @@ function parseItem(value: unknown, depth = 0): SavedItem | null {
   const book = parseBook(value.book);
   const hue = isNumber(value.hue) && isDyeHue(value.hue) ? value.hue : undefined;
   const treasure = parseTreasure(value.treasure);
+  const ship = parseShipRecord(value.ship);
   const extra = {
     ...(mark ? { mark } : {}),
     ...(book ? { book } : {}),
     ...(hue !== undefined ? { hue } : {}),
     ...(treasure ? { treasure } : {}),
+    ...(ship ? { ship } : {}),
     ...(contents.length > 0 ? { contents } : {}),
   };
   if (location.type === 'equipment' && isEquipmentSlot(location.slot))
@@ -396,6 +452,7 @@ export function restoreCharacter(
       restored.book = item.book ?? null;
       restored.hue = item.hue ?? null;
       restored.treasure = item.treasure ?? null;
+      restored.ship = item.ship ?? null;
     } else {
       const restored = world.items.add(nextId(), item.kind, item.amount, {
         type: location.type === 'bank' ? 'bank' : 'backpack',
@@ -406,6 +463,7 @@ export function restoreCharacter(
       restored.book = item.book ?? null;
       restored.hue = item.hue ?? null;
       restored.treasure = item.treasure ?? null;
+      restored.ship = item.ship ?? null;
       restoreContents(world, restored.id, item.contents ?? [], nextId);
     }
   }
@@ -456,6 +514,7 @@ function restoreContents(
     restored.book = inner.book ?? null;
     restored.hue = inner.hue ?? null;
     restored.treasure = inner.treasure ?? null;
+    restored.ship = inner.ship ?? null;
     restoreContents(world, restored.id, inner.contents ?? [], nextId);
   }
 }

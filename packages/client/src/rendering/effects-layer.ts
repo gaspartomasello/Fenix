@@ -22,6 +22,9 @@ interface ActiveEffect {
   readonly casterId: EntityId;
   readonly targetId: EntityId;
   readonly startedAt: number;
+  /** Para lo que va de un lugar a otro (un cañonazo), en vez de entre dos personajes. */
+  readonly from?: FractionalPosition;
+  readonly to?: FractionalPosition;
 }
 
 /** Proyectiles y destellos propios de algunos hechizos; el resto sale de lo que hacen. */
@@ -94,6 +97,22 @@ function visualFor(spell: SpellKey): Visual {
   return { style: 'projectile', color: 0xffffff, glow: 0xa0a0ff, durationMs: 600, size: 4 };
 }
 
+/** La bala de cañón: oscura, y al llegar estalla (si dio en algo) o salpica el agua. */
+const CANNON_HIT: Visual = {
+  style: 'projectile',
+  color: 0x2a2a30,
+  glow: 0xff7a30,
+  durationMs: 900,
+  size: 5,
+};
+const CANNON_MISS: Visual = {
+  style: 'projectile',
+  color: 0x2a2a30,
+  glow: 0xd8f0ff,
+  durationMs: 900,
+  size: 5,
+};
+
 const ARROW: Visual = { style: 'arrow', color: 0xe8dcc0, glow: 0x6a4a2a, durationMs: 300, size: 1 };
 
 /** Efectos de hechizos y flechas, dibujados con formas simples que se animan por frame. */
@@ -117,14 +136,26 @@ export class EffectsLayer {
     this.effects.push({ visual: ARROW, casterId, targetId, startedAt: now });
   }
 
+  /** Un cañonazo de un tile a otro. */
+  addShot(from: FractionalPosition, to: FractionalPosition, hit: boolean, now: number): void {
+    this.effects.push({
+      visual: hit ? CANNON_HIT : CANNON_MISS,
+      casterId: '',
+      targetId: '',
+      startedAt: now,
+      from,
+      to,
+    });
+  }
+
   update(now: number): void {
     const g = this.graphics.clear();
     this.effects = this.effects.filter((e) => now - e.startedAt < e.visual.durationMs);
     for (const effect of this.effects) {
       const { visual } = effect;
       const t = (now - effect.startedAt) / visual.durationMs;
-      const target = this.positionOf(effect.targetId, now);
-      const caster = this.positionOf(effect.casterId, now) ?? target;
+      const target = effect.to ?? this.positionOf(effect.targetId, now);
+      const caster = effect.from ?? this.positionOf(effect.casterId, now) ?? target;
       if (!target || !caster) continue;
       const to = chest(this.ground, target);
       const from = chest(this.ground, caster);

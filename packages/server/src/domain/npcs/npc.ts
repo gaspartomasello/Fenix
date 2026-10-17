@@ -80,6 +80,15 @@ const LOOKS: Readonly<Record<NpcRole, { appearance: Appearance; equipment: Equip
     },
     equipment: { rightHand: 'saw', legs: 'trousers', feet: 'boots' },
   },
+  shipwright: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      clothHue: 0x2f4f6f,
+      hairHue: 0x3a2a1a,
+      facialHair: 'beard',
+    },
+    equipment: { rightHand: 'smith-hammer', head: 'bandana', legs: 'trousers', feet: 'boots' },
+  },
   provisioner: {
     appearance: {
       ...DEFAULT_APPEARANCE,

@@ -16,6 +16,8 @@ export type ChatInput =
   | { readonly kind: 'logout' }
   /** `/desmontar`: bajarse de la montura. */
   | { readonly kind: 'dismount' }
+  /** `/subir`: subir al barco más cercano; `/barco`: abrir la ventana del barco. */
+  | { readonly kind: 'ship'; readonly action: 'board' | 'panel' }
   /** `/liberar`: dejar ir a la montura para siempre. */
   | { readonly kind: 'releasePet' }
   /** `/esconderse`, `/mirar`: usar esas habilidades. */
@@ -47,6 +49,7 @@ export const CHAT_HELP = [
   '/dejargremio — dejar el gremio',
   '/desconectar — salir del juego (se guarda tu personaje)',
   '/desmontar — bajarte de tu montura',
+  '/subir — subir al barco más cercano; /barco — abrir la ventana del barco',
   '/liberar — dejar ir a tu montura (para siempre)',
   '/esconderse — esconderte (habilidad Esconderse)',
   '/mirar — buscar a los escondidos cerca (habilidad Mirar)',
@@ -103,6 +106,11 @@ export function parseChatInput(raw: string): ChatInput {
       return { kind: 'dismount' };
     case 'liberar':
       return { kind: 'releasePet' };
+    case 'subir':
+    case 'abordar':
+      return { kind: 'ship', action: 'board' };
+    case 'barco':
+      return { kind: 'ship', action: 'panel' };
     case 'esconderse':
     case 'esconder':
       return { kind: 'useSkill', skill: 'hiding' };

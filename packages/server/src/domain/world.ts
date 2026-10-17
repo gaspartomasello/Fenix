@@ -13,6 +13,7 @@ import { Items } from './items/items';
 import type { Mobile } from './mobile';
 import { Npc } from './npcs/npc';
 import { Player, type PlayerProps } from './player';
+import type { Ship } from './ships/ship';
 import { Guilds } from './social/guilds';
 import { SpatialIndex } from './spatial-index';
 import { Parties } from './social/parties';
@@ -27,6 +28,8 @@ export class World {
   readonly items = new Items();
   readonly parties = new Parties();
   readonly guilds = new Guilds();
+  /** Los barcos en el agua. */
+  readonly ships = new Map<EntityId, Ship>();
   /** Quién está dónde, por celdas: las consultas de cercanía no recorren todo el mundo. */
   private readonly nearPlayers = new SpatialIndex<Player>();
   private readonly nearCreatures = new SpatialIndex<Creature>();
