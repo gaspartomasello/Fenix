@@ -3,10 +3,10 @@
   "name": "objetos",
   "tilewidth": 136,
   "tileheight": 168,
-  "tilecount": 182,
-  "columns": 182,
+  "tilecount": 185,
+  "columns": 185,
   "image": "objetos.png",
-  "imagewidth": 24752,
+  "imagewidth": 25160,
   "imageheight": 168,
   "tileoffset": {
     "x": -46,
@@ -1830,6 +1830,36 @@
           "name": "static",
           "type": "string",
           "value": "cobweb"
+        }
+      ]
+    },
+    {
+      "id": 182,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "ship"
+        }
+      ]
+    },
+    {
+      "id": 183,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "pirate-ship"
+        }
+      ]
+    },
+    {
+      "id": 184,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "pier-post"
         }
       ]
     }

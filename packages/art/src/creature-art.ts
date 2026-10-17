@@ -13,6 +13,7 @@ import type { PixelImage, Rgb } from './pixel-art';
 import { drawSummonFrame, isSummonKind } from './summon-art';
 import { drawMonsterFrame, isMonsterKind } from './monster-art';
 import { drawFaunaFrame, isFaunaArtKind } from './fauna-art';
+import { drawHumanFoeFrame, isHumanFoe } from './human-foe-art';
 import type { VolumeCanvas } from './volume';
 import { add, axesAlong, normalize, ramp, solid, tone, type Vec3 } from './volume';
 import { biteOffset, fur, gait, tailWag } from './creature-motion';
@@ -25,6 +26,7 @@ export function drawCreatureFrame(
   canvasFor: CanvasFactory = spriteCanvas,
 ): PixelImage {
   if (kind === 'skeleton') return drawSkeletonFrame(direction, frame, canvasFor);
+  if (isHumanFoe(kind)) return drawHumanFoeFrame(kind, direction, frame, canvasFor);
   if (isSummonKind(kind)) return drawSummonFrame(kind, direction, frame, canvasFor);
   if (isMonsterKind(kind)) return drawMonsterFrame(kind, direction, frame, canvasFor);
   if (isMountKind(kind)) return drawMountFrame(kind, direction, frame, canvasFor);
