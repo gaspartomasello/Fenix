@@ -463,6 +463,20 @@ una tintura y cambia `Item.hue` (uno de los 15 colores de `DYE_HUES`). El color 
 (yelmo de calavera, pechera y perneras) no es de metal: deja meditar y lanzar hechizos. La
 dejan esqueletos, magos esqueléticos y liches, y la maga vende el yelmo.
 
+### Muros, campos, hechizos de área y trampas
+
+Los hechizos de campo (`field`) apuntan a un lugar caminable y levantan una línea de
+`FIELD_LENGTH` (5) casillas perpendicular a la dirección del lanzador: muro de piedra, campo de
+fuego, campo venenoso, campo paralizante y campo de energía. Cada casilla es un objeto fijo en el
+suelo (`field-*`) que vence según `FIELDS`. El caso de uso `Fields` los levanta y, cada segundo,
+golpea a quien esté parado encima: el fuego quema, el veneno envenena y el paralizante inmoviliza
+un rato. Los de piedra y energía son barrera: `TileMap.setBarrier` bloquea la casilla en el
+servidor y el cliente hace lo mismo al ver el objeto (`FIELDS[...].barrier`), así la predicción de
+movimiento coincide. Los de área (`area-cure`, `area-protection`, `burst`, `burst-curse`) afectan
+al objetivo y a todo lo que tenga alrededor: curar y proteger a varios, cadena de rayos, lluvia de
+meteoritos y maldición en masa. «Trampa mágica» se lanza sobre un cofre o barril del mundo: quien
+lo abra recibe una explosión (`TRAP_DAMAGE`); «Desactivar trampa» la quita.
+
 ### Persistencia
 
 Un personaje se guarda como datos planos (`SavedCharacter`, en `domain/persistence`):

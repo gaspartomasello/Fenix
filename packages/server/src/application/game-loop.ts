@@ -8,6 +8,7 @@ import {
   step,
   tileDistance,
   wearsMetalArmor,
+  type EntityId,
   type Position,
   type SpellKey,
 } from '@fenix/shared';
@@ -33,6 +34,7 @@ import { Player } from '../domain/player';
 import type { World } from '../domain/world';
 import { EMPTY_CORPSE_MS, type Corpses } from './corpses';
 import type { Gates } from './gates';
+import { Fields, type FieldHit } from './fields';
 import type { Stealth } from './stealth';
 import type { WarMode } from './war-mode';
 import type { MountActions } from './use-cases/mount-actions';
@@ -55,6 +57,10 @@ export const RESURRECT_HEALTH = 0.5;
  */
 export class GameLoop {
   private readonly shrines: readonly Position[];
+  /** Muros y campos mágicos. */
+  private readonly fields: Fields;
+  /** Lo arma la aplicación: poner o sacar una trampa mágica en un mueble. */
+  onTrap: (casterId: EntityId, containerId: string, armed: boolean) => void = () => {};
   /** Lo arma la aplicación: una criatura murió a manos de un jugador (misiones de caza). */
   onCreatureKilled: (killer: Player, creature: Creature) => void = () => {};
 
@@ -75,6 +81,7 @@ export class GameLoop {
     private readonly warMode: WarMode,
   ) {
     this.shrines = world.map.statics.filter((s) => s.kind === 'shrine');
+    this.fields = new Fields(world, ids, items);
   }
 
   tick(now: number): void {
@@ -82,6 +89,7 @@ export class GameLoop {
     for (const creature of this.world.allCreatures()) this.tickCreature(creature, now);
     this.landDelayedSpells(now);
     this.gates.tick(now);
+    for (const hit of this.fields.tick(now, this.roll)) this.fieldHit(hit, now);
     this.stealth.tick(now);
   }
 
@@ -269,6 +277,18 @@ export class GameLoop {
     const { target, amount, killed, resisted, effectsChanged, moveTo, message } = outcome;
     if (moveTo) this.teleport(player, moveTo);
     if (outcome.gate) this.gates.open(outcome.gate.from, outcome.gate.to, now, player.id);
+    if (outcome.field) {
+      const raised = this.fields.raise(
+        outcome.field.kind,
+        outcome.field.at,
+        outcome.field.from,
+        now,
+        player.id,
+      );
+      if (raised === 0)
+        this.notifier.send(player.id, { type: 'system', text: 'No hubo lugar para levantarlo.' });
+    }
+    if (outcome.trap) this.onTrap(player.id, outcome.trap.containerId, outcome.trap.armed);
     if (outcome.conceal) this.stealth.conceal(outcome.conceal.target, outcome.conceal.until);
     if (outcome.revealAt) {
       const found = this.stealth.revealArea(
@@ -412,6 +432,30 @@ export class GameLoop {
       this.mobiles.spellEffect(creature, hit.target, 'flamestrike', hit.amount, false);
       this.afterHarm(creature, hit.target, hit.amount, hit.killed, false, now);
     }
+  }
+
+  /** Un campo mágico castigó a quien estaba parado adentro. */
+  private fieldHit(hit: FieldHit, now: number): void {
+    const { target } = hit;
+    const killed = hit.damage > 0 ? target.combat.takeDamage(hit.damage) : false;
+    const caster = this.world.getMobile(hit.casterId);
+    if (target instanceof Player) {
+      const text =
+        hit.kind === 'fire'
+          ? `¡Te quemás! (${hit.damage})`
+          : hit.kind === 'poison'
+            ? 'Los vapores te envenenan.'
+            : 'Quedaste helado: no te podés mover.';
+      this.notifier.send(target.id, { type: 'system', text });
+    }
+    this.afterHarm(caster ?? target, target, hit.damage, killed, true, now);
+  }
+
+  /** Daña directo (una trampa que estalla), con los avisos y la muerte de siempre. */
+  hurt(target: Mobile, amount: number, now: number): void {
+    if (target.combat.isDead) return;
+    const killed = target.combat.takeDamage(amount);
+    this.afterHarm(target, target, amount, killed, false, now);
   }
 
   /** Avisos después de que una criatura dañó o hechizó a alguien. */

@@ -96,6 +96,12 @@ export const BASE_ITEM_KINDS = [
   'blank-scroll',
   'rune',
   'moongate',
+  // Muros y campos mágicos (fijos en el suelo, por un rato)
+  'field-stone',
+  'field-fire',
+  'field-poison',
+  'field-paralyze',
+  'field-energy',
   'black-pearl',
   'blood-moss',
   'garlic',
@@ -269,6 +275,26 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
   // Viajes: la runa guarda un lugar (con Marcar) y el portal lo abre Portal.
   rune: { name: 'runa', plural: 'runas', article: 'una', color: 0x8a7a9c },
   moongate: { name: 'portal', plural: 'portales', article: 'un', fixed: true, color: 0x4aa8ff },
+  'field-stone': { name: 'muro de piedra', plural: 'muros de piedra', article: 'un', fixed: true },
+  'field-fire': { name: 'campo de fuego', plural: 'campos de fuego', article: 'un', fixed: true },
+  'field-poison': {
+    name: 'campo venenoso',
+    plural: 'campos venenosos',
+    article: 'un',
+    fixed: true,
+  },
+  'field-paralyze': {
+    name: 'campo paralizante',
+    plural: 'campos paralizantes',
+    article: 'un',
+    fixed: true,
+  },
+  'field-energy': {
+    name: 'campo de energía',
+    plural: 'campos de energía',
+    article: 'un',
+    fixed: true,
+  },
 
   dagger: weapon('daga', 'dagas', 'una'),
   kryss: weapon('estoque', 'estoques', 'un'),

@@ -18,30 +18,42 @@ export const SPELL_KEYS = [
   'harm',
   'protection',
   'strength',
+  'magic-trap',
+  'magic-untrap',
   // Tercer círculo
   'bless',
   'fireball',
   'poison',
   'teleport',
+  'wall-of-stone',
   // Cuarto círculo
   'curse',
   'greater-heal',
   'lightning',
   'mana-drain',
   'recall',
+  'arch-cure',
+  'arch-protection',
+  'fire-field',
   // Quinto círculo
   'mind-blast',
   'paralyze',
+  'poison-field',
   // Sexto círculo
   'energy-bolt',
   'explosion',
   'mark',
   'invisibility',
   'reveal',
+  'mass-curse',
+  'paralyze-field',
   // Séptimo círculo
   'flamestrike',
   'mana-vampire',
   'gate-travel',
+  'chain-lightning',
+  'meteor-swarm',
+  'energy-field',
   // Octavo círculo
   'earthquake',
   'energy-vortex',
@@ -56,6 +68,28 @@ export type SpellKey = (typeof SPELL_KEYS)[number];
 
 export const SPELL_CIRCLES = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 export type SpellCircle = (typeof SPELL_CIRCLES)[number];
+
+/** Muros y campos mágicos: cada uno deja un objeto fijo en el suelo por un rato. */
+export const FIELD_KINDS = ['stone', 'fire', 'poison', 'paralyze', 'energy'] as const;
+export type FieldKind = (typeof FIELD_KINDS)[number];
+
+/** Cuánto dura cada campo, y si cierra el paso (piedra y energía) o hace algo al pisarlo. */
+export const FIELDS: Readonly<
+  Record<
+    FieldKind,
+    { readonly item: BaseItemKind; readonly durationMs: number; readonly barrier: boolean }
+  >
+> = {
+  stone: { item: 'field-stone', durationMs: 10_000, barrier: true },
+  fire: { item: 'field-fire', durationMs: 15_000, barrier: false },
+  poison: { item: 'field-poison', durationMs: 15_000, barrier: false },
+  paralyze: { item: 'field-paralyze', durationMs: 12_000, barrier: false },
+  energy: { item: 'field-energy', durationMs: 20_000, barrier: true },
+};
+/** Largo de un muro o campo, en tiles. */
+export const FIELD_LENGTH = 5;
+/** Daño de una trampa mágica al abrir el cofre. */
+export const TRAP_DAMAGE: readonly [number, number] = [10, 22];
 
 export const CIRCLE_NAMES: Readonly<Record<SpellCircle, string>> = {
   1: 'Primer círculo',
@@ -133,6 +167,21 @@ export type SpellEffect =
       readonly power: readonly [number, number];
       readonly radius: number;
     }
+  /** Levanta una pared de 5 tiles frente al lanzador (de piedra, fuego, veneno, parálisis o energía). */
+  | { readonly kind: 'field'; readonly field: FieldKind }
+  /** Cura el veneno (o protege) a los aliados alrededor del lanzador. */
+  | { readonly kind: 'area-cure'; readonly radius: number }
+  | { readonly kind: 'area-protection'; readonly radius: number }
+  /** Daña al objetivo y a los que están a su alrededor (cadena de rayos, meteoritos). */
+  | {
+      readonly kind: 'burst';
+      readonly power: readonly [number, number];
+      readonly radius: number;
+    }
+  /** Maldice al objetivo y a los que están a su alrededor. */
+  | { readonly kind: 'burst-curse'; readonly radius: number }
+  /** Pone (o saca) una trampa en un cofre del mundo. */
+  | { readonly kind: 'trap'; readonly armed: boolean }
   /** Devuelve la vida a un fantasma. */
   | { readonly kind: 'resurrect' }
   /** Invoca una criatura que pelea para el lanzador por un tiempo. */
@@ -543,6 +592,126 @@ const LIST: readonly SpellDefinition[] = [
   ),
 
   spell(
+    'magic-trap',
+    2,
+    'Trampa mágica',
+    'Ignis Clausa',
+    ['GA', 'SS', 'SA'],
+    'location',
+    { kind: 'trap', armed: true },
+    'Pone una trampa en un cofre o mueble: estalla en la cara del próximo que lo abra.',
+  ),
+  spell(
+    'magic-untrap',
+    2,
+    'Desarmar trampa',
+    'Clausa Solvo',
+    ['BM', 'SA'],
+    'location',
+    { kind: 'trap', armed: false },
+    'Desarma la trampa mágica de un cofre o mueble.',
+  ),
+  spell(
+    'wall-of-stone',
+    3,
+    'Muro de piedra',
+    'Saxum Murus',
+    ['BM', 'GA'],
+    'location',
+    { kind: 'field', field: 'stone' },
+    'Levanta un muro de piedra de cinco pasos: nadie lo cruza hasta que se desmorona.',
+  ),
+  spell(
+    'arch-cure',
+    4,
+    'Curación en grupo',
+    'Purgo Omnes',
+    ['GA', 'GI', 'MR'],
+    'self',
+    { kind: 'area-cure', radius: 3 },
+    'Saca el veneno a vos y a tus aliados cercanos (tu grupo, tus criaturas).',
+  ),
+  spell(
+    'arch-protection',
+    4,
+    'Protección en grupo',
+    'Scutum Omnes',
+    ['GA', 'GI', 'MR', 'SA'],
+    'self',
+    { kind: 'area-protection', radius: 3 },
+    'Protege con una coraza mágica a vos y a tus aliados cercanos.',
+  ),
+  spell(
+    'fire-field',
+    4,
+    'Campo de fuego',
+    'Ignis Murus',
+    ['BP', 'SS', 'SA'],
+    'location',
+    { kind: 'field', field: 'fire' },
+    'Levanta una pared de llamas: quema a quien la pise o se quede adentro.',
+  ),
+  spell(
+    'poison-field',
+    5,
+    'Campo venenoso',
+    'Venenum Murus',
+    ['BP', 'NS', 'SS'],
+    'location',
+    { kind: 'field', field: 'poison' },
+    'Levanta una pared de vapores verdes: envenena a quien la cruce.',
+  ),
+  spell(
+    'mass-curse',
+    6,
+    'Maldición en grupo',
+    'Maledictio Omnes',
+    ['GA', 'MR', 'NS', 'SA'],
+    'harmful',
+    { kind: 'burst-curse', radius: 3 },
+    'Debilita al objetivo y a todos los que estén a su alrededor.',
+  ),
+  spell(
+    'paralyze-field',
+    6,
+    'Campo paralizante',
+    'Glacies Murus',
+    ['BP', 'GI', 'SS'],
+    'location',
+    { kind: 'field', field: 'paralyze' },
+    'Levanta una pared de luz helada: deja quieto a quien la pise.',
+  ),
+  spell(
+    'chain-lightning',
+    7,
+    'Cadena de rayos',
+    'Fulgur Catena',
+    ['BP', 'BM', 'MR', 'SA'],
+    'harmful',
+    { kind: 'burst', power: [18, 28], radius: 2 },
+    'Un rayo cae sobre el objetivo y salta a los que están a su lado.',
+  ),
+  spell(
+    'meteor-swarm',
+    7,
+    'Lluvia de meteoritos',
+    'Saxa Caelo',
+    ['BM', 'MR', 'SA', 'SS'],
+    'harmful',
+    { kind: 'burst', power: [16, 26], radius: 3 },
+    'Una lluvia de piedras encendidas cae sobre el objetivo y todo lo que lo rodea.',
+  ),
+  spell(
+    'energy-field',
+    7,
+    'Campo de energía',
+    'Vis Murus',
+    ['BP', 'MR', 'SS', 'SA'],
+    'location',
+    { kind: 'field', field: 'energy' },
+    'Levanta una pared de energía que nada puede cruzar, más duradera que la de piedra.',
+  ),
+  spell(
     'earthquake',
     8,
     'Terremoto',
@@ -658,7 +827,8 @@ export function rollSpellPower(
     effect.kind !== 'damage' &&
     effect.kind !== 'heal' &&
     effect.kind !== 'mana-drain' &&
-    effect.kind !== 'area-damage'
+    effect.kind !== 'area-damage' &&
+    effect.kind !== 'burst'
   )
     return 0;
   const [min, max] = effect.power;

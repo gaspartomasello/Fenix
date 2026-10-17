@@ -43,6 +43,30 @@ const SPELL_VISUALS: Partial<Record<SpellKey, Visual>> = {
   poison: { style: 'sink', color: 0x70e060, glow: 0x308020, durationMs: 800, size: 8 },
   cure: { style: 'sparkles', color: 0xf0fff0, glow: 0xf0fff0, durationMs: 700, size: 8 },
   'create-food': { style: 'sparkles', color: 0xffe080, glow: 0xffe080, durationMs: 700, size: 6 },
+  'chain-lightning': { style: 'bolt', color: 0xf0f6ff, glow: 0x6090ff, durationMs: 500, size: 4 },
+  'meteor-swarm': { style: 'burst', color: 0xffa040, glow: 0xff3010, durationMs: 800, size: 30 },
+  'mass-curse': { style: 'sink', color: 0x9050c0, glow: 0x501080, durationMs: 900, size: 30 },
+  'arch-cure': { style: 'ring', color: 0xf0fff0, glow: 0xa0ffa0, durationMs: 800, size: 46 },
+  'arch-protection': { style: 'ring', color: 0xffd860, glow: 0xffd860, durationMs: 800, size: 46 },
+  'magic-trap': { style: 'sparkles', color: 0xff8060, glow: 0xff4020, durationMs: 700, size: 8 },
+  'magic-untrap': { style: 'sparkles', color: 0xc0d0ff, glow: 0x8090ff, durationMs: 700, size: 8 },
+  'wall-of-stone': {
+    style: 'sparkles',
+    color: 0xc8c0b0,
+    glow: 0x8a8070,
+    durationMs: 700,
+    size: 10,
+  },
+  'fire-field': { style: 'sparkles', color: 0xffb040, glow: 0xff5010, durationMs: 700, size: 10 },
+  'poison-field': { style: 'sparkles', color: 0x90e070, glow: 0x308020, durationMs: 700, size: 10 },
+  'paralyze-field': {
+    style: 'sparkles',
+    color: 0xb0f0ff,
+    glow: 0x60c0ff,
+    durationMs: 700,
+    size: 10,
+  },
+  'energy-field': { style: 'sparkles', color: 0xc0d8ff, glow: 0x4080ff, durationMs: 700, size: 12 },
 };
 
 function visualFor(spell: SpellKey): Visual {

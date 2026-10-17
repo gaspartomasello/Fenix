@@ -2,6 +2,7 @@ import {
   ITEMS,
   LORE_BOOKS,
   SCROLL_KINDS,
+  TRAP_DAMAGE,
   STATIC_CONTAINERS,
   STATICS,
   staticContainerAt,
@@ -77,6 +78,10 @@ export class Containers {
   private readonly open = new Map<EntityId, Set<string>>();
   /** Cuándo se llenó por última vez cada mueble. */
   private readonly stockedAt = new Map<string, number>();
+  /** Muebles con trampa mágica: estalla en la cara del próximo que lo abra. */
+  private readonly traps = new Set<string>();
+  /** Lo arma la aplicación: daña a alguien (la trampa que estalla). */
+  hurt: (playerId: EntityId, amount: number) => void = () => {};
   private nextCheckAt = 0;
 
   constructor(
@@ -99,6 +104,13 @@ export class Containers {
     if (!name) return;
     const denied = this.world.items.containerAccess(player, containerId, this.nearBanker(playerId));
     if (denied) return this.say(playerId, denied);
+    if (this.traps.delete(containerId)) {
+      const [min, max] = TRAP_DAMAGE;
+      const amount = min + Math.floor(this.random.next() * (max - min + 1));
+      this.say(playerId, `¡Una trampa mágica estalla al abrir ${name}! (${amount})`);
+      this.hurt(playerId, amount);
+      if (player.combat.isDead) return;
+    }
     if (staticContainerAt(containerId)) this.stock(containerId);
     let set = this.open.get(playerId);
     if (!set) this.open.set(playerId, (set = new Set()));
@@ -120,6 +132,21 @@ export class Containers {
         if (this.world.items.containerAccess(player, id, this.nearBanker(playerId)))
           this.close(playerId, id);
     }
+  }
+
+  /** Trampa mágica puesta (o sacada) con un hechizo. */
+  setTrap(casterId: EntityId, containerId: string, armed: boolean): void {
+    const name = this.nameOf(containerId) ?? 'el mueble';
+    if (armed) {
+      this.traps.add(containerId);
+      return this.say(casterId, `Pusiste una trampa en ${name}.`);
+    }
+    this.say(
+      casterId,
+      this.traps.delete(containerId)
+        ? `Desarmaste la trampa de ${name}.`
+        : `${capitalize(name)} no tenía ninguna trampa.`,
+    );
   }
 
   forget(playerId: EntityId): void {
@@ -242,4 +269,8 @@ export class Containers {
   private say(playerId: EntityId, text: string): void {
     this.notifier.send(playerId, { type: 'system', text });
   }
+}
+
+function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }

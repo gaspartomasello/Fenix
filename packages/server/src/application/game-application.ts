@@ -213,6 +213,12 @@ export class GameApplication {
       warMode,
     );
     this.loop.onCreatureKilled = (killer, creature) => this.quests.creatureKilled(killer, creature);
+    this.loop.onTrap = (casterId, containerId, armed) =>
+      this.containers.setTrap(casterId, containerId, armed);
+    this.containers.hurt = (playerId, amount) => {
+      const player = world.get(playerId);
+      if (player) this.loop.hurt(player, amount, clock.now());
+    };
   }
 
   private revealPlayer(playerId: EntityId, text: string): void {
