@@ -390,6 +390,16 @@ vacíos, reenvía el contenido cuando cambia y cierra la ventana de quien se ale
 bolsas se guardan con todo lo de adentro (`SavedItem.contents`) y no se puede meter una
 bolsa dentro de sí misma.
 
+### Libros
+
+Un `book` guarda su texto en `Item.book` (`BookText`: título, autor y hasta 16 hojas de
+320 letras; ver `shared/domain/items/books.ts`). Con doble clic el servidor manda `book`
+con el texto y si se puede escribir; el cliente lo muestra en `BookWindow` como dos hojas de
+pergamino con letra antigua (IM Fell English y UnifrakturMaguntia, licencia OFL, empaquetadas
+con `@fontsource`). Se escribe hoja por hoja (`writeBook`, para no pasar el límite de 1 KB de
+un mensaje); el primero que escribe queda como autor. Las bibliotecas traen libros ya escritos
+(`LORE_BOOKS`, con `sealed`) que se leen pero no se cambian. La maga vende libros en blanco.
+
 ### Persistencia
 
 Un personaje se guarda como datos planos (`SavedCharacter`, en `domain/persistence`):

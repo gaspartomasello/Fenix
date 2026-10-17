@@ -30,6 +30,7 @@ import { JoinWorld, type JoinWorldResult } from './use-cases/join-world';
 import { LeaveWorld } from './use-cases/leave-world';
 import { GameMaster } from './use-cases/game-master';
 import { TownLife } from './use-cases/town-life';
+import { Books } from './use-cases/books';
 import { Containers } from './use-cases/containers';
 import { MovePlayer } from './use-cases/move-player';
 import { SendChat } from './use-cases/send-chat';
@@ -62,6 +63,7 @@ export class GameApplication {
   private readonly gameMaster: GameMaster;
   private readonly townLife: TownLife;
   private readonly containers: Containers;
+  private readonly books: Books;
   private readonly movePlayer: MovePlayer;
   private readonly sendChat: SendChat;
   private readonly moveItem: MoveItem;
@@ -180,6 +182,8 @@ export class GameApplication {
     );
     this.containers = new Containers(world, clock, ids, random, notifications, notifier);
     this.useItem.openContainer = (playerId, id) => this.containers.openFor(playerId, id);
+    this.books = new Books(world, notifications, notifier);
+    this.useItem.openBook = (playerId, id) => this.books.read(playerId, id);
     this.townLife = new TownLife(
       world,
       this.mobiles,
@@ -317,6 +321,12 @@ export class GameApplication {
         break;
       case 'toggleInvulnerable':
         this.toggleInvulnerable(playerId);
+        break;
+      case 'readBook':
+        this.books.read(playerId, message.itemId);
+        break;
+      case 'writeBook':
+        this.books.write(playerId, message.itemId, message.title, message.page, message.text);
         break;
       case 'openContainer':
         this.containers.openFor(playerId, message.containerId);

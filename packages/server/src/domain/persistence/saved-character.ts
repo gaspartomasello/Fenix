@@ -1,6 +1,10 @@
 import {
   ITEMS,
+  BOOK_PAGES,
   MAX_STACK,
+  cleanBookPage,
+  cleanBookTitle,
+  type BookText,
   PLAYER_ATTRIBUTES,
   SKILL_KEYS,
   SKILL_MAX,
@@ -38,6 +42,8 @@ export interface SavedItem {
   readonly location: SavedItemLocation;
   /** Runa marcada: el lugar que guarda. */
   readonly mark?: RuneMark;
+  /** Libro: lo que tiene escrito. */
+  readonly book?: BookText;
   /** Bolsa o caja: lo que lleva adentro (con su lugar en la ventana). */
   readonly contents?: readonly SavedItem[];
 }
@@ -102,6 +108,7 @@ export function captureCharacter(
       const { location } = item;
       const mark = {
         ...(item.mark ? { mark: item.mark } : {}),
+        ...(item.book ? { book: item.book } : {}),
         ...(ITEMS[item.kind].capacity ? { contents: savedContents(world, item.id) } : {}),
       };
       if (location.type === 'equipment')
@@ -179,6 +186,7 @@ function savedContents(world: World, containerId: string, depth = 0): SavedItem[
         amount: inner.amount,
         location: { type: 'backpack', position: inner.location.position },
         ...(inner.mark ? { mark: inner.mark } : {}),
+        ...(inner.book ? { book: inner.book } : {}),
         ...(ITEMS[inner.kind].capacity
           ? { contents: savedContents(world, inner.id, depth + 1) }
           : {}),
@@ -197,7 +205,12 @@ function parseItem(value: unknown, depth = 0): SavedItem | null {
     Array.isArray(value.contents) && depth < 5
       ? value.contents.flatMap((inner) => parseItem(inner, depth + 1) ?? [])
       : [];
-  const extra = { ...(mark ? { mark } : {}), ...(contents.length > 0 ? { contents } : {}) };
+  const book = parseBook(value.book);
+  const extra = {
+    ...(mark ? { mark } : {}),
+    ...(book ? { book } : {}),
+    ...(contents.length > 0 ? { contents } : {}),
+  };
   if (location.type === 'equipment' && isEquipmentSlot(location.slot))
     return {
       kind: value.kind,
@@ -213,6 +226,20 @@ function parseItem(value: unknown, depth = 0): SavedItem | null {
       ...extra,
     };
   return null;
+}
+
+function parseBook(value: unknown): BookText | null {
+  if (!isObject(value) || typeof value.title !== 'string' || !Array.isArray(value.pages))
+    return null;
+  const pages = value.pages
+    .slice(0, BOOK_PAGES)
+    .map((p) => (typeof p === 'string' ? cleanBookPage(p) : ''));
+  return {
+    title: cleanBookTitle(value.title),
+    author: typeof value.author === 'string' ? value.author.slice(0, 40) : '',
+    pages,
+    ...(value.sealed === true ? { sealed: true } : {}),
+  };
 }
 
 function parseMark(value: unknown): RuneMark | null {
@@ -303,6 +330,7 @@ export function restoreCharacter(
         slot: location.slot,
       });
       restored.mark = item.mark ?? null;
+      restored.book = item.book ?? null;
     } else {
       const restored = world.items.add(nextId(), item.kind, item.amount, {
         type: location.type === 'bank' ? 'bank' : 'backpack',
@@ -310,6 +338,7 @@ export function restoreCharacter(
         position: location.type === 'equipment' ? { x: 0, y: 0 } : location.position,
       });
       restored.mark = item.mark ?? null;
+      restored.book = item.book ?? null;
       restoreContents(world, restored.id, item.contents ?? [], nextId);
     }
   }
@@ -356,6 +385,7 @@ function restoreContents(
       position: inner.location.type === 'equipment' ? { x: 0, y: 0 } : inner.location.position,
     });
     restored.mark = inner.mark ?? null;
+    restored.book = inner.book ?? null;
     restoreContents(world, restored.id, inner.contents ?? [], nextId);
   }
 }

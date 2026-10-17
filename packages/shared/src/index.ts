@@ -14,6 +14,7 @@ export * from './domain/character/password';
 export * from './domain/items/equipment';
 export * from './domain/items/item-catalog';
 export * from './domain/items/item-rules';
+export * from './domain/items/books';
 export * from './domain/combat/vitals';
 export * from './domain/combat/weapons';
 export * from './domain/combat/combat-rules';

@@ -34,7 +34,12 @@ export class WorldCombat {
     window.addEventListener(
       'keydown',
       (e) => {
-        if (e.key !== 'Escape' || e.target instanceof HTMLInputElement) return;
+        if (
+          e.key !== 'Escape' ||
+          e.target instanceof HTMLInputElement ||
+          e.target instanceof HTMLTextAreaElement
+        )
+          return;
         if (this.picking) this.cancelPick();
         else game.stopAttack();
       },

@@ -56,6 +56,8 @@ export interface ItemSnapshot {
   readonly amount: number;
   /** Runa marcada: el lugar que guarda. */
   readonly mark?: RuneMark;
+  /** Libro con título: para mostrarlo al pasar el mouse. */
+  readonly bookTitle?: string;
 }
 
 /** Lugar grabado en una runa con Marcar. */
@@ -288,6 +290,21 @@ export interface OpenContainerRequest {
   readonly containerId: string;
 }
 
+/** Abrir un libro para leerlo (doble clic). */
+export interface ReadBookRequest {
+  readonly type: 'readBook';
+  readonly itemId: EntityId;
+}
+
+/** Guardar una hoja (y el título) de un libro propio. De a una, para que el mensaje sea chico. */
+export interface WriteBookRequest {
+  readonly type: 'writeBook';
+  readonly itemId: EntityId;
+  readonly title: string;
+  readonly page: number;
+  readonly text: string;
+}
+
 /** Pasar todo lo que hay en un cuerpo a la mochila. */
 export interface LootAllRequest {
   readonly type: 'lootAll';
@@ -324,6 +341,8 @@ export type ClientMessage =
   | ToggleInvulnerableRequest
   | GmRequest
   | OpenContainerRequest
+  | ReadBookRequest
+  | WriteBookRequest
   | OpenCorpseRequest
   | LootAllRequest
   | BuyMountRequest
@@ -583,6 +602,16 @@ export interface ContainerMessage {
   readonly items: readonly BackpackItemSnapshot[];
 }
 
+/** Un libro abierto: lo que tiene escrito y si se puede escribir. */
+export interface BookMessage {
+  readonly type: 'book';
+  readonly itemId: EntityId;
+  readonly title: string;
+  readonly author: string;
+  readonly pages: readonly string[];
+  readonly writable: boolean;
+}
+
 /** El recipiente ya no se puede ver (el jugador se alejó o se lo llevaron). */
 export interface ContainerClosedMessage {
   readonly type: 'containerClosed';
@@ -606,6 +635,7 @@ export type ServerMessage =
   | WelcomeMessage
   | ContainerMessage
   | ContainerClosedMessage
+  | BookMessage
   | JoinRejectedMessage
   | MobileAppearedMessage
   | MobileDisappearedMessage

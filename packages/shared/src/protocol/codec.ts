@@ -2,6 +2,7 @@ import { isAppearance } from '../domain/character/appearance';
 import { PASSWORD_MAX_LENGTH } from '../domain/character/password';
 import { isEquipmentSlot } from '../domain/items/equipment';
 import { isItemKind } from '../domain/items/item-catalog';
+import { BOOK_PAGES, cleanBookPage, cleanBookTitle } from '../domain/items/books';
 import { isSpellKey } from '../domain/magic/spell-catalog';
 import { isActiveSkill } from '../domain/skills/stealth';
 import { isMountKind } from '../domain/mounts/mount-catalog';
@@ -240,6 +241,31 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       if (typeof data.containerId === 'string' && data.containerId.length <= 64)
         return { ok: true, message: { type: 'openContainer', containerId: data.containerId } };
       break;
+    case 'readBook':
+      if (isId(data.itemId))
+        return { ok: true, message: { type: 'readBook', itemId: data.itemId } };
+      break;
+    case 'writeBook':
+      if (
+        isId(data.itemId) &&
+        typeof data.title === 'string' &&
+        typeof data.text === 'string' &&
+        typeof data.page === 'number' &&
+        Number.isInteger(data.page) &&
+        data.page >= 0 &&
+        data.page < BOOK_PAGES
+      )
+        return {
+          ok: true,
+          message: {
+            type: 'writeBook',
+            itemId: data.itemId,
+            title: cleanBookTitle(data.title),
+            page: data.page,
+            text: cleanBookPage(data.text),
+          },
+        };
+      break;
     case 'gm': {
       const command = parseGmCommand(data.command);
       if (command) return { ok: true, message: { type: 'gm', command } };
@@ -288,6 +314,7 @@ const SERVER_TYPE_FLAGS: Readonly<Record<ServerMessageType, true>> = {
   welcome: true,
   container: true,
   containerClosed: true,
+  book: true,
   joinRejected: true,
   mobileAppeared: true,
   mobileDisappeared: true,

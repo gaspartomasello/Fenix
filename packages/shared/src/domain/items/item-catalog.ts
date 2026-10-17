@@ -52,6 +52,7 @@ export const BASE_ITEM_KINDS = [
   'boots',
   // Magia
   'spellbook',
+  'book',
   'blank-scroll',
   'rune',
   'moongate',
@@ -107,6 +108,7 @@ export type ItemUse =
   | 'bandage'
   | 'scroll'
   | 'container'
+  | 'book'
   | 'none';
 
 /** Lo que hace una poción al tomarla. */
@@ -248,6 +250,7 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
     article: 'un',
     use: 'spellbook',
   },
+  book: { name: 'libro', plural: 'libros', article: 'un', use: 'book' },
   'blank-scroll': {
     name: 'pergamino en blanco',
     plural: 'pergaminos en blanco',

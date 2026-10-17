@@ -53,7 +53,10 @@ export class ChatPanel {
     window.addEventListener(
       'keydown',
       (e) => {
-        if (e.key === 'Enter' && document.activeElement !== this.input) {
+        // Mientras se escribe en otro lado (un libro), Enter es un salto de línea.
+        const typing =
+          e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement;
+        if (e.key === 'Enter' && !typing && document.activeElement !== this.input) {
           e.preventDefault();
           this.input.focus();
         }
