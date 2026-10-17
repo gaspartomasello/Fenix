@@ -28,6 +28,7 @@ import { MoveItem } from './use-cases/move-item';
 import { UseItem } from './use-cases/use-item';
 import { JoinWorld, type JoinWorldResult } from './use-cases/join-world';
 import { LeaveWorld } from './use-cases/leave-world';
+import { GameMaster } from './use-cases/game-master';
 import { MovePlayer } from './use-cases/move-player';
 import { SendChat } from './use-cases/send-chat';
 import { SocialActions } from './use-cases/social-actions';
@@ -45,6 +46,8 @@ export interface GameApplicationDeps {
   readonly passwords?: PasswordHasher;
   /** Personajes de prueba: entran con todo al máximo (solo para probar el juego). */
   readonly testCharacters?: readonly string[];
+  /** Administradores del juego (los de prueba también lo son). */
+  readonly admins?: readonly string[];
 }
 
 /**
@@ -54,6 +57,7 @@ export interface GameApplicationDeps {
 export class GameApplication {
   private readonly joinWorld: JoinWorld;
   private readonly leaveWorld: LeaveWorld;
+  private readonly gameMaster: GameMaster;
   private readonly movePlayer: MovePlayer;
   private readonly sendChat: SendChat;
   private readonly moveItem: MoveItem;
@@ -86,6 +90,7 @@ export class GameApplication {
     characters,
     passwords,
     testCharacters = [],
+    admins = [],
   }: GameApplicationDeps) {
     this.world = world;
     this.worldClock = worldClock;
@@ -154,6 +159,21 @@ export class GameApplication {
     this.corpses = new Corpses(world, clock, ids, notifications, notifier);
     this.doors = new Doors(world, notifier);
     this.mounts = new MountActions(world, ids, notifications, this.mobiles, notifier);
+    this.gameMaster = new GameMaster(
+      world,
+      clock,
+      ids,
+      notifier,
+      this.mobiles,
+      notifications,
+      {
+        teleport: (player, to) => this.movePlayer.teleport(player, to),
+        slay: (victim, by, now) => this.loop.slay(victim, by, now),
+        dismiss: (creature) => this.loop.dismiss(creature),
+        grantMount: (player, kind) => this.mounts.grant(player, kind),
+      },
+      (name) => isTestCharacter(name, [...testCharacters, ...admins]),
+    );
     this.loop = new GameLoop(
       world,
       this.mobiles,
@@ -282,6 +302,9 @@ export class GameApplication {
         break;
       case 'toggleInvulnerable':
         this.toggleInvulnerable(playerId);
+        break;
+      case 'gm':
+        this.gameMaster.execute(playerId, message.command);
         break;
       case 'openCorpse':
         this.corpses.open(playerId, message.corpseId);

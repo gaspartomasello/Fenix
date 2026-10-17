@@ -208,6 +208,36 @@ export interface ToggleInvulnerableRequest {
   readonly type: 'toggleInvulnerable';
 }
 
+/**
+ * Comandos del administrador del juego. Los nombres (de criaturas, objetos,
+ * monturas y personas) van como se escriben en el chat: el servidor los
+ * busca sin importar mayúsculas ni tildes, y revisa que quien los manda sea
+ * administrador.
+ */
+export type GmCommand =
+  /** Hacer aparecer criaturas al lado: salvajes, o que siguen y pelean para el administrador. */
+  | {
+      readonly kind: 'summon';
+      readonly creature: string;
+      readonly amount: number;
+      readonly tame: boolean;
+    }
+  | { readonly kind: 'creatures' }
+  | { readonly kind: 'item'; readonly item: string; readonly amount: number }
+  | { readonly kind: 'mount'; readonly mount: string }
+  | { readonly kind: 'slay'; readonly targetId: EntityId }
+  | { readonly kind: 'heal'; readonly name?: string; readonly targetId?: EntityId }
+  | { readonly kind: 'resurrect'; readonly name?: string; readonly targetId?: EntityId }
+  | { readonly kind: 'bring'; readonly name: string }
+  | { readonly kind: 'goTo'; readonly name: string }
+  | { readonly kind: 'clear'; readonly radius: number }
+  | { readonly kind: 'announce'; readonly text: string };
+
+export interface GmRequest {
+  readonly type: 'gm';
+  readonly command: GmCommand;
+}
+
 /** Comprar una montura en la caballeriza. */
 export interface BuyMountRequest {
   readonly type: 'buyMount';
@@ -283,6 +313,7 @@ export type ClientMessage =
   | SetHourRequest
   | TestTravelRequest
   | ToggleInvulnerableRequest
+  | GmRequest
   | OpenCorpseRequest
   | LootAllRequest
   | BuyMountRequest

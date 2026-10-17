@@ -9,7 +9,13 @@ import { isChatChannel, isSocialCommand } from '../domain/social/groups';
 import { isDirection } from '../domain/geometry/direction';
 import { isMoveMode } from '../domain/rules/movement';
 import type { Position } from '../domain/geometry/position';
-import type { ClientMessage, ItemDestination, ServerMessage, ServerMessageType } from './messages';
+import type {
+  ClientMessage,
+  GmCommand,
+  ItemDestination,
+  ServerMessage,
+  ServerMessageType,
+} from './messages';
 
 /** Tamaño máximo aceptado para un mensaje entrante del cliente (bytes). */
 export const MAX_CLIENT_MESSAGE_BYTES = 1024;
@@ -224,6 +230,11 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       break;
     case 'toggleInvulnerable':
       return { ok: true, message: { type: 'toggleInvulnerable' } };
+    case 'gm': {
+      const command = parseGmCommand(data.command);
+      if (command) return { ok: true, message: { type: 'gm', command } };
+      break;
+    }
     case 'buyMount':
       if (isId(data.vendorId) && isMountKind(data.mount))
         return {
@@ -305,4 +316,48 @@ export function decodeServerMessage(raw: string): DecodeResult<ServerMessage> {
     return { ok: false, error: 'Mensaje del servidor desconocido' };
   }
   return { ok: true, message: data as unknown as ServerMessage };
+}
+
+/** Un comando del administrador, con textos cortos y cantidades razonables. */
+function parseGmCommand(raw: unknown): GmCommand | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const c = raw as Record<string, unknown>;
+  const text = (value: unknown, max = 60): value is string =>
+    typeof value === 'string' && value.trim().length > 0 && value.length <= max;
+  const count = (value: unknown, max: number): value is number =>
+    Number.isInteger(value) && (value as number) >= 1 && (value as number) <= max;
+  const who = (): { name?: string; targetId?: string } => ({
+    ...(text(c.name) ? { name: c.name } : {}),
+    ...(isId(c.targetId) ? { targetId: c.targetId } : {}),
+  });
+  switch (c.kind) {
+    case 'summon':
+      return text(c.creature) && count(c.amount, 20) && typeof c.tame === 'boolean'
+        ? { kind: 'summon', creature: c.creature, amount: c.amount, tame: c.tame }
+        : null;
+    case 'creatures':
+      return { kind: 'creatures' };
+    case 'item':
+      return text(c.item) && count(c.amount, 60000)
+        ? { kind: 'item', item: c.item, amount: c.amount }
+        : null;
+    case 'mount':
+      return text(c.mount) ? { kind: 'mount', mount: c.mount } : null;
+    case 'slay':
+      return isId(c.targetId) ? { kind: 'slay', targetId: c.targetId } : null;
+    case 'heal':
+      return { kind: 'heal', ...who() };
+    case 'resurrect':
+      return { kind: 'resurrect', ...who() };
+    case 'bring':
+      return text(c.name) ? { kind: 'bring', name: c.name } : null;
+    case 'goTo':
+      return text(c.name) ? { kind: 'goTo', name: c.name } : null;
+    case 'clear':
+      return count(c.radius, 30) ? { kind: 'clear', radius: c.radius } : null;
+    case 'announce':
+      return text(c.text, 300) ? { kind: 'announce', text: c.text } : null;
+    default:
+      return null;
+  }
 }

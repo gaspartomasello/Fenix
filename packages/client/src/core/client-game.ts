@@ -324,6 +324,22 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this.notify(`Lugares: ${places.join(', ')}.`);
         return;
       }
+      case 'gm':
+        this.gateway.send({ type: 'gm', command: input.command });
+        return;
+      case 'gmTarget': {
+        const targetId = this.targetId;
+        if (input.action === 'slay') {
+          if (!targetId) this.notify('Elegí primero a quién (tu blanco).');
+          else this.gateway.send({ type: 'gm', command: { kind: 'slay', targetId } });
+          return;
+        }
+        this.gateway.send({
+          type: 'gm',
+          command: { kind: input.action, ...(targetId ? { targetId } : {}) },
+        });
+        return;
+      }
       case 'help':
         CHAT_HELP.forEach((line) => this.notify(line));
         return;
