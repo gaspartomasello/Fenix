@@ -477,6 +477,25 @@ describe('pisos altos: posadas, torres de mago y casas de dos pisos', () => {
     }
   });
 
+  it('arriba de la torre hay una azotea con almenas, y las casas de una planta tienen techo', () => {
+    const roof = floors.find((r) => r.name.includes('la torre del mago, azotea'));
+    expect(roof?.anchor).toBeDefined();
+    const ladder = map.statics.find(
+      (s) =>
+        s.kind === 'ladder-up' &&
+        map.regionAt(s)?.name.includes('la torre del mago') &&
+        map.regionAt(s)?.floor === 2,
+    );
+    const top = ladder ? hop(ladder) : undefined;
+    expect(top && map.regionAt(top)).toBe(roof);
+    expect(map.statics.some((s) => s.kind === 'parapet-corner' && map.regionAt(s) === roof)).toBe(
+      true,
+    );
+    const hatch = map.statics.find((s) => s.kind === 'trapdoor' && map.regionAt(s) === roof);
+    expect(hatch && levelOf(hop(hatch) ?? hatch)).toBe(2);
+    expect(floors.some((r) => r.name.endsWith(', techo'))).toBe(true);
+  });
+
   it('desde un piso alto no se ve la calle', () => {
     const floor = floors[0];
     if (!floor) throw new Error('sin pisos');
