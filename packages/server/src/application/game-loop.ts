@@ -15,7 +15,7 @@ import {
   type SpellKey,
   type TreasureLevel,
 } from '@fenix/shared';
-import { outOfAmmo, trySwing, type SwingResult } from '../domain/combat/combat';
+import { missingAmmo, trySwing, type SwingResult } from '../domain/combat/combat';
 import { resolveBandage } from '../domain/healing/bandage';
 import {
   breatheFire,
@@ -219,14 +219,16 @@ export class GameLoop {
     const targetId = player.combat.targetId;
     if (targetId) {
       const target = this.world.getMobile(targetId);
+      const ammo = missingAmmo(player, this.world);
       if (!target || target.combat.isDead || this.world.isHidden(target)) {
         player.combat.targetId = null;
         this.mobiles.sendTarget(player);
         this.warMode.nextAttacker(player);
-      } else if (outOfAmmo(player, this.world)) {
+      } else if (ammo) {
         player.combat.targetId = null;
         this.mobiles.sendTarget(player);
-        this.notifier.send(player.id, { type: 'system', text: 'No te quedan flechas.' });
+        const missing = ammo === 'bolt' ? 'virotes' : 'flechas';
+        this.notifier.send(player.id, { type: 'system', text: `No te quedan ${missing}.` });
       } else {
         const result = trySwing(player, target, this.world, now, this.roll);
         if (result) this.resolveSwing(result, now);

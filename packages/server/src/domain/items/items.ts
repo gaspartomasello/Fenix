@@ -26,6 +26,15 @@ import { Item, type ItemLocation } from './item';
 export interface ItemActor {
   readonly id: EntityId;
   readonly position: Position;
+  /** Su apariencia (el peto de placas de mujer solo lo usan ellas). */
+  readonly appearance?: { readonly gender?: string };
+}
+
+/** Por qué no puede ponerse algo (null: sí puede). */
+function wearRefusal(actor: ItemActor, kind: ItemKind): string | null {
+  if (ITEMS[kind].womenOnly && actor.appearance?.gender !== 'female')
+    return 'Ese peto está hecho para una mujer.';
+  return null;
 }
 
 /** Qué cambió tras una acción, para avisar solo a quien corresponde. */
@@ -288,6 +297,7 @@ export class Items {
         );
         return { ok: true, changes };
       case 'equipment':
+        if (wearRefusal(actor, item.kind)) return fail(wearRefusal(actor, item.kind) ?? '');
         return this.equip(actor.id, item, to.slot, changes);
       case 'container':
         return this.putInContainer(
@@ -451,6 +461,7 @@ export class Items {
       case 'equip':
         if (item.location.type === 'equipment')
           return this.putInBackpack(actor.id, item, undefined, changes);
+        if (wearRefusal(actor, item.kind)) return fail(wearRefusal(actor, item.kind) ?? '');
         return this.equip(actor.id, item, definition.slot ?? 'rightHand', changes);
       case 'spellbook':
       case 'tool':

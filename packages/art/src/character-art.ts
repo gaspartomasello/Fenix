@@ -214,7 +214,8 @@ function drawFigure(
     metalTorso:
       equipment.torso === 'chainmail' ||
       equipment.torso === 'ringmail' ||
-      equipment.torso === 'plate-chest',
+      equipment.torso === 'plate-chest' ||
+      equipment.torso === 'female-plate',
   };
 
   drawLegs(canvas, figure);
@@ -358,7 +359,7 @@ function torsoMaterial({ rig, palette: p, equipment, outfit, female, robed }: Fi
       if (front && Math.abs(local[0]) < 1.3) return tone(GOLD, s.light);
       return tone(p.belt, s.light);
     }
-    if (armor === 'plate-chest' && y > -4) {
+    if ((armor === 'plate-chest' || armor === 'female-plate') && y > -4) {
       // Peto de placas: láminas horizontales con borde claro y una cresta al centro.
       const band = ((y + 20) % 3.4) / 3.4;
       if (front && Math.abs(local[0]) < 0.5) return tone(STEEL, s.light + 0.25, 1);
@@ -461,7 +462,8 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
       material,
     );
   }
-  if (female && !metalTorso) {
+  // El peto de mujer tiene el busto forjado en la placa.
+  if ((female && !metalTorso) || equipment.torso === 'female-plate') {
     for (const side of [1, -1] as const) {
       canvas.sphere(chest.at([side * 2.1, 0.8, 2.4]), 2.2, material);
     }
@@ -474,7 +476,7 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
   if (torso && torso !== 'robe') {
     // Hombreras: más grandes en el peto de placas.
     const pad = metalTorso ? metal(STEEL) : solid(ramp(wornColor(torso) ?? [122, 78, 42]), 1);
-    const big = torso === 'plate-chest' ? 1.2 : 1;
+    const big = torso === 'plate-chest' || torso === 'female-plate' ? 1.2 : 1;
     for (const side of [1, -1] as const) {
       canvas.ellipsoid(
         add(rig.arms[side].shoulder, chest.dir([side * 0.4, 0.8, 0])),
@@ -626,6 +628,41 @@ function drawShield(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     if (small) canvas.sphere(add(middle, scale(facing, 0.8)), 1.1, metal(STEEL));
     return;
   }
+  if (kind === 'kite-shield' || kind === 'heater-shield') {
+    // Escudos de punta abajo: el de cometa largo y angosto, el heráldico cuartelado.
+    const kite = kind === 'kite-shield';
+    const facing = normalize(rig.chest.dir([-0.8, 0, 0.6]));
+    const middle = add(hand, rig.chest.dir([-1.4, kite ? 2 : 2.6, 1.2]));
+    const axes = axesAlong(facing);
+    const up = axes[1];
+    const across = axes[0];
+    const width = kite ? 4.4 : 5.2;
+    const top = kite ? 6 : 5;
+    const bottom = kite ? 9 : 6.4;
+    const point = (h: number, w: number): Vec3 => add(middle, add(scale(up, h), scale(across, w)));
+    const half = (h: number): number =>
+      h > 0 ? width : width * Math.cos((-h / bottom) * (Math.PI / 2));
+    const color = ramp(wornColor(kind) ?? [138, 42, 42]);
+    const rim: Vec3[] = [];
+    for (let i = 0; i <= 10; i++) {
+      const h = top - (i * (top + bottom)) / 10;
+      rim.push(point(h, half(h)));
+    }
+    for (let i = 10; i >= 0; i--) {
+      const h = top - (i * (top + bottom)) / 10;
+      rim.push(point(h, -half(h)));
+    }
+    canvas.polygon(rim, (s) => {
+      const local = sub(s.p, middle);
+      const h = local[0] * up[0] + local[1] * up[1] + local[2] * up[2];
+      const w = local[0] * across[0] + local[1] * across[1] + local[2] * across[2];
+      if (h > top - 0.8 || Math.abs(w) > half(h) - 0.8) return tone(STEEL, s.light);
+      if (kite) return Math.abs(w) < 0.5 ? tone(GOLD, s.light) : tone(color, s.light - 0.1);
+      return w > 0 === h > 0 ? tone(color, s.light - 0.1) : tone(DARK_STEEL, s.light + 0.1);
+    });
+    if (kite) canvas.sphere(add(middle, scale(facing, 0.6)), 0.9, metal(GOLD));
+    return;
+  }
   const center = add(hand, rig.chest.dir([-1.6, 3, 1.2]));
   const facing = normalize(rig.chest.dir([-0.8, 0, 0.6]));
   const wood = ramp(wornColor(kind) ?? [138, 90, 46]);
@@ -664,12 +701,123 @@ function drawLight(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
   );
 }
 
+/** Hachas grandes en la mano: largo del mango y tamaño de la hoja. */
+const HEAVY_AXES: Partial<
+  Record<ItemKind, { haft: number; reach: number; height: number; double: boolean }>
+> = {
+  'double-axe': { haft: 12, reach: 3.8, height: 2.8, double: true },
+  'battle-axe': { haft: 13, reach: 4.6, height: 3.6, double: false },
+  'two-handed-axe': { haft: 17, reach: 4.8, height: 3.8, double: false },
+  'large-battle-axe': { haft: 17, reach: 4.8, height: 4, double: true },
+};
+
 function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
   const { hand, weaponDir: dir } = rig.arms[1];
   const across = cross(dir, [0, 1, 0]);
   const side = Math.hypot(...across) < 0.2 ? rig.chest.dir([1, 0, 0]) : normalize(across);
   const along = (k: number): Vec3 => add(hand, scale(dir, k));
   const grip = solid(ramp([84, 56, 34]));
+
+  const heavyAxe = HEAVY_AXES[kind];
+  if (heavyAxe) {
+    // Hachas de guerra: mango (largo en las de dos manos) y una o dos hojas.
+    const { haft, reach, height, double } = heavyAxe;
+    canvas.limb(along(haft > 14 ? -6 : -3), along(haft), 0.75, 0.75, solid(WOOD));
+    const up = normalize(cross(side, dir));
+    const head = along(haft - 1.5);
+    for (const k of double ? [1, -1] : [1])
+      canvas.polygon(
+        [
+          add(head, scale(up, 2.2)),
+          add(add(head, scale(side, reach * k)), scale(up, height)),
+          add(add(head, scale(side, reach * k)), scale(up, -height)),
+          add(head, scale(up, -2.2)),
+        ],
+        metal(STEEL),
+      );
+    // La hacha de batalla lleva un pico corto atrás.
+    if (kind === 'battle-axe')
+      canvas.limb(head, add(head, scale(side, -3)), 0.8, 0.2, metal(DARK_STEEL));
+    return;
+  }
+  if (kind === 'bardiche') {
+    // Asta larga con una hoja alargada atada a lo largo.
+    canvas.limb(along(-9), along(18), 0.6, 0.6, solid(WOOD));
+    canvas.polygon(
+      [along(10), along(17.5), add(along(19), scale(side, 3.2)), add(along(12), scale(side, 3.8))],
+      metal(STEEL),
+    );
+    return;
+  }
+  if (kind === 'war-fork' || kind === 'short-spear') {
+    const fork = kind === 'war-fork';
+    const end = fork ? 16 : 12;
+    canvas.limb(along(fork ? -8 : -5), along(end), 0.6, 0.6, solid(WOOD));
+    if (fork) {
+      // Dos púas paralelas sobre un travesaño.
+      canvas.limb(
+        add(along(end), scale(side, -1.4)),
+        add(along(end), scale(side, 1.4)),
+        0.5,
+        0.5,
+        metal(DARK_STEEL),
+      );
+      for (const k of [1, -1])
+        canvas.limb(
+          add(along(end), scale(side, 1.2 * k)),
+          add(along(end + 5), scale(side, 1.2 * k)),
+          0.45,
+          0.15,
+          metal(STEEL),
+        );
+    } else {
+      canvas.polygon(
+        [
+          along(end),
+          add(along(end + 1.6), scale(side, 1.2)),
+          along(end + 5),
+          add(along(end + 1.6), scale(side, -1.2)),
+        ],
+        metal(STEEL),
+      );
+    }
+    return;
+  }
+  if (kind === 'hammer-pick') {
+    // Martillo de un lado y pico curvo del otro.
+    canvas.limb(along(-3), along(12), 0.7, 0.7, solid(WOOD));
+    const head = along(12.4);
+    const up = normalize(cross(side, dir));
+    canvas.limb(
+      add(head, scale(side, -0.6)),
+      add(head, scale(side, 2.6)),
+      1.5,
+      1.5,
+      metal(DARK_STEEL),
+    );
+    canvas.limb(
+      add(head, scale(side, -0.6)),
+      add(add(head, scale(side, -4.4)), scale(up, -1.4)),
+      1,
+      0.15,
+      metal(STEEL),
+    );
+    return;
+  }
+  if (kind === 'crossbow' || kind === 'heavy-crossbow') {
+    // Caja de madera apuntando adelante, arco de acero cruzado y cuerda.
+    const size = kind === 'heavy-crossbow' ? 1.25 : 1;
+    canvas.limb(along(-4), along(9 * size), 0.9, 0.8, solid(WOOD));
+    const prod = along(8 * size);
+    const back = along(5 * size);
+    for (const k of [1, -1]) {
+      const tip = add(add(prod, scale(side, 5 * size * k)), scale(dir, -1.6 * size));
+      canvas.limb(prod, tip, 0.6, 0.4, metal(STEEL));
+      canvas.limb(tip, back, 0.15, 0.15, solid(ramp([226, 220, 200])));
+    }
+    canvas.limb(along(0.5), along(-1.5), 0.3, 0.3, metal(DARK_STEEL));
+    return;
+  }
 
   if (kind === 'axe' || kind === 'pickaxe' || kind === 'war-axe') {
     canvas.limb(along(-3), along(12), 0.75, 0.75, solid(WOOD));
@@ -768,10 +916,12 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     katana: { length: 14, width: 0.7, guard: 0 },
     longsword: { length: 17, width: 1, guard: 3 },
     scimitar: { length: 13, width: 1.1, guard: 2.2 },
+    cutlass: { length: 10, width: 1.3, guard: 1.6 },
+    'viking-sword': { length: 13, width: 1.25, guard: 2.2 },
   };
   const { length, width, guard } = blades[kind] ?? { length: 13, width: 0.85, guard: 2.4 };
   const katana = kind === 'katana';
-  if (kind === 'scimitar') {
+  if (kind === 'scimitar' || kind === 'cutlass') {
     // Hoja curva que se ensancha antes de la punta.
     canvas.limb(along(-2), along(1.2), 0.8, 0.8, grip);
     canvas.limb(

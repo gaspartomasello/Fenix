@@ -6,6 +6,7 @@ import {
   tileDistance,
   weaponOf,
   type DefenderStats,
+  type ItemKind,
   type SkillKey,
   type Weapon,
 } from '@fenix/shared';
@@ -63,10 +64,10 @@ function defenseFor(mobile: Mobile, world: World): DefenderStats {
   return { armor, skill: fightingSkill(mobile, world), parrying: 0 };
 }
 
-/** ¿Le faltan flechas para el arma que tiene en la mano? */
-export function outOfAmmo(player: Player, world: World): boolean {
+/** La munición (flechas o virotes) que le falta para el arma que tiene en la mano. */
+export function missingAmmo(player: Player, world: World): ItemKind | null {
   const ammo = weaponFor(player, world).ammo;
-  return ammo !== undefined && world.items.countInBackpack(player.id, ammo) === 0;
+  return ammo !== undefined && world.items.countInBackpack(player.id, ammo) === 0 ? ammo : null;
 }
 
 /**
