@@ -488,6 +488,22 @@ describe('pisos altos: posadas, torres de mago y casas de dos pisos', () => {
     );
     const top = ladder ? hop(ladder) : undefined;
     expect(top && map.regionAt(top)).toBe(roof);
+    // Se llega caminando a la escalera de mano desde donde se aparece al subir.
+    const arrival = map.teleporters.find(
+      (t) => map.regionAt(t.to) === map.regionAt(ladder ?? { x: -1, y: -1 }) && levelOf(t) === 1,
+    )?.to;
+    expect(arrival && ladder && reachable(map, arrival).has(`${ladder.x},${ladder.y}`)).toBe(true);
+    // Y en todos los pisos con escalera se llega de la bajada a la que sigue.
+    for (const region of floors) {
+      const up = map.statics.find(
+        (s) => map.regionAt(s) === region && (s.kind === 'ladder-up' || s.kind.includes('stairs')),
+      );
+      const enter = map.teleporters.find(
+        (t) => map.regionAt(t.to) === region && levelOf(t) < (region.floor ?? 0),
+      )?.to;
+      if (!up || !enter) continue;
+      expect(reachable(map, enter).has(`${up.x},${up.y}`), region.name).toBe(true);
+    }
     expect(map.statics.some((s) => s.kind === 'parapet-corner' && map.regionAt(s) === roof)).toBe(
       true,
     );
