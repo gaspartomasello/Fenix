@@ -20,9 +20,12 @@ export class SpatialIndex<T extends { readonly position: Position }> {
   private readonly entries = new Map<T, Entry>();
   private nextOrder = 0;
 
+  /** `locate`: dónde se cuenta cada cosa (por omisión, su posición; los pisos altos, donde se ven). */
+  constructor(private readonly locate: (item: T) => Position = (item) => item.position) {}
+
   /** Agrega o reubica según su posición actual. */
   update(item: T): void {
-    const cell = cellOf(item.position);
+    const cell = cellOf(this.locate(item));
     const entry = this.entries.get(item);
     if (entry) {
       if (entry.cell === cell) return;

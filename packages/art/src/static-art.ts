@@ -1335,6 +1335,30 @@ const basaltPost: Model = (c) => {
   c.box([-H + 4, 51, -H + 4], UP, [5.4, 1.4, 5.4], solid(ramp([96, 50, 38])));
 };
 
+/** Arenisca: bloques claros y cálidos, con una moldura de dibujo escalonado arriba. */
+const SANDSTONE = ramp([206, 176, 128]);
+const SANDSTONE_MORTAR = ramp([170, 140, 98]);
+const sandstoneWall: WallFace = (c, along) => {
+  c.box(
+    edge(along, 0, 24, 3),
+    UP,
+    edgeHalf(along, H, 24, 3),
+    courses(SANDSTONE, SANDSTONE_MORTAR, along, 6, 12),
+  );
+  // Moldura: una franja más oscura con un dibujo de grecas.
+  c.box(edge(along, 0, 43, 3.4), UP, edgeHalf(along, H, 2.2, 3.4), (s) => {
+    const t = Math.floor((s.p[along] + 100) / 3);
+    const row = Math.floor((s.p[1] - 40.8) / 1.5);
+    const fret = (t + row) % 3 === 0 || t % 3 === 0;
+    return tone(fret ? ramp([132, 96, 62]) : ramp([176, 144, 100]), s.light);
+  });
+  c.box(edge(along, 0, 49, 3), UP, edgeHalf(along, H, 1.2, 3.8), solid(ramp([222, 196, 150])));
+};
+const sandstonePost: Model = (c) => {
+  c.box([-H + 4, 25, -H + 4], UP, [4.6, 25, 4.6], courses(SANDSTONE, SANDSTONE_MORTAR, 0, 6, 12));
+  c.box([-H + 4, 51, -H + 4], UP, [5.4, 1.4, 5.4], solid(ramp([222, 196, 150])));
+};
+
 /** Muralla de la ciudad: alta y gruesa, con almenas y un camino de ronda. */
 const RAMPART = ramp([168, 160, 144]);
 const RAMPART_HEIGHT = 66;
@@ -2196,6 +2220,14 @@ const STONE_WINDOW = windowWall(
 );
 const LOG_WINDOW = windowWall(logWall, () => SQUARE, 6, SKY_GLASS, ramp([110, 76, 46]), true);
 const PLANK_WINDOW = windowWall(plankWall, () => SQUARE, 4.8, SKY_GLASS, ramp([96, 66, 40]), true);
+const SANDSTONE_WINDOW = windowWall(
+  sandstoneWall,
+  (v) => GOTHIC[v % GOTHIC.length] ?? SQUARE,
+  6,
+  ramp([46, 56, 74]),
+  ramp([150, 118, 80]),
+  false,
+);
 const BASALT_WINDOW = windowWall(
   basaltWall,
   () => NARROW,
@@ -2372,6 +2404,7 @@ function doorSpecs(): Record<string, StaticSpec> {
 const LOG_WALL = wallSet(logWall, logPost);
 const PLANK_WALL = wallSet(plankWall, plankPost);
 const BASALT_WALL = wallSet(basaltWall, basaltPost);
+const SANDSTONE_WALL = wallSet(sandstoneWall, sandstonePost);
 const RAMPART_WALL = wallSet(rampart, rampartPost);
 
 /** Los árboles los dibuja `tree-art`, cada especie con su ramificación. */
@@ -2488,6 +2521,31 @@ const trapdoor: Model = (c) => {
   c.sphere([0, 12, -8.4], 1.6, metal(IRON));
 };
 
+/** Parapeto de azotea: un muro bajo de piedra con almenas, sobre el borde de atrás del tile. */
+function parapet(c: VolumeCanvas, along: 0 | 2): void {
+  const low = 12;
+  const at = (t: number, y: number): Vec3 => (along === 0 ? [t, y, -H + 3] : [-H + 3, y, t]);
+  const half = (len: number, tall: number): Vec3 => (along === 0 ? [len, tall, 3] : [3, tall, len]);
+  c.box(at(0, low / 2), UP, half(H, low / 2), masonry(along));
+  // Dos almenas por tile, con el hueco en el medio (como un castillo).
+  for (const t of [-H / 2, H / 2]) c.box(at(t, low + 4), UP, half(H / 4, 4), masonry(along));
+  c.box(at(0, low + 0.6), UP, half(H, 0.6), solid(STONE, 1));
+}
+
+const parapetX: Model = (c) => parapet(c, 0);
+const parapetY: Model = (c) => parapet(c, 2);
+const parapetCorner: Model = (c) => {
+  parapet(c, 0);
+  parapet(c, 2);
+  // Pináculo en la esquina.
+  c.box([-H + 3, 14, -H + 3], UP, [4.5, 14, 4.5], masonry(0));
+  c.limb([-H + 3, 28, -H + 3], [-H + 3, 38, -H + 3], 3.4, 0.6, solid(STONE, 1));
+};
+const parapetPost: Model = (c) => {
+  c.box([-H + 3, 14, -H + 3], UP, [4.5, 14, 4.5], masonry(0));
+  c.limb([-H + 3, 28, -H + 3], [-H + 3, 38, -H + 3], 3.4, 0.6, solid(STONE, 1));
+};
+
 const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   oak: tree('oak'),
   pine: tree('pine'),
@@ -2520,6 +2578,16 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   'ladder-up': { model: ladderUp },
   'stair-hole': { model: stairHole },
   trapdoor: { model: trapdoor },
+  'parapet-x': { model: parapetX },
+  'parapet-y': { model: parapetY },
+  'parapet-corner': { model: parapetCorner },
+  'parapet-post': { model: parapetPost },
+  'sandstone-wall-x': { model: SANDSTONE_WALL.x },
+  'sandstone-wall-y': { model: SANDSTONE_WALL.y },
+  'sandstone-wall-corner': { model: SANDSTONE_WALL.corner },
+  'sandstone-wall-post': { model: SANDSTONE_WALL.post },
+  'sandstone-window-x': { model: SANDSTONE_WINDOW.x },
+  'sandstone-window-y': { model: SANDSTONE_WINDOW.y },
   cobweb: { model: cobweb },
   ship: {
     model: ship(false),

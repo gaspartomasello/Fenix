@@ -70,7 +70,9 @@ export class ItemNotifications {
   groundSnapshotsNear(playerId: EntityId): GroundItemSnapshot[] {
     const player = this.world.get(playerId);
     if (!player) return [];
-    return this.world.items.groundNear(player.position).flatMap((i) => i.toGroundSnapshot() ?? []);
+    return this.world.items
+      .groundNear(player.position, (p) => this.world.seen(p))
+      .flatMap((i) => i.toGroundSnapshot() ?? []);
   }
 
   private sendLook(ownerId: EntityId): void {

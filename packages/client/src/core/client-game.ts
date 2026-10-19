@@ -305,6 +305,18 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     return advanceTime(this.time.value, this.clock() - this.time.receivedAt);
   }
 
+  /**
+   * Dónde se ve uno: en un piso alto, encima de su edificio (para el mapa,
+   * el minimapa y las coordenadas); si no, donde está.
+   */
+  selfSeenAt(): Position | null {
+    const self = this.self;
+    if (!self) return null;
+    if (!this._map) return self.position;
+    const { x, y } = this._map.displayOf(self.position);
+    return { x, y };
+  }
+
   /** Zona con nombre donde está el jugador, si hay alguna. */
   currentRegion(): RegionData | undefined {
     const self = this.self;

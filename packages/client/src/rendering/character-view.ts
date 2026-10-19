@@ -236,6 +236,8 @@ export class CharacterView {
     const lunge = this.entity.lungeOffset(now);
     const screen = this.ground.toScreen({ x: position.x + lunge.x, y: position.y + lunge.y });
     this.container.position.set(screen.x, screen.y);
+    // En un piso de arriba del edificio donde uno está, no se ve.
+    this.container.visible = !this.ground.hidden(position);
     if (!this.entity.dead) this.seenAlive = true;
     else if (this.seenAlive) {
       this.seenAlive = false;

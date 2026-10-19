@@ -14,6 +14,7 @@ import type { ClientGame } from '../core/client-game';
 import type { Entity, FractionalPosition } from '../core/entity';
 import { CharacterView } from './character-view';
 import { EffectsLayer } from './effects-layer';
+import { FloorLayer } from './floor-layer';
 import { ItemLayer } from './item-layer';
 import { Ground } from './ground';
 import { renderResolution, type ScreenPoint } from './iso';
@@ -39,6 +40,8 @@ const VIEW_MARGIN = 96;
 const PREPARE_MARGIN = 512;
 /** Los objetos fijos se destruyen recién a esta distancia de la pantalla. */
 const DISCARD_MARGIN = 768;
+/** Margen para armar los pisos altos antes de que entren en pantalla (pixeles). */
+const TILE_MARGIN = 256;
 
 /**
  * Dibuja el estado de `ClientGame` con Pixi. Solo lee el estado: nunca lo
@@ -59,6 +62,7 @@ export class GameRenderer {
   private readonly views = new Map<EntityId, CharacterView>();
   private terrain: TerrainLayer | null = null;
   private statics: StaticLayer | null = null;
+  private floors: FloorLayer | null = null;
   private readonly groundItems = new ItemLayer(this.textures, this.entityLayer, this.ground);
   private readonly ships = new ShipLayer(this.textures, this.ground);
   private readonly effects = new EffectsLayer((id, now) => {
@@ -93,7 +97,10 @@ export class GameRenderer {
 
   /** Tile del mundo bajo un punto de la pantalla (relativo al canvas). */
   screenToTile(point: ScreenPoint): Position {
-    const tile = this.ground.pick(this.toWorld(point));
+    // Desde un piso alto se apunta primero a ese piso; si ahí no hay, a la calle.
+    const self = this.game.self;
+    const level = self ? this.ground.display(self.position).level : 0;
+    const tile = this.ground.pickAt(this.toWorld(point), level);
     return { x: Math.round(tile.x), y: Math.round(tile.y) };
   }
 
@@ -238,9 +245,13 @@ export class GameRenderer {
         seat: this.game.map?.seatAt(view.tile),
       });
     const focus = self.renderPosition(now);
+    // Adentro de un edificio no se ven sus pisos de arriba (ni su techo).
+    this.ground.setHiddenFloors(this.ground.floorsAbove(focus));
     const view = this.updateCamera(focus);
     const near = grown(view, PREPARE_MARGIN);
     this.terrain?.cull(view, near);
+    this.floors?.update(grown(view, TILE_MARGIN));
+    this.groundItems.refreshHidden();
     // Lo que tapa a uno mismo o a quien esté cerca (por ejemplo, un orco que
     // ataca escondido detrás de un árbol) se vuelve translúcido.
     const nearby: FractionalPosition[] = [focus];
@@ -369,9 +380,11 @@ export class GameRenderer {
   private setMap(map: TileMap): void {
     this.statics?.destroy();
     this.terrain?.destroy();
+    this.floors?.destroy();
     this.scene.removeChildren();
     this.ground.setMap(map);
     this.terrain = new TerrainLayer(map, this.textures, this.ground);
+    this.floors = new FloorLayer(map, this.textures, this.entityLayer, this.ground);
     this.statics = new StaticLayer(map, this.textures, this.entityLayer, this.ground);
     this.scene.addChild(this.terrain.container, this.ships.container, this.entityLayer);
   }

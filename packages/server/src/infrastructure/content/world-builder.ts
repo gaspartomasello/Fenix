@@ -54,8 +54,11 @@ export interface BuiltWorld extends GeneratedWorld {
 export const DUNGEON_NAME = 'Cueva del Lamento';
 const DUNGEON_SIZE = 60;
 /** Roca maciza entre el continente y la mazmorra, para que desde adentro no se vea el mar. */
-/** Separación entre los pisos altos (roca negra). */
-const FLOOR_GAP = 40;
+/**
+ * Separación entre los pisos altos (roca negra). Se ven encima de sus
+ * edificios, así que no importa que queden cerca entre sí en el mapa.
+ */
+const FLOOR_GAP = 4;
 const DUNGEON_GAP = 24;
 
 /** Por debajo de este tamaño el mapa no da para los tres pueblos: queda solo la capital. */
@@ -316,6 +319,8 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
           width: floor.width,
           height: floor.height,
           floor: floor.level,
+          // Se ve encima de su edificio.
+          anchor: { x: floor.anchor.x - at.x, y: floor.anchor.y - at.y },
         })),
       ),
       { name: DUNGEON_NAME, x: size, y: 0, width: width - size, height, dungeon: true },
@@ -346,9 +351,11 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
           const below = previous?.floor.upBack
             ? inPocket(previous.at)(previous.floor.upBack)
             : ascent.back;
+          // Un techo sin acceso (las casas de una planta) no tiene escaleras.
+          if (!floor.down || !floor.arrival) return [];
           const links = [{ ...here(floor.down), to: below }];
           if (!previous) links.push({ ...ascent.position, to: here(floor.arrival) });
-          if (next && floor.up)
+          if (next?.floor.arrival && floor.up)
             links.push({ ...here(floor.up), to: inPocket(next.at)(next.floor.arrival) });
           return links;
         }),

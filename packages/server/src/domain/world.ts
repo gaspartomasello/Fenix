@@ -31,9 +31,11 @@ export class World {
   /** Los barcos en el agua. */
   readonly ships = new Map<EntityId, Ship>();
   /** Quién está dónde, por celdas: las consultas de cercanía no recorren todo el mundo. */
-  private readonly nearPlayers = new SpatialIndex<Player>();
-  private readonly nearCreatures = new SpatialIndex<Creature>();
-  private readonly nearNpcs = new SpatialIndex<Npc>();
+  // Cuentan donde se ven: alguien en un piso alto está encima de su edificio, así
+  // ve la calle y desde la calle se lo ve.
+  private readonly nearPlayers = new SpatialIndex<Player>((m) => this.seen(m.position));
+  private readonly nearCreatures = new SpatialIndex<Creature>((m) => this.seen(m.position));
+  private readonly nearNpcs = new SpatialIndex<Npc>((m) => this.seen(m.position));
 
   constructor(
     readonly map: TileMap,
@@ -150,23 +152,28 @@ export class World {
 
   /** Jugadores y criaturas (presentes) que ven la posición dada. */
   mobilesNear(position: Position, options: { except?: EntityId } = {}): Mobile[] {
-    const creatures = this.nearCreatures.near(position, VIEW_RANGE).filter((c) => !c.gone);
+    const at = this.seen(position);
+    const creatures = this.nearCreatures.near(at, VIEW_RANGE).filter((c) => !c.gone);
     return [
-      ...this.nearPlayers.near(position, VIEW_RANGE),
+      ...this.nearPlayers.near(at, VIEW_RANGE),
       ...creatures,
-      ...this.nearNpcs.near(position, VIEW_RANGE),
-    ].filter((m) => m.id !== options.except && inViewRange(m.position, position));
+      ...this.nearNpcs.near(at, VIEW_RANGE),
+    ].filter((m) => m.id !== options.except && inViewRange(this.seen(m.position), at));
+  }
+
+  /** Dónde se ve una posición (la de un piso alto, encima de su edificio). */
+  seen(position: Position): Position {
+    const { x, y } = this.map.displayOf(position);
+    return { x, y };
   }
 
   /** ¿Hay algún jugador a `range` tiles o menos? (para despertar a las criaturas) */
   anyPlayerNear(position: Position, range: number): boolean {
-    return this.nearPlayers
-      .near(position, range)
-      .some(
-        (p) =>
-          Math.max(Math.abs(p.position.x - position.x), Math.abs(p.position.y - position.y)) <=
-          range,
-      );
+    const at = this.seen(position);
+    return this.nearPlayers.near(at, range).some((p) => {
+      const there = this.seen(p.position);
+      return Math.max(Math.abs(there.x - at.x), Math.abs(there.y - at.y)) <= range;
+    });
   }
 
   /** Un jugador escondido: los demás no lo ven (ni las criaturas). */
@@ -244,8 +251,9 @@ export class World {
 
   /** Jugadores que ven la posición dada (rango de visión de UO). */
   playersNear(position: Position, options: { except?: EntityId } = {}): Player[] {
+    const at = this.seen(position);
     return [...this.players.values()].filter(
-      (p) => p.id !== options.except && inViewRange(p.position, position),
+      (p) => p.id !== options.except && inViewRange(this.seen(p.position), at),
     );
   }
 

@@ -3,10 +3,10 @@
   "name": "objetos",
   "tilewidth": 136,
   "tileheight": 168,
-  "tilecount": 191,
-  "columns": 191,
+  "tilecount": 201,
+  "columns": 201,
   "image": "objetos.png",
-  "imagewidth": 25976,
+  "imagewidth": 27336,
   "imageheight": 168,
   "tileoffset": {
     "x": -46,
@@ -1920,6 +1920,106 @@
           "name": "static",
           "type": "string",
           "value": "trapdoor"
+        }
+      ]
+    },
+    {
+      "id": 191,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "parapet-x"
+        }
+      ]
+    },
+    {
+      "id": 192,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "parapet-y"
+        }
+      ]
+    },
+    {
+      "id": 193,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "parapet-corner"
+        }
+      ]
+    },
+    {
+      "id": 194,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "parapet-post"
+        }
+      ]
+    },
+    {
+      "id": 195,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "sandstone-wall-x"
+        }
+      ]
+    },
+    {
+      "id": 196,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "sandstone-wall-y"
+        }
+      ]
+    },
+    {
+      "id": 197,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "sandstone-wall-corner"
+        }
+      ]
+    },
+    {
+      "id": 198,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "sandstone-wall-post"
+        }
+      ]
+    },
+    {
+      "id": 199,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "sandstone-window-x"
+        }
+      ]
+    },
+    {
+      "id": 200,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "sandstone-window-y"
         }
       ]
     }
