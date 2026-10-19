@@ -2546,6 +2546,113 @@ const parapetPost: Model = (c) => {
   c.limb([-H + 3, 28, -H + 3], [-H + 3, 38, -H + 3], 3.4, 0.6, solid(STONE, 1));
 };
 
+// ── Bajo la ciudad: alcantarillas y catacumbas ───────────────────────
+
+const MOSSY = ramp([112, 110, 88]);
+const MOSS = ramp([78, 96, 52]);
+
+/** Bloques grandes de piedra gris oliva, con musgo que cuelga de las juntas. */
+function mossyBlocks(seed: number): Material {
+  return (s) => {
+    const course = Math.floor((s.p[1] + 200) / 7);
+    const along = Math.abs(s.n[0]) > Math.abs(s.n[2]) ? s.p[2] : s.p[0];
+    const pos = along + (course % 2) * 6 + 200;
+    const inCourse = (s.p[1] + 200) % 7;
+    if (inCourse < 1 || pos % 12 < 1) return tone(ramp([60, 58, 48]), s.light);
+    const block = noise(Math.floor(pos / 12), course, seed);
+    const lichen = noise(Math.floor(pos / 4), Math.floor((s.p[1] + 200) / 3), seed + 5);
+    const moss = lichen > (s.p[1] < 8 ? 0.72 : 0.9);
+    if (moss) return tone(MOSS, s.light, block > 0.5 ? 1 : 0);
+    return tone(MOSSY, s.light, block > 0.75 ? 1 : block < 0.25 ? -1 : 0);
+  };
+}
+
+/** Muro de alcantarilla: un bloque macizo que llena el tile, con el remate escalonado. */
+const sewerWall: Model = (c, variant) => {
+  const stone = mossyBlocks(variant * 11);
+  c.box([0, 18, 0], UP, [H, 18, H], stone);
+  // Remate: bloques sueltos a distintas alturas, como un muro viejo.
+  for (const [x, z, h] of [
+    [-H / 2, -H / 2, 5],
+    [H / 2, -H / 2, 3],
+    [-H / 2, H / 2, 2],
+    [H / 2, H / 2, 4],
+  ] as const)
+    c.box([x, 36 + h / 2, z], UP, [H / 2, h / 2, H / 2], stone);
+};
+
+/** Pared agrietada: el mismo muro con una grieta oscura por donde se pasa (un pasadizo). */
+const crackedWall: Model = (c, variant) => {
+  const stone = mossyBlocks(variant * 11 + 3);
+  c.box([0, 18, 0], UP, [H, 18, H], (s) => {
+    const crack = Math.abs(s.p[0] - s.p[2] * 0.3 - Math.sin(s.p[1] / 5) * 2) < 3.2 && s.p[1] < 32;
+    if (crack && (s.n[0] > 0.5 || s.n[2] > 0.5)) return tone(ramp([16, 14, 12]), s.light * 0.2);
+    return stone(s);
+  });
+};
+
+/** Baba verde y brillante sobre el piso. */
+const slime: Model = (c, variant) => {
+  const goo = (s: { light: number }) => tone(ramp([96, 150, 60]), 0.5 + s.light * 0.5);
+  for (let i = 0; i < 4; i++) {
+    const x = (noise(i, variant, 31) - 0.5) * 18;
+    const z = (noise(i, variant, 32) - 0.5) * 18;
+    c.ellipsoid(
+      [x, 0.5, z],
+      UP,
+      [3 + noise(i, variant, 33) * 5, 0.7, 2.5 + noise(i, variant, 34) * 4],
+      goo,
+    );
+  }
+  c.sphere([2, 1.4, 1], 1.1, solid(ramp([186, 220, 120]), 1));
+};
+
+/** Un agujero en el piso del que sale un gas amarillento. */
+const noxiousHole: Model = (c) => {
+  c.ellipsoid([0, 0.4, 0], UP, [10, 0.5, 9], solid(ramp([122, 112, 70])));
+  c.ellipsoid([0, 0.7, 0], UP, [6.5, 0.6, 6], solid(ramp([24, 22, 16])));
+  const gas = (s: { light: number }) => tone(ramp([196, 200, 96]), 0.7 + s.light * 0.3);
+  c.ellipsoid([1, 7, 0], UP, [5, 4, 5], gas);
+  c.ellipsoid([-1, 13, 1], UP, [3.5, 3, 3.5], gas);
+  c.ellipsoid([1, 18, -1], UP, [2.2, 2, 2.2], gas);
+};
+
+/** Un montón de calaveras y huesos contra la pared (el osario de las catacumbas). */
+const skullPile: Model = (c, variant) => {
+  const bone = solid(BONE);
+  const hollow = solid(ramp([30, 26, 22]));
+  for (let i = 0; i < 14; i++) {
+    const layer = i < 7 ? 0 : i < 11 ? 1 : 2;
+    const x = (noise(i, variant, 41) - 0.5) * (18 - layer * 6);
+    const z = (noise(i, variant, 42) - 0.5) * (14 - layer * 4) - 4;
+    const y = 3 + layer * 5;
+    c.sphere([x, y, z], 3.2, bone);
+    c.sphere([x + 1, y + 0.4, z + 2.8], 0.8, hollow);
+    c.sphere([x - 1, y + 0.4, z + 2.8], 0.8, hollow);
+  }
+  for (let i = 0; i < 5; i++) {
+    const a = noise(i, variant, 43) * Math.PI;
+    c.limb(
+      [Math.cos(a) * 10, 1, Math.sin(a) * 6],
+      [-Math.cos(a) * 8, 2, -Math.sin(a) * 6],
+      0.8,
+      0.8,
+      bone,
+    );
+  }
+};
+
+/** Una baldosa floja: apenas levantada, con una junta oscura alrededor (esconde un pasadizo). */
+const looseFlagstone: Model = (c) => {
+  c.box([0, 0.2, 0], UP, [9.5, 0.3, 9.5], solid(ramp([34, 30, 26])));
+  c.box(
+    [0.6, 1.2, -0.4],
+    axesAlong([1, 0.06, 0.02]),
+    [8.5, 0.9, 8.5],
+    solid(ramp([138, 130, 116])),
+  );
+};
+
 const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   oak: tree('oak'),
   pine: tree('pine'),
@@ -2588,6 +2695,12 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   'sandstone-wall-post': { model: SANDSTONE_WALL.post },
   'sandstone-window-x': { model: SANDSTONE_WINDOW.x },
   'sandstone-window-y': { model: SANDSTONE_WINDOW.y },
+  'sewer-wall': { model: sewerWall },
+  'cracked-wall': { model: crackedWall },
+  slime: { model: slime, flat: true },
+  'noxious-hole': { model: noxiousHole },
+  'skull-pile': { model: skullPile, shadow: [14, 6] },
+  'loose-flagstone': { model: looseFlagstone, flat: true },
   cobweb: { model: cobweb },
   ship: {
     model: ship(false),

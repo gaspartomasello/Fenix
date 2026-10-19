@@ -520,3 +520,53 @@ describe('pisos altos: posadas, torres de mago y casas de dos pisos', () => {
     expect(map.levelAt({ x: 10, y: 10 })).toBe('');
   });
 });
+
+describe('bajo la capital: alcantarilla, catacumbas y pasadizos', () => {
+  const { map, lairs } = buildWorld({ size: 700, height: 900, seed: 1997 });
+  const catacombs = map.regions.find((r) => r.name.startsWith('Catacumbas'));
+  const inside = (r: { name: string } | undefined) => (p: Position) => map.regionAt(p) === r;
+
+  it('hay catacumbas con criaturas, adoquines y muros con musgo', () => {
+    expect(catacombs?.dungeon).toBe(true);
+    if (!catacombs) return;
+    const here = inside(catacombs);
+    expect(lairs.filter((l) => here(l.home)).length).toBeGreaterThan(10);
+    expect(map.statics.some((s) => s.kind === 'sewer-wall' && here(s))).toBe(true);
+    expect(map.statics.some((s) => s.kind === 'skull-pile' && here(s))).toBe(true);
+  });
+
+  it('la grieta de la alcantarilla da a las catacumbas, y de ahí se llega a la cripta y a las casas', () => {
+    if (!catacombs) throw new Error('sin catacumbas');
+    const sewer = map.regions.find((r) => r.name.startsWith('Alcantarillas'));
+    const crack = map.statics.find((s) => s.kind === 'cracked-wall' && inside(sewer)(s));
+    const into = crack ? map.teleportAt(crack) : undefined;
+    expect(into && inside(catacombs)(into)).toBe(true);
+    if (!into) return;
+    const walk = reachable(map, into);
+    // La grieta hacia la cripta del cementerio.
+    const toCrypt = map.statics.find(
+      (s) =>
+        s.kind === 'cracked-wall' &&
+        inside(catacombs)(s) &&
+        map.regionAt(map.teleportAt(s) ?? s)?.name.startsWith('Cripta'),
+    );
+    expect(toCrypt && walk.has(`${toCrypt.x},${toCrypt.y}`)).toBe(true);
+    // Las escaleras que suben a las baldosas flojas de las casas.
+    const ladders = map.statics.filter((s) => s.kind === 'ladder' && inside(catacombs)(s));
+    expect(ladders.length).toBeGreaterThanOrEqual(1);
+    for (const ladder of ladders) {
+      expect(walk.has(`${ladder.x},${ladder.y}`)).toBe(true);
+      const up = map.teleportAt(ladder);
+      expect(up && map.isWalkable(up)).toBe(true);
+      expect(up && map.regionAt(up)?.dungeon).toBeFalsy();
+      // Al lado está la baldosa floja, que vuelve a bajar.
+      const flag = map.statics.find(
+        (s) =>
+          s.kind === 'loose-flagstone' &&
+          up !== undefined &&
+          Math.abs(s.x - up.x) + Math.abs(s.y - up.y) === 1,
+      );
+      expect(flag && inside(catacombs)(map.teleportAt(flag) ?? flag)).toBe(true);
+    }
+  });
+});

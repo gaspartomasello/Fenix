@@ -3,10 +3,10 @@
   "name": "terreno",
   "tilewidth": 44,
   "tileheight": 44,
-  "tilecount": 37,
-  "columns": 37,
+  "tilecount": 39,
+  "columns": 39,
   "image": "terreno.png",
-  "imagewidth": 1628,
+  "imagewidth": 1716,
   "imageheight": 44,
   "tiles": [
     {
@@ -376,6 +376,26 @@
           "name": "terrain",
           "type": "string",
           "value": "mountain"
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "properties": [
+        {
+          "name": "terrain",
+          "type": "string",
+          "value": "cobblestone"
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "properties": [
+        {
+          "name": "terrain",
+          "type": "string",
+          "value": "sewer-water"
         }
       ]
     }

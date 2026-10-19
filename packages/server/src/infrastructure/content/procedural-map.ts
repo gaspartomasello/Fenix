@@ -654,6 +654,7 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
       ...(town.descents ?? []).map((d) => ({
         ...d,
         position: { x: d.position.x + ox, y: d.position.y + oy },
+        ...(d.back ? { back: { x: d.back.x + ox, y: d.back.y + oy } } : {}),
       })),
     );
     const shift = (p: Position): Position => ({ x: p.x + ox, y: p.y + oy });

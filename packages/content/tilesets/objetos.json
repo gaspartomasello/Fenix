@@ -3,10 +3,10 @@
   "name": "objetos",
   "tilewidth": 136,
   "tileheight": 168,
-  "tilecount": 201,
-  "columns": 201,
+  "tilecount": 207,
+  "columns": 207,
   "image": "objetos.png",
-  "imagewidth": 27336,
+  "imagewidth": 28152,
   "imageheight": 168,
   "tileoffset": {
     "x": -46,
@@ -2020,6 +2020,66 @@
           "name": "static",
           "type": "string",
           "value": "sandstone-window-y"
+        }
+      ]
+    },
+    {
+      "id": 201,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "sewer-wall"
+        }
+      ]
+    },
+    {
+      "id": 202,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "slime"
+        }
+      ]
+    },
+    {
+      "id": 203,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "noxious-hole"
+        }
+      ]
+    },
+    {
+      "id": 204,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "skull-pile"
+        }
+      ]
+    },
+    {
+      "id": 205,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "cracked-wall"
+        }
+      ]
+    },
+    {
+      "id": 206,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "loose-flagstone"
         }
       ]
     }

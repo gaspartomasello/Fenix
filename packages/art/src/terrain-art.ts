@@ -670,6 +670,43 @@ const STYLES: Readonly<Record<Terrain, TerrainStyle>> = {
       return color;
     },
   },
+  [Terrain.Cobblestone]: {
+    varies: false,
+    base: [116, 112, 106],
+    paint(u, v, seed) {
+      // Adoquines redondeados de piedra gris, en hileras corridas: cada uno con
+      // su luz arriba a la izquierda, juntas oscuras y algo de musgo en ellas.
+      const rows = 5;
+      const row = Math.floor(v * rows);
+      const shift = row % 2 ? 0.5 / rows : 0;
+      const col = Math.floor((u + shift) * rows);
+      const fx = (u + shift) * rows - col - 0.5;
+      const fy = v * rows - row - 0.5;
+      const r = Math.max(Math.abs(fx), Math.abs(fy)) * 0.55 + Math.hypot(fx, fy) * 0.5;
+      if (r > 0.5) {
+        const moss = fbm(u, v, seed + 7, 6, 2) > 0.58;
+        return moss ? [70, 84, 50] : [52, 48, 44];
+      }
+      const stone = hash((col + rows) % rows, row, seed);
+      const base = mix([104, 100, 96], [150, 144, 134], stone);
+      // Abombado: más claro arriba a la izquierda, más oscuro abajo a la derecha.
+      const light = 1.08 - (fx + fy) * 0.32 - r * 0.25;
+      return mix(shade(base, light), [120, 108, 90], fbm(u, v, seed, 8, 1) * 0.25);
+    },
+  },
+  [Terrain.SewerWater]: {
+    varies: true,
+    base: [40, 92, 66],
+    paint(u, v, seed) {
+      // Agua verde y turbia: manchas oscuras, ondas claras y espuma sucia.
+      const depth = fbm(u, v, seed, 3, 3);
+      let color = mix([26, 70, 50], [58, 116, 82], depth);
+      const wave = periodicNoise(u * 1.4 + v * 0.3, v, 7, seed + 9);
+      if (Math.abs(wave - 0.5) < 0.03) color = mix(color, [120, 170, 120], 0.55);
+      if (periodicNoise(u, v, 12, seed + 3) > 0.9) color = mix(color, [150, 160, 96], 0.5);
+      return color;
+    },
+  },
 };
 
 /**
