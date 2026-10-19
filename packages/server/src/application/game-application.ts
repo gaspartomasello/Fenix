@@ -542,9 +542,9 @@ export class GameApplication {
     const coords = /^(\d+)[\s,]+(\d+)$/.exec(name.trim());
     if (coords) return this.walkableNear(Number(coords[1]), Number(coords[2]), 30);
     const wanted = plain(name);
-    const region = this.world.map.regions.find(
-      (r) => !r.dungeon && plain(r.name).startsWith(wanted),
-    );
+    // Primero los lugares de la superficie; si no hay, los de abajo (criptas, catacumbas).
+    const matches = this.world.map.regions.filter((r) => plain(r.name).startsWith(wanted));
+    const region = matches.find((r) => !r.dungeon) ?? matches[0];
     if (!region) return undefined;
     return this.walkableNear(
       region.x + Math.floor(region.width / 2),

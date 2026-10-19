@@ -128,6 +128,8 @@ export class Minimap {
     ctx.font = '600 10px Georgia, serif';
     ctx.textAlign = 'center';
     for (const region of map.regions) {
+      // Los pisos altos se ven encima de su edificio, no con su nombre aparte.
+      if (region.floor) continue;
       if (region.dungeon) continue;
       const [x, y] = project(region.x + region.width / 2, region.y + region.height / 2);
       if (x < 10 || y < 8 || x > SIZE - 10 || y > SIZE - 4) continue;
