@@ -171,6 +171,15 @@ export const BASE_ITEM_KINDS = [
   'fishing-pole',
   'smith-hammer',
   'lockpick',
+  // Leyendas: reliquias que hay que devolver y los pergaminos de maestría que se ganan
+  'silent-grimoire',
+  'buried-crown',
+  'hermit-diary',
+  'burnt-key',
+  'mastery-magery',
+  'mastery-tactics',
+  'mastery-healing',
+  'mastery-lockpicking',
   'sewing-kit',
   'saw',
   'fletching-kit',
@@ -218,6 +227,7 @@ export type ItemUse =
   | 'dig'
   | 'ship'
   | 'lockpick'
+  | 'mastery'
   | 'none';
 
 /** Lo que hace una poción al tomarla. */
@@ -352,6 +362,18 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
     use: 'map',
   },
   shovel: { name: 'pala', plural: 'palas', article: 'una', use: 'dig' },
+  'silent-grimoire': {
+    name: 'Grimorio del Silencio',
+    plural: 'Grimorios del Silencio',
+    article: 'un',
+  },
+  'buried-crown': { name: 'corona del Rey Sepultado', plural: 'coronas', article: 'una' },
+  'hermit-diary': { name: 'diario del ermitaño', plural: 'diarios', article: 'un' },
+  'burnt-key': { name: 'llave chamuscada', plural: 'llaves chamuscadas', article: 'una' },
+  'mastery-magery': mastery('Magia'),
+  'mastery-tactics': mastery('Tácticas'),
+  'mastery-healing': mastery('Primeros auxilios'),
+  'mastery-lockpicking': mastery('Forzar cerraduras'),
   lockpick: { name: 'ganzúa', plural: 'ganzúas', article: 'una', stackable: true, use: 'lockpick' },
   'sloop-deed': {
     name: 'maqueta de balandra',
@@ -679,6 +701,14 @@ function wear(
   color: number,
 ): Spec {
   return { name, plural, article, slot, use: 'equip', color };
+}
+function mastery(skill: string): Spec {
+  return {
+    name: `pergamino de maestría: ${skill}`,
+    plural: `pergaminos de maestría: ${skill}`,
+    article: 'un',
+    use: 'mastery',
+  };
 }
 function reagent(name: string, plural: string, article: 'un' | 'una'): Spec {
   return { name, plural, article, stackable: true };

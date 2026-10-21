@@ -34,6 +34,7 @@ export * from './domain/magic/effects';
 export * from './domain/economy/vendors';
 export * from './domain/economy/crafting';
 export * from './domain/quests/quests';
+export * from './domain/quests/legends';
 export * from './domain/treasure/treasure';
 export * from './domain/ships/ships';
 export * from './domain/social/reputation';

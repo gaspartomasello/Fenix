@@ -405,6 +405,7 @@ const SERVER_TYPE_FLAGS: Readonly<Record<ServerMessageType, true>> = {
   cannonShot: true,
   questOffer: true,
   quests: true,
+  legends: true,
   joinRejected: true,
   account: true,
   mobileAppeared: true,

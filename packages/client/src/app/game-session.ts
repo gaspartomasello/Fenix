@@ -399,6 +399,7 @@ export class GameSession {
     const journal = new QuestJournal((giver) => this.game.abandonQuest(giver));
     this.game.on('questOffered', ({ npcId, quest }) => offer.open(npcId, quest));
     this.game.on('questsChanged', (quests) => journal.render(quests));
+    this.game.on('legendsChanged', (legends) => journal.renderLegends(legends));
     this.hosts.ui.append(offer.window.element, journal.window.element);
     this.hudExtras.push({ label: 'Misiones', key: 'j', onPress: () => journal.window.toggle() });
   }

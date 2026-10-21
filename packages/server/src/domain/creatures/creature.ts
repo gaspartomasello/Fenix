@@ -20,7 +20,8 @@ export const RESPAWN_MS = 30_000;
 
 export class Creature implements Mobile {
   readonly body: CreatureKind;
-  readonly name: string;
+  /** El de su especie; los jefes de las leyendas tienen nombre propio. */
+  name: string;
   readonly definition: CreatureDefinition;
   combat: Combatant;
   private _position: Position;

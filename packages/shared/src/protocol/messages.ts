@@ -835,6 +835,17 @@ export interface QuestsMessage {
   readonly quests: readonly QuestProgress[];
 }
 
+/** Las leyendas que el jugador conoce y en qué paso va (se reenvía cuando cambia). */
+export interface LegendsMessage {
+  readonly type: 'legends';
+  readonly legends: readonly {
+    readonly id: string;
+    readonly title: string;
+    readonly hint: string;
+    readonly done: boolean;
+  }[];
+}
+
 /** El recipiente ya no se puede ver (el jugador se alejó o se lo llevaron). */
 export interface ContainerClosedMessage {
   readonly type: 'containerClosed';
@@ -874,6 +885,7 @@ export type ServerMessage =
   | MoveAckMessage
   | MoveRejectedMessage
   | ChatMessage
+  | LegendsMessage
   | GroundItemsMessage
   | InventoryMessage
   | PlayerEquipmentMessage

@@ -49,8 +49,8 @@ export class WorldNpcs {
       npc.npc === 'banker'
         ? 'clic para abrir el banco'
         : npc.npc && !isMerchant(npc.npc)
-          ? 'clic para hablar'
-          : 'clic para comerciar';
+          ? 'clic o escribí «hola» para hablar'
+          : 'clic para comerciar · escribí para hablar';
     this.tooltip.show(`${npc.name} · ${action}`, e.clientX, e.clientY);
   }
 

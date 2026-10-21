@@ -56,14 +56,32 @@ export class QuestJournal {
   readonly window: GameWindow;
   private readonly list: HTMLElement;
   private readonly count: HTMLElement;
+  private readonly legends: HTMLElement;
 
   constructor(private readonly abandon: (giver: string) => void) {
     this.window = new GameWindow('misiones', 'Misiones', { x: 320, y: 120 });
     this.window.element.classList.add('quest-window');
     this.list = el('ul', { className: 'quest-list' });
     this.count = el('p', { className: 'window-hint' });
-    this.window.body.append(this.list, this.count);
+    this.legends = el('ul', { className: 'quest-list legend-list' });
+    this.window.body.append(this.list, this.count, this.legends);
     this.render([]);
+  }
+
+  /**
+   * Leyendas: misiones largas que empiezan con un rumor. Solo se anota la
+   * pista: lo demás hay que descubrirlo hablando con los vecinos.
+   */
+  renderLegends(legends: readonly { title: string; hint: string; done: boolean }[]): void {
+    this.legends.replaceChildren(
+      ...(legends.length > 0 ? [el('li', { className: 'legend-head', text: 'Leyendas' })] : []),
+      ...legends.map((l) =>
+        el('li', { className: `quest-item${l.done ? ' quest-done' : ''}` }, [
+          el('strong', { text: l.title }),
+          el('p', { className: 'quest-goal', text: l.hint }),
+        ]),
+      ),
+    );
   }
 
   render(quests: readonly QuestProgress[]): void {

@@ -21,6 +21,7 @@ import {
   type Notoriety,
   type MountKind,
   type Position,
+  type LegendId,
   type QuestProgress,
   type SkillValues,
   type TileMap,
@@ -79,6 +80,8 @@ export class Player implements Mobile {
   readonly statGains: AttributeKey[] = [];
   /** Misiones aceptadas (ver `Quests`). */
   quests: QuestProgress[] = [];
+  /** Leyendas que conoce y en qué paso va (ver `Legends`). */
+  legends = new Map<LegendId, number>();
   private usesSinceStatGain = 0;
   /** Cuándo puede volver a recolectar o fabricar. */
   nextActionAt = 0;

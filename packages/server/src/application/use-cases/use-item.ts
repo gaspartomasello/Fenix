@@ -22,6 +22,8 @@ export class UseItem {
   openContainer: (playerId: EntityId, containerId: string) => void = () => {};
   /** Lo arma la aplicación: abrir un libro para leer o escribir. */
   openBook: (playerId: EntityId, itemId: EntityId) => void = () => {};
+  /** Leer un pergamino de maestría (lo resuelven las leyendas). */
+  readMastery: (playerId: EntityId, itemId: EntityId) => void = () => {};
   /** Lo arma la aplicación: leer un mapa del tesoro. */
   openTreasureMap: (playerId: EntityId, itemId: EntityId) => void = () => {};
   /** Lo arma la aplicación: botar el barco de una maqueta. */
@@ -71,6 +73,10 @@ export class UseItem {
     }
     if (item && ITEMS[item.kind].use === 'music' && item.ownerId() === playerId) {
       this.play(playerId, item.kind);
+      return;
+    }
+    if (item && ITEMS[item.kind].use === 'mastery' && item.ownerId() === playerId) {
+      this.readMastery(playerId, itemId);
       return;
     }
     if (item && ITEMS[item.kind].use === 'book') {

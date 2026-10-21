@@ -687,6 +687,52 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
       c.limb(to, add(to, [0.4, 0, hook]), 0.24, 0.18, metal(STEEL));
     }
   },
+  'silent-grimoire'(c) {
+    // Tapas negras con un sello de plata: el libro que nadie debería leer.
+    tome(c, ramp([40, 34, 44]), ramp([190, 196, 210]));
+  },
+  'hermit-diary'(c) {
+    // Cuero gastado, atado con un cordel.
+    tome(c, ramp([96, 74, 48]), null);
+    c.limb([-4.4, 2.5, 0.8], [4.4, 2.5, -0.8], 0.25, 0.25, solid(ramp([150, 120, 80])));
+  },
+  'buried-crown'(c) {
+    // Un aro de oro con puntas y gemas, sucio de tierra.
+    c.ellipsoid([0, 1.4, 0], lying(0), [4, 1.4, 4], (s) =>
+      Math.hypot(s.p[0], s.p[2]) < 3 ? tone(ramp([60, 44, 30]), s.light) : metal(GOLD)(s),
+    );
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      const base: Vec3 = [Math.cos(a) * 3.6, 2.2, Math.sin(a) * 3.6];
+      c.limb(base, add(base, [0, 2.2, 0]), 0.8, 0.15, metal(GOLD));
+      if (i % 2 === 0) c.sphere(add(base, [0, 0.4, 0]), 0.6, solid(ramp([170, 30, 40]), 1));
+    }
+  },
+  'burnt-key'(c) {
+    // Una llave grande de hierro, ennegrecida por el fuego.
+    const iron = (s: { light: number; p: Vec3 }) =>
+      tone(ramp([60, 56, 54]), s.light, s.p[0] > 2 ? -1 : 0);
+    c.ellipsoid(
+      [-3.6, 0.8, 1.6],
+      lying(0.4),
+      [1.8, 0.5, 1.8],
+      clipping((s) => (Math.hypot(s.p[0] + 3.6, s.p[2] - 1.6) < 0.9 ? null : iron(s))),
+    );
+    c.limb([-2, 0.8, 0.8], [4.2, 0.8, -2], 0.45, 0.45, iron);
+    c.box([3.6, 0.8, -1], lying(0.4), [0.5, 0.4, 1], iron);
+  },
+  'mastery-magery'(c) {
+    scroll(c, ramp([120, 70, 200]));
+  },
+  'mastery-tactics'(c) {
+    scroll(c, ramp([200, 60, 50]));
+  },
+  'mastery-healing'(c) {
+    scroll(c, ramp([90, 180, 90]));
+  },
+  'mastery-lockpicking'(c) {
+    scroll(c, ramp([60, 60, 70]));
+  },
   'bone-helm'(c) {
     // Máscara de calavera entera: cráneo, cara con cuencas y dientes, y cuernos de carnero.
     const bone = ramp([212, 200, 150]);
@@ -1660,6 +1706,18 @@ function gloves(c: VolumeCanvas, stuff: PieceStuff, color: Ramp): void {
       c.limb([x + k, 1, -0.8], [x + k * 1.1, 0.9, -3.4 + Math.abs(k) * 0.5], 0.5, 0.4, material);
     c.limb([x - side * 1.6, 1.1, 0.8], [x - side * 3, 1, -0.6], 0.6, 0.45, material);
   }
+}
+
+/** Un libro cerrado con tapas del color pedido y, si se quiere, un sello en el frente. */
+function tome(c: VolumeCanvas, cover: Ramp, seal: Ramp | null): void {
+  c.box([0, 1.2, 0], lying(-0.3), [4.2, 1.1, 5.4], (s) =>
+    s.n[1] > 0.7
+      ? tone(cover, s.light, Math.abs(s.p[0]) < 0.4 ? -1 : 0)
+      : Math.abs(s.n[1]) < 0.5 && s.p[1] > 0.4 && s.p[1] < 2
+        ? tone(PAPER, s.light, -1)
+        : tone(cover, s.light, -1),
+  );
+  if (seal) c.ellipsoid([0, 2.4, 0], lying(0), [1.6, 0.4, 1.6], metal(seal));
 }
 
 function legs(c: VolumeCanvas, material: Material): void {
