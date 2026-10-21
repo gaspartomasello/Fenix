@@ -12,6 +12,7 @@ import {
   validateCreation,
   type Attributes,
   type CharacterCreation,
+  type CreationSkills,
   type SkillKey,
 } from '@fenix/shared';
 import { AppearancePicker } from './appearance-picker';
@@ -23,7 +24,7 @@ export interface CreationScreenOptions {
 }
 
 type AttributeKey = keyof Attributes;
-type ChosenSkills = [SkillKey, SkillKey, SkillKey];
+type ChosenSkills = [...CreationSkills];
 
 const ATTRIBUTE_NAMES: Readonly<Record<AttributeKey, string>> = {
   strength: 'Fuerza',
@@ -40,31 +41,31 @@ const TEMPLATES: readonly {
   {
     name: 'Guerrero',
     attributes: { strength: 60, dexterity: 40, intelligence: 20 },
-    skills: ['swordsmanship', 'tactics', 'healing'],
+    skills: ['swordsmanship', 'tactics', 'healing', 'parrying'],
   },
   {
     name: 'Mago',
     attributes: { strength: 25, dexterity: 20, intelligence: 75 },
-    skills: ['magery', 'meditation', 'evaluating-intelligence'],
+    skills: ['magery', 'meditation', 'evaluating-intelligence', 'magic-resist'],
   },
   {
     name: 'Arquero',
     attributes: { strength: 45, dexterity: 55, intelligence: 20 },
-    skills: ['archery', 'tactics', 'healing'],
+    skills: ['archery', 'tactics', 'healing', 'anatomy'],
   },
   {
     name: 'Herrero',
     attributes: { strength: 60, dexterity: 40, intelligence: 20 },
-    skills: ['blacksmithy', 'mining', 'tactics'],
+    skills: ['blacksmithy', 'mining', 'tactics', 'tailoring'],
   },
   {
     name: 'Sigiloso',
     attributes: { strength: 35, dexterity: 65, intelligence: 20 },
-    skills: ['fencing', 'hiding', 'stealth'],
+    skills: ['fencing', 'hiding', 'stealth', 'lockpicking'],
   },
 ];
 
-/** Crear un personaje: nombre, apariencia, atributos y tres habilidades (60, 50 y 50). */
+/** Crear un personaje: nombre, apariencia, atributos y cuatro habilidades (60, 60, 50 y 50). */
 export class CreationScreen {
   readonly element: HTMLElement;
   private readonly picker = new AppearancePicker();
@@ -73,7 +74,7 @@ export class CreationScreen {
   private readonly kitText: HTMLElement;
   private readonly createButton: HTMLButtonElement;
   private attributes: Attributes = { strength: 40, dexterity: 40, intelligence: 40 };
-  private skills: ChosenSkills = ['swordsmanship', 'tactics', 'healing'];
+  private skills: ChosenSkills = ['swordsmanship', 'tactics', 'healing', 'parrying'];
   private readonly sliders = new Map<
     AttributeKey,
     { input: HTMLInputElement; value: HTMLElement }

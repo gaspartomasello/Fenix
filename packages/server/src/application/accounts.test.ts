@@ -6,7 +6,7 @@ import {
   startingKit,
   validateCreation,
   type CharacterCreation,
-  type SkillKey,
+  type CreationSkills,
 } from '@fenix/shared';
 import { describe, expect, it } from 'vitest';
 import { World } from '../domain/world';
@@ -59,7 +59,7 @@ function createServer(characters = new FakeCharacterStore(), accounts = new Memo
 
 const creation = (
   name: string,
-  skills: [SkillKey, SkillKey, SkillKey] = ['magery', 'meditation', 'healing'],
+  skills: CreationSkills = ['magery', 'meditation', 'healing', 'anatomy'],
 ): CharacterCreation => ({
   name,
   appearance: DEFAULT_APPEARANCE,
@@ -90,10 +90,16 @@ describe('cuentas', () => {
     if (!player) throw new Error('sin jugador');
 
     expect(player.skills.get('magery')).toBe(600);
-    expect(player.skills.get('meditation')).toBe(500);
+    expect(player.skills.get('meditation')).toBe(600);
+    expect(player.skills.get('healing')).toBe(500);
+    expect(player.skills.get('anatomy')).toBe(500);
+    // Empieza vestida: camisa del color elegido y pantalón (sin ellos se vería la ropa interior).
+    const shirt = world.items.equipmentOf(player.id).find((i) => i.kind === 'shirt');
+    expect(shirt?.hue).toBe(DEFAULT_APPEARANCE.clothHue);
+    expect(world.items.lookOf(player.id).legs).toBe('trousers');
     expect(player.combat.baseAttributes).toEqual({ strength: 40, dexterity: 30, intelligence: 50 });
     expect(world.items.countInBackpack(player.id, 'black-pearl')).toBe(150);
-    expect(world.items.countInBackpack(player.id, 'bandage')).toBe(150);
+    expect(world.items.countInBackpack(player.id, 'bandage')).toBe(200);
     expect(world.items.backpackOf(player.id).some((i) => i.kind === 'spellbook')).toBe(true);
     expect(world.items.bankOf(player.id).find((i) => i.kind === 'gold')?.amount).toBe(
       STARTING_BANK_GOLD,
@@ -134,7 +140,7 @@ describe('cuentas', () => {
     if (!login.ok) throw new Error(login.reason);
     const first = app.accounts.createCharacter(
       login.account,
-      creation('Bruta', ['swordsmanship', 'tactics', 'parrying']),
+      creation('Bruta', ['swordsmanship', 'tactics', 'parrying', 'anatomy']),
     );
     if (!first.ok) throw new Error(first.reason);
     const equipped = world.items.equipmentOf(first.playerId).map((i) => i.kind);
@@ -196,7 +202,12 @@ describe('cuentas', () => {
       }).ok,
     ).toBe(false);
     expect(
-      validateCreation({ ...creation('Ana'), skills: ['magery', 'magery', 'healing'] }).ok,
+      validateCreation({ ...creation('Ana'), skills: ['magery', 'magery', 'healing', 'anatomy'] })
+        .ok,
+    ).toBe(false);
+    // Hacen falta cuatro: dos quedan en 60 y dos en 50.
+    expect(
+      validateCreation({ ...creation('Ana'), skills: ['magery', 'meditation', 'healing'] }).ok,
     ).toBe(false);
     const kit = startingKit(['anatomy', 'healing', 'wrestling']);
     expect(kit.find((k) => k.kind === 'bandage')?.amount).toBe(200);

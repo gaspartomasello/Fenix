@@ -724,10 +724,17 @@ cuentas pasa a la cuenta de su mismo nombre la primera vez que se entra con su c
 cuenta de un personaje de prueba ya lo trae.
 
 La creación es como en UO (`shared/domain/character/creation.ts`): 120 puntos de atributos (de
-10 a 80 cada uno) y tres habilidades, una en 60 y dos en 50. El equipo sale de `startingKit`:
+10 a 80 cada uno) y cuatro habilidades, dos en 60 y dos en 50. El equipo sale de `startingKit`:
 lo de todos (100 vendas, comida, pociones, antorcha) más lo de cada habilidad (armas y armadura
 para combate, libro y 150 de cada reactivo para Magia, herramientas y materiales para los
 oficios…); además, 2000 monedas en el banco. Las armas, la armadura y el escudo se ponen solos.
+Empieza vestido con `startingClothes`: camisa del color elegido y pantalón (las mujeres,
+pollera), objetos de verdad que se pueden sacar. Un jugador sin nada en el torso o en las
+piernas muestra **ropa interior**, como en UO pero apta para todo público (`bareTorso` y
+`underpants` en `character-art.ts`): un short largo de lino y, las mujeres, una musculosa. Los
+vecinos del pueblo siempre andan vestidos. Hay más peinados (rapado, con entradas, en punta,
+cresta, moño alto, a los hombros, largo ondulado, trenza al costado, dos rodetes) y barbas
+(chivita, barba larga).
 
 Todo ese equipo es **de equipo inicial** (`Item.newbie`, se guarda y se muestra en el nombre):
 no se puede tirar al suelo, ni guardar fuera de las cosas propias (mochila, equipo, banco y sus

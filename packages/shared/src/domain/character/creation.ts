@@ -1,4 +1,5 @@
 import type { Attributes } from '../combat/vitals';
+import type { EquipmentSlot } from '../items/equipment';
 import type { ItemKind } from '../items/item-catalog';
 import {
   SKILL_NAMES,
@@ -12,7 +13,7 @@ import { validateCharacterName } from './name';
 
 /**
  * Crear un personaje, como en UO: se reparten los puntos de los atributos y
- * se eligen tres habilidades (una en 60 y dos en 50). Según esas habilidades
+ * se eligen cuatro habilidades (dos en 60 y dos en 50). Según esas habilidades
  * trae su equipo: armas, el libro de hechizos y los reactivos, herramientas…
  * Ese equipo inicial es "del personaje": no se pierde ni se lo pueden sacar.
  */
@@ -25,8 +26,11 @@ export const CREATION_ATTRIBUTE_TOTAL = 120;
 export const CREATION_ATTRIBUTE_MIN = 10;
 export const CREATION_ATTRIBUTE_MAX = 80;
 
-/** Las tres habilidades elegidas empiezan en 60, 50 y 50 (en décimas). */
-export const CREATION_SKILL_VALUES = [600, 500, 500] as const;
+/** Las cuatro habilidades elegidas empiezan en 60, 60, 50 y 50 (en décimas). */
+export const CREATION_SKILL_VALUES = [600, 600, 500, 500] as const;
+
+/** Las habilidades elegidas al crear: las dos primeras en 60, las otras dos en 50. */
+export type CreationSkills = readonly [SkillKey, SkillKey, SkillKey, SkillKey];
 
 /** Oro que cada personaje nuevo tiene guardado en el banco. */
 export const STARTING_BANK_GOLD = 2000;
@@ -35,8 +39,8 @@ export interface CharacterCreation {
   readonly name: string;
   readonly appearance: Appearance;
   readonly attributes: Attributes;
-  /** La primera queda en 60; las otras dos, en 50. */
-  readonly skills: readonly [SkillKey, SkillKey, SkillKey];
+  /** Las dos primeras quedan en 60; las otras dos, en 50. */
+  readonly skills: CreationSkills;
 }
 
 export type CreationValidation =
@@ -72,23 +76,23 @@ export function validateCreation(value: unknown): CreationValidation {
   const skills = data.skills;
   if (
     !Array.isArray(skills) ||
-    skills.length !== 3 ||
+    skills.length !== CREATION_SKILL_VALUES.length ||
     !skills.every(isSkillKey) ||
-    new Set(skills).size !== 3
+    new Set(skills).size !== CREATION_SKILL_VALUES.length
   )
-    return { ok: false, reason: 'Elegí tres habilidades distintas.' };
+    return { ok: false, reason: 'Elegí cuatro habilidades distintas.' };
   return {
     ok: true,
     creation: {
       name: name.name,
       appearance: data.appearance,
       attributes: { strength, dexterity, intelligence },
-      skills: [skills[0], skills[1], skills[2]] as [SkillKey, SkillKey, SkillKey],
+      skills: [skills[0], skills[1], skills[2], skills[3]] as CreationSkills,
     },
   };
 }
 
-/** Las habilidades del personaje nuevo: las de siempre, con las tres elegidas más altas. */
+/** Las habilidades del personaje nuevo: las de siempre, con las cuatro elegidas más altas. */
 export function creationSkills(chosen: readonly SkillKey[]): SkillValues {
   const values: Record<SkillKey, number> = { ...STARTING_SKILLS };
   chosen.forEach((skill, index) => {
@@ -199,6 +203,20 @@ export function startingKit(chosen: readonly SkillKey[]): KitEntry[] {
     totals.set(entry.kind, (totals.get(entry.kind) ?? 0) + entry.amount);
   }
   return [...totals].map(([kind, amount]) => ({ kind, amount }));
+}
+
+/**
+ * La ropa con la que empieza: camisa del color elegido y pantalón (las
+ * mujeres, pollera). Son objetos de verdad: si se los saca, se ve la ropa
+ * interior, como en UO.
+ */
+export function startingClothes(
+  appearance: Appearance,
+): readonly { kind: ItemKind; slot: EquipmentSlot; hue?: number }[] {
+  return [
+    { kind: 'shirt', slot: 'torso', hue: appearance.clothHue },
+    { kind: appearance.gender === 'female' ? 'skirt' : 'trousers', slot: 'legs' },
+  ];
 }
 
 /** Lo que se suma aunque venga de a uno (no hay de estos en el kit, pero queda claro). */
