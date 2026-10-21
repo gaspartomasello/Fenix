@@ -4,6 +4,7 @@ import {
   isWater,
   TileMap,
   type CreatureKind,
+  type NpcRole,
   type Position,
   type RegionData,
   type StaticKind,
@@ -20,6 +21,13 @@ export interface Place {
   readonly region: RegionData;
   readonly center: Position;
   readonly creatures: readonly { kind: CreatureKind; home: Position }[];
+}
+
+/** Alguien que vive en un lugar (el granjero y su familia). */
+export interface PlaceNpc {
+  readonly role: NpcRole;
+  readonly position: Position;
+  readonly name?: string;
 }
 
 /** El continente con sus lugares, la boca de la cueva y las criaturas ubicadas. */
@@ -61,6 +69,8 @@ interface Site {
   ocean(x: number, y: number): boolean;
   /** Pone algo sobre el agua sin secarla (un barco amarrado). */
   moor(x: number, y: number, kind: StaticKind): void;
+  /** Alguien que vive ahí. */
+  npc(x: number, y: number, role: NpcRole, name?: string): void;
 }
 
 /**
@@ -256,6 +266,143 @@ const PLACES: readonly PlaceSpec[] = [
     },
   },
   {
+    name: 'Granja de los Olmos',
+    biomes: ['grassland', 'meadow', 'plains', 'forest'],
+    radius: 8,
+    from: 24,
+    to: 46,
+    creatures: [
+      ['cow', 2],
+      ['sheep', 3],
+    ],
+    build(site) {
+      farmstead(site, PLANK_KIT, 'Eusebio el granjero', 'Rufina');
+    },
+  },
+  {
+    name: 'Chacra del Molino',
+    biomes: ['grassland', 'meadow', 'plains', 'forest', 'savanna'],
+    radius: 8,
+    from: 20,
+    to: 40,
+    near: 'Roca Alta',
+    creatures: [
+      ['goat', 2],
+      ['cow', 1],
+    ],
+    build(site) {
+      farmstead(site, LOG_KIT, 'Venancia la granjera', 'Ciriaco');
+    },
+  },
+  {
+    name: 'Granja del Arroyo',
+    biomes: ['grassland', 'meadow', 'plains', 'forest', 'swamp'],
+    radius: 8,
+    from: 20,
+    to: 40,
+    near: 'Junco Verde',
+    creatures: [
+      ['sheep', 2],
+      ['goat', 1],
+    ],
+    build(site) {
+      farmstead(site, PLANK_KIT, 'Anselmo el granjero', 'Jacinta');
+    },
+  },
+  {
+    name: 'Casa del Ermitaño',
+    biomes: ['forest', 'jungle', 'swamp', 'grassland'],
+    radius: 6,
+    from: 34,
+    to: 90,
+    creatures: [
+      ['zombie', 1],
+      ['rat', 2],
+    ],
+    build(site) {
+      // Una cabaña de troncos abandonada en el bosque: sin techo, con la puerta
+      // abierta, telarañas, huesos y un cofre olvidado.
+      const { x, y } = site.center;
+      for (let dy = -6; dy <= 6; dy++)
+        for (let dx = -6; dx <= 6; dx++)
+          if (Math.hypot(dx, dy) > 4 && site.random.next() < 0.08)
+            site.put(x + dx, y + dy, site.random.next() < 0.5 ? 'dead-tree' : 'weeds');
+      const room = cabin(site, { x0: x - 3, y0: y - 2, x1: x + 2, y1: y + 2 }, LOG_KIT, 0.25);
+      site.put(room.door.x, room.door.y, 'door-x-open');
+      site.put(room.x0, room.y0, 'cobweb');
+      site.put(room.x1, room.y0, 'cobweb');
+      site.put(room.x0, room.y0 + 1, 'bed');
+      site.put(room.x1, room.y1, 'chest');
+      site.put(room.x0 + 2, room.y0 + 1, 'bones');
+      site.put(room.x0 + 1, room.y1, 'rubble');
+      site.put(room.x1 - 1, room.y0, 'bookshelf-x');
+      site.put(x + 4, y + 4, 'gravestone');
+    },
+  },
+  {
+    name: 'Granja Quemada',
+    biomes: ['grassland', 'meadow', 'plains', 'savanna', 'badlands'],
+    radius: 7,
+    from: 40,
+    to: 110,
+    creatures: [
+      ['ghoul', 2],
+      ['skeleton', 1],
+    ],
+    build(site) {
+      // Lo que quedó de una granja después del incendio: paredes a medio caer,
+      // ceniza, escombros, el pozo y los árboles secos del huerto.
+      const { x, y } = site.center;
+      for (let dy = -6; dy <= 6; dy++)
+        for (let dx = -6; dx <= 6; dx++)
+          if (Math.hypot(dx, dy) + site.random.next() * 2 < 5.5)
+            site.ground(x + dx, y + dy, Terrain.Ash);
+      const room = cabin(site, { x0: x - 3, y0: y - 3, x1: x + 2, y1: y + 1 }, PLANK_KIT, 0.45);
+      for (let i = 0; i < 6; i++) {
+        const rx = room.x0 + Math.floor(site.random.next() * (room.x1 - room.x0 + 1));
+        const ry = room.y0 + Math.floor(site.random.next() * (room.y1 - room.y0 + 1));
+        site.put(rx, ry, i % 3 === 0 ? 'bones' : 'rubble');
+      }
+      site.put(room.x1, room.y0, 'chest');
+      site.put(x + 4, y - 4, 'well');
+      for (const [dx, dy] of [
+        [-5, 4],
+        [-3, 5],
+        [4, 3],
+        [5, 5],
+      ] as const)
+        site.put(x + dx, y + dy, 'dead-tree');
+    },
+  },
+  {
+    name: 'Capilla Olvidada',
+    biomes: ['forest', 'grassland', 'meadow', 'plains', 'tundra'],
+    radius: 6,
+    from: 50,
+    to: 140,
+    oldRoad: true,
+    creatures: [
+      ['skeleton', 2],
+      ['skeleton-mage', 1],
+    ],
+    build(site) {
+      // Una capilla de piedra en ruinas: columnas caídas, bancos rotos, velas
+      // apagadas y tumbas sin nombre detrás.
+      const { x, y } = site.center;
+      const room = cabin(site, { x0: x - 3, y0: y - 4, x1: x + 3, y1: y + 2 }, STONE_KIT, 0.35);
+      for (let ry = room.y0 + 2; ry <= room.y1 - 1; ry += 2) {
+        site.put(room.x0 + 1, ry, 'bench-x');
+        site.put(room.x1 - 1, ry, site.random.next() < 0.5 ? 'bench-x' : 'rubble');
+      }
+      site.put(x, room.y0, 'candelabra');
+      site.put(room.x0, room.y0, 'cobweb');
+      site.put(room.x1, room.y0, 'fallen-column');
+      site.put(x - 1, room.y0, 'column');
+      site.put(x + 1, room.y0, 'column');
+      for (const dx of [-4, -2, 2, 4]) site.put(x + dx, y + 5, 'gravestone');
+    },
+  },
+  {
     name: 'Muelle de Puerto Ceniza',
     biomes: ['beach', 'grassland', 'forest', 'meadow', 'plains'],
     radius: 5,
@@ -416,6 +563,115 @@ function harbor(site: Site, kind: 'ship' | 'pirate-ship'): void {
   site.put(x - side.x * 2 - step.x, y - side.y * 2 - step.y, 'barrel');
   site.put(x + side.x * 3, y + side.y * 3, 'keg');
   site.put(x + side.x * 3 - step.x, y + side.y * 3 - step.y, 'lamp');
+}
+
+/** Paredes de una casa de un lugar (las mismas piezas que en los pueblos). */
+interface CabinKit {
+  readonly x: StaticKind;
+  readonly y: StaticKind;
+  readonly corner: StaticKind;
+  readonly post: StaticKind;
+  readonly windowX: StaticKind;
+  readonly windowY: StaticKind;
+}
+const PLANK_KIT: CabinKit = {
+  x: 'plank-wall-x',
+  y: 'plank-wall-y',
+  corner: 'plank-wall-corner',
+  post: 'plank-wall-post',
+  windowX: 'plank-window-x',
+  windowY: 'plank-window-y',
+};
+const LOG_KIT: CabinKit = {
+  x: 'log-wall-x',
+  y: 'log-wall-y',
+  corner: 'log-wall-corner',
+  post: 'log-wall-post',
+  windowX: 'log-window-x',
+  windowY: 'log-window-y',
+};
+const STONE_KIT: CabinKit = {
+  x: 'wall-x',
+  y: 'wall-y',
+  corner: 'wall-corner',
+  post: 'wall-post',
+  windowX: 'wall-window-x',
+  windowY: 'wall-window-y',
+};
+
+/**
+ * Una casa de un lugar: piso de madera, paredes con ventanas y la puerta en
+ * la pared del sur (el lado que se ve). Con `broken` > 0, ese tanto de las
+ * paredes se cayó y quedan escombros (casas abandonadas y en ruinas).
+ * Devuelve el piso de adentro y dónde va la puerta.
+ */
+function cabin(
+  site: Site,
+  r: { x0: number; y0: number; x1: number; y1: number },
+  kit: CabinKit,
+  broken = 0,
+): { x0: number; y0: number; x1: number; y1: number; door: Position } {
+  for (let y = r.y0; y <= r.y1 + 1; y++)
+    for (let x = r.x0; x <= r.x1 + 1; x++) site.ground(x, y, Terrain.Wood);
+  const door = { x: Math.floor((r.x0 + r.x1) / 2) + 1, y: r.y1 + 1 };
+  const wall = (x: number, y: number, kind: StaticKind, window?: StaticKind): void => {
+    if (x === door.x && y === door.y) return;
+    if (broken > 0 && site.random.next() < broken) {
+      if (site.random.next() < 0.6) site.put(x, y, 'rubble');
+      return;
+    }
+    site.put(x, y, window && (x + y) % 3 === 0 ? window : kind);
+  };
+  wall(r.x0, r.y0, kit.corner);
+  for (let x = r.x0 + 1; x <= r.x1; x++) wall(x, r.y0, kit.x, kit.windowX);
+  for (let y = r.y0 + 1; y <= r.y1; y++) wall(r.x0, y, kit.y, kit.windowY);
+  for (let y = r.y0; y <= r.y1; y++) wall(r.x1 + 1, y, kit.y, kit.windowY);
+  for (let x = r.x0; x <= r.x1; x++) wall(x, r.y1 + 1, kit.x, kit.windowX);
+  wall(r.x1 + 1, r.y1 + 1, kit.post);
+  site.put(door.x, door.y, 'door-x');
+  return { x0: r.x0 + 1, y0: r.y0 + 1, x1: r.x1, y1: r.y1, door };
+}
+
+/**
+ * Una granja en las afueras: la casa (cama, mesa, hogar y cofre), un corral
+ * con heno y bebedero, surcos sembrados, el pozo y un espantapájaros de
+ * fardos. Viven el granjero, que vende lo que da la tierra, y su familia.
+ */
+function farmstead(site: Site, kit: CabinKit, farmer: string, family: string): void {
+  const { x, y } = site.center;
+  const room = cabin(site, { x0: x - 7, y0: y - 6, x1: x - 2, y1: y - 2 }, kit);
+  site.put(room.x0, room.y0, 'bed');
+  site.put(room.x1, room.y0, 'hearth');
+  site.put(room.x0, room.y1, 'chest');
+  site.put(room.x0 + 2, room.y0 + 1, 'table');
+  site.put(room.x0 + 1, room.y0 + 1, 'chair-e');
+  site.put(room.x1, room.y1, 'barrel');
+  site.npc(room.x0 + 3, room.y1, 'townsfolk', family);
+  // El corral: cerca con una tranquera, heno y bebedero.
+  const pen = { x0: x + 1, y0: y - 6, x1: x + 7, y1: y - 1 };
+  for (let px = pen.x0; px <= pen.x1; px++) {
+    site.put(px, pen.y0, 'fence-x');
+    if (px !== pen.x0 + 2) site.put(px, pen.y1, 'fence-x');
+  }
+  for (let py = pen.y0 + 1; py < pen.y1; py++) {
+    site.put(pen.x0, py, 'fence-y');
+    site.put(pen.x1, py, 'fence-y');
+  }
+  for (let py = pen.y0 + 1; py < pen.y1; py++)
+    for (let px = pen.x0 + 1; px < pen.x1; px++) site.ground(px, py, Terrain.Dirt);
+  site.put(pen.x0 + 1, pen.y0 + 1, 'hay-pile');
+  site.put(pen.x1 - 1, pen.y0 + 1, 'water-trough');
+  // Los surcos sembrados, al sur, con el pozo y los fardos.
+  for (let fy = y + 1; fy <= y + 6; fy++)
+    for (let fx = x - 6; fx <= x + 6; fx++) {
+      site.ground(fx, fy, fy % 2 === 0 ? Terrain.Dirt : Terrain.Mud);
+      if (fy % 2 === 1 && site.random.next() < 0.7) site.put(fx, fy, 'tall-grass');
+    }
+  site.ground(x - 1, y, Terrain.Dirt);
+  site.put(x - 1, y - 1, 'well');
+  site.put(x + 3, y, 'hay-bale');
+  site.put(x + 4, y, 'hay-bale');
+  site.npc(x, y - 1, 'farmer', farmer);
 }
 
 /** Un patio en ruinas: muros de piedra caídos a medias, escombros y huesos. */
@@ -622,6 +878,7 @@ export function populateContinent(continent: Continent, seed: number): Populated
   const places: Place[] = [];
   const oldRoads = new Set<string>();
   const homes: { kind: CreatureKind; home: Position }[] = [];
+  const placeNpcs: PlaceNpc[] = [];
 
   const scale = Math.max(1, Math.max(width, height) / 320);
   const free = (x: number, y: number): boolean => x > 1 && y > 1 && x < width - 2 && y < height - 2;
@@ -651,6 +908,11 @@ export function populateContinent(continent: Continent, seed: number): Populated
       },
       moor(x, y, kind) {
         if (free(x, y)) statics.set(index(x, y), { kind, x, y });
+      },
+      npc(x, y, role, name) {
+        if (!free(x, y)) return;
+        statics.delete(index(x, y));
+        placeNpcs.push({ role, position: { x, y }, ...(name ? { name } : {}) });
       },
     };
     // Se despeja el lugar antes de construir.
@@ -802,7 +1064,14 @@ export function populateContinent(continent: Continent, seed: number): Populated
     ...(heights ? { heights } : {}),
   });
   homes.push(...biomeCreatures(populated), ...continent.townCreatures);
-  return { ...continent, map: populated, places, caveEntrance, homes };
+  return {
+    ...continent,
+    map: populated,
+    places,
+    caveEntrance,
+    homes,
+    npcs: [...continent.npcs, ...placeNpcs],
+  };
 
   /** Un lugar del bioma pedido, a la distancia pedida y lejos de los demás. */
   function findSite(spec: PlaceSpec, origin: Position): Position | null {

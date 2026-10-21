@@ -219,12 +219,8 @@ function drawBoneHelm(head: HeadParts): void {
       [side * 6.6, -0.6, 1],
     ];
     for (let i = 0; i + 1 < curl.length; i++)
-      head.limb(
-        curl[i] as Vec3,
-        curl[i + 1] as Vec3,
-        1.3 - i * 0.2,
-        1.1 - i * 0.2,
-        (s) => tone(bone, s.light - 0.1, Math.floor(s.p[1] * 1.5) % 2 ? -1 : 0),
+      head.limb(curl[i] as Vec3, curl[i + 1] as Vec3, 1.3 - i * 0.2, 1.1 - i * 0.2, (s) =>
+        tone(bone, s.light - 0.1, Math.floor(s.p[1] * 1.5) % 2 ? -1 : 0),
       );
   }
   // Nariz hueca y la fila de dientes.

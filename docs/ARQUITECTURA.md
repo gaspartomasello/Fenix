@@ -430,6 +430,26 @@ bolsas e instrumentos, y compra gemas. La ventana de la tienda muestra el daño,
 cuánto alimenta cada objeto, separa los estantes (armas, armaduras, comida, otros) en las
 tiendas grandes, calcula el total al comprar varios y tiene «Vender todo».
 
+### Pueblos vivos
+
+- **Puertas del lado que se ve**: en la vista isométrica las paredes del norte y del oeste
+  quedan tapadas por la casa, así que las puertas van siempre en la pared del sur o del este
+  (`building` en `city-builder.ts`), la que mira a la plaza si afuera hay paso. La barraca del
+  castillo también abre al este. Si igual algo tapa al personaje, se vuelve translúcido.
+- **Más oficios** (`NPC_ROLES`): alquimista, curandera, arquero, panadera, carnicero,
+  pescador, joyero, escriba y granjero, cada uno con su tienda (`VENDORS`), su aspecto
+  (`npc.ts`), su ropa de trabajo y su local amueblado (`furnishShop`). Cada pueblo abre los
+  oficios por orden de importancia mientras haya casas; la capital los tiene todos. En la
+  plaza pide un mendigo (`beggar`).
+- **Casa abandonada**: en los pueblos medianos y grandes, la casa más alejada de la plaza
+  quedó sin techo, con telarañas, escombros, huesos y un agujero en la pared.
+- **Afuera** (`places.ts`): granjas (`farmstead`: casa, corral con animales, surcos, pozo y
+  fardos) donde viven el granjero, que vende lo que da la tierra, y su familia; y lugares que
+  despiertan la curiosidad: la Casa del Ermitaño (cabaña abandonada en el bosque), la Granja
+  Quemada (ruinas con necrófagos) y la Capilla Olvidada (con esqueletos y un mago esquelético).
+  Las casas de los lugares se arman con `cabin`, que puede dejar paredes caídas. Los lugares
+  pueden tener vecinos (`Site.npc`).
+
 ### Armas de guerra y ventanas de recipientes
 
 - **Armas nuevas**: hacha doble, hacha de batalla, hacha a dos manos, gran hacha de batalla,

@@ -109,6 +109,116 @@ const LOOKS: Readonly<Record<NpcRole, { appearance: Appearance; equipment: Equip
     },
     equipment: { torso: 'dress', feet: 'shoes', head: 'feathered-hat' },
   },
+  alchemist: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      clothHue: CLOTH_HUES[2] ?? DEFAULT_APPEARANCE.clothHue,
+      gender: 'female',
+      hairStyle: 'ponytail',
+      hairHue: 0x2b1d0e,
+      skinTone: 0xc68642,
+    },
+    equipment: { feet: 'shoes' },
+  },
+  healer: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      clothHue: 0xe8e2d0,
+      gender: 'female',
+      hairStyle: 'bun',
+      hairHue: 0x8a8a8a,
+    },
+    equipment: { torso: 'robe', feet: 'sandals' },
+  },
+  bowyer: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      clothHue: CLOTH_HUES[2] ?? DEFAULT_APPEARANCE.clothHue,
+      hairHue: 0xa0522d,
+      hairStyle: 'ponytail',
+    },
+    equipment: {
+      torso: 'leather-armor',
+      legs: 'leather-leggings',
+      feet: 'boots',
+      rightHand: 'bow',
+    },
+  },
+  baker: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      clothHue: 0xd8cfb8,
+      gender: 'female',
+      hairStyle: 'bun',
+      hairHue: 0x6b3a1e,
+      skinTone: 0xe0ac69,
+    },
+    equipment: { legs: 'skirt', feet: 'shoes' },
+  },
+  butcher: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      clothHue: 0xd8cfb8,
+      hairStyle: 'bald',
+      facialHair: 'mustache',
+      skinTone: 0xe0ac69,
+    },
+    equipment: { rightHand: 'dagger', legs: 'trousers', feet: 'boots' },
+  },
+  fisherman: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      clothHue: CLOTH_HUES[5] ?? DEFAULT_APPEARANCE.clothHue,
+      skinTone: 0xc68642,
+      facialHair: 'beard',
+      hairHue: 0x8a8a8a,
+    },
+    equipment: {
+      rightHand: 'fishing-pole',
+      legs: 'short-pants',
+      feet: 'sandals',
+      head: 'straw-hat',
+    },
+  },
+  jeweler: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      clothHue: CLOTH_HUES[4] ?? DEFAULT_APPEARANCE.clothHue,
+      hairHue: 0x2a1c14,
+      facialHair: 'mustache',
+    },
+    equipment: { torso: 'doublet', legs: 'trousers', feet: 'shoes', head: 'feathered-hat' },
+  },
+  scribe: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      clothHue: CLOTH_HUES[1] ?? DEFAULT_APPEARANCE.clothHue,
+      hairHue: 0x8a8a8a,
+      hairStyle: 'bald',
+      facialHair: 'beard',
+    },
+    equipment: { torso: 'robe', feet: 'sandals', rightHand: 'scribe-pen' },
+  },
+  farmer: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      clothHue: CLOTH_HUES[3] ?? DEFAULT_APPEARANCE.clothHue,
+      skinTone: 0xd8a070,
+      facialHair: 'beard',
+      hairHue: 0x6b3a1e,
+    },
+    equipment: { legs: 'trousers', feet: 'boots', head: 'straw-hat', rightHand: 'shovel' },
+  },
+  beggar: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      clothHue: 0x5a5046,
+      hairHue: 0x8a8a8a,
+      hairStyle: 'long',
+      facialHair: 'beard',
+    },
+    equipment: { cloak: 'cloak' },
+  },
   // Los vecinos cambian de aspecto (ver TOWNSFOLK); este es el de base.
   townsfolk: { appearance: DEFAULT_APPEARANCE, equipment: { legs: 'trousers' } },
   guard: {
@@ -185,7 +295,12 @@ const TOWNSFOLK: readonly { appearance: Appearance; equipment: EquipmentLook }[]
 ];
 
 /** Hasta dónde se aleja de su lugar al caminar (los que no comercian). */
-const WANDER: Readonly<Partial<Record<NpcRole, number>>> = { townsfolk: 7, guard: 3 };
+const WANDER: Readonly<Partial<Record<NpcRole, number>>> = {
+  townsfolk: 7,
+  guard: 3,
+  farmer: 4,
+  beggar: 5,
+};
 
 /**
  * Personaje del pueblo: no pelea y atiende (o charla) a quien se acerca.

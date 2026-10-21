@@ -81,6 +81,14 @@ describe('buildCity', () => {
         'shipwright',
         'stablemaster',
         'woodcutter',
+        'healer',
+        'bowyer',
+        'alchemist',
+        'baker',
+        'butcher',
+        'jeweler',
+        'scribe',
+        'fisherman',
       ].sort(),
     );
     for (const npc of capital.npcs) {
@@ -176,6 +184,33 @@ describe('buildCity', () => {
     const seats = capital.statics.filter((s) => SEATS[s.kind] !== undefined);
     expect(seats.length).toBeGreaterThan(10);
     for (const seat of seats) expect(map.seatAt(seat), seat.kind).toBeDefined();
+  });
+
+  it('hay una casa abandonada con telarañas y escombros, y un mendigo en la plaza', () => {
+    const kinds = capital.statics.map((s) => s.kind);
+    expect(kinds.filter((k) => k === 'cobweb').length).toBeGreaterThanOrEqual(3);
+    expect(kinds.filter((k) => k === 'rubble').length).toBeGreaterThanOrEqual(2);
+    expect(capital.npcs.some((n) => n.role === 'beggar')).toBe(true);
+  });
+
+  it('las puertas de las casas dan al sur o al este (el lado que se ve)', () => {
+    // Cada puerta simple tiene adentro (al norte o al oeste) un piso de casa y
+    // afuera (al sur o al este) la calle: nunca al revés.
+    const floors = new Set<Terrain>([Terrain.Wood, Terrain.Sandstone]);
+    const at = (x: number, y: number) => capital.terrain[y * capital.width + x];
+    let checked = 0;
+    for (const s of capital.statics) {
+      if (s.kind !== 'door-x' && s.kind !== 'door-y') continue;
+      const [ix, iy, ox, oy] =
+        s.kind === 'door-x' ? [s.x, s.y - 1, s.x, s.y + 1] : [s.x - 1, s.y, s.x + 1, s.y];
+      const inside = at(ix, iy);
+      const outside = at(ox, oy);
+      if (!floors.has(inside as Terrain) || floors.has(outside as Terrain)) continue;
+      checked++;
+    }
+    // Casi todas las puertas cumplen (las que no, son del castillo o de la caballeriza).
+    const doors = capital.statics.filter((s) => s.kind === 'door-x' || s.kind === 'door-y');
+    expect(checked).toBeGreaterThan(doors.length * 0.7);
   });
 
   it('las casas tienen puerta y ventanas; el banco y el salón del trono, puerta de hierro', () => {

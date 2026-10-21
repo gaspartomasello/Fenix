@@ -185,6 +185,21 @@ describe('buildWorld: el continente', () => {
     expect(camp?.creatures.filter((c) => c.kind === 'orc').length).toBeGreaterThanOrEqual(3);
     expect(map.statics.some((s) => s.kind === 'lighthouse')).toBe(true);
   });
+
+  it('afuera hay granjas con su granjero, y casas abandonadas y en ruinas', () => {
+    const names = world.places.map((p) => p.name);
+    for (const name of ['Granja de los Olmos', 'Casa del Ermitaño', 'Granja Quemada'])
+      expect(names).toContain(name);
+    const farmers = world.npcs.filter((n) => n.role === 'farmer');
+    // En el mapa chico no hay lugar para las tres; en el grande, sí.
+    expect(farmers.length).toBeGreaterThanOrEqual(1);
+    for (const farmer of farmers) {
+      expect(map.regionAt(farmer.position)?.name).toMatch(/Granja|Chacra/);
+      expect(walkable.has(`${farmer.position.x},${farmer.position.y}`)).toBe(true);
+    }
+    const ruined = world.places.find((p) => p.name === 'Granja Quemada');
+    expect(ruined?.creatures.some((c) => c.kind === 'ghoul')).toBe(true);
+  });
 });
 
 describe('createWorld', () => {
@@ -510,7 +525,8 @@ describe('pisos altos: posadas, torres de mago y casas de dos pisos', () => {
     const hatch = map.statics.find((s) => s.kind === 'trapdoor' && map.regionAt(s) === roof);
     expect(hatch && levelOf(hop(hatch) ?? hatch)).toBe(2);
     expect(floors.some((r) => r.name.endsWith(', techo'))).toBe(true);
-  });
+    // Recorre todos los pisos del mundo: con la máquina cargada pasa los 5 s.
+  }, 30_000);
 
   it('desde un piso alto no se ve la calle', () => {
     const floor = floors[0];

@@ -318,7 +318,13 @@ function drawLegs(
       const forward = normalize(sub(leg.toe, leg.ankle));
       const cap = add(leg.knee, scale(forward, 1.6));
       canvas.sphere(cap, 2 * thick, solid(OLD_BONE));
-      canvas.limb(cap, add(add(cap, scale(forward, 2.6)), [0, 1, 0]), 0.7, 0.15, solid(OLD_BONE, 1));
+      canvas.limb(
+        cap,
+        add(add(cap, scale(forward, 2.6)), [0, 1, 0]),
+        0.7,
+        0.15,
+        solid(OLD_BONE, 1),
+      );
     }
     canvas.ellipsoid(
       lerp(leg.ankle, leg.toe, 0.55),
@@ -575,12 +581,12 @@ function drawArms(
   const sleeve: Material = boneArmor
     ? (s) => tone(LEATHER_DARK, s.light)
     : metalTorso
-    ? metal(STEEL)
-    : outfit === 'vest'
-      ? solid(LINEN)
-      : outfit === 'woodcutter'
-        ? plaid
-        : solid(p.cloth);
+      ? metal(STEEL)
+      : outfit === 'vest'
+        ? solid(LINEN)
+        : outfit === 'woodcutter'
+          ? plaid
+          : solid(p.cloth);
   // Herrero y tabernero trabajan con las mangas arremangadas.
   const bareForearms = outfit === 'apron' || outfit === 'innkeeper' || outfit === 'woodcutter';
   const thin = female ? 0.85 : 1;
