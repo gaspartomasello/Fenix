@@ -134,7 +134,9 @@ export function drawHumanHead(
     look.headgear === 'bandana' ||
     look.headgear === 'skull';
   drawHair(head, look.hair, look.hairStyle, underHat);
-  drawFacialHair(head, look.hair, look.facialHair);
+  // Bajo una máscara o un yelmo cerrado no asoma la barba.
+  if (look.headgear !== 'skull' && look.headgear !== 'plate-helm')
+    drawFacialHair(head, look.hair, look.facialHair);
 
   if (look.headgear === 'helmet') drawHelmet(head);
   else if (look.headgear === 'plate-helm') drawPlateHelm(head);
@@ -188,23 +190,50 @@ function drawBandana(head: HeadParts, cloth: Ramp): void {
   head.limb([0, 0.8, -5.2], [-0.8, -2.8, -5.6], 0.7, 0.3, solid(cloth, -1));
 }
 
-/** Yelmo de calavera: un cráneo de hueso sobre la cabeza, con cuencas y cuernitos. */
+/**
+ * Yelmo de calavera: una máscara de hueso que cubre la cabeza entera, como
+ * un cráneo enorme con cuencas hondas, la nariz hueca, los dientes, pómulos
+ * marcados, una cresta de púas y dos cuernos curvos de carnero.
+ */
 function drawBoneHelm(head: HeadParts): void {
-  const bone = ramp([226, 218, 196]);
-  head.ellipsoid(
-    [0, 1.2, -0.2],
-    [5, 5.6, 5.5],
-    head.masked(
-      (n) => !(n[2] > 0.5 && n[1] < 0.2),
-      (s) => tone(bone, s.light),
-    ),
-  );
+  const bone = ramp([212, 200, 150]);
+  const hollow: Rgb = [22, 18, 16];
+  const skull: Material = (s) =>
+    tone(bone, s.light, noise(Math.floor(s.p[0] * 2), Math.floor(s.p[1] * 2)) > 0.86 ? -1 : 0);
+  // Cráneo y cara: tapan todo (cabeza, orejas y mentón).
+  head.ellipsoid([0, 1, -0.3], [5.1, 5.8, 5.7], skull);
+  head.ellipsoid([0, -2.3, 1.5], [3.9, 3.7, 4.2], skull);
+  head.ellipsoid([0, -4.5, 2.4], [2.4, 1.6, 2.1], skull);
+  head.ellipsoid([0, 1.4, 4.5], [3.7, 1, 1.4], solid(bone, 1));
   for (const side of [1, -1] as const) {
-    head.decal([side * 1.7, 2.9, 5.1], [side * 0.3, 0.2, 1], [26, 20, 18], 2, 2);
-    head.limb([side * 3.6, 4.4, -0.5], [side * 5.8, 7.6, -1.6], 0.8, 0.2, solid(bone, -1));
+    head.ellipsoid([side * 2.9, -1, 3.8], [1.3, 0.9, 1.1], solid(bone, 1));
+    // Cuencas hondas.
+    head.decal([side * 1.7, 0.1, 5.5], [side * 0.25, 0, 1], hollow, 2, 2);
+    // Cuerno de carnero: sale de la sien, va hacia atrás y se enrosca hacia adelante.
+    const curl: Vec3[] = [
+      [side * 4.3, 3.2, 0.6],
+      [side * 6.2, 4.6, -1.2],
+      [side * 7.4, 3, -3],
+      [side * 7.2, 0.2, -2.6],
+      [side * 6.4, -1.4, -0.6],
+      [side * 6.6, -0.6, 1],
+    ];
+    for (let i = 0; i + 1 < curl.length; i++)
+      head.limb(
+        curl[i] as Vec3,
+        curl[i + 1] as Vec3,
+        1.3 - i * 0.2,
+        1.1 - i * 0.2,
+        (s) => tone(bone, s.light - 0.1, Math.floor(s.p[1] * 1.5) % 2 ? -1 : 0),
+      );
   }
-  // Dientes de la calavera sobre la frente.
-  head.decal([0, 1.6, 5.4], [0, 0, 1], [120, 108, 92], 3, 1);
+  // Nariz hueca y la fila de dientes.
+  head.decal([0, -1.4, 5.6], [0, 0, 1], hollow, 1, 2);
+  head.decal([0, -3.4, 5.6], [0, -0.1, 1], [236, 228, 196], 3, 1);
+  head.decal([0, -3.9, 5.3], [0, -0.2, 1], hollow, 3, 1);
+  // Cresta de púas sobre el cráneo.
+  for (const z of [3, 0.6, -1.8])
+    head.limb([0, 6.2, z], [0, 8.4, z - 1], 0.7, 0.12, solid(bone, 1));
 }
 
 /**
@@ -307,27 +336,46 @@ function drawCap(head: HeadParts, leather: Ramp): void {
   head.ellipsoid([0, 3.2, 0.1], [5.2, 0.6, 5.4], solid(leather, -1));
 }
 
+/**
+ * Yelmo de hierro: cubre la cabeza hasta la nuca, con protectores de mejillas
+ * que bajan hasta la mandíbula, nasal y una cortina de malla sobre el cuello.
+ * Solo queda a la vista la franja de los ojos y la boca.
+ */
 function drawHelmet(head: HeadParts): void {
+  const band = head.at([0, 0.6, 0])[1];
   head.ellipsoid(
     [0, 0.8, -0.4],
-    [4.9, 5.6, 5.4],
+    [5, 5.7, 5.5],
     head.masked(
-      (n) => !(n[2] > 0.45 && n[1] < 0.3 && Math.abs(n[0]) < 0.6) && n[1] > -0.5,
-      (s) =>
-        Math.abs(s.p[1] - head.at([0, 0.2, 0])[1]) < 0.5
-          ? tone(STEEL, s.light, 1)
-          : metal(STEEL)(s),
+      (n) => !(n[2] > 0.55 && n[1] < 0.28 && n[1] > -0.75 && Math.abs(n[0]) < 0.42),
+      (s) => (Math.abs(s.p[1] - band) < 0.5 ? tone(STEEL, s.light, 1) : metal(STEEL)(s)),
     ),
   );
-  head.limb([0, 3.4, 5], [0, -1.2, 4.9], 0.7, 0.6, metal(STEEL));
+  for (const side of [1, -1] as const)
+    head.ellipsoid([side * 3.3, -2.6, 2], [1.4, 2.8, 2.6], metal(STEEL));
+  head.limb([0, 3.4, 5.2], [0, -1.6, 5.1], 0.7, 0.6, metal(STEEL));
+  // Malla de la nuca y el cuello.
+  head.ellipsoid(
+    [0, -4.2, -0.8],
+    [4.6, 2.6, 4.8],
+    head.masked(
+      (n) => n[2] < 0.5,
+      (s) => tone(STEEL, s.light, (Math.floor(s.p[0] * 2) + Math.floor(s.p[1] * 2)) % 2 ? -1 : 0),
+    ),
+  );
 }
 
-/** Yelmo cerrado: cubre toda la cabeza, con ranura para los ojos, respiraderos y cresta. */
+/**
+ * Yelmo cerrado: cubre toda la cabeza y el mentón, con ranura para los ojos,
+ * respiraderos, cresta y gola sobre el cuello.
+ */
 function drawPlateHelm(head: HeadParts): void {
-  head.ellipsoid([0, 0.4, 0.1], [5.1, 6.1, 5.6], metal(STEEL));
-  head.decal([0, 0.2, 5.6], [0, 0, 1], [20, 18, 22], 5, 1);
-  head.decal([0, -2.8, 5.4], [0, -0.2, 1], [40, 38, 44], 1, 2);
-  head.limb([0, 6.4, -4.4], [0, 6.6, 3.4], 0.6, 0.5, metal(STEEL));
+  head.ellipsoid([0, 0.3, 0.1], [5.2, 6.4, 5.7], metal(STEEL));
+  head.ellipsoid([0, -3.4, 1.4], [4, 3, 4.4], metal(STEEL));
+  head.ellipsoid([0, -5.6, 0], [4.8, 1.5, 4.8], (s) => tone(STEEL, s.light - 0.1, 1));
+  head.decal([0, 0.2, 5.8], [0, 0, 1], [20, 18, 22], 5, 1);
+  for (const dx of [-1, 0, 1]) head.decal([dx * 1.1, -2.9, 5.7], [0, -0.2, 1], [40, 38, 44], 1, 2);
+  head.limb([0, 6.6, -4.4], [0, 6.8, 3.4], 0.6, 0.5, metal(STEEL));
 }
 
 function drawWizardHat(head: HeadParts, cloth: Ramp): void {

@@ -612,18 +612,31 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     c.ellipsoid([0, 1.8, -4.4], lying(0), [4, 1.2, 1.6], solid(ramp([226, 214, 196])));
   },
   'bone-helm'(c) {
-    const bone = ramp([226, 218, 196]);
-    c.ellipsoid(
-      [0, 0.4, 0],
-      lying(0),
-      [4.2, 4.2, 4.6],
-      clipping((s) => (s.p[1] < 0 ? null : tone(bone, s.light))),
-    );
+    // Máscara de calavera entera: cráneo, cara con cuencas y dientes, y cuernos de carnero.
+    const bone = ramp([212, 200, 150]);
+    const hollow = solid(ramp([26, 20, 18]));
+    c.ellipsoid([0, 3.6, -0.6], lying(0), [4.2, 3.8, 4.4], solid(bone));
+    c.ellipsoid([0, 2.2, 2.4], lying(0), [3.2, 2.6, 2.8], solid(bone));
     for (const side of [1, -1]) {
-      c.ellipsoid([side * 1.6, 2.6, 4], lying(0), [1, 1, 0.5], solid(ramp([26, 20, 18])));
-      c.limb([side * 3, 3.4, -0.4], [side * 5, 6.2, -1.4], 0.7, 0.2, solid(bone, -1));
+      c.ellipsoid([side * 1.5, 3.4, 4.2], lying(0), [1.1, 1, 0.6], hollow);
+      for (const [a, b] of [
+        [
+          [side * 3.4, 5.4, -0.4],
+          [side * 5.6, 6.2, -2.4],
+        ],
+        [
+          [side * 5.6, 6.2, -2.4],
+          [side * 6.2, 3.8, -2.6],
+        ],
+        [
+          [side * 6.2, 3.8, -2.6],
+          [side * 5.4, 2.6, -0.6],
+        ],
+      ] as [Vec3, Vec3][])
+        c.limb(a, b, 1, 0.8, solid(bone, -1));
     }
-    c.ellipsoid([0, 0.6, 4.2], lying(0), [2, 0.6, 0.5], solid(ramp([120, 108, 92])));
+    c.ellipsoid([0, 2.4, 5], lying(0), [0.5, 0.7, 0.4], hollow);
+    c.ellipsoid([0, 1, 4.6], lying(0), [1.8, 0.4, 0.5], solid(ramp([236, 228, 196])));
   },
   'bone-armor'(c) {
     const bone = ramp([226, 218, 196]);
