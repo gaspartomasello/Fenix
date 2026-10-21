@@ -101,4 +101,46 @@ describe('administrador del juego', () => {
       ),
     ).toBe(1);
   });
+
+  it('abre la ventana de todos los objetos solo al administrador', () => {
+    const { join, gm, notifier, said } = createApp();
+    const mod = join('Moderador');
+    const ana = join('Ana');
+    gm(ana.id, { kind: 'catalog' });
+    expect(notifier.ofType('gmCatalog')).toHaveLength(0);
+    expect(said(ana.id).at(-1)).toMatch(/Solo un administrador/);
+    gm(mod.id, { kind: 'catalog' });
+    expect(notifier.ofType('gmCatalog').map((d) => d.to)).toEqual([mod.id]);
+  });
+
+  it('elimina objetos propios (también una bolsa con lo de adentro) y no los ajenos', () => {
+    const { join, gm, world, said } = createApp();
+    const mod = join('Moderador');
+    const ana = join('Ana');
+    gm(mod.id, { kind: 'item', item: 'bag', amount: 1 });
+    const bag = world.items.backpackOf(mod.id).find((i) => i.kind === 'bag');
+    if (!bag) throw new Error('sin bolsa');
+    const inside = world.items.add('adentro', 'apple', 3, {
+      type: 'container',
+      containerId: bag.id,
+      position: { x: 0, y: 0 },
+    });
+    gm(mod.id, { kind: 'delete', itemId: bag.id });
+    expect(world.items.get(bag.id)).toBeUndefined();
+    expect(world.items.get(inside.id)).toBeUndefined();
+    expect(said(mod.id).at(-1)).toMatch(/Eliminaste bolsa/);
+
+    // Lo de otra persona no se toca, ni lo puede borrar quien no es administrador.
+    const theirs = world.items.add('ajeno', 'apple', 1, {
+      type: 'backpack',
+      ownerId: ana.id,
+      position: { x: 0, y: 0 },
+    });
+    gm(mod.id, { kind: 'delete', itemId: theirs.id });
+    expect(world.items.get(theirs.id)).toBeDefined();
+    expect(said(mod.id).at(-1)).toMatch(/Solo podés eliminar/);
+    gm(ana.id, { kind: 'delete', itemId: theirs.id });
+    expect(world.items.get(theirs.id)).toBeDefined();
+    expect(said(ana.id).at(-1)).toMatch(/Solo un administrador/);
+  });
 });

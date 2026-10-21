@@ -8,7 +8,7 @@ import {
   type MountKind,
   type NpcRole,
 } from '@fenix/shared';
-import { GOLD, STEEL, drawHumanHead, drawSkullHead } from './humanoid-head';
+import { GOLD, STEEL, drawHumanHead, drawMempo, drawSkullHead } from './humanoid-head';
 import {
   BUILDS,
   CHARACTER_ART_HEIGHT,
@@ -41,6 +41,7 @@ import {
   yaw,
   type Material,
   type Ramp,
+  type Sample,
   type Vec3,
 } from './volume';
 
@@ -99,7 +100,7 @@ const LINEN = ramp([214, 206, 186]);
 const DARK_STEEL = ramp([96, 102, 114]);
 
 /** De qué está hecha cada pieza de armadura (decide cómo se ve puesta). */
-type Stuff = 'leather' | 'studded' | 'ringmail' | 'chain' | 'plate' | 'bone';
+type Stuff = 'leather' | 'studded' | 'ringmail' | 'chain' | 'plate' | 'bone' | 'segmented';
 const STUFF: Partial<Record<ItemKind, Stuff>> = {
   'leather-armor': 'leather',
   'leather-leggings': 'leather',
@@ -127,6 +128,10 @@ const STUFF: Partial<Record<ItemKind, Stuff>> = {
   'bone-leggings': 'bone',
   'bone-arms': 'bone',
   'bone-gloves': 'bone',
+  'legion-arms': 'segmented',
+  'templar-sleeves': 'chain',
+  'templar-gauntlets': 'chain',
+  'templar-chausses': 'chain',
 };
 
 /**
@@ -154,7 +159,33 @@ function armorSurface(stuff: Stuff, color: Ramp, band: (p: Vec3) => number): Mat
     case 'bone':
       return (s) =>
         wrap(band(s.p), 2.6) < 0.55 ? tone(BONE_GAP, s.light) : tone(OLD_BONE, s.light);
+    case 'segmented':
+      // Bandas de acero superpuestas (el brazal legionario): una línea oscura entre banda y banda.
+      return (s) => (wrap(band(s.p), 1.3) < 0.25 ? tone(DARK_STEEL, s.light) : metal(STEEL)(s));
   }
+}
+
+// ── Samurái, legionario y templario ─────────────────────────────────
+
+const LACE = ramp([40, 46, 84]);
+const TUNIC_RED = ramp([150, 34, 32]);
+const SURCOAT = ramp([232, 226, 210]);
+const CROSS_RED = ramp([168, 30, 30]);
+
+/** Placas laqueadas en hileras (según `row`): borde dorado arriba, cordones atando las placas. */
+function lacquer(color: Ramp, row: number, across: number, light: number): Rgb {
+  const r = (((row % 1.5) + 1.5) % 1.5) / 1.5;
+  if (r < 0.14) return tone(GOLD, light + 0.05);
+  if ((((across * 0.8) % 1) + 1) % 1 < 0.13) return tone(LACE, light);
+  return tone(color, light + 0.1 - r * 0.25, r < 0.3 ? 1 : 0);
+}
+
+/** ¿Está el punto dentro de una cruz de brazos que se abren hacia afuera? */
+function crossPattee(x: number, y: number, reach: number): boolean {
+  const ax = Math.abs(x);
+  const ay = Math.abs(y);
+  if (ax > reach || ay > reach) return false;
+  return ax < 0.5 + ay * 0.24 || ay < 0.5 + ax * 0.24;
 }
 
 /** La superficie de una pieza puesta, con su color (o el teñido). */
@@ -290,13 +321,17 @@ function drawFigure(
       equipment.torso === 'chainmail' ||
       equipment.torso === 'ringmail' ||
       equipment.torso === 'plate-chest' ||
-      equipment.torso === 'female-plate',
+      equipment.torso === 'female-plate' ||
+      equipment.torso === 'samurai-do' ||
+      equipment.torso === 'legion-cuirass' ||
+      equipment.torso === 'templar-hauberk',
   };
 
   drawLegs(canvas, figure);
   drawTorso(canvas, figure);
   drawArms(canvas, figure);
-  if (equipment.neck) drawGorget(canvas, figure.rig, equipment.neck);
+  if (equipment.neck && equipment.neck !== 'samurai-mempo')
+    drawGorget(canvas, figure.rig, equipment.neck);
   const headgear = equipment.head;
   drawHumanHead(canvas, figure.rig.head, figure.rig.neck, {
     skin: figure.palette.skin,
@@ -311,19 +346,27 @@ function drawFigure(
           ? 'bandana'
           : headgear === 'bone-helm'
             ? 'skull'
-            : headgear === 'iron-helmet' || headgear === 'chain-coif'
-              ? 'helmet'
-              : headgear === 'plate-helm'
-                ? 'plate-helm'
-                : headgear === 'wizard-hat' || (!headgear && outfit === 'robe')
-                  ? 'wizard'
-                  : headgear
-                    ? 'cap'
-                    : null,
+            : headgear === 'samurai-kabuto'
+              ? 'kabuto'
+              : headgear === 'legion-helm'
+                ? 'galea'
+                : headgear === 'templar-helm'
+                  ? 'great-helm'
+                  : headgear === 'iron-helmet' || headgear === 'chain-coif'
+                    ? 'helmet'
+                    : headgear === 'plate-helm'
+                      ? 'plate-helm'
+                      : headgear === 'wizard-hat' || (!headgear && outfit === 'robe')
+                        ? 'wizard'
+                        : headgear
+                          ? 'cap'
+                          : null,
     capColor: ramp(wornColor(headgear) ?? [122, 78, 42]),
     hatColor:
       headgear === 'wizard-hat' ? ramp(wornColor(headgear) ?? [58, 42, 106]) : figure.palette.cloth,
   });
+  if (equipment.neck === 'samurai-mempo')
+    drawMempo(canvas, figure.rig.head, ramp(wornColor(equipment.neck) ?? [154, 38, 32]));
   if (equipment.cloak)
     drawCloak(canvas, figure.rig, ramp(wornColor(equipment.cloak) ?? [120, 30, 40]));
   if (equipment.leftHand) drawShield(canvas, figure.rig, equipment.leftHand);
@@ -344,9 +387,16 @@ function drawLegs(
   const bone = equipment.legs === 'bone-leggings';
   const leather = equipment.legs === 'leather-leggings';
   const shorts = equipment.legs === 'short-pants';
+  const haidate = equipment.legs === 'samurai-haidate';
+  const legionLegs = equipment.legs === 'legion-greaves';
+  const suneate = equipment.feet === 'samurai-suneate';
+  const lacquerColor = ramp(wornColor(equipment.feet ?? equipment.legs) ?? [154, 38, 32]);
+  const hakama = ramp([52, 56, 80]);
   // Perneras tachonadas, de anillas o de malla: el material de la pieza, en hileras.
   const legPiece =
-    equipment.legs && !plate && !bone && !leather ? STUFF[equipment.legs] : undefined;
+    equipment.legs && !plate && !bone && !leather && !haidate && !legionLegs
+      ? STUFF[equipment.legs]
+      : undefined;
   const mailLegs =
     legPiece && equipment.legs ? pieceSurface(equipment.legs, (q) => q[1] * 0.9) : null;
   // Alto del calzado sobre el tobillo: sandalias y zapatos bajos, botas altas hasta la rodilla.
@@ -359,12 +409,31 @@ function drawLegs(
     // Las grebas de placas son de metal con rodillera; las perneras, cuero con costuras.
     const legMaterial: Material = (s) => {
       // La bota llega hasta 6 px sobre el tobillo (de pie o montado).
-      const bootTop = feet === 'thigh-boots' ? leg.knee[1] + 1.5 : leg.ankle[1] + shoeHeight;
+      const bootTop =
+        feet === 'thigh-boots'
+          ? leg.knee[1] + 1.5
+          : suneate
+            ? leg.knee[1] + 0.4
+            : leg.ankle[1] + shoeHeight;
+      // Canilleras samuráis: tablillas laqueadas unidas por tiras de malla.
+      if (suneate && s.p[1] < bootTop && s.p[1] > leg.ankle[1] + 0.8) {
+        const local = sub(s.p, lerp(leg.knee, leg.ankle, 0.5));
+        const stripe = (((Math.atan2(local[0], local[2]) * (4 / Math.PI)) % 1) + 1) % 1;
+        if (stripe < 0.2) return tone(STEEL, s.light, (s.x + s.y) % 2 ? 1 : -1);
+        return tone(lacquerColor, s.light + 0.1, s.p[1] > bootTop - 0.8 ? 1 : 0);
+      }
+      if (suneate && s.p[1] < bootTop) return tone(LACE, s.light);
       if (s.p[1] < bootTop && !(plate && !equipment.feet))
         return tone(p.boots, s.light, s.p[1] > bootTop - 1 ? 1 : 0);
       // Sandalias: tiras sobre el pie descalzo.
       if (feet === 'sandals' && s.p[1] < leg.ankle[1] + 2) return tone(p.skin, s.light);
       if (shorts && s.p[1] < leg.knee[1] - 0.5) return tone(p.skin, s.light);
+      if (legionLegs) {
+        // Muslo descubierto y greba de acero de la rodilla al tobillo.
+        if (s.p[1] < leg.knee[1] + 0.8) return metal(STEEL)(s);
+        return tone(p.skin, s.light);
+      }
+      if (haidate) return tone(hakama, s.light, Math.sin(s.p[0] * 1.3) > 0.7 ? -1 : 0);
       if (bone) {
         // Placas de hueso atadas, con la rodilla de calavera.
         // Muslo de placas atadas con tiras; la canillera, una sola pieza con borde.
@@ -410,12 +479,68 @@ function drawLegs(
         solid(OLD_BONE, 1),
       );
     }
+    if (legionLegs || equipment.legs === 'templar-chausses') {
+      // Rodillera abombada (de la greba legionaria o sobre las calzas de malla).
+      const forward = normalize(sub(leg.toe, leg.ankle));
+      canvas.sphere(add(leg.knee, scale(forward, 1.1)), 2 * thick, metal(STEEL));
+    }
+    if (haidate) {
+      // Faldar: un panel de placas chicas cosidas sobre tela, delante de cada muslo.
+      const forward = normalize(sub(leg.toe, leg.ankle));
+      const up = normalize(sub(leg.hip, leg.knee));
+      const center = add(lerp(leg.hip, leg.knee, 0.42), add(scale(forward, 3.1), scale(up, 0.6)));
+      canvas.box(center, axesAlong(forward, up), [3.1 * thick, 4.4, 0.35], (q) => {
+        const gx = ((((q.p[0] + q.p[2]) * 1.1) % 1) + 1) % 1;
+        const gy = (((q.p[1] * 1.1) % 1) + 1) % 1;
+        if (gx < 0.16 || gy < 0.16) return tone(LACE, q.light);
+        return tone(lacquerColor, q.light + 0.1 - gy * 0.2, gy < 0.4 ? 1 : 0);
+      });
+    }
     canvas.ellipsoid(
       lerp(leg.ankle, leg.toe, 0.55),
       axesAlong(sub(leg.toe, leg.ankle)),
       [2.3 * thick, 1.7, 3.5 * thick],
-      solid(p.boots),
+      suneate ? solid(LACE) : solid(p.boots),
     );
+  }
+  if (legionLegs && !robed) {
+    // Faldón de tiras de cuero rojo con remaches de bronce en la punta.
+    for (let i = 0; i < 13; i++) {
+      const a = -Math.PI * 0.95 + (i / 12) * Math.PI * 1.9;
+      const from = rig.pelvis.at([Math.sin(a) * 6.4, -0.4, Math.cos(a) * 5.2]);
+      const to = rig.pelvis.at([Math.sin(a) * 7.6, -6.6, Math.cos(a) * 6.6]);
+      canvas.limb(from, to, 0.9, 0.8, (q) =>
+        q.p[1] < to[1] + 0.9 ? tone(GOLD, q.light) : tone(TUNIC_RED, q.light, i % 2 ? -1 : 0),
+      );
+    }
+  }
+  if (equipment.torso === 'templar-hauberk' && !robed && !rig.seated) {
+    // Faldón de la sobreveste: tela blanca hasta la rodilla, abierta adelante.
+    const top = rig.pelvis.origin[1] - 1;
+    const bottom = Math.min(rig.legs[1].knee[1], rig.legs[-1].knee[1]) - 1;
+    const knees = lerp(rig.legs[1].knee, rig.legs[-1].knee, 0.5);
+    const kneeGap = Math.abs(rig.legs[1].knee[2] - rig.legs[-1].knee[2]);
+    const step = canvas.detail > 1 ? 0.35 : 1;
+    const cloth = clipping((q) => {
+      const local = rig.pelvis.local(q.p);
+      // La abertura del frente, entre las piernas.
+      if (local[2] > 3 && Math.abs(local[0]) < 0.9 && q.p[1] < top - 2) return null;
+      return tone(SURCOAT, q.light, Math.sin(q.p[0] * 0.9) > 0.6 ? -1 : 0);
+    });
+    for (let y = top; y >= bottom; y -= step) {
+      const t = (top - y) / Math.max(1, top - bottom);
+      const center: Vec3 = [
+        rig.pelvis.origin[0] + (knees[0] - rig.pelvis.origin[0]) * t,
+        y,
+        rig.pelvis.origin[2] + (knees[2] - rig.pelvis.origin[2]) * t - 0.3 * t,
+      ];
+      canvas.ellipsoid(
+        center,
+        rig.pelvis.axes,
+        [5.8 + t * 1.6, 1.4, 4.5 + t * (1.2 + kneeGap * 0.55)],
+        cloth,
+      );
+    }
   }
   if (plate && !robed) {
     // Escarcelas: tres láminas de placa que cuelgan del cinturón sobre los muslos.
@@ -488,6 +613,29 @@ function torsoMaterial({ rig, palette: p, equipment, outfit, female, robed }: Fi
       if (front && Math.abs(local[0]) < 0.5 && y > 3.5) return tone(STEEL, s.light + 0.25, 1);
       if (y < 4 && ((y + 20) % 1.7) / 1.7 < 0.2) return tone(STEEL, s.light - 0.25, -1);
       return metal(STEEL)(s);
+    }
+    if (armor === 'samurai-do' && y > -4) {
+      // Coraza samurái: hileras de placas laqueadas atadas con cordones.
+      return lacquer(ramp(wornColor(armor) ?? [154, 38, 32]), y + 0.4, local[0], s.light);
+    }
+    if (armor === 'legion-cuirass' && y > -4) {
+      // Coraza legionaria: bandas de acero alrededor del cuerpo y bisagras de bronce al frente.
+      const band = (((y + 20) % 1.6) + 1.6) % 1.6;
+      if (front && Math.abs(local[0]) < 0.55 && band > 0.4 && band < 1) return tone(GOLD, s.light);
+      if (local[1] > 3.2 && Math.abs(Math.abs(local[0]) - 2.6) < 0.35) return tone(GOLD, s.light);
+      return band < 0.28 ? tone(DARK_STEEL, s.light) : metal(STEEL)(s);
+    }
+    if (armor === 'templar-hauberk' && y > -4) {
+      // Sobreveste blanca adelante y atrás (con la cruz roja en el pecho); a los costados, la malla.
+      if (Math.abs(n[2]) > 0.3 || Math.abs(local[0]) < 3.6) {
+        if (front && crossPattee(local[0], local[1] - 0.8, 3.4)) return tone(CROSS_RED, s.light);
+        return tone(
+          SURCOAT,
+          s.light,
+          noise(Math.floor(local[0]), Math.floor(y / 2)) > 0.9 ? -1 : 0,
+        );
+      }
+      return tone(STEEL, s.light, (s.x + s.y * 2) % 3 === 0 ? -1 : (s.x + s.y) % 2 === 0 ? 1 : 0);
     }
     if (armor === 'bone-armor' && y > -4) {
       // Costillar: costillas que bajan en curva desde el esternón, con huecos
@@ -607,16 +755,22 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
       canvas.ellipsoid(pelvis.at([0, -2.2, 0]), pelvis.axes, [5.5, 2.6, 3.7], solid(p.cloth, -1));
   }
   const torso = equipment.torso;
-  const plateArms = STUFF[equipment.arms ?? 'gold'] === 'plate';
+  const armStuff = STUFF[equipment.arms ?? 'gold'];
+  const plateArms = armStuff === 'plate' || armStuff === 'segmented';
   if ((torso && torso !== 'robe') || plateArms) {
     // Hombreras: más grandes en el peto de placas.
     const bone = torso === 'bone-armor';
     const pad =
-      metalTorso || plateArms
-        ? metal(STEEL)
-        : bone
-          ? solid(OLD_BONE)
-          : solid(ramp(wornColor(torso ?? 'gold') ?? [122, 78, 42]), 1);
+      torso === 'samurai-do'
+        ? solid(ramp(wornColor(torso) ?? [154, 38, 32]), 1)
+        : torso === 'templar-hauberk' && !plateArms
+          ? (q: Sample) =>
+              tone(STEEL, q.light, (q.x + q.y * 2) % 3 === 0 ? -1 : (q.x + q.y) % 2 ? 1 : 0)
+          : metalTorso || plateArms
+            ? metal(STEEL)
+            : bone
+              ? solid(OLD_BONE)
+              : solid(ramp(wornColor(torso ?? 'gold') ?? [122, 78, 42]), 1);
     const big =
       torso === 'plate-chest' || torso === 'female-plate' || plateArms ? 1.2 : bone ? 1.15 : 1;
     for (const side of [1, -1] as const) {
@@ -641,6 +795,28 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
             0.15,
             solid(OLD_BONE, 1),
           );
+    }
+    if (torso === 'samurai-do' && !robed) {
+      // Faldón de la coraza: tres hileras de placas en seis paneles alrededor de la cadera.
+      const color = ramp(wornColor(torso) ?? [154, 38, 32]);
+      for (const [i, dy] of [-1.4, -3.1, -4.8].entries())
+        canvas.ellipsoid(
+          rig.pelvis.at([0, dy, 0.1]),
+          rig.pelvis.axes,
+          [5.6 + i * 0.45, 1.05, 4.3 + i * 0.4],
+          clipping((q) => {
+            const local = rig.pelvis.local(q.p);
+            const a = Math.atan2(local[0], local[2]) / ((Math.PI * 2) / 6) + 0.5;
+            if (Math.abs((((a % 1) + 1) % 1) - 0.5) > 0.44) return null;
+            return lacquer(color, q.p[1] - rig.pelvis.origin[1] + 0.5 - i * 0.2, local[0], q.light);
+          }),
+        );
+    }
+    if (torso === 'legion-cuirass' && !robed) {
+      // La túnica roja asoma bajo la coraza.
+      canvas.ellipsoid(rig.pelvis.at([0, -2.4, 0]), rig.pelvis.axes, [5.8, 2.6, 4.3], (q) =>
+        tone(TUNIC_RED, q.light, Math.sin(q.p[0] * 1.4) > 0.6 ? -1 : 0),
+      );
     }
     if (bone) {
       // Faldón de tiras de cuero rojo oscuro que cuelga del cinturón.
@@ -700,11 +876,21 @@ function drawArms(canvas: VolumeCanvas, figure: Figure): void {
   for (const side of [1, -1] as const) {
     const arm = rig.arms[side];
     const along = (q: Vec3): number => Math.hypot(...sub(q, arm.shoulder));
-    const piece = sleeves ? pieceSurface(sleeves, along) : null;
+    // Bajo las hombreras samuráis, mangas de tela azul oscuro con placas chicas cosidas.
+    const kote: Material = (q) =>
+      Math.round(along(q.p) * 1.2) % 3 === 0
+        ? tone(ramp(wornColor(sleeves) ?? [154, 38, 32]), q.light)
+        : tone(LACE, q.light);
+    const piece = sleeves === 'samurai-sode' ? kote : sleeves ? pieceSurface(sleeves, along) : null;
     const mail = mailTorso && torso ? pieceSurface(torso, along) : null;
     const upper = piece ?? mail ?? cloth;
     const lower = piece ?? (bareForearms ? solid(p.skin) : cloth);
-    const bulk = sleeveStuff === 'plate' ? 1.12 : sleeveStuff ? 1.05 : 1;
+    const bulk =
+      sleeveStuff === 'plate' || sleeveStuff === 'segmented'
+        ? 1.12
+        : sleeveStuff || sleeves === 'samurai-sode'
+          ? 1.05
+          : 1;
     canvas.limb(arm.shoulder, arm.elbow, 2.75 * thin * bulk, 2.1 * thin * bulk, upper);
     canvas.limb(arm.elbow, arm.hand, 2.1 * thin * bulk, 1.8 * thin * bulk, lower);
     const back = normalize(sub(arm.elbow, arm.hand));
@@ -719,6 +905,20 @@ function drawArms(canvas: VolumeCanvas, figure: Figure): void {
       );
       canvas.limb(lerp(arm.elbow, arm.hand, 0.82), arm.hand, 2.25 * thin, 2.1 * thin, (s) =>
         tone(STEEL, s.light + 0.15, 1),
+      );
+    } else if (sleeves === 'samurai-sode') {
+      // Hombrera samurái: una plancha grande de hileras laqueadas colgando del hombro.
+      const down = normalize(sub(arm.elbow, arm.shoulder));
+      const outward = rig.chest.dir([side, 0, 0.15]);
+      const color = ramp(wornColor(sleeves) ?? [154, 38, 32]);
+      const center = add(add(arm.shoulder, scale(down, 2.6)), scale(outward, 2.5));
+      canvas.box(center, axesAlong(outward, scale(down, -1)), [2.9 * thin, 3.6, 0.45], (q) =>
+        lacquer(color, q.p[1] - center[1] + 4, q.p[0] + q.p[2], q.light),
+      );
+    } else if (sleeveStuff === 'segmented') {
+      // Brazal legionario: la hombrera de bandas y el guardabrazo del antebrazo.
+      canvas.limb(lerp(arm.elbow, arm.hand, 0.3), arm.hand, 2.3 * thin, 2.05 * thin, (q) =>
+        Math.round((q.p[1] - arm.hand[1]) * 1.4) % 3 === 0 ? tone(GOLD, q.light) : metal(STEEL)(q),
       );
     } else if (sleeveStuff === 'bone') {
       // Brazales de hueso con bandas y una púa en el codo.
@@ -927,68 +1127,115 @@ function drawCloak(canvas: VolumeCanvas, rig: Rig, cloak: Ramp): void {
   canvas.sphere(chest.at([0, shoulderY - 2.2, 4.1]), 1, metal(GOLD));
 }
 
+/**
+ * Escudo en la mano izquierda. Los grandes (como los de justa) cubren del
+ * pecho a la rodilla: se dibujan al costado, por delante del cuerpo.
+ */
 function drawShield(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
   const hand = rig.arms[-1].hand;
   if (kind === 'torch' || kind === 'lantern') return drawLight(canvas, rig, kind);
-  if (kind === 'buckler' || kind === 'metal-shield') {
-    // Rodela chica y abombada, o escudo de metal largo con una cruz dorada.
-    const small = kind === 'buckler';
-    const middle = add(hand, rig.chest.dir([-1.4, small ? 1.6 : 3, 1.2]));
-    const facing = normalize(rig.chest.dir([-0.8, 0, 0.6]));
-    canvas.ellipsoid(middle, axesAlong(facing), small ? [3.6, 3.6, 1] : [5, 7, 0.9], (s) => {
-      const local = sub(s.p, middle);
-      if (!small && (Math.abs(local[1] - 1) < 0.45 || Math.hypot(local[0], local[2]) < 0.45))
-        return tone(GOLD, s.light);
-      return metal(STEEL)(s);
-    });
-    if (small) canvas.sphere(add(middle, scale(facing, 0.8)), 1.1, metal(STEEL));
+  // Los grandes miran casi al frente, como en la ventana de personaje de UO.
+  const facing = normalize(rig.chest.dir(kind === 'buckler' ? [-0.8, 0, 0.6] : [-0.4, 0, 0.92]));
+  const axes = axesAlong(facing);
+  const up = axes[1];
+  const across = axes[0];
+  const color = ramp(wornColor(kind) ?? [138, 42, 42]);
+  if (kind === 'buckler') {
+    // Rodela chica y abombada.
+    const middle = add(hand, rig.chest.dir([-1.4, 1.6, 1.2]));
+    canvas.ellipsoid(middle, axes, [4.2, 4.2, 1.1], metal(STEEL));
+    canvas.sphere(add(middle, scale(facing, 0.9)), 1.3, metal(STEEL));
     return;
   }
-  if (kind === 'kite-shield' || kind === 'heater-shield') {
-    // Escudos de punta abajo: el de cometa largo y angosto, el heráldico cuartelado.
-    const kite = kind === 'kite-shield';
-    const facing = normalize(rig.chest.dir([-0.8, 0, 0.6]));
-    const middle = add(hand, rig.chest.dir([-1.4, kite ? 2 : 2.6, 1.2]));
-    const axes = axesAlong(facing);
-    const up = axes[1];
-    const across = axes[0];
-    const width = kite ? 4.4 : 5.2;
-    const top = kite ? 6 : 5;
-    const bottom = kite ? 9 : 6.4;
-    const point = (h: number, w: number): Vec3 => add(middle, add(scale(up, h), scale(across, w)));
-    const half = (h: number): number =>
-      h > 0 ? width : width * Math.cos((-h / bottom) * (Math.PI / 2));
-    const color = ramp(wornColor(kind) ?? [138, 42, 42]);
-    const rim: Vec3[] = [];
-    for (let i = 0; i <= 10; i++) {
-      const h = top - (i * (top + bottom)) / 10;
-      rim.push(point(h, half(h)));
-    }
-    for (let i = 10; i >= 0; i--) {
-      const h = top - (i * (top + bottom)) / 10;
-      rim.push(point(h, -half(h)));
-    }
-    canvas.polygon(rim, (s) => {
-      const local = sub(s.p, middle);
-      const h = local[0] * up[0] + local[1] * up[1] + local[2] * up[2];
-      const w = local[0] * across[0] + local[1] * across[1] + local[2] * across[2];
-      if (h > top - 0.8 || Math.abs(w) > half(h) - 0.8) return tone(STEEL, s.light);
-      if (kite) return Math.abs(w) < 0.5 ? tone(GOLD, s.light) : tone(color, s.light - 0.1);
-      return w > 0 === h > 0 ? tone(color, s.light - 0.1) : tone(DARK_STEEL, s.light + 0.1);
+  // Los grandes van algo más afuera y más abajo que la mano, para cubrir hasta la rodilla.
+  const middle = add(hand, rig.chest.dir([-3, 0.6, 2.6]));
+  const at = (h: number, w: number, bulge = 0): Vec3 =>
+    add(middle, add(add(scale(up, h), scale(across, w)), scale(facing, bulge)));
+  const local = (q: Vec3): [number, number] => {
+    const d = sub(q, middle);
+    return [
+      d[0] * across[0] + d[1] * across[1] + d[2] * across[2],
+      d[0] * up[0] + d[1] * up[1] + d[2] * up[2],
+    ];
+  };
+  if (kind === 'metal-shield' || kind === 'wooden-shield') {
+    // Escudo redondo grande (de madera con tablas, o de acero con la cruz dorada).
+    const wooden = kind === 'wooden-shield';
+    const radii: Vec3 = wooden ? [8, 8.6, 1] : [8, 11, 1];
+    canvas.ellipsoid(middle, axes, radii, (q) => {
+      const [w, h] = local(q.p);
+      const edge = Math.hypot(w / radii[0], h / radii[1]);
+      if (edge > 0.88) return tone(STEEL, q.light);
+      if (wooden) {
+        if (edge < 0.24) return metal(GOLD)(q);
+        return tone(color, q.light, Math.floor((w + 20) * 0.45) % 2 === 0 ? 0 : -1);
+      }
+      if (Math.abs(w) < 0.5 || Math.abs(h - 1.5) < 0.5) return tone(GOLD, q.light);
+      return metal(STEEL)(q);
     });
-    if (kite) canvas.sphere(add(middle, scale(facing, 0.6)), 0.9, metal(GOLD));
     return;
   }
-  const center = add(hand, rig.chest.dir([-1.6, 3, 1.2]));
-  const facing = normalize(rig.chest.dir([-0.8, 0, 0.6]));
-  const wood = ramp(wornColor(kind) ?? [138, 90, 46]);
-  canvas.ellipsoid(center, axesAlong(facing), [5.4, 6, 0.9], (s) => {
-    const d = Math.hypot(...sub(s.p, center));
-    if (d > 4.7) return tone(STEEL, s.light);
-    if (d < 1.4) return metal(GOLD)(s);
-    const plank = Math.floor((s.p[1] - center[1]) * 0.55) % 2 === 0 ? 0 : -1;
-    return tone(wood, s.light, plank);
+  if (kind === 'legion-shield') {
+    // Escudo legionario: un rectángulo alto que se curva alrededor del cuerpo.
+    const width = 7;
+    const top = 10;
+    const bottom = 13.5;
+    const curve = (w: number): number => -((w / width) ** 2) * 2.4;
+    const material: Material = (q) => {
+      const [w, h] = local(q.p);
+      if (Math.abs(w) > width - 0.6 || h > top - 0.6 || h < -bottom + 0.6)
+        return tone(GOLD, q.light);
+      const r = Math.hypot(w * 0.85, h);
+      const wing = Math.abs(r - 3.6) < 0.35 && Math.abs(h) > 1;
+      if (Math.abs(h) < 0.4 || wing) return tone(GOLD, q.light);
+      return tone(color, q.light);
+    };
+    const strips = 8;
+    for (let i = 0; i < strips; i++) {
+      const a = -width + (2 * width * i) / strips;
+      const b = -width + (2 * width * (i + 1)) / strips;
+      canvas.polygon(
+        [
+          at(top, a, curve(a)),
+          at(top, b, curve(b)),
+          at(-bottom, b, curve(b)),
+          at(-bottom, a, curve(a)),
+        ],
+        material,
+      );
+    }
+    canvas.sphere(add(middle, scale(facing, 0.6)), 1.8, (q) =>
+      Math.hypot(...local(q.p)) > 1.4 ? tone(GOLD, q.light) : metal(STEEL)(q),
+    );
+    return;
+  }
+  // Escudos de punta abajo: el de cometa largo y angosto, el heráldico y el templario.
+  const kite = kind === 'kite-shield';
+  const templar = kind === 'templar-shield';
+  const width = kite ? 7 : 8;
+  const top = 9;
+  const bottom = kite ? 16.5 : 14.5;
+  const half = (h: number): number =>
+    h > 0 ? width : width * Math.cos((-h / bottom) * (Math.PI / 2)) ** (kite ? 1 : 0.8);
+  // El contorno empieza en la punta: el abanico de triángulos queda adentro.
+  const rim: Vec3[] = [at(-bottom, 0)];
+  for (let i = 11; i >= 0; i--) {
+    const h = top - (i * (top + bottom)) / 12;
+    rim.push(at(h, half(h)));
+  }
+  for (let i = 0; i <= 11; i++) {
+    const h = top - (i * (top + bottom)) / 12;
+    rim.push(at(h, -half(h)));
+  }
+  canvas.polygon(rim, (q) => {
+    const [w, h] = local(q.p);
+    if (h > top - 0.8 || Math.abs(w) > half(h) - 0.8) return tone(STEEL, q.light);
+    if (templar)
+      return crossPattee(w, h - 1, 5.4) ? tone(CROSS_RED, q.light) : tone(color, q.light);
+    if (kite) return Math.abs(w) < 0.6 ? tone(GOLD, q.light) : tone(color, q.light - 0.1);
+    return w > 0 === h > 0 ? tone(color, q.light - 0.1) : tone(DARK_STEEL, q.light + 0.1);
   });
+  if (kite) canvas.sphere(add(middle, scale(facing, 0.6)), 1.1, metal(GOLD));
 }
 
 /** Antorcha encendida o farol, en la mano izquierda. */
@@ -1227,6 +1474,28 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     return;
   }
 
+  if (kind === 'flail') {
+    // Mango con zunchos y tres cadenas que cuelgan (o vuelan con el golpe) hasta las bolas con púas.
+    canvas.limb(along(-2.5), along(7), 0.7, 0.75, solid(WOOD));
+    for (const k of [-1.6, 3.2, 6.6])
+      canvas.limb(along(k - 0.4), along(k + 0.4), 0.9, 0.9, metal(DARK_STEEL));
+    const top = along(7.6);
+    const fall = normalize(add(scale(dir, 0.7), [0, -1, 0]));
+    for (const [k, spread] of [
+      [1, -1.3],
+      [1.15, 0],
+      [0.9, 1.3],
+    ] as const) {
+      const ball = add(add(top, scale(fall, 4.6 * k)), scale(side, spread));
+      for (let i = 0; i < 4; i++)
+        canvas.sphere(lerp(top, ball, (i + 0.5) / 4.6), 0.38, metal(STEEL));
+      canvas.sphere(ball, 1.05, metal(DARK_STEEL));
+      for (const d of [side, scale(side, -1), up, scale(up, -1), fall])
+        canvas.limb(add(ball, scale(d, 0.8)), add(ball, scale(d, 1.8)), 0.4, 0.1, metal(STEEL));
+    }
+    return;
+  }
+
   const blades: Partial<Record<ItemKind, { length: number; width: number; guard: number }>> = {
     dagger: { length: 6, width: 0.85, guard: 2.4 },
     kryss: { length: 11, width: 0.6, guard: 1.8 },
@@ -1254,16 +1523,9 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     canvas.limb(mid, add(along(2 + length), scale(up, 3)), width * 1.2, 0.25, metal(STEEL));
     return;
   }
-  canvas.limb(along(katana ? -3.6 : -2), along(1.2), 0.8, 0.8, grip);
-  if (!katana) canvas.sphere(along(-2.4), 0.9, metal(GOLD));
-  if (katana) {
-    // Guarda redonda y hoja apenas curva.
-    canvas.ellipsoid(along(1.5), axesAlong(dir), [1.8, 0.35, 1.8], metal(GOLD));
-    const mid = add(along(2 + length / 2), scale(up, 0.6));
-    canvas.limb(along(2), mid, width, width * 0.8, metal(STEEL));
-    canvas.limb(mid, add(along(2 + length), scale(up, 1.6)), width * 0.8, 0.25, metal(STEEL));
-    return;
-  }
+  if (katana) return drawKatana(canvas, along, dir, up);
+  canvas.limb(along(-2), along(1.2), 0.8, 0.8, grip);
+  canvas.sphere(along(-2.4), 0.9, metal(GOLD));
   canvas.limb(
     add(along(1.6), scale(side, -guard)),
     add(along(1.6), scale(side, guard)),
@@ -1272,6 +1534,65 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     metal(GOLD),
   );
   canvas.limb(along(2), along(2 + length), width, 0.35, metal(STEEL));
+}
+
+/**
+ * Katana en la mano: el mango largo envuelto en rombos, la guarda de hierro
+ * con borde dorado y la hoja curva hacia el lomo, con el filo templado claro.
+ */
+function drawKatana(canvas: VolumeCanvas, along: (k: number) => Vec3, dir: Vec3, up: Vec3): void {
+  const side = normalize(cross(dir, up));
+  canvas.limb(along(-4.6), along(0.6), 0.8, 0.78, (q) => {
+    const a = sub(q.p, along(0));
+    const u = a[0] * dir[0] + a[1] * dir[1] + a[2] * dir[2];
+    const v =
+      a[0] * side[0] +
+      a[1] * side[1] +
+      a[2] * side[2] +
+      (a[0] * up[0] + a[1] * up[1] + a[2] * up[2]);
+    const x = ((((u + v) * 0.9) % 1) + 1) % 1;
+    const y = ((((u - v) * 0.9) % 1) + 1) % 1;
+    return x > 0.3 && x < 0.7 && y > 0.3 && y < 0.7
+      ? tone(LINEN, q.light)
+      : tone(ramp([40, 40, 60]), q.light);
+  });
+  canvas.ellipsoid(along(-4.8), axesAlong(dir), [0.9, 0.5, 0.9], metal(DARK_STEEL));
+  canvas.ellipsoid(along(0.9), axesAlong(dir), [2, 0.35, 2], (q) =>
+    Math.hypot(...sub(q.p, along(0.9))) > 1.6 ? tone(GOLD, q.light) : tone(DARK_STEEL, q.light),
+  );
+  canvas.limb(along(1.2), along(2), 0.75, 0.7, metal(GOLD));
+  const length = 15;
+  const sag = 1.4;
+  const center = (t: number): Vec3 => add(along(2 + length * t), scale(up, sag * t * t));
+  const width = (t: number): number => 1.05 - 0.3 * t;
+  const blade: Material = (q) => {
+    const rel = sub(q.p, along(2));
+    const t = Math.max(
+      0,
+      Math.min(1, (rel[0] * dir[0] + rel[1] * dir[1] + rel[2] * dir[2]) / length),
+    );
+    const d = sub(q.p, center(t));
+    const across = (d[0] * up[0] + d[1] * up[1] + d[2] * up[2]) / width(t);
+    if (across < -0.4 + 0.08 * Math.sin(t * 40)) return tone(ramp([226, 230, 236]), q.light + 0.15);
+    return across > 0.15 ? tone(DARK_STEEL, q.light) : metal(STEEL)(q);
+  };
+  for (let i = 0; i < 10; i++) {
+    const a = i / 10;
+    const b = (i + 1) / 10;
+    const edge = (t: number): number => {
+      const k = t < 0.88 ? 0 : (t - 0.88) / 0.12;
+      return -0.72 * width(t) * (1 - k * k) + 0.25 * width(t) * k * k;
+    };
+    canvas.polygon(
+      [
+        add(center(a), scale(up, 0.28 * width(a))),
+        add(center(b), scale(up, 0.28 * width(b))),
+        add(center(b), scale(up, edge(b))),
+        add(center(a), scale(up, edge(a))),
+      ],
+      blade,
+    );
+  }
 }
 
 /**

@@ -68,6 +68,13 @@ const ICON_FIT: Partial<Record<ItemKind, number>> = {
   'viking-sword': 0.74,
   crossbow: 0.78,
   'heavy-crossbow': 0.66,
+  katana: 0.9,
+  flail: 0.86,
+  'legion-shield': 0.86,
+  'templar-shield': 0.9,
+  'samurai-do': 0.9,
+  'samurai-haidate': 0.92,
+  'templar-hauberk': 0.9,
 };
 
 const OUTLINE: Rgb = [24, 17, 14];
@@ -886,14 +893,7 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     hilt(c, [-3.2, 0.6, 2.4], normalize([10, 0, -5.2]), 3.8, 3);
   },
   katana(c) {
-    // Hoja apenas curva, guarda redonda y empuñadura larga envuelta.
-    const from: Vec3 = [-2.6, 0.6, 2];
-    c.limb(from, [2, 0.6, -0.6], 0.8, 0.7, metal(STEEL));
-    c.limb([2, 0.6, -0.6], [6.6, 0.6, -2.4], 0.7, 0.2, metal(STEEL));
-    c.ellipsoid(from, lying(1.05), [1.6, 0.4, 1.6], metal(GOLD));
-    c.limb(from, [-6.6, 0.6, 4.2], 0.75, 0.75, (s) =>
-      tone(ramp([40, 36, 44]), s.light, Math.floor(s.p[0] * 1.5) % 2 ? 1 : 0),
-    );
+    katana(c);
   },
   spear(c) {
     // De pie: asta larga con una punta de hoja y un regatón abajo.
@@ -1637,6 +1637,92 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     c.box([0, 1, 0.8], lying(0.3), [3.8, 1, 1.6], metal(STEEL));
     c.box([0.4, 3, 0.4], lying(-0.2), [3.6, 1, 1.5], metal(STEEL));
   },
+  flail(c) {
+    flail(c);
+  },
+  'legion-shield'(c, color) {
+    legionShield(c, color);
+  },
+  'templar-shield'(c, color) {
+    templarShield(c, color);
+  },
+  'samurai-kabuto'(c, color) {
+    kabuto(c, color);
+  },
+  'samurai-mempo'(c, color) {
+    mempo(c, color);
+  },
+  'samurai-do'(c, color) {
+    tunic(
+      c,
+      lamellar(color, (p) => p[2]),
+    );
+    // Faldón de cinco paneles colgando de la coraza.
+    for (const x of [-3.2, -1.1, 1.1, 3.2])
+      c.box(
+        [x, 0.9, 6.6],
+        lying(0),
+        [1, 0.4, 1.7],
+        lamellar(color, (p) => p[2]),
+      );
+  },
+  'samurai-sode'(c, color) {
+    for (const side of [1, -1])
+      c.box(
+        [side * 3, 1, 0],
+        lying(side * 0.12),
+        [2.3, 0.45, 4.6],
+        lamellar(color, (p) => p[2]),
+      );
+  },
+  'samurai-haidate'(c, color) {
+    haidate(c, color);
+  },
+  'samurai-suneate'(c, color) {
+    suneate(c, color);
+  },
+  'legion-helm'(c) {
+    legionHelm(c);
+  },
+  'legion-cuirass'(c) {
+    tunic(c, (s) => {
+      // Bandas de acero superpuestas, con hebillas de bronce al centro.
+      if (Math.abs(s.p[0]) < 0.7 && (s.p[2] + 20) % 1.3 < 0.5) return lit(GOLD_RGB, s.light);
+      return (s.p[2] + 20) % 1.3 < 0.22
+        ? lit([70, 74, 84], s.light)
+        : lit(STEEL_RGB, s.light * 0.85 + 0.1);
+    });
+  },
+  'legion-arms'(c, color) {
+    sleeves(c, 'plate', color, (p) => p[2] * 2.6);
+  },
+  'legion-greaves'(c) {
+    legionGreaves(c);
+  },
+  'templar-helm'(c) {
+    greatHelm(c);
+  },
+  'templar-hauberk'(c, color) {
+    // Malla en las mangas; al frente, la sobreveste con la cruz roja.
+    const mail = pieceMaterial('chain', color, (p) => p[2]);
+    tunic(c, (s) =>
+      Math.abs(s.p[0]) < 3.6 && s.p[2] > -4 ? surcoat(s, s.p[0], s.p[2] + 0.4) : mail(s),
+    );
+    c.box([0, 0.9, 6.2], lying(0), [3.4, 0.5, 1.6], (s) => surcoat(s, s.p[0], 99));
+  },
+  'templar-sleeves'(c, color) {
+    sleeves(c, 'chain', color);
+  },
+  'templar-gauntlets'(c, color) {
+    gloves(c, 'chain', color);
+  },
+  'templar-chausses'(c, color) {
+    legs(
+      c,
+      pieceMaterial('chain', color, (p) => p[2]),
+    );
+    for (const side of [1, -1]) c.sphere([side * 2.3, 1.8, 1.4], 1.5, metal(STEEL));
+  },
 };
 
 function scale3(v: Vec3, k: number): Vec3 {
@@ -1736,10 +1822,15 @@ function gorget(c: VolumeCanvas, stuff: PieceStuff, color: Ramp): void {
 }
 
 /** Par de mangas o brazales, acostados uno al lado del otro. */
-function sleeves(c: VolumeCanvas, stuff: PieceStuff, color: Ramp): void {
+function sleeves(
+  c: VolumeCanvas,
+  stuff: PieceStuff,
+  color: Ramp,
+  band: (p: Vec3) => number = (p) => p[2] * 1.1,
+): void {
   for (const side of [1, -1]) {
     const x = side * 2.6;
-    const material = pieceMaterial(stuff, color, (p) => p[2] * 1.1);
+    const material = pieceMaterial(stuff, color, band);
     c.limb([x, 1.6, -5.4], [x + side * 0.4, 1.4, 0], 2, 1.7, material);
     c.limb([x + side * 0.4, 1.4, 0], [x + side * 0.2, 1.2, 5], 1.7, 1.4, material);
     if (stuff === 'plate') {
@@ -1923,4 +2014,382 @@ export function drawItem(
     scroll(canvas, ramp(CIRCLE_RIBBON[SPELLS[definition.spell].circle - 1] ?? [200, 60, 50]));
   else MODELS[kind as BaseItemKind](canvas, color);
   return canvas.toImage(OUTLINE);
+}
+
+// ── Etapa 59: katana, mangual, escudos grandes y armaduras samurái, legionaria y templaria ──
+
+/**
+ * Katana acostada: hoja curva con el filo templado (la línea ondulada del
+ * temple, más clara), el lomo oscuro, la punta en ángulo, el collar dorado,
+ * la guarda de hierro con borde de oro y el mango envuelto en rombos.
+ */
+function katana(c: VolumeCanvas): void {
+  const d = normalize([1, 0, -0.55]);
+  // Hacia arriba en el ícono: la hoja se curva hacia ahí.
+  const n: Vec3 = [d[2], 0, -d[0]];
+  const h0: Vec3 = [-2.4, 0.6, 1.9];
+  const length = 11.6;
+  const sag = 1.1;
+  const center = (t: number): Vec3 => add(h0, add(scale3(d, length * t), scale3(n, sag * t * t)));
+  const width = (t: number): number => 0.95 - 0.28 * t;
+  const spine: Vec3[] = [];
+  const edge: Vec3[] = [];
+  for (let i = 0; i <= 20; i++) {
+    const t = i / 20;
+    const w = width(t);
+    spine.push(add(center(t), scale3(n, 0.28 * w)));
+    // La punta: el filo sube hasta el lomo en curva.
+    const k = t < 0.88 ? 0 : (t - 0.88) / 0.12;
+    edge.push(add(center(t), scale3(n, -0.72 * w * (1 - k * k) + 0.28 * w * k * k)));
+  }
+  const tip = add(center(1), add(scale3(n, 0.2), scale3(d, 0.7)));
+  c.polygon([...spine, tip, ...edge.reverse()], (s) => {
+    const rel: Vec3 = [s.p[0] - h0[0], 0, s.p[2] - h0[2]];
+    const t = Math.max(0, Math.min(1, (rel[0] * d[0] + rel[2] * d[2]) / length));
+    const c0 = center(t);
+    const across = ((s.p[0] - c0[0]) * n[0] + (s.p[2] - c0[2]) * n[2]) / width(t);
+    const hamon = -0.38 + 0.09 * Math.sin(t * 46) + 0.04 * Math.sin(t * 17);
+    const sheen = s.light * 0.7 + 0.25 * Math.sin(t * Math.PI);
+    if (Math.abs(across + 0.02) < 0.07) return lit(EDGE_RGB, sheen + 0.25);
+    if (across > 0.14) return lit([78, 84, 98], sheen, 0.2);
+    if (across < hamon) return lit([226, 230, 236], sheen + 0.15 + (across < -0.62 ? 0.15 : 0));
+    return lit([132, 142, 160], sheen + 0.05);
+  });
+  // Collar dorado, guarda de hierro con borde de oro y mango envuelto.
+  c.limb(h0, add(h0, scale3(d, 0.9)), 0.9, 0.85, (s) => lit(GOLD_RGB, s.light, 0.8));
+  c.ellipsoid(h0, axesAlong(d), [1.9, 0.35, 1.9], (s) => {
+    const r = Math.hypot(s.p[0] - h0[0], s.p[2] - h0[2], (s.p[1] - h0[1]) * 1.2);
+    return r > 1.55 ? lit(GOLD_RGB, s.light, 0.8) : lit([58, 54, 56], s.light, 0.3);
+  });
+  const end = add(h0, scale3(d, -5.4));
+  c.limb(h0, end, 0.74, 0.7, (s) => {
+    const a = (s.p[0] - h0[0]) * -d[0] + (s.p[2] - h0[2]) * -d[2];
+    const b = (s.p[0] - h0[0]) * n[0] + (s.p[2] - h0[2]) * n[2] + s.p[1] * 0.6;
+    const u = (((a * 1.5 + b * 1.6) % 1) + 1) % 1;
+    const v = (((a * 1.5 - b * 1.6) % 1) + 1) % 1;
+    // Rombos claros (la piel de raya) entre las cintas oscuras cruzadas.
+    if (u > 0.3 && u < 0.7 && v > 0.3 && v < 0.7) return lit([226, 222, 206], s.light);
+    return lit([34, 34, 52], s.light + 0.1, 0.2);
+  });
+  c.sphere(add(h0, scale3(d, -2.6)), 0.55, (s) => lit(GOLD_RGB, s.light, 0.8));
+  c.ellipsoid(end, axesAlong(d), [0.82, 0.6, 0.82], (s) => lit([58, 54, 56], s.light, 0.5));
+}
+
+/** Bola de hierro con púas. */
+function spikedBall(c: VolumeCanvas, at: Vec3, r: number): void {
+  c.sphere(at, r, (s) => lit([92, 96, 106], s.light, 0.5));
+  const dirs: Vec3[] = [
+    [1, 0, 0],
+    [-1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1],
+    [0, 0, -1],
+    [0.6, 0.6, 0.6],
+    [-0.6, 0.6, 0.6],
+    [0.6, 0.6, -0.6],
+    [-0.6, 0.6, -0.6],
+  ];
+  for (const raw of dirs) {
+    const v = normalize(raw);
+    c.limb(add(at, scale3(v, r * 0.8)), add(at, scale3(v, r * 1.75)), r * 0.32, 0.08, (s) =>
+      lit(EDGE_RGB, s.light * 0.9),
+    );
+  }
+}
+
+/** Cadena de eslabones de `from` a `to`, con una caída en el medio. */
+function chain(c: VolumeCanvas, from: Vec3, to: Vec3, links: number): void {
+  for (let i = 0; i < links; i++) {
+    const t = (i + 0.5) / links;
+    const at = add(lerp3(from, to, t), [0, -Math.sin(t * Math.PI) * 0.4, 0]);
+    const dir = normalize([to[0] - from[0], 0, to[2] - from[2]]);
+    const axes = axesAlong(i % 2 ? [dir[0], 0.7, dir[2]] : dir);
+    c.ellipsoid(
+      at,
+      axes,
+      [0.42, 0.62, 0.18],
+      clipping((s) => {
+        const q: Vec3 = [s.p[0] - at[0], s.p[1] - at[1], s.p[2] - at[2]];
+        const along = q[0] * axes[1][0] + q[1] * axes[1][1] + q[2] * axes[1][2];
+        const side = q[0] * axes[0][0] + q[1] * axes[0][1] + q[2] * axes[0][2];
+        return Math.hypot(side / 0.42, along / 0.62) < 0.5 ? null : lit(STEEL_RGB, s.light);
+      }),
+    );
+  }
+}
+
+/**
+ * Mangual: mango de madera con el agarre acanalado y zunchos de hierro, un
+ * aro arriba y tres cadenas que terminan en bolas con púas.
+ */
+function flail(c: VolumeCanvas): void {
+  const from: Vec3 = [-6, 0.8, 3.8];
+  const to: Vec3 = [0.6, 0.8, 0.2];
+  const d = normalize([to[0] - from[0], 0, to[2] - from[2]]);
+  const grain = woodGrain(from, to);
+  c.limb(from, to, 0.68, 0.74, (s) => {
+    const a = (s.p[0] - from[0]) * d[0] + (s.p[2] - from[2]) * d[2];
+    // Agarre acanalado en la mitad de abajo.
+    if (a > 0.8 && a < 4.2 && (((a * 2.2) % 1) + 1) % 1 < 0.32)
+      return lit([70, 44, 26], s.light, 0.1);
+    return grain(s);
+  });
+  for (const t of [0, 0.62, 1]) {
+    const at = lerp3(from, to, t);
+    c.limb(add(at, scale3(d, -0.35)), add(at, scale3(d, 0.35)), 0.86, 0.86, (s) =>
+      lit([88, 92, 102], s.light, 0.6),
+    );
+  }
+  const ring = add(to, scale3(d, 0.9));
+  c.ellipsoid(
+    ring,
+    axesAlong([0, 1, 0]),
+    [0.8, 0.25, 0.8],
+    clipping((s) =>
+      Math.hypot(s.p[0] - ring[0], s.p[2] - ring[2]) < 0.4 ? null : metal(STEEL)(s),
+    ),
+  );
+  for (const ball of [
+    [6.2, 1.6, -5.4],
+    [7.6, 1.6, -0.4],
+    [2, 1.6, -6.8],
+  ] as Vec3[]) {
+    chain(c, ring, ball, 8);
+    spikedBall(c, ball, 1.35);
+  }
+}
+
+/** Escudo legionario: rectangular y curvo, con borde de bronce, umbo y alas doradas. */
+function legionShield(c: VolumeCanvas, color: Ramp): void {
+  const w = 4.8;
+  const h = 7.4;
+  const outline: Vec3[] = [];
+  for (let i = 0; i <= 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    // Rectángulo de esquinas apenas redondeadas.
+    const x = Math.sign(Math.cos(a)) * Math.abs(Math.cos(a)) ** 0.18 * w;
+    const z = Math.sign(Math.sin(a)) * Math.abs(Math.sin(a)) ** 0.18 * h;
+    outline.push([x, 1, z]);
+  }
+  c.polygon(outline, (s) => {
+    const x = s.p[0];
+    const z = s.p[2];
+    // Curvo: los costados se oscurecen como si se fueran para atrás.
+    const light = s.light - (Math.abs(x) / w) ** 2 * 0.35;
+    if (Math.abs(x) > w - 0.6 || Math.abs(z) > h - 0.6) return lit(GOLD_RGB, light + 0.1, 0.8);
+    const r = Math.hypot(x * 0.85, z);
+    // Alas: dos arcos a cada lado del umbo, y rayos hacia las esquinas.
+    const wing = Math.abs(r - 3.1) < 0.28 && Math.abs(z) > 0.8;
+    const bolt = Math.abs(Math.abs(z) - Math.abs(x) * 1.25 - 1.6) < 0.25 && Math.abs(x) > 1.4;
+    if (Math.abs(z) < 0.32 || wing || bolt) return lit(GOLD_RGB, light, 0.7);
+    return tone(color, light, noise(Math.floor(x * 3), Math.floor(z * 3)) > 0.9 ? -1 : 0);
+  });
+  c.ellipsoid([0, 1.2, 0], lying(0), [1.8, 1, 1.8], (s) =>
+    Math.hypot(s.p[0], s.p[2]) > 1.45 ? lit(GOLD_RGB, s.light, 0.8) : lit(STEEL_RGB, s.light),
+  );
+}
+
+/** Escudo templario: de plancha, blanco, con la cruz roja de brazos que se abren. */
+function templarShield(c: VolumeCanvas, color: Ramp): void {
+  const top = -5.6;
+  const bottom = 7.2;
+  const half = (z: number): number =>
+    z < 0 ? 5.6 : 5.6 * Math.cos((z / bottom) * (Math.PI / 2)) ** 0.8;
+  // Desde la punta de abajo: el abanico de triángulos queda dentro del contorno.
+  const outline: Vec3[] = [[0, 1, bottom]];
+  for (let i = 11; i >= 0; i--) {
+    const z = top + (i * (bottom - top)) / 12;
+    outline.push([half(z), 1, z]);
+  }
+  for (let i = 0; i <= 11; i++) {
+    const z = top + (i * (bottom - top)) / 12;
+    outline.push([-half(z), 1, z]);
+  }
+  const red = ramp([168, 30, 30]);
+  c.polygon(outline, (s) => {
+    const x = s.p[0];
+    const z = s.p[2];
+    if (z < top + 0.6 || Math.abs(x) > half(z) - 0.6) return lit([120, 126, 138], s.light);
+    if (crossPattee(x, z + 0.6, 4.6)) return tone(red, s.light);
+    return tone(color, s.light + 0.05);
+  });
+}
+
+/** ¿Está el punto dentro de una cruz de brazos que se ensanchan hacia afuera? */
+function crossPattee(x: number, z: number, reach: number): boolean {
+  const ax = Math.abs(x);
+  const az = Math.abs(z);
+  if (ax > reach || az > reach) return false;
+  return ax < 0.55 + az * 0.22 || az < 0.55 + ax * 0.22;
+}
+
+/** Sobreveste blanca con la cruz roja (x, z: dónde en la sobreveste). */
+function surcoat(s: { light: number }, x: number, z: number): Rgb {
+  if (crossPattee(x, z, 2.9)) return lit([176, 34, 32], s.light);
+  return lit([232, 226, 210], s.light, 0.1);
+}
+
+/**
+ * Placas laqueadas en hileras atadas con cordones: cada hilera clara arriba,
+ * oscura abajo, con los cordones azul oscuro y los remaches dorados.
+ */
+function lamellar(color: Ramp, row: (p: Vec3) => number): Material {
+  return (s) => {
+    const r = (((row(s.p) % 1.3) + 1.3) % 1.3) / 1.3;
+    const lace = (((s.p[0] * 0.75) % 1) + 1) % 1 < 0.16;
+    if (r < 0.14) return lit([212, 170, 76], s.light, 0.7);
+    if (lace) return lit([40, 46, 84], s.light);
+    return tone(color, s.light + 0.15 - r * 0.3, r < 0.3 ? 1 : 0);
+  };
+}
+
+/** Yelmo samurái: cuenco con nervios, cubrenuca de láminas y cuernos dorados al frente. */
+function kabuto(c: VolumeCanvas, color: Ramp): void {
+  c.ellipsoid(
+    [0, 1.6, 0],
+    lying(0),
+    [4, 4, 4.2],
+    clipping((s) => {
+      if (s.p[1] < 1.6) return null;
+      const a = Math.atan2(s.p[0], s.p[2]);
+      return Math.abs(Math.sin(a * 8)) < 0.12
+        ? lit([212, 170, 76], s.light, 0.6)
+        : lit([70, 34, 30], s.light * 0.9 + 0.15, 0.8);
+    }),
+  );
+  // Cubrenuca: tres láminas que se abren hacia atrás y a los costados.
+  for (const [i, y] of [1.4, 0.6, -0.2].entries())
+    c.ellipsoid(
+      [0, y, -0.8 - i * 0.3],
+      lying(0),
+      [4.4 + i * 0.7, 0.55, 4.2 + i * 0.6],
+      clipping((s) => (s.p[2] > 2.2 ? null : lamellar(color, (p) => p[1] * 2 + 0.4)(s))),
+    );
+  for (const side of [1, -1]) {
+    // Solapas vueltas a los lados de la cara y los cuernos en media luna.
+    c.ellipsoid([side * 3.8, 1.8, 2.4], lying(side * 0.6), [1.2, 1, 0.5], solid(color, 1));
+    c.limb([side * 0.6, 2.6, 4], [side * 2.2, 5.4, 4.6], 0.5, 0.35, (s) =>
+      lit(GOLD_RGB, s.light, 0.9),
+    );
+    c.limb([side * 2.2, 5.4, 4.6], [side * 2.6, 8, 4.2], 0.35, 0.12, (s) =>
+      lit(GOLD_RGB, s.light, 0.9),
+    );
+  }
+  c.ellipsoid([0, 2.4, 4.1], lying(0), [1, 0.9, 0.4], (s) => lit(GOLD_RGB, s.light, 0.9));
+}
+
+/** Máscara samurái: media cara laqueada con nariz y bigote, y el babero de láminas. */
+function mempo(c: VolumeCanvas, color: Ramp): void {
+  // De pie, mirando al frente: de la nariz al mentón, y el babero de láminas debajo.
+  c.ellipsoid(
+    [0, 5.4, 0],
+    lying(0),
+    [3.2, 3.6, 2.8],
+    clipping((s) => (s.p[2] < 0 || s.p[1] > 6.6 ? null : tone(color, s.light + 0.12))),
+  );
+  c.ellipsoid([0, 6.2, 2.6], lying(0), [0.75, 1.3, 0.8], solid(color, 1));
+  c.ellipsoid([0, 4.2, 2.6], lying(0), [1.5, 0.3, 0.3], solid(ramp([20, 16, 16])));
+  for (const side of [1, -1])
+    c.limb([side * 0.3, 4.9, 2.9], [side * 2.2, 4.4, 2.2], 0.34, 0.12, solid(ramp([24, 20, 20])));
+  for (const [i, y] of [2.4, 1.3, 0.3].entries())
+    c.ellipsoid(
+      [0, y, -0.4],
+      lying(0),
+      [3.4 + i * 0.5, 0.62, 2.8 + i * 0.4],
+      clipping((s) => (s.p[2] < -0.6 ? null : lamellar(color, (p) => p[1] + 0.2)(s))),
+    );
+}
+
+/** Faldar samurái: dos paneles de placas chicas cosidas sobre tela, colgando del cinto. */
+function haidate(c: VolumeCanvas, color: Ramp): void {
+  c.limb([-4.6, 1.2, -5.4], [4.6, 1.2, -5.4], 0.7, 0.7, solid(ramp([40, 46, 84])));
+  for (const side of [1, -1])
+    c.box([side * 2.5, 1, 0.6], lying(-side * 0.08), [2.3, 0.4, 5.6], (s) => {
+      const gx = (((s.p[0] * 1.6) % 1) + 1) % 1;
+      const gz = (((s.p[2] * 1.6) % 1) + 1) % 1;
+      if (gx < 0.18 || gz < 0.18) return lit([40, 46, 84], s.light);
+      return tone(color, s.light + 0.1 - gz * 0.2, gz < 0.4 ? 1 : 0);
+    });
+}
+
+/** Canilleras samuráis: tablillas laqueadas unidas por malla, con el empeine. */
+function suneate(c: VolumeCanvas, color: Ramp): void {
+  for (const side of [1, -1]) {
+    const x = side * 2.5;
+    c.limb([x, 1.4, -5], [x, 1.4, 3.6], 1.6, 1.3, (s) => {
+      const stripe = ((((s.p[0] - x) * 1.9) % 1) + 1) % 1;
+      if (stripe < 0.22) return tone(ramp([120, 126, 138]), s.light, (s.x + s.y) % 2 ? 1 : 0);
+      return tone(color, s.light + 0.1);
+    });
+    c.limb([x - 1.6, 1.8, -4.6], [x + 1.6, 1.8, -4.6], 0.35, 0.35, solid(ramp([40, 46, 84])));
+    c.ellipsoid([x, 1, 5], lying(0), [1.5, 0.8, 1.8], solid(ramp([40, 34, 30])));
+  }
+}
+
+/** Yelmo legionario: casco con cubrenuca, carrilleras, visera y penacho rojo. */
+function legionHelm(c: VolumeCanvas): void {
+  c.ellipsoid(
+    [0, 0.6, 0],
+    lying(0),
+    [4.2, 4.4, 4.5],
+    clipping((s) => (s.p[1] < 0.6 ? null : lit(STEEL_RGB, s.light * 0.9 + 0.08))),
+  );
+  c.ellipsoid(
+    [0, 0.9, -1.6],
+    lying(0),
+    [4.6, 0.4, 3.6],
+    clipping((s) => (s.p[2] > 0 ? null : lit(STEEL_RGB, s.light))),
+  );
+  c.ellipsoid([0, 2.4, 3.6], lying(0), [3.8, 0.3, 1.2], (s) => lit(GOLD_RGB, s.light, 0.8));
+  for (const side of [1, -1])
+    c.ellipsoid([side * 3.4, 0.6, 2.4], lying(side * 0.35), [0.5, 1.5, 1.5], (s) =>
+      lit(STEEL_RGB, s.light * 0.9 + 0.1),
+    );
+  for (let i = 0; i <= 8; i++) {
+    const t = i / 8;
+    const z = -3.6 + t * 6.6;
+    const y = 4.2 + Math.sin(t * Math.PI) * 1.4;
+    c.limb([0, y - 0.6, z], [0, y + 1.6, z + 0.2], 0.9, 0.55, (s) =>
+      tone(ramp([170, 34, 30]), s.light, (i + Math.round(s.p[1] * 2)) % 3 === 0 ? -1 : 0),
+    );
+  }
+}
+
+/** Grebas legionarias: el faldón de tiras de cuero con remaches y las dos grebas. */
+function legionGreaves(c: VolumeCanvas): void {
+  const strap = ramp([126, 40, 34]);
+  c.limb([-4.4, 1.2, -6], [4.4, 1.2, -6], 0.8, 0.8, solid(LEATHER_DARK_ICON));
+  for (let i = 0; i < 7; i++) {
+    const x = -3.9 + i * 1.3;
+    c.box([x, 1, -3.4], lying(0), [0.55, 0.3, 2.4], (s) =>
+      s.p[2] > -1.6 ? lit(GOLD_RGB, s.light, 0.7) : tone(strap, s.light, i % 2 ? -1 : 0),
+    );
+  }
+  for (const side of [1, -1]) {
+    const x = side * 2.4;
+    c.limb([x, 1.4, 0.6], [x, 1.2, 7], 1.7, 1.25, (s) =>
+      lit(STEEL_RGB, s.light * 0.85 + 0.12 - Math.abs(s.p[0] - x) * 0.08),
+    );
+    c.sphere([x, 2.2, 1.2], 1.4, (s) => lit(STEEL_RGB, s.light));
+  }
+}
+
+/** Yelmo templario: cilindro de techo plano con la mirilla y la cruz de refuerzo. */
+function greatHelm(c: VolumeCanvas): void {
+  c.limb([0, 0, 0], [0, 6, 0], 4, 3.8, (s) => {
+    const front = s.p[2] > 1.6;
+    if (front && Math.abs(s.p[1] - 3.8) < 0.35 && Math.abs(s.p[0]) > 0.5)
+      return [18, 16, 18] as Rgb;
+    if (front && (Math.abs(s.p[0]) < 0.5 || Math.abs(s.p[1] - 4.5) < 0.3))
+      return lit(GOLD_RGB, s.light, 0.7);
+    if (front && s.p[1] < 2.8 && s.p[0] > 0.8 && (s.x + s.y) % 3 === 0) return [24, 22, 24] as Rgb;
+    return lit(STEEL_RGB, s.light * 0.85 + 0.1);
+  });
+  c.ellipsoid([0, 6, 0], lying(0), [3.8, 0.3, 3.8], (s) => lit(STEEL_RGB, s.light));
+}
+
+const LEATHER_DARK_ICON = ramp([84, 54, 34]);
+
+function lerp3(a: Vec3, b: Vec3, t: number): Vec3 {
+  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 }

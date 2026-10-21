@@ -395,6 +395,7 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
 
 const SERVER_TYPE_FLAGS: Readonly<Record<ServerMessageType, true>> = {
   welcome: true,
+  gmCatalog: true,
   container: true,
   containerClosed: true,
   book: true,
@@ -472,6 +473,10 @@ function parseGmCommand(raw: unknown): GmCommand | null {
       return text(c.item) && count(c.amount, 60000)
         ? { kind: 'item', item: c.item, amount: c.amount }
         : null;
+    case 'catalog':
+      return { kind: 'catalog' };
+    case 'delete':
+      return isId(c.itemId) ? { kind: 'delete', itemId: c.itemId } : null;
     case 'mount':
       return text(c.mount) ? { kind: 'mount', mount: c.mount } : null;
     case 'slay':

@@ -70,6 +70,11 @@ export class GameMaster {
         );
       case 'item':
         return this.createItem(gm, command.item, command.amount);
+      case 'catalog':
+        this.notifier.send(playerId, { type: 'gmCatalog' });
+        return;
+      case 'delete':
+        return this.deleteItem(gm, command.itemId);
       case 'mount':
         return this.mount(gm, command.mount);
       case 'slay':
@@ -238,6 +243,31 @@ export class GameMaster {
           if (this.world.map.isWalkable(spot) && !this.world.isOccupied(spot)) spots.push(spot);
         }
     return spots;
+  }
+
+  /**
+   * Borra un objeto propio: de la mochila, puesto o dentro de una bolsa que
+   * esté entre sus cosas. Un recipiente se borra con lo que tenga adentro.
+   */
+  private deleteItem(gm: Player, itemId: EntityId): void {
+    const items = this.world.items;
+    const item = items.get(itemId);
+    if (!item) return this.say(gm.id, 'Eso ya no está.');
+    const location =
+      item.location.type === 'container' ? items.rootOf(item.location.containerId) : item.location;
+    const mine =
+      location !== null &&
+      (location.type === 'backpack' || location.type === 'equipment') &&
+      location.ownerId === gm.id;
+    if (!mine)
+      return this.say(gm.id, 'Solo podés eliminar objetos de tu mochila o lo que tenés puesto.');
+    const changes = emptyChanges();
+    // Primero lo de adentro (las bolsas más profundas al final de la lista).
+    if (ITEMS[item.kind].capacity)
+      for (const inner of items.descendantsOf(item.id).reverse()) items.destroy(inner.id, changes);
+    items.destroy(item.id, changes);
+    this.items.publish(changes, gm.id);
+    this.say(gm.id, `Eliminaste ${ITEMS[item.kind].name}.`);
   }
 
   private say(playerId: EntityId, text: string): void {

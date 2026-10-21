@@ -12,6 +12,7 @@ import {
   tone,
   type Material,
   type Ramp,
+  type Sample,
   type Vec3,
   type VolumeCanvas,
 } from './volume';
@@ -54,6 +55,13 @@ class HeadParts {
     this.canvas.decal(this.at(offset), this.basis.dir(normalize(normal)), color, width, height);
   }
 
+  /** Material que recibe el punto y la normal en el sistema de la cabeza. */
+  local(paint: (p: Vec3, n: Vec3, s: Sample) => Rgb | null): Material {
+    return clipping((s) =>
+      paint(scale(this.basis.local(s.p), 1 / HEAD_SCALE), this.basis.localDir(s.n), s),
+    );
+  }
+
   /** Material que recibe la normal en el sistema de la cabeza (para máscaras de pelo, casco…). */
   masked(mask: (n: Vec3, p: Vec3) => boolean, material: Material): Material {
     return clipping((s) => {
@@ -94,6 +102,9 @@ export interface HeadLook {
     | 'tricorne'
     | 'bandana'
     | 'skull'
+    | 'kabuto'
+    | 'galea'
+    | 'great-helm'
     | null;
   readonly capColor: Ramp;
   readonly hatColor: Ramp;
@@ -132,10 +143,13 @@ export function drawHumanHead(
     look.headgear === 'helmet' ||
     look.headgear === 'plate-helm' ||
     look.headgear === 'bandana' ||
-    look.headgear === 'skull';
+    look.headgear === 'skull' ||
+    look.headgear === 'kabuto' ||
+    look.headgear === 'galea' ||
+    look.headgear === 'great-helm';
   drawHair(head, look.hair, look.hairStyle, underHat);
   // Bajo una máscara o un yelmo cerrado no asoma la barba.
-  if (look.headgear !== 'skull' && look.headgear !== 'plate-helm')
+  if (look.headgear !== 'skull' && look.headgear !== 'plate-helm' && look.headgear !== 'great-helm')
     drawFacialHair(head, look.hair, look.facialHair);
 
   if (look.headgear === 'helmet') drawHelmet(head);
@@ -147,6 +161,9 @@ export function drawHumanHead(
   else if (look.headgear === 'tricorne') drawWideHat(head, look.capColor, 'tricorne');
   else if (look.headgear === 'bandana') drawBandana(head, look.capColor);
   else if (look.headgear === 'skull') drawBoneHelm(head);
+  else if (look.headgear === 'kabuto') drawKabuto(head, look.capColor);
+  else if (look.headgear === 'galea') drawGalea(head);
+  else if (look.headgear === 'great-helm') drawGreatHelm(head);
 }
 
 /** Sombrero de ala ancha: de paja (con trenzado), con pluma o tricornio (el ala doblada). */
@@ -393,4 +410,140 @@ export function drawSkullHead(canvas: VolumeCanvas, basis: Basis, bone: Ramp): v
   }
   head.decal([0, -1.9, 4.3], [0, 0, 1], [40, 30, 30]);
   head.decal([0, -4.1, 3.8], [0, -0.3, 1], [90, 80, 70], 3, 1);
+}
+
+// ── Etapa 59: yelmos samurái, legionario y templario, y la máscara samurái ──
+
+const LACE = ramp([40, 46, 84]);
+const BLACK_LACQUER = ramp([44, 34, 36]);
+const CREST = ramp([172, 34, 30]);
+
+/** Placas laqueadas en hileras (según la altura `row`), con el borde dorado y el cordón. */
+function lacquerRows(color: Ramp, row: number, x: number, light: number): Rgb {
+  const r = (((row % 1.3) + 1.3) % 1.3) / 1.3;
+  if (r < 0.16) return tone(GOLD, light + 0.1);
+  if ((((x * 0.9) % 1) + 1) % 1 < 0.14) return tone(LACE, light);
+  return tone(color, light + 0.12 - r * 0.25, r < 0.32 ? 1 : 0);
+}
+
+/**
+ * Yelmo samurái: cuenco laqueado con nervios dorados, visera, un cubrenuca
+ * de tres láminas que se abren, las solapas vueltas junto a la cara y los
+ * cuernos dorados en media luna al frente.
+ */
+function drawKabuto(head: HeadParts, color: Ramp): void {
+  head.ellipsoid(
+    [0, 1.6, -0.3],
+    [5.3, 5.7, 5.6],
+    head.local((p, _n, s) => {
+      if (p[1] < 1) return null;
+      const a = Math.atan2(p[0], p[2]);
+      return Math.abs(Math.sin(a * 6)) < 0.07
+        ? tone(GOLD, s.light)
+        : tone(BLACK_LACQUER, s.light + 0.2, 1);
+    }),
+  );
+  head.ellipsoid([0, 1.3, 4.6], [4.4, 0.45, 1.9], solid(BLACK_LACQUER, 1));
+  for (let i = 0; i < 3; i++)
+    head.ellipsoid(
+      [0, 0.6 - i * 1.4, -1],
+      [5.7 + i * 0.75, 0.8, 5.6 + i * 0.75],
+      head.local((p, _n, s) =>
+        p[2] > 1.4 + i * 0.3 ? null : lacquerRows(color, p[1] + 0.4 + i * 1.4, p[0], s.light),
+      ),
+    );
+  for (const side of [1, -1] as const) {
+    head.ellipsoid([side * 5.6, 0.6, 2.4], [0.7, 1.9, 1.6], solid(color, 1));
+    head.limb([side * 0.8, 2.6, 5.1], [side * 2.9, 6.4, 5.8], 0.55, 0.4, metal(GOLD));
+    head.limb([side * 2.9, 6.4, 5.8], [side * 3.4, 9.8, 4.6], 0.4, 0.12, metal(GOLD));
+  }
+  head.ellipsoid([0, 2.8, 5.6], [1.1, 1.1, 0.35], metal(GOLD));
+}
+
+/**
+ * Yelmo legionario: casco de acero con la banda de bronce, visera, el
+ * cubrenuca ancho atrás, las carrilleras y un penacho rojo de adelante atrás.
+ */
+function drawGalea(head: HeadParts): void {
+  head.ellipsoid(
+    [0, 1, -0.4],
+    [5.1, 5.9, 5.6],
+    head.local((p, _n, s) => {
+      if (p[1] < 0.6 && p[2] > -1.4) return null;
+      if (Math.abs(p[1] - 1.4) < 0.45 && p[2] > -2) return tone(GOLD, s.light);
+      return metal(STEEL)(s);
+    }),
+  );
+  head.ellipsoid([0, 1.2, 4.7], [4.4, 0.35, 1.5], metal(STEEL));
+  head.ellipsoid([0, -2.4, -4], [5.4, 0.55, 3.2], (s) => tone(STEEL, s.light, 1));
+  for (const side of [1, -1] as const) {
+    head.ellipsoid([side * 4.5, -2.2, 2.1], [0.55, 2.8, 2.1], metal(STEEL));
+    head.ellipsoid([side * 4.95, -2, 2.1], [0.3, 0.45, 0.45], metal(GOLD));
+  }
+  head.limb([0, 5.8, 2.4], [0, 6.6, 2.4], 0.6, 0.5, metal(GOLD));
+  for (let i = 0; i <= 8; i++) {
+    const t = i / 8;
+    const z = 3.4 - t * 8.4;
+    const y = 6.8 + Math.sin(t * Math.PI) * 1.2;
+    head.limb([0, y - 0.8, z], [0, y + 1.8, z - 0.3], 1, 0.6, (s) =>
+      tone(CREST, s.light, (i + s.y) % 3 === 0 ? -1 : 0),
+    );
+  }
+}
+
+/**
+ * Yelmo templario: un cilindro de techo plano que cubre toda la cabeza, con
+ * la mirilla, la cruz de refuerzo en bronce y los agujeros para respirar.
+ */
+function drawGreatHelm(head: HeadParts): void {
+  const steel = metal(STEEL);
+  // Un cilindro con el techo plano: se cortan las puntas redondas del tubo.
+  head.limb(
+    [0, -6.4, 0.3],
+    [0, 4.4, 0.3],
+    5.6,
+    5.4,
+    head.local((p, n, s) => {
+      if (p[1] > 4.9) return null;
+      const front = n[2] > 0.45;
+      if (front && Math.abs(p[1] - 0.3) < 0.45 && Math.abs(p[0]) > 0.6) return [18, 16, 18];
+      if (front && Math.abs(p[0]) < 0.6 && p[1] < 4.5) return tone(GOLD, s.light);
+      if (front && Math.abs(p[1] - 1.6) < 0.4) return tone(GOLD, s.light);
+      if (front && p[1] < -1.6 && p[1] > -4.4 && p[0] > 1.2 && (s.x + s.y) % 3 === 0)
+        return [26, 24, 26];
+      return steel(s);
+    }),
+  );
+  head.ellipsoid([0, 4.9, 0.3], [5.3, 0.45, 5.3], steel);
+}
+
+/**
+ * Máscara samurái sobre la mitad de abajo de la cara: laqueada, con nariz,
+ * boca abierta y bigote, y el babero de láminas que cubre la garganta.
+ */
+export function drawMempo(canvas: VolumeCanvas, basis: Basis, color: Ramp): void {
+  const head = new HeadParts(canvas, basis);
+  head.ellipsoid(
+    [0, -2.7, 1.5],
+    [4.1, 3.4, 4.1],
+    head.local((p, _n, s) => (p[2] < 0.4 || p[1] > -0.8 ? null : tone(color, s.light + 0.12))),
+  );
+  head.ellipsoid([0, -1.1, 4.9], [0.8, 1.3, 0.9], solid(color, 1));
+  head.decal([0, -3.3, 5.3], [0, -0.2, 1], [20, 14, 14], 3, 1);
+  for (const side of [1, -1] as const)
+    head.limb(
+      [side * 0.4, -2.5, 5.3],
+      [side * 2.4, -3.1, 4.4],
+      0.35,
+      0.12,
+      solid(ramp([24, 20, 20])),
+    );
+  for (let i = 0; i < 3; i++)
+    head.ellipsoid(
+      [0, -5.9 - i * 1.1, 0.6],
+      [4.1 + i * 0.5, 0.65, 4 + i * 0.5],
+      head.local((p, _n, s) =>
+        p[2] < -1 ? null : lacquerRows(color, p[1] + 6.3 + i * 0.2, p[0], s.light),
+      ),
+    );
 }

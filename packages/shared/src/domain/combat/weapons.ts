@@ -129,6 +129,8 @@ const WEAPONS: Partial<Record<ItemKind, Weapon>> = {
     swingMs: 2750,
     skill: 'mace-fighting',
   },
+  // Mangual: tres bolas con púas en cadenas; pega fuerte y sin aviso.
+  flail: { name: 'mangual', minDamage: 9, maxDamage: 18, swingMs: 3000, skill: 'mace-fighting' },
   // Las ballestas pegan más fuerte que el arco, pero se recargan más despacio.
   crossbow: {
     name: 'ballesta',
@@ -200,6 +202,24 @@ const ARMOR_RATING: Partial<Record<ItemKind, number>> = {
   'studded-leggings': 4,
   'ringmail-leggings': 5,
   'chain-leggings': 6,
+  // Juegos de la etapa 59: cerca de lo que suma el juego completo de placas (42).
+  'legion-shield': 13,
+  'templar-shield': 12,
+  'samurai-kabuto': 6,
+  'samurai-mempo': 3,
+  'samurai-do': 16,
+  'samurai-sode': 5,
+  'samurai-haidate': 6,
+  'samurai-suneate': 4,
+  'legion-helm': 7,
+  'legion-cuirass': 18,
+  'legion-arms': 6,
+  'legion-greaves': 9,
+  'templar-helm': 7,
+  'templar-hauberk': 16,
+  'templar-sleeves': 5,
+  'templar-gauntlets': 4,
+  'templar-chausses': 7,
 };
 
 /** Armadura de metal: no deja meditar (como en UO). */
@@ -222,6 +242,23 @@ const METAL_ARMOR: ReadonlySet<ItemKind> = new Set<ItemKind>([
   'female-plate',
   'plate-chest',
   'plate-legs',
+  'legion-shield',
+  'templar-shield',
+  'samurai-kabuto',
+  'samurai-mempo',
+  'samurai-do',
+  'samurai-sode',
+  'samurai-haidate',
+  'samurai-suneate',
+  'legion-helm',
+  'legion-cuirass',
+  'legion-arms',
+  'legion-greaves',
+  'templar-helm',
+  'templar-hauberk',
+  'templar-sleeves',
+  'templar-gauntlets',
+  'templar-chausses',
 ]);
 
 export function weaponOf(look: EquipmentLook): Weapon {

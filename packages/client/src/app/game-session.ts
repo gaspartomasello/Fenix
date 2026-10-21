@@ -42,6 +42,7 @@ import { TreasureMapWindow } from '../ui/treasure-map-window';
 import { ShipWindow } from '../ui/ship-window';
 import { WorldShips } from './world-ships';
 import { DyeWindow } from '../ui/dye-window';
+import { ItemCatalogWindow } from '../ui/item-catalog-window';
 import { QuestJournal, QuestOfferWindow } from '../ui/quest-windows';
 import { ContainerWindow } from '../ui/container-window';
 import { CorpseWindow } from '../ui/corpse-window';
@@ -631,6 +632,17 @@ export class GameSession {
       },
     };
     economy.setItemActions(actions);
+    // Administrador: la ventana de todos los objetos (`/objetos`) y borrar con `/eliminar`.
+    const catalog = new ItemCatalogWindow((kind, amount) => this.game.createItem(kind, amount));
+    this.hosts.ui.append(catalog.window.element);
+    this.game.on('itemCatalogOpened', () => catalog.open());
+    this.game.on('deletePickRequested', () => {
+      banner.show('Tocá el objeto de tu mochila que querés eliminar (Escape cancela).');
+      drag.pickItem((itemId) => {
+        done();
+        this.game.deleteItem(itemId);
+      }, done);
+    });
     const backpack = new BackpackWindow(drag, actions);
     // Como en UO, la ventana de personaje tiene a mano las demás ventanas.
     const equipment = new EquipmentWindow(drag, actions, self.appearance, [
