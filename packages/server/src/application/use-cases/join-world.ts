@@ -141,8 +141,10 @@ export class JoinWorld {
 
   private admit(player: Player, account: JoinAccount): JoinWorldResult {
     this.persistence.register(player, account.passwordHash, account.name);
-    if (isTestCharacter(player.name, this.testCharacters))
+    if (isTestCharacter(player.name, this.testCharacters)) {
       equipTestCharacter(player, this.world, () => this.ids.next());
+      this.dress(player, false);
+    }
     return { ok: true, playerId: player.id };
   }
 
