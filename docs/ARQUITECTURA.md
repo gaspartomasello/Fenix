@@ -491,6 +491,19 @@ tiendas grandes, calcula el total al comprar varios y tiene «Vender todo».
   empuñan algo) y las telas caen sin escalones. Para agarrar una prenda del dibujo se comparan
   dibujos chicos de la misma pose, con y sin la prenda.
 
+### Rastrear
+
+- **Habilidad Rastrear** (`tracking`, grupo Sigilo; reglas en `shared/domain/skills/tracking.ts`):
+  se usa desde la ventana de habilidades, la barra de atajos o `/rastrear`. Se elige qué buscar
+  (animales, monstruos, personas o vecinos) y el servidor (`application/tracking.ts`) devuelve
+  los rastros a la redonda (`tracking`): nombre, dirección (norte, noreste…) y distancia, del más
+  cercano al más lejano. El alcance va de 12 a 37 tiles según la habilidad, notar cada rastro
+  depende de la habilidad y la distancia, y a un jugador escondido le suma su Esconderse.
+- **Seguir un rastro** (`followTrack`): solo uno de los que encontró. Durante 90 s el servidor
+  manda cada segundo dónde está (`trackPoint`) y el cliente muestra una flecha alrededor del
+  personaje con el nombre y los pasos (`TrackingArrow`). Se pierde si se aleja demasiado, muere
+  o se esconde.
+
 ### Samurái, legionario, templario, mangual y escudos grandes
 
 - **Juegos nuevos** (catálogo, `ARMOR_RATING`, `METAL_ARMOR`, herrería y herrero): cada uno

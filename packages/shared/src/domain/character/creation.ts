@@ -143,6 +143,7 @@ export const SKILL_KITS: Readonly<Record<SkillKey, readonly KitEntry[]>> = {
   hiding: [{ kind: 'cloak', amount: 1 }],
   stealth: [{ kind: 'cloak', amount: 1 }],
   'detect-hidden': [{ kind: 'lantern', amount: 1 }],
+  tracking: [{ kind: 'boots', amount: 1 }],
   lockpicking: [{ kind: 'lockpick', amount: 10 }],
   snooping: [{ kind: 'pouch', amount: 1 }],
   stealing: [{ kind: 'dagger', amount: 1 }],

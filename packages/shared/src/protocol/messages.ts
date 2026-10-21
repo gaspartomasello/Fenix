@@ -15,6 +15,7 @@ import type { SpellKey } from '../domain/magic/spell-catalog';
 import type { SkillKey, SkillValues } from '../domain/skills/skill-catalog';
 import type { CharacterCreation } from '../domain/character/creation';
 import type { ActiveSkill } from '../domain/skills/stealth';
+import type { TrackingCategory } from '../domain/skills/tracking';
 import type { WorldTime } from '../domain/rules/daylight';
 import type { MoveMode } from '../domain/rules/movement';
 import type { CompactMapData } from '../domain/world/map-codec';
@@ -368,6 +369,18 @@ export interface SetWarModeRequest {
 }
 
 /** Usar una habilidad a propósito (Esconderse, Mirar; Fisgonear y Robar, sobre alguien). */
+/** Rastrear: buscar rastros de una clase (animales, monstruos, personas o vecinos). */
+export interface TrackRequest {
+  readonly type: 'track';
+  readonly category: TrackingCategory;
+}
+
+/** Seguir uno de los rastros encontrados: el servidor manda dónde está, de a ratos. */
+export interface FollowTrackRequest {
+  readonly type: 'followTrack';
+  readonly targetId: EntityId;
+}
+
 export interface UseSkillRequest {
   readonly type: 'useSkill';
   readonly skill: ActiveSkill;
@@ -492,6 +505,8 @@ export type ClientMessage =
   | DismountRequest
   | ReleasePetRequest
   | UseSkillRequest
+  | TrackRequest
+  | FollowTrackRequest
   | SetWarModeRequest
   | UseDoorRequest
   | SocialRequest;
@@ -862,6 +877,32 @@ export interface CorpseClosedMessage {
   readonly corpseId: EntityId;
 }
 
+/** Un rastro encontrado al Rastrear: quién, hacia dónde y a cuántos pasos. */
+export interface TrackSighting {
+  readonly id: EntityId;
+  readonly name: string;
+  readonly direction: Direction;
+  readonly distance: number;
+}
+
+/** Lo que encontró al Rastrear (puede estar vacío). */
+export interface TrackingMessage {
+  readonly type: 'tracking';
+  readonly category: TrackingCategory;
+  readonly found: readonly TrackSighting[];
+}
+
+/** Dónde está el rastro que sigue (o que lo perdió). */
+export type TrackPointMessage =
+  | {
+      readonly type: 'trackPoint';
+      readonly targetId: EntityId;
+      readonly name: string;
+      readonly x: number;
+      readonly y: number;
+    }
+  | { readonly type: 'trackPoint'; readonly targetId: EntityId; readonly lost: true };
+
 /** El servidor confirma que es administrador: el cliente abre la ventana de todos los objetos. */
 export interface GmCatalogMessage {
   readonly type: 'gmCatalog';
@@ -917,6 +958,8 @@ export type ServerMessage =
   | WarModeChangedMessage
   | DoorMessage
   | GmCatalogMessage
+  | TrackingMessage
+  | TrackPointMessage
   | SystemMessage;
 
 export type ServerMessageType = ServerMessage['type'];

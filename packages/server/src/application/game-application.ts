@@ -8,6 +8,7 @@ import { MountActions } from './use-cases/mount-actions';
 import { Gates } from './gates';
 import { Stealth } from './stealth';
 import { Thievery } from './thievery';
+import { Tracking } from './tracking';
 import { Legends } from './legends';
 import { NpcTalk } from './npc-talk';
 import { WarMode } from './war-mode';
@@ -95,6 +96,7 @@ export class GameApplication {
   private readonly doors: Doors;
   private readonly mounts: MountActions;
   private readonly stealth: Stealth;
+  private readonly tracking: Tracking;
   private readonly thievery: Thievery;
   private readonly legends: Legends;
   private readonly npcTalk: NpcTalk;
@@ -150,6 +152,7 @@ export class GameApplication {
     this.leaveWorld = new LeaveWorld(world, notifier);
     const gates = new Gates(world, ids, notifications);
     this.stealth = new Stealth(world, this.mobiles, notifier, random);
+    this.tracking = new Tracking(world, this.mobiles, notifier, random, clock);
     this.movePlayer = new MovePlayer(
       world,
       clock,
@@ -293,6 +296,7 @@ export class GameApplication {
     this.legends.tick(now);
     this.treasure.tick(now);
     this.ships.tick(now);
+    this.tracking.tick(now);
     this.persistence.autosave(now);
   }
 
@@ -385,6 +389,12 @@ export class GameApplication {
           if (message.skill === 'snooping') this.thievery.snoop(playerId, message.targetId);
           else this.thievery.steal(playerId, message.targetId);
         } else this.stealth.use(playerId, message.skill);
+        break;
+      case 'track':
+        this.tracking.track(playerId, message.category);
+        break;
+      case 'followTrack':
+        this.tracking.follow(playerId, message.targetId);
         break;
       case 'pickLock':
         this.thievery.pickLock(playerId, message.toolId, message.position);
