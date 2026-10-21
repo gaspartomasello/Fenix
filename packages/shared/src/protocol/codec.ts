@@ -224,6 +224,12 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       }
       break;
     }
+    case 'pickLock': {
+      const position = asPosition(data.position);
+      if (isId(data.toolId) && position)
+        return { ok: true, message: { type: 'pickLock', toolId: data.toolId, position } };
+      break;
+    }
     case 'dig': {
       const position = asPosition(data.position);
       if (isId(data.toolId) && position)
@@ -361,7 +367,14 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       break;
     case 'useSkill':
       if (isActiveSkill(data.skill))
-        return { ok: true, message: { type: 'useSkill', skill: data.skill } };
+        return {
+          ok: true,
+          message: {
+            type: 'useSkill',
+            skill: data.skill,
+            ...(isId(data.targetId) ? { targetId: data.targetId } : {}),
+          },
+        };
       break;
     case 'openCorpse':
     case 'lootAll':

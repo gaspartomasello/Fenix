@@ -25,10 +25,13 @@ import { EffectsBar } from '../ui/effects-bar';
 import {
   ITEMS,
   NPC_CHATTER,
+  SKILL_NAMES,
   VENDORS,
   VENDOR_RANGE,
   isMerchant,
   reputationTitle,
+  skillNeedsTarget,
+  type ActiveSkill,
   type ItemSnapshot,
   type NpcRole,
 } from '@fenix/shared';
@@ -84,6 +87,8 @@ interface Targeting {
 interface Magic {
   readonly spellbook: SpellbookWindow;
   readonly cast: (spell: SpellKey, scrollId?: string) => void;
+  /** Usar una habilidad: fisgonear y robar piden elegir a la persona de al lado. */
+  readonly useSkill: (skill: ActiveSkill) => void;
 }
 
 /** Ventanas de la economía que otras partes de la sesión necesitan abrir o actualizar. */
@@ -230,6 +235,7 @@ export class GameSession {
       economy.openNpc(id, role),
     );
     const worldCombat = new WorldCombat(this.game, renderer, tooltip);
+    worldNpcs.busy = () => worldCombat.isPicking;
     const worldCorpses = new WorldCorpses(this.game, renderer, tooltip);
     const worldDoors = new WorldDoors(this.game, renderer, tooltip);
     const worldContainers = new WorldContainers(this.game, renderer, tooltip);
@@ -491,7 +497,19 @@ export class GameSession {
     };
 
     const spellbook = new SpellbookWindow((spell) => cast(spell));
-    const skills = new SkillsWindow((skill) => this.game.useSkill(skill));
+    const useSkill = (skill: ActiveSkill): void => {
+      if (!skillNeedsTarget(skill)) return this.game.useSkill(skill);
+      banner.show(`${SKILL_NAMES[skill]}: tocá a la persona que tenés al lado (Escape cancela).`);
+      worldCombat.pickMobile(
+        (targetId) => {
+          banner.hide();
+          this.game.useSkill(skill, targetId);
+        },
+        () => banner.hide(),
+        { people: true, self: false, npcs: true },
+      );
+    };
+    const skills = new SkillsWindow(useSkill);
     this.hosts.ui.append(spellbook.window.element, skills.window.element);
     const render = (): void => {
       const values = this.game.skills;
@@ -520,7 +538,7 @@ export class GameSession {
       { label: 'Hechizos', key: 'l', onPress: () => spellbook.window.toggle() },
       { label: 'Habilidades', key: 'k', onPress: () => skills.window.toggle() },
     );
-    return { spellbook, cast };
+    return { spellbook, cast, useSkill };
   }
 
   /** Ventanas de mochila y equipo, sus botones y la sincronización con el estado. */
@@ -590,6 +608,13 @@ export class GameSession {
             tilePicker.pick((tile) => {
               done();
               this.game.gather(itemId, tile);
+            }, done);
+            return;
+          case 'lockpick':
+            banner.show('Tocá el cofre que querés forzar, al lado tuyo (Escape cancela).');
+            tilePicker.pick((tile) => {
+              done();
+              this.game.pickLock(itemId, tile);
             }, done);
             return;
           case 'dig':
@@ -773,7 +798,7 @@ export class GameSession {
       const selfId = this.game.selfId;
       if (!slot || !selfId) return;
       if (slot.type === 'skill') {
-        this.game.useSkill(slot.skill);
+        magic.useSkill(slot.skill);
         return;
       }
       if (slot.type === 'spell') {

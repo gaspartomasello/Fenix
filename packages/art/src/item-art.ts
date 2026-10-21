@@ -668,6 +668,25 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
       pieceMaterial('chain', color, (p) => p[2]),
     );
   },
+  lockpick(c) {
+    // Un juego de ganzúas: alambres finos de distintas puntas, atados con un aro.
+    c.ellipsoid(
+      [-3.4, 0.6, 2],
+      lying(0),
+      [1.6, 0.4, 1.6],
+      clipping((s) => (Math.hypot(s.p[0] + 3.4, s.p[2] - 2) < 0.9 ? null : metal(DARK_STEEL)(s))),
+    );
+    for (const [dx, dz, hook] of [
+      [0, 0, 0.8],
+      [0.7, -0.6, -0.6],
+      [-0.6, 0.5, 0.4],
+    ] as const) {
+      const from: Vec3 = [-2.6 + dx * 0.3, 0.6, 1.4 + dz * 0.3];
+      const to: Vec3 = [4 + dx, 0.6, -2.2 + dz];
+      c.limb(from, to, 0.28, 0.22, metal(STEEL));
+      c.limb(to, add(to, [0.4, 0, hook]), 0.24, 0.18, metal(STEEL));
+    }
+  },
   'bone-helm'(c) {
     // Máscara de calavera entera: cráneo, cara con cuencas y dientes, y cuernos de carnero.
     const bone = ramp([212, 200, 150]);

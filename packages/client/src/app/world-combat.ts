@@ -6,6 +6,8 @@ import type { WorldTooltip } from '../ui/world-tooltip';
 export interface PickOptions {
   readonly people: boolean;
   readonly self: boolean;
+  /** También los vecinos del pueblo (para fisgonear y robar). */
+  readonly npcs?: boolean;
 }
 
 /**
@@ -84,6 +86,10 @@ export class WorldCombat {
     if (creature) return creature;
     const options = this.picking?.options;
     if (options) {
+      if (options.npcs) {
+        const npc = this.renderer.npcAt(point);
+        if (npc) return npc;
+      }
       if (options.self) return this.renderer.humanAt(point);
       return options.people ? this.renderer.playerAt(point) : null;
     }

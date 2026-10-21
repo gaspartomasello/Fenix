@@ -4,6 +4,7 @@ import {
   SCROLL_KINDS,
   TRAP_DAMAGE,
   STATIC_CONTAINERS,
+  lockDifficulty,
   STATICS,
   staticContainerAt,
   type ContainerLook,
@@ -80,6 +81,8 @@ export class Containers {
   private readonly stockedAt = new Map<string, number>();
   /** Muebles con trampa mágica: estalla en la cara del próximo que lo abra. */
   private readonly traps = new Set<string>();
+  /** Cofres cerrados con llave que alguien abrió con ganzúa, y cuándo (se vuelven a cerrar). */
+  private readonly unlocked = new Map<string, number>();
   /** Lo arma la aplicación: daña a alguien (la trampa que estalla). */
   hurt: (playerId: EntityId, amount: number) => void = () => {};
   /** Lo arma la aplicación: por qué alguien no puede abrir un recipiente (la bodega de un barco). */
@@ -108,6 +111,11 @@ export class Containers {
     if (denied) return this.say(playerId, denied);
     const refused = this.refusal(playerId, containerId);
     if (refused) return this.say(playerId, refused);
+    if (this.lockOf(containerId) > 0)
+      return this.say(
+        playerId,
+        `${capitalize(name)} está cerrado con llave. Hace falta una ganzúa.`,
+      );
     if (this.traps.delete(containerId)) {
       const [min, max] = TRAP_DAMAGE;
       const amount = min + Math.floor(this.random.next() * (max - min + 1));
@@ -151,6 +159,37 @@ export class Containers {
         ? `Desarmaste la trampa de ${name}.`
         : `${capitalize(name)} no tenía ninguna trampa.`,
     );
+  }
+
+  /**
+   * Dificultad de la cerradura de un mueble (0 si está abierto). Solo los
+   * cofres tienen llave; los abiertos con ganzúa se vuelven a cerrar cuando
+   * se reponen.
+   */
+  lockOf(containerId: string): number {
+    const difficulty = this.difficultyOf(containerId);
+    if (difficulty === 0) return 0;
+    const at = this.unlocked.get(containerId);
+    return at !== undefined && this.clock.now() - at < REFILL_MS ? 0 : difficulty;
+  }
+
+  /** La cerradura cedió: queda abierto hasta que el cofre se reponga. */
+  unlock(containerId: string): void {
+    this.unlocked.set(containerId, this.clock.now());
+  }
+
+  /** El nombre de un mueble o bolsa (para los avisos). */
+  describe(containerId: string): string | null {
+    return this.nameOf(containerId);
+  }
+
+  private difficultyOf(containerId: string): number {
+    const placed = this.staticOf(containerId);
+    if (!placed || STATIC_CONTAINERS[placed.kind]?.look !== 'chest') return 0;
+    // Fuera de todo pueblo o lugar con nombre no hay cerraduras.
+    const region = this.world.map.regionAt(placed);
+    if (!region) return 0;
+    return lockDifficulty(placed.x, placed.y, !this.world.map.safeZoneAt(placed));
   }
 
   forget(playerId: EntityId): void {
@@ -204,6 +243,38 @@ export class Containers {
             this.world.items.contentsOf(containerId).map((it) => it.location),
           ),
         });
+    }
+    // Lo que se guarda con llave vale más: oro y alguna gema según la cerradura.
+    const lock = this.difficultyOf(containerId);
+    if (lock > 0) {
+      const spot = (): {
+        type: 'container';
+        containerId: string;
+        position: { x: number; y: number };
+      } => ({
+        type: 'container',
+        containerId,
+        position: this.world.items.gridSpot(
+          this.world.items.contentsOf(containerId).map((it) => it.location),
+        ),
+      });
+      this.world.items.add(
+        this.ids.next(),
+        'gold',
+        20 + Math.floor(this.random.next() * lock),
+        spot(),
+      );
+      const gems = ['amethyst', 'sapphire', 'ruby', 'emerald', 'diamond'] as const;
+      if (this.random.next() < 0.3 + lock / 1500) {
+        const gem =
+          gems[
+            Math.min(
+              gems.length - 1,
+              Math.floor((lock / 1000) * gems.length * this.random.next() * 1.6),
+            )
+          ] ?? 'amethyst';
+        this.world.items.add(this.ids.next(), gem, 1, spot());
+      }
     }
     // En las bibliotecas, a veces, un pergamino de hechizo.
     if (this.lookOf(containerId) === 'bookshelf' && this.random.next() < 0.3) {

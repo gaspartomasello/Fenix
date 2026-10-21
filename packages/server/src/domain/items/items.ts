@@ -239,6 +239,37 @@ export class Items {
     return true;
   }
 
+  /**
+   * Pasa un objeto de la mochila de uno a la de otro (lo que se roba). Con
+   * `amount` menor que la pila, se lleva solo esa parte. Devuelve false si
+   * no entra en la mochila de destino.
+   */
+  transfer(
+    itemId: EntityId,
+    toOwnerId: EntityId,
+    amount: number,
+    ids: () => EntityId,
+    changes: ItemChanges,
+  ): boolean {
+    const item = this.byId.get(itemId);
+    if (!item || item.location.type !== 'backpack') return false;
+    const from = item.location.ownerId;
+    if (amount < item.amount) {
+      if (!this.addToBackpack(toOwnerId, item.kind, amount, ids, changes)) return false;
+      item.amount -= amount;
+      changes.inventories.add(from);
+      return true;
+    }
+    if (this.backpackOf(toOwnerId).length >= MAX_BACKPACK_ITEMS) return false;
+    this.relocate(
+      item,
+      { type: 'backpack', ownerId: toOwnerId, position: this.freeSpot(toOwnerId) },
+      changes,
+    );
+    changes.inventories.add(from).add(toOwnerId);
+    return true;
+  }
+
   /** Borra todo lo que lleva un jugador (todavía no hay persistencia). */
   removeOwnedBy(ownerId: EntityId): void {
     for (const item of this.all())
@@ -476,6 +507,7 @@ export class Items {
       case 'map':
       case 'dig':
       case 'ship':
+      case 'lockpick':
         // Se resuelven en otros casos de uso (o en el cliente): acá no hay nada que hacer.
         return { ok: true, changes };
       case 'none': {
