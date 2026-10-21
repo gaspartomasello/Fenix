@@ -1,6 +1,5 @@
-import { drawCharacterFrame, type PixelImage } from '@fenix/art';
+import { drawPaperdoll, type PixelImage } from '@fenix/art';
 import {
-  Direction,
   EQUIPMENT_SLOTS,
   NOTORIETY_NAMES,
   SLOT_LABELS,
@@ -16,24 +15,30 @@ import { toCanvas } from '../platform/canvas';
 import { el } from './dom';
 import { itemIconUrl } from './item-icons';
 
-/** El personaje se muestra grande y de frente, como en la ventana de personaje de UO. */
-const FIGURE_SCALE = 3;
-const FIGURE_DIRECTION = Direction.SouthEast;
-/** Orden de los casilleros a la izquierda, de la cabeza a los pies. */
+/**
+ * Casilleros a la izquierda, en dos columnas: la armadura de la cabeza a los
+ * pies, y lo que va en las manos y la capa.
+ */
 const SLOT_ORDER: readonly EquipmentSlot[] = [
   'head',
-  'cloak',
+  'neck',
   'torso',
-  'rightHand',
-  'leftHand',
+  'arms',
+  'hands',
   'legs',
   'feet',
+  'cloak',
+  'rightHand',
+  'leftHand',
 ];
 /** Si dos objetos se tapan en el dibujo, se agarra primero el de más arriba. */
 const PICK_ORDER: readonly EquipmentSlot[] = [
   'rightHand',
   'leftHand',
+  'hands',
   'head',
+  'neck',
+  'arms',
   'cloak',
   'torso',
   'legs',
@@ -169,40 +174,22 @@ export class PaperdollView {
   render(look: PaperdollLook): void {
     this.look = look;
     const equipment: EquipmentLook = { ...look.equipment };
-    const full = drawCharacterFrame(
-      look.appearance,
-      FIGURE_DIRECTION,
-      'idle',
-      equipment,
-      look.role,
-      null,
-      undefined,
-      look.hues ?? {},
-    );
+    const hues = look.hues ?? {};
+    // El dibujo grande y con detalle (no el sprite del mundo agrandado).
+    const art = toCanvas(drawPaperdoll(look.appearance, equipment, look.role, hues));
+    this.figure.width = art.width;
+    this.figure.height = art.height;
+    this.figure.getContext('2d')?.drawImage(art, 0, 0);
+    // La silueta de cada objeto, para agarrarlo del dibujo: lo que cambia al
+    // sacárselo, en un dibujo chico (mucho más rápido) de la misma pose.
+    const small = (e: EquipmentLook): PixelImage =>
+      drawPaperdoll(look.appearance, e, look.role, hues, 1);
+    const full = small(equipment);
     this.artWidth = full.width;
-    // La silueta de cada objeto: lo que cambia en el dibujo al sacárselo.
     this.masks = new Map();
     for (const slot of EQUIPMENT_SLOTS) {
       if (!look.equipment[slot]) continue;
-      const without = drawCharacterFrame(
-        look.appearance,
-        FIGURE_DIRECTION,
-        'idle',
-        { ...equipment, [slot]: undefined },
-        look.role,
-        null,
-        undefined,
-        look.hues ?? {},
-      );
-      this.masks.set(slot, difference(full, without));
-    }
-    const art = toCanvas(full);
-    this.figure.width = art.width * FIGURE_SCALE;
-    this.figure.height = art.height * FIGURE_SCALE;
-    const ctx = this.figure.getContext('2d');
-    if (ctx) {
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(art, 0, 0, this.figure.width, this.figure.height);
+      this.masks.set(slot, difference(full, small({ ...equipment, [slot]: undefined })));
     }
 
     for (const [slot, box] of this.slots) {

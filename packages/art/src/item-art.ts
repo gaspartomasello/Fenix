@@ -611,6 +611,63 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     );
     c.ellipsoid([0, 1.8, -4.4], lying(0), [4, 1.2, 1.6], solid(ramp([226, 214, 196])));
   },
+  'leather-gorget'(c, color) {
+    gorget(c, 'leather', color);
+  },
+  'studded-gorget'(c, color) {
+    gorget(c, 'studded', color);
+  },
+  'plate-gorget'(c, color) {
+    gorget(c, 'plate', color);
+  },
+  'leather-sleeves'(c, color) {
+    sleeves(c, 'leather', color);
+  },
+  'studded-sleeves'(c, color) {
+    sleeves(c, 'studded', color);
+  },
+  'ringmail-sleeves'(c, color) {
+    sleeves(c, 'ringmail', color);
+  },
+  'bone-arms'(c, color) {
+    sleeves(c, 'bone', color);
+  },
+  'plate-arms'(c, color) {
+    sleeves(c, 'plate', color);
+  },
+  'leather-gloves'(c, color) {
+    gloves(c, 'leather', color);
+  },
+  'studded-gloves'(c, color) {
+    gloves(c, 'studded', color);
+  },
+  'ringmail-gloves'(c, color) {
+    gloves(c, 'ringmail', color);
+  },
+  'bone-gloves'(c, color) {
+    gloves(c, 'bone', color);
+  },
+  'plate-gloves'(c, color) {
+    gloves(c, 'plate', color);
+  },
+  'studded-leggings'(c, color) {
+    legs(
+      c,
+      pieceMaterial('studded', color, (p) => p[2] * 0.9),
+    );
+  },
+  'ringmail-leggings'(c, color) {
+    legs(
+      c,
+      pieceMaterial('ringmail', color, (p) => p[2] * 0.9),
+    );
+  },
+  'chain-leggings'(c, color) {
+    legs(
+      c,
+      pieceMaterial('chain', color, (p) => p[2]),
+    );
+  },
   'bone-helm'(c) {
     // Máscara de calavera entera: cráneo, cara con cuencas y dientes, y cuernos de carnero.
     const bone = ramp([212, 200, 150]);
@@ -1491,6 +1548,101 @@ function ribs(c: VolumeCanvas, meat: Ramp): void {
 }
 
 /** Pantalón de armadura acostado, con las dos piernas. */
+/** Materiales de las piezas sueltas de armadura, en el ícono. */
+type PieceStuff = 'leather' | 'studded' | 'ringmail' | 'chain' | 'plate' | 'bone';
+function pieceMaterial(stuff: PieceStuff, color: Ramp, band: (p: Vec3) => number): Material {
+  const wrap = (v: number, m: number): number => ((v % m) + m) % m;
+  const bone = ramp([212, 200, 150]);
+  switch (stuff) {
+    case 'leather':
+      return (s) => tone(color, s.light, wrap(band(s.p), 2.6) < 0.35 ? -1 : 0);
+    case 'studded':
+      return (s) =>
+        wrap(band(s.p), 2) < 0.7 && wrap(s.p[0] + s.p[2], 1.8) < 0.8
+          ? tone(STEEL, s.light + 0.3, 1)
+          : tone(color, s.light);
+    case 'ringmail':
+      return (s) => tone(DARK_STEEL, s.light + 0.15, Math.round(band(s.p) * 1.5) % 2 ? 1 : 0);
+    case 'chain':
+      return (s) => tone(STEEL, s.light, (s.x + s.y * 2) % 3 === 0 ? -1 : (s.x + s.y) % 2 ? 1 : 0);
+    case 'plate':
+      return (s) => (wrap(band(s.p), 2.6) < 0.3 ? tone(DARK_STEEL, s.light) : metal(STEEL)(s));
+    case 'bone':
+      return (s) =>
+        wrap(band(s.p), 2.2) < 0.5 ? tone(ramp([40, 34, 30]), s.light) : tone(bone, s.light);
+  }
+}
+
+/** Gola acostada: anillos de cuello, uno sobre otro, con el hueco del cuello. */
+function gorget(c: VolumeCanvas, stuff: PieceStuff, color: Ramp): void {
+  const rings: readonly [number, number][] =
+    stuff === 'plate'
+      ? [
+          [0.6, 5.6],
+          [1.5, 4.8],
+          [2.4, 4],
+        ]
+      : [
+          [0.8, 5.2],
+          [2, 4.4],
+        ];
+  for (const [y, r] of rings)
+    c.ellipsoid(
+      [0, y, 0],
+      lying(0),
+      [r, 0.7, r * 0.85],
+      clipping((s) =>
+        Math.hypot(s.p[0], s.p[2] / 0.85) < 2.6
+          ? null
+          : stuff === 'plate'
+            ? tone(STEEL, s.light + 0.1, 1)
+            : pieceMaterial(stuff, color, (p) => Math.atan2(p[2], p[0]) * 3)(s),
+      ),
+    );
+}
+
+/** Par de mangas o brazales, acostados uno al lado del otro. */
+function sleeves(c: VolumeCanvas, stuff: PieceStuff, color: Ramp): void {
+  for (const side of [1, -1]) {
+    const x = side * 2.6;
+    const material = pieceMaterial(stuff, color, (p) => p[2] * 1.1);
+    c.limb([x, 1.6, -5.4], [x + side * 0.4, 1.4, 0], 2, 1.7, material);
+    c.limb([x + side * 0.4, 1.4, 0], [x + side * 0.2, 1.2, 5], 1.7, 1.4, material);
+    if (stuff === 'plate') {
+      c.sphere([x + side * 0.4, 2, 0], 1.9, metal(STEEL));
+      c.ellipsoid([x - side * 0.5, 3, -5.2], lying(0), [2.6, 1.2, 1.8], metal(STEEL));
+    }
+    if (stuff === 'bone')
+      c.limb(
+        [x + side * 0.4, 2.2, 0],
+        [x + side * 1.6, 3.6, -1.2],
+        0.6,
+        0.15,
+        solid(ramp([212, 200, 150])),
+      );
+  }
+}
+
+/** Par de guantes: palma, dedos, pulgar y puño (acampanado en los guanteletes). */
+function gloves(c: VolumeCanvas, stuff: PieceStuff, color: Ramp): void {
+  for (const side of [1, -1]) {
+    const x = side * 3;
+    const material = pieceMaterial(stuff, color, (p) => p[2] * 1.6);
+    const cuff = stuff === 'plate' ? metal(STEEL) : material;
+    c.limb(
+      [x, 1.4, 4.4],
+      [x, 1.2, 1.8],
+      stuff === 'plate' || stuff === 'bone' ? 2.2 : 1.7,
+      1.6,
+      cuff,
+    );
+    c.ellipsoid([x, 1.1, 0.4], lying(0), [1.8, 0.9, 1.6], material);
+    for (const k of [-1.2, -0.4, 0.4, 1.2])
+      c.limb([x + k, 1, -0.8], [x + k * 1.1, 0.9, -3.4 + Math.abs(k) * 0.5], 0.5, 0.4, material);
+    c.limb([x - side * 1.6, 1.1, 0.8], [x - side * 3, 1, -0.6], 0.6, 0.45, material);
+  }
+}
+
 function legs(c: VolumeCanvas, material: Material): void {
   c.ellipsoid([0, 0.9, -3.2], lying(0), [3.8, 1, 1.7], material);
   for (const side of [1, -1]) {

@@ -430,6 +430,26 @@ bolsas e instrumentos, y compra gemas. La ventana de la tienda muestra el daño,
 cuánto alimenta cada objeto, separa los estantes (armas, armaduras, comida, otros) en las
 tiendas grandes, calcula el total al comprar varios y tiene «Vender todo».
 
+### Equipo completo y ventana de personaje
+
+- **Lugares del equipo** (`EQUIPMENT_SLOTS`): además de cabeza, capa, torso, manos, piernas
+  y pies, ahora hay cuello (golas), brazos (mangas y brazales) y manos (guantes y guanteletes),
+  como en UO. Cada material tiene sus piezas: cuero, tachonado, anillas, malla, hueso y placas;
+  el juego completo de placas suma bastante más que el peto solo. El herrero vende las de
+  metal, el tabernero las de cuero; la herrería y la sastrería las fabrican. Los guardias
+  llevan el juego completo.
+- **Cómo se ven puestas** (`character-art.ts`): `STUFF` dice de qué es cada pieza y
+  `armorSurface` la pinta (láminas, hileras de anillas, costuras, tachas, bandas de hueso). El
+  peto de placas ya no pone mangas de metal: los brazos los cubren los brazales (con codera y
+  hombrera). Las grebas de placas tienen escarcelas y rodilleras; la gola se apila sobre el
+  cuello.
+- **Ventana de personaje** (`paperdoll-art.ts`): el mismo modelo 3D, de frente y casi sin
+  inclinación, en la pose `display` (brazos separados, como en UO) y dibujado a
+  `PAPERDOLL_DETAIL` veces la resolución del sprite (no el sprite agrandado). El lienzo tiene
+  `detail`: con más de 1 las calcomanías crecen, las manos tienen dedos y pulgar (cerradas si
+  empuñan algo) y las telas caen sin escalones. Para agarrar una prenda del dibujo se comparan
+  dibujos chicos de la misma pose, con y sin la prenda.
+
 ### Pueblos vivos
 
 - **Puertas del lado que se ve**: en la vista isométrica las paredes del norte y del oeste

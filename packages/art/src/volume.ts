@@ -386,6 +386,12 @@ export class VolumeCanvas {
   private readonly normals: Float32Array;
   private readonly materials: Material[] = [];
   private readonly materialIndex = new Map<Material, number>();
+  /**
+   * Pixeles por pixel de sprite: en 1 se dibuja como en el mundo; más alto
+   * (la ventana de personaje) agranda las calcomanías (ojos, boca, ranuras)
+   * para que mantengan su tamaño en el modelo.
+   */
+  detail = 1;
 
   constructor(
     readonly width: number,
@@ -613,13 +619,18 @@ export class VolumeCanvas {
     if (dot(normalize(normal), this.camera.viewDir) < 0.2) return;
     this.resolve();
     const [cx, cy, cz] = this.camera.point(point);
-    const left = Math.round(cx - width / 2);
-    const top = Math.round(cy - height / 2);
-    for (let y = top; y < top + height; y++) {
-      for (let x = left; x < left + width; x++) {
+    // En la ventana de personaje, las calcomanías un poco más finas que agrandadas.
+    const grow = this.detail === 1 ? 1 : this.detail * 0.8;
+    const w = Math.max(1, Math.round(width * grow));
+    const h = Math.max(1, Math.round(height * grow));
+    const left = Math.round(cx - w / 2);
+    const top = Math.round(cy - h / 2);
+    for (let y = top; y < top + h; y++) {
+      for (let x = left; x < left + w; x++) {
         if (x < 0 || y < 0 || x >= this.width || y >= this.height) continue;
         const i = y * this.width + x;
-        if (this.colors[i] && Math.abs((this.depth[i] ?? 0) - cz) < 1.6) this.colors[i] = color;
+        if (this.colors[i] && Math.abs((this.depth[i] ?? 0) - cz) < 1.6 * this.detail)
+          this.colors[i] = color;
       }
     }
   }

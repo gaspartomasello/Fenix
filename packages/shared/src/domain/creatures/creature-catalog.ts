@@ -176,6 +176,8 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       { kind: 'bone-helm', chance: 0.04 },
       { kind: 'bone-armor', chance: 0.03 },
       { kind: 'bone-leggings', chance: 0.03 },
+      { kind: 'bone-arms', chance: 0.03 },
+      { kind: 'bone-gloves', chance: 0.03 },
       { kind: 'scimitar', chance: 0.05 },
       { kind: 'chain-coif', chance: 0.05 },
       { kind: 'gold', chance: 1, amount: [15, 40] },
@@ -528,6 +530,8 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     loot: [
       { kind: 'bone-armor', chance: 0.2 },
       { kind: 'bone-leggings', chance: 0.2 },
+      { kind: 'bone-arms', chance: 0.2 },
+      { kind: 'bone-gloves', chance: 0.2 },
       { kind: 'bone-helm', chance: 0.2 },
       { kind: 'sapphire', chance: 0.4, amount: [1, 3] },
       { kind: 'diamond', chance: 0.15 },
