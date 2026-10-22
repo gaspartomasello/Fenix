@@ -18,8 +18,12 @@ import { Camera, VolumeCanvas, withSmoothShading } from './volume';
 /** Cuántas veces más grande que el sprite del mundo se dibuja la ventana de personaje. */
 export const PAPERDOLL_DETAIL = 4;
 
-/** Se dibuja a este múltiplo y después se achica: bordes suaves, sin serrucho. */
-const SUPERSAMPLE = 2;
+/**
+ * Los últimos dibujos hechos, por aspecto y equipo: volver a mostrar el mismo
+ * personaje (o las siluetas para agarrar prendas) es instantáneo.
+ */
+const CACHE_SIZE = 32;
+const cache = new Map<string, PixelImage>();
 
 /**
  * El personaje de la ventana de personaje, como en UO: de frente, grande y
@@ -34,10 +38,21 @@ export function drawPaperdoll(
   hues: EquipmentHues = {},
   detail = PAPERDOLL_DETAIL,
 ): PixelImage {
-  // Grande: sombreado continuo y dibujado al doble para achicarlo con bordes suaves.
-  // Chico (las máscaras para agarrar prendas): tal cual.
-  const sample = detail > 1 ? SUPERSAMPLE : 1;
-  const scale = detail * sample;
+  const key = JSON.stringify([
+    appearance,
+    sortedEntries(equipment),
+    role,
+    sortedEntries(hues),
+    detail,
+  ]);
+  const cached = cache.get(key);
+  if (cached) {
+    // Al frente de la cola: es el último usado.
+    cache.delete(key);
+    cache.set(key, cached);
+    return cached;
+  }
+  const scale = detail;
   const draw = (): PixelImage =>
     drawCharacterFrame(
       appearance,
@@ -61,8 +76,18 @@ export function drawPaperdoll(
       },
       hues,
     );
-  if (sample === 1) return draw();
-  return withSmoothShading(draw).downsample(sample);
+  // Grande: con sombreado continuo (sin franjas). Chico (las siluetas para agarrar prendas): tal cual.
+  const image = detail > 1 ? withSmoothShading(draw) : draw();
+  cache.set(key, image);
+  if (cache.size > CACHE_SIZE) cache.delete(cache.keys().next().value as string);
+  return image;
+}
+
+/** Las entradas en orden fijo, para que el mismo equipo dé siempre la misma clave. */
+function sortedEntries(record: Readonly<Record<string, unknown>>): [string, unknown][] {
+  return Object.entries(record)
+    .filter(([, value]) => value !== undefined)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
 }
 
 export const PAPERDOLL_WIDTH = CHARACTER_ART_WIDTH * PAPERDOLL_DETAIL;

@@ -490,14 +490,19 @@ tiendas grandes, calcula el total al comprar varios y tiene «Vender todo».
   `detail`: con más de 1 las calcomanías crecen, las manos tienen dedos y pulgar (cerradas si
   empuñan algo) y las telas caen sin escalones. Para agarrar una prenda del dibujo se comparan
   dibujos chicos de la misma pose, con y sin la prenda.
-- **Acabado de la ventana de personaje**: se dibuja al doble (`SUPERSAMPLE`) y se achica
-  promediando (`PixelImage.downsample`), así los bordes quedan suaves. Mientras tanto el
-  sombreado es continuo (`withSmoothShading`: `tone` mezcla los tonos de la rampa en vez de
-  saltar de uno a otro). Con `detail > 1` el motor además usa la normal del tubo en las
-  extremidades (sin anillos), junta las esferas de las piezas finas, achata la normal de las
-  telas hechas de discos y del torso (`ellipsoid(..., flatten)`) y no marca el borde entre
-  partes de una misma pieza. La cara tiene ojos con iris, pupila y brillo, párpados, cejas y
-  boca con volumen (`drawFace`), y el pelo, mechones finos con el nacimiento ondulado.
+- **Acabado de la ventana de personaje**: el sombreado es continuo (`withSmoothShading`: `tone`
+  mezcla los tonos de la rampa en vez de saltar de uno a otro). Con `detail > 1` el motor además
+  usa la normal del tubo en las extremidades (sin anillos), junta las esferas de las piezas
+  finas, achata la normal de las telas hechas de discos y del torso
+  (`ellipsoid(..., flatten)`) y no marca el borde entre partes de una misma pieza. La cara tiene
+  ojos con iris, pupila y brillo, párpados, cejas y boca con volumen (`drawFace`), y el pelo,
+  mechones finos con el nacimiento ondulado. `drawPaperdoll` guarda los últimos 32 dibujos por
+  aspecto y equipo: el primero tarda unos 45 ms y repetirlo (o las siluetas para agarrar
+  prendas), casi nada.
+- **Pies**: un jugador sin calzado anda descalzo (`barefoot`; con dedos de cerca), y las
+  sandalias dejan ver el pie con la suela y las tiras. Los personajes nuevos empiezan con
+  zapatos (`startingClothes`). Cada casillero vacío de la ventana muestra, apagado, el dibujo de
+  lo que va ahí (`SLOT_HINTS`).
 
 ### Rastrear
 

@@ -207,8 +207,8 @@ export function startingKit(chosen: readonly SkillKey[]): KitEntry[] {
 }
 
 /**
- * La ropa con la que empieza: camisa del color elegido y pantalón (las
- * mujeres, pollera). Son objetos de verdad: si se los saca, se ve la ropa
+ * La ropa con la que empieza: camisa del color elegido, pantalón (las
+ * mujeres, pollera) y zapatos. Son objetos de verdad: si se los saca, se ve la ropa
  * interior, como en UO.
  */
 export function startingClothes(
@@ -217,6 +217,7 @@ export function startingClothes(
   return [
     { kind: 'shirt', slot: 'torso', hue: appearance.clothHue },
     { kind: appearance.gender === 'female' ? 'skirt' : 'trousers', slot: 'legs' },
+    { kind: 'shoes', slot: 'feet' },
   ];
 }
 
