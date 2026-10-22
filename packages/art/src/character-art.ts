@@ -558,6 +558,7 @@ function drawLegs(
         rig.pelvis.axes,
         [5.8 + t * 1.6, 1.4, 4.5 + t * (1.2 + kneeGap * 0.55)],
         cloth,
+        canvas.detail > 1 ? 0.92 : 0,
       );
     }
   }
@@ -602,6 +603,7 @@ function drawLegs(
         rig.pelvis.axes,
         [5.6 + t * flare, 1.4, 4.4 + t * (flare * 0.75 + kneeGap * 0.55)],
         fabric,
+        canvas.detail > 1 ? 0.92 : 0,
       );
     }
   }
@@ -752,17 +754,21 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
   const pelvis = rig.pelvis;
   const chest = rig.chest;
   // Cadera, cintura y pecho; en las mujeres, cadera más ancha, cintura fina y busto.
+  // De cerca, la luz no cambia de golpe entre una parte y otra (el torso se ve de una pieza).
+  const smooth = canvas.detail > 1 ? 0.7 : 0;
   canvas.ellipsoid(
     pelvis.at([0, 0.5, 0]),
     pelvis.axes,
     female ? [5.8, 4, 3.8] : [5.3, 3.8, 3.5],
     material,
+    smooth,
   );
   canvas.ellipsoid(
     lerp(pelvis.at([0, 4.5, 0.1]), chest.at([0, -5, 0]), 0.3),
     chest.axes,
     female ? [4, 3.4, 2.9] : [4.9, 3.6, 3.2],
     material,
+    smooth,
   );
   // Caja torácica amplia y, arriba, el pecho que se ensancha hacia los hombros.
   canvas.ellipsoid(
@@ -770,12 +776,14 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
     chest.axes,
     female ? [5.3, 6.2, 3.6] : [6.2, 6.7, 4.1],
     material,
+    smooth,
   );
   canvas.ellipsoid(
     chest.at([0, 2.9, 0.4]),
     chest.axes,
     female ? [5.6, 3, 3.4] : [6.6, 3.3, 3.9],
     material,
+    smooth,
   );
   // Trapecios: la pendiente del cuello a cada hombro, sobre las clavículas.
   const shoulderSpan = Math.abs(rig.arms[1].shoulder[0] - rig.arms[-1].shoulder[0]) / 2;
@@ -790,12 +798,12 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
   }
   // El peto de mujer tiene el busto forjado en la placa.
   if ((female && !metalTorso) || equipment.torso === 'female-plate') {
-    for (const side of [1, -1] as const) {
-      if (canvas.detail > 1)
-        // De cerca, el busto más suave y pegado al pecho.
-        canvas.ellipsoid(chest.at([side * 2, 0.5, 2.3]), chest.axes, [2.3, 2, 1.7], material);
-      else canvas.sphere(chest.at([side * 2.1, 0.8, 2.4]), 2.2, material);
-    }
+    if (canvas.detail > 1)
+      // De cerca, una sola forma ancha y suave sobre el pecho, sin marcar nada.
+      canvas.ellipsoid(chest.at([0, 0.7, 1.6]), chest.axes, [4.3, 2.3, 2.1], material, 0.5);
+    else
+      for (const side of [1, -1] as const)
+        canvas.sphere(chest.at([side * 2.1, 0.8, 2.4]), 2.2, material);
   }
   // Faldón de la camisa debajo del cinturón.
   if (!robed && !skirt && !metalTorso && !bareTorso) {
@@ -808,7 +816,8 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
   const torso = equipment.torso;
   const armStuff = STUFF[equipment.arms ?? 'gold'];
   const plateArms = armStuff === 'plate' || armStuff === 'segmented';
-  if ((torso && torso !== 'robe') || plateArms) {
+  // Hombreras para las armaduras (la ropa de tela no tiene).
+  if ((torso && torso !== 'robe' && !SHIRTS.has(torso)) || plateArms) {
     // Hombreras: más grandes en el peto de placas.
     const bone = torso === 'bone-armor';
     const pad =

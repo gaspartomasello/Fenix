@@ -13,10 +13,13 @@ import {
   PERSON_ZOOM,
 } from './humanoid-rig';
 import type { PixelImage } from './pixel-art';
-import { Camera, VolumeCanvas } from './volume';
+import { Camera, VolumeCanvas, withSmoothShading } from './volume';
 
 /** Cuántas veces más grande que el sprite del mundo se dibuja la ventana de personaje. */
 export const PAPERDOLL_DETAIL = 4;
+
+/** Se dibuja a este múltiplo y después se achica: bordes suaves, sin serrucho. */
+const SUPERSAMPLE = 2;
 
 /**
  * El personaje de la ventana de personaje, como en UO: de frente, grande y
@@ -31,28 +34,35 @@ export function drawPaperdoll(
   hues: EquipmentHues = {},
   detail = PAPERDOLL_DETAIL,
 ): PixelImage {
-  return drawCharacterFrame(
-    appearance,
-    Direction.SouthEast,
-    'display',
-    equipment,
-    role,
-    null,
-    (width, height) => {
-      // Un poco de giro para que se lea el volumen; la cámara casi a la altura del pecho.
-      const camera = new Camera(
-        0.22,
-        (width * detail) / 2,
-        (CHARACTER_FEET_Y + 2) * detail,
-        0.12,
-        PERSON_ZOOM * detail,
-      );
-      const canvas = new VolumeCanvas(width * detail, height * detail, camera);
-      canvas.detail = detail;
-      return canvas;
-    },
-    hues,
-  );
+  // Grande: sombreado continuo y dibujado al doble para achicarlo con bordes suaves.
+  // Chico (las máscaras para agarrar prendas): tal cual.
+  const sample = detail > 1 ? SUPERSAMPLE : 1;
+  const scale = detail * sample;
+  const draw = (): PixelImage =>
+    drawCharacterFrame(
+      appearance,
+      Direction.SouthEast,
+      'display',
+      equipment,
+      role,
+      null,
+      (width, height) => {
+        // Un poco de giro para que se lea el volumen; la cámara casi a la altura del pecho.
+        const camera = new Camera(
+          0.22,
+          (width * scale) / 2,
+          (CHARACTER_FEET_Y + 2) * scale,
+          0.12,
+          PERSON_ZOOM * scale,
+        );
+        const canvas = new VolumeCanvas(width * scale, height * scale, camera);
+        canvas.detail = scale;
+        return canvas;
+      },
+      hues,
+    );
+  if (sample === 1) return draw();
+  return withSmoothShading(draw).downsample(sample);
 }
 
 export const PAPERDOLL_WIDTH = CHARACTER_ART_WIDTH * PAPERDOLL_DETAIL;

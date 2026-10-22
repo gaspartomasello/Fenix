@@ -35,6 +35,41 @@ export class PixelImage {
     return [this.data[i] ?? 0, this.data[i + 1] ?? 0, this.data[i + 2] ?? 0];
   }
 
+  /**
+   * La imagen achicada `factor` veces promediando cada bloque (con su
+   * transparencia): bordes suaves, sin serrucho, para los dibujos grandes.
+   */
+  downsample(factor: number): PixelImage {
+    const width = Math.floor(this.width / factor);
+    const height = Math.floor(this.height / factor);
+    const out = new PixelImage(width, height);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        let a = 0;
+        for (let dy = 0; dy < factor; dy++) {
+          for (let dx = 0; dx < factor; dx++) {
+            const i = ((y * factor + dy) * this.width + x * factor + dx) * 4;
+            const alpha = this.data[i + 3] ?? 0;
+            r += (this.data[i] ?? 0) * alpha;
+            g += (this.data[i + 1] ?? 0) * alpha;
+            b += (this.data[i + 2] ?? 0) * alpha;
+            a += alpha;
+          }
+        }
+        if (a === 0) continue;
+        const o = (y * width + x) * 4;
+        out.data[o] = r / a;
+        out.data[o + 1] = g / a;
+        out.data[o + 2] = b / a;
+        out.data[o + 3] = a / (factor * factor);
+      }
+    }
+    return out;
+  }
+
   set(x: number, y: number, [r, g, b]: Rgb, alpha = 255): void {
     x = Math.floor(x);
     y = Math.floor(y);
