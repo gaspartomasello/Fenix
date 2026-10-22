@@ -1,5 +1,7 @@
 import {
   effectiveMoveMode,
+  encumbrance,
+  maxWeight,
   type Direction,
   type EntityId,
   type MobileMovedMessage,
@@ -52,9 +54,29 @@ export class MovePlayer {
     const groundBefore = new Set(this.notifications.groundSnapshotsNear(playerId).map((i) => i.id));
     // Sin energía no se puede correr: el paso cuenta como caminata (el cliente aplica la misma regla).
     // Montado corre la montura: no gasta la energía del jinete.
-    const effectiveMode = player.mount
-      ? mode
-      : effectiveMoveMode(mode, player.combat.current.stamina);
+    // Con más peso del que aguanta su Fuerza no corre, cada paso lo cansa y,
+    // muy cargado (o sin energía), no se mueve: la misma regla que aplica el cliente.
+    const load =
+      player.mount || player.unburdened
+        ? encumbrance(0, 1)
+        : encumbrance(player.carried, maxWeight(player.combat.attributes.strength));
+    const stamina = player.combat.current.stamina;
+    const stuck = !load.canMove
+      ? 'Llevás demasiado peso: no podés moverte.'
+      : load.stepStamina > 0 && stamina <= 0
+        ? 'Estás demasiado cansado para moverte con tanto peso.'
+        : null;
+    if (stuck) {
+      this.notifier.send(playerId, { type: 'system', text: stuck });
+      this.notifier.send(playerId, {
+        type: 'moveRejected',
+        seq,
+        position: player.position,
+        direction: player.direction,
+      });
+      return;
+    }
+    const effectiveMode = player.mount ? mode : effectiveMoveMode(mode, stamina, load.canRun);
     const refused = this.refusal(player, player.position, step(player.position, direction));
     if (refused) this.notifier.send(playerId, { type: 'system', text: refused });
     const outcome = refused
@@ -74,6 +96,10 @@ export class MovePlayer {
     this.stealth?.step(player, effectiveMode === 'run');
     if (effectiveMode === 'run' && !player.mount && player.registerRunStep())
       this.mobiles.sendVitals(player);
+    if (load.stepStamina > 0) {
+      player.combat.spendStamina(load.stepStamina);
+      this.mobiles.sendVitals(player);
+    }
     this.updateVisibility(player, before, {
       type: 'mobileMoved',
       id: player.id,

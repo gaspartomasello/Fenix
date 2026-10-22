@@ -33,6 +33,8 @@ const TEST_SUPPLIES: readonly { kind: ItemKind; amount: number }[] = [
  */
 export function equipTestCharacter(player: Player, world: World, ids: () => EntityId): ItemChanges {
   for (const key of SKILL_KEYS) player.skills.set(key, SKILL_MAX);
+  // Como un administrador del juego: lleva lo que quiera (tiene oro de sobra encima).
+  player.unburdened = true;
   player.combat.setBaseAttributes({
     strength: STAT_CAP,
     dexterity: STAT_CAP,

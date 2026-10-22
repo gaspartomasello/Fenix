@@ -742,7 +742,13 @@ body {
 
 .targeting-banner {
   position: absolute;
-  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  /* Por encima de la barra de atajos (que va abajo de todo): nunca la tapa. */
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   width: min(460px, calc(100% - 24px));
@@ -753,8 +759,38 @@ body {
 
 @media (max-width: 640px) {
   .targeting-banner {
-    bottom: calc(130px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(70px + env(safe-area-inset-bottom, 0px));
   }
+}
+
+.targeting-banner[hidden] {
+  display: none;
+}
+
+.targeting-cancel-inline {
+  flex: none;
+  padding: 0.2rem 0.6rem;
+  font: inherit;
+  font-size: 0.85em;
+  color: var(--color-text);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+/* El botón grande de cancelar solo existe en el celular (junto al joystick). */
+.targeting-cancel {
+  display: none;
+}
+
+/* Eligiendo un objetivo: el puntero es una mira. */
+.is-targeting #game canvas,
+.is-targeting .item-icon {
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Cg fill='none' stroke='%23000' stroke-width='4'%3E%3Ccircle cx='16' cy='16' r='9'/%3E%3Cpath d='M16 1v8M16 23v8M1 16h8M23 16h8'/%3E%3C/g%3E%3Cg fill='none' stroke='%23ffd36b' stroke-width='2'%3E%3Ccircle cx='16' cy='16' r='9'/%3E%3Cpath d='M16 1v8M16 23v8M1 16h8M23 16h8'/%3E%3C/g%3E%3Ccircle cx='16' cy='16' r='2' fill='%23ffd36b'/%3E%3C/svg%3E")
+      16 16,
+    crosshair;
 }
 
 /* ── Economía ─────────────────────────────────────────────────────── */
@@ -1475,7 +1511,8 @@ body {
   position: absolute;
   /* Centrada, pero sin pisar el chat de la izquierda en pantallas medianas. */
   left: max(50%, min(712px, calc(100% - 275px)));
-  bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+  /* Abajo de todo, para no tapar el juego ni los avisos. */
+  bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   display: flex;
   gap: 4px;
@@ -1687,7 +1724,7 @@ body {
   .hotbar {
     --hotbar-slot: 40px;
     left: 50%;
-    bottom: calc(220px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -1916,6 +1953,7 @@ body {
 
 .touch-ui .targeting-banner,
 .touch-ui .ghost-banner {
+  z-index: 70;
   top: calc(34px + env(safe-area-inset-top, 0px));
   bottom: auto;
   width: min(420px, 60vw);
@@ -2869,4 +2907,72 @@ body {
 }
 .tracking-pointer[hidden] {
   display: none;
+}
+
+/* ── Etapa 63: cancelar con el dedo y panel de estado ─────────────── */
+
+/* Celular: cancelar el hechizo o la habilidad, arriba del joystick. */
+.touch-ui .targeting-cancel {
+  position: absolute;
+  left: calc(var(--safe-left) + 44px);
+  bottom: calc(var(--safe-bottom) + 158px);
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  font: inherit;
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #fff4dc;
+  background: radial-gradient(circle at 35% 30%, #6a6a72, #26242a);
+  border: 3px solid #ffd36b;
+  border-radius: 50%;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+}
+
+.touch-ui .targeting-cancel[hidden] {
+  display: none;
+}
+
+.vitals-panel {
+  cursor: pointer;
+}
+
+.status-rows {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.9rem;
+  margin: 0 0 0.6rem;
+  min-width: 240px;
+}
+
+.status-rows dt {
+  color: var(--color-text-muted);
+}
+
+.status-rows dd {
+  margin: 0;
+  text-align: right;
+}
+
+.status-weight {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--color-panel-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.status-weight[hidden] {
+  display: none;
+}
+
+.status-weight-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8fb86a, #d8c26a);
+}
+
+.status-weight--over .status-weight-fill {
+  background: linear-gradient(90deg, #d86a4a, #ff8a5a);
 }

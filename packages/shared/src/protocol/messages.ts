@@ -611,6 +611,10 @@ export interface InventoryMessage {
   readonly equipment: readonly EquippedItemSnapshot[];
   /** Caja del banco (se puede usar cerca de la banquera). */
   readonly bank: readonly BackpackItemSnapshot[];
+  /** Cuánto pesa lo que lleva encima (mochila con lo de adentro y lo puesto), en piedras. */
+  readonly weight?: number;
+  /** No le pesa nada (personajes de prueba y administradores): sin límite de carga. */
+  readonly unburdened?: true;
 }
 
 /** Cambió lo que se ve puesto un jugador. */

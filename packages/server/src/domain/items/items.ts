@@ -10,6 +10,7 @@ import {
   clampToBackpack,
   describeItem,
   inViewRange,
+  itemWeight,
   withinReach,
   type EntityId,
   type EquipmentHues,
@@ -363,6 +364,18 @@ export class Items {
   }
 
   /** Todo lo que hay adentro, también en las bolsas de adentro. */
+  /** Cuánto pesa lo que lleva alguien: la mochila (con lo de adentro de las bolsas) y lo puesto. */
+  weightOf(ownerId: EntityId): number {
+    let total = 0;
+    for (const item of [...this.backpackOf(ownerId), ...this.equipmentOf(ownerId)]) {
+      total += itemWeight(item.kind) * item.amount;
+      if (ITEMS[item.kind].capacity)
+        for (const inner of this.descendantsOf(item.id))
+          total += itemWeight(inner.kind) * inner.amount;
+    }
+    return total;
+  }
+
   descendantsOf(containerId: string): Item[] {
     const out: Item[] = [];
     for (const item of this.contentsOf(containerId)) {
