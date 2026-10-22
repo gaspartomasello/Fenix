@@ -2,6 +2,7 @@ import { ITEM_ART_SIZE } from '@fenix/art';
 import type { EntityId, GroundItemSnapshot } from '@fenix/shared';
 import { Sprite, type Container } from 'pixi.js';
 import { characterDepth, groundItemDepth } from './depth';
+import { drawnAsField } from './field-layer';
 import type { Ground } from './ground';
 import { CHARACTER_SCALE, type ScreenPoint } from './iso';
 import type { TextureCache } from './texture-cache';
@@ -25,6 +26,8 @@ export class ItemLayer {
     for (const id of removed) this.remove(id);
     for (const item of added) {
       this.remove(item.id);
+      // El fuego, el veneno y el muro de piedra los dibuja la capa de campos.
+      if (drawnAsField(item.kind)) continue;
       const sprite = new Sprite(this.textures.item(item.kind, item.amount));
       const screen = this.ground.toScreen(item.position);
       sprite.anchor.set(0.5);

@@ -74,6 +74,7 @@ export class MountActions {
     if (!player || !(pet instanceof Creature) || !pet.isPet || pet.ownerId !== playerId) return;
     if (player.combat.isDead) return this.say(playerId, 'Los fantasmas no pueden montar.');
     if (player.mount) return this.say(playerId, 'Ya estás montado.');
+    if (player.form) return this.say(playerId, 'Transformado no podés montar.');
     if (tileDistance(pet.position, player.position) > MOUNT_RANGE)
       return this.say(playerId, 'Acercate a tu montura para subirte.');
     if (!isMountKind(pet.body)) return;

@@ -19,6 +19,7 @@ describe('cuerpos muertos', () => {
     for (const kind of CREATURE_KINDS) {
       const spirit = [
         'energy-vortex',
+        'blade-spirits',
         'air-elemental',
         'fire-elemental',
         'water-elemental',

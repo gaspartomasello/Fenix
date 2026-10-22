@@ -10,6 +10,10 @@ export const EFFECT_KINDS = [
   'poison',
   'paralyzed',
   'night-sight',
+  'reactive-armor',
+  'magic-reflection',
+  'incognito',
+  'polymorph',
 ] as const;
 export type EffectKind = (typeof EFFECT_KINDS)[number];
 
@@ -23,6 +27,10 @@ export const EFFECT_NAMES: Readonly<Record<EffectKind, string>> = {
   poison: 'Envenenado',
   paralyzed: 'Paralizado',
   'night-sight': 'Visión nocturna',
+  'reactive-armor': 'Armadura reactiva',
+  'magic-reflection': 'Reflejo mágico',
+  incognito: 'Incógnito',
+  polymorph: 'Transformación',
 };
 
 /** Un efecto activo, tal como lo ve su dueño. */

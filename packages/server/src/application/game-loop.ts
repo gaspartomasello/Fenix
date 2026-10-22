@@ -64,6 +64,11 @@ export class GameLoop {
   private readonly fields: Fields;
   /** Lo arma la aplicación: poner o sacar una trampa mágica en un mueble. */
   onTrap: (casterId: EntityId, containerId: string, armed: boolean) => void = () => {};
+  /** Lo arma la aplicación: Cerradura mágica o Abrir cerradura sobre un mueble. */
+  onLock: (casterId: EntityId, containerId: string, locked: boolean, magery: number) => void =
+    () => {};
+  /** Lo arma la aplicación: Telequinesis sobre una puerta o un mueble. */
+  onTelekinesis: (casterId: EntityId, position: Position) => void = () => {};
   /** Lo arma la aplicación: una criatura murió a manos de un jugador (misiones de caza). */
   onCreatureKilled: (killer: Player, creature: Creature) => void = () => {};
   /** Cualquier criatura que mata un jugador (también las que no reaparecen, como los jefes). */
@@ -214,6 +219,7 @@ export class GameLoop {
     }
     this.announceStatGains(player);
     this.tickEffects(player, now);
+    this.expireLook(player);
     if (player.combat.isDead) return;
     if (player.pendingCast && now >= player.pendingCast.resolveAt) this.finishCast(player, now);
     if (player.pendingBandage && now >= player.pendingBandage.resolveAt) this.finishBandage(player);
@@ -250,6 +256,23 @@ export class GameLoop {
     if (meditates && regen.mana && player.skills.tryGain('meditation', this.roll)) {
       this.mobiles.skillGains([{ player, skill: 'meditation' }]);
     }
+  }
+
+  /** Se terminó el Incógnito o la Transformación (o murió): vuelve a ser quien era. */
+  private expireLook(player: Player): void {
+    let changed = false;
+    if (player.disguise && !player.combat.effect('incognito')) {
+      player.disguise = null;
+      changed = true;
+    }
+    if (player.form && !player.combat.effect('polymorph')) {
+      player.form = null;
+      changed = true;
+    }
+    if (!changed) return;
+    this.mobiles.look(player);
+    if (!player.combat.isDead)
+      this.notifier.send(player.id, { type: 'system', text: 'Volvés a ser vos.' });
   }
 
   private finishCast(player: Player, now: number): void {
@@ -317,6 +340,41 @@ export class GameLoop {
         this.notifier.send(player.id, { type: 'system', text: 'No hubo lugar para levantarlo.' });
     }
     if (outcome.trap) this.onTrap(player.id, outcome.trap.containerId, outcome.trap.armed);
+    if (outcome.lock)
+      this.onLock(player.id, outcome.lock.containerId, outcome.lock.locked, outcome.lock.magery);
+    if (outcome.telekinesis) this.onTelekinesis(player.id, outcome.telekinesis);
+    if (outcome.dispelField && !this.fields.dispel(outcome.dispelField))
+      this.notifier.send(player.id, { type: 'system', text: 'Ahí no hay ningún campo mágico.' });
+    for (const creature of outcome.dispelled ?? []) {
+      this.mobiles.spellEffect(player, creature, spellKey, 0, false);
+      this.dismiss(creature);
+      if (creature.ownerId && creature.ownerId !== player.id)
+        this.notifier.send(creature.ownerId, {
+          type: 'system',
+          text: `Disiparon a tu ${creature.name}.`,
+        });
+    }
+    if (outcome.dispelled && outcome.dispelled.length > 0)
+      this.notifier.send(player.id, {
+        type: 'system',
+        text:
+          outcome.dispelled.length === 1
+            ? `${capitalize(outcome.dispelled[0]?.name ?? '')} se desvaneció.`
+            : `Se desvanecieron ${outcome.dispelled.length} invocaciones.`,
+      });
+    if (outcome.lookChanged) this.mobiles.look(player);
+    if (outcome.reflectedBy) {
+      this.mobiles.spellEffect(outcome.reflectedBy, player, 'magic-reflection', 0, false);
+      this.notifier.send(player.id, {
+        type: 'system',
+        text: `¡${outcome.reflectedBy.name} te devolvió el hechizo!`,
+      });
+      if (outcome.reflectedBy instanceof Player)
+        this.notifier.send(outcome.reflectedBy.id, {
+          type: 'system',
+          text: 'Tu Reflejo mágico devolvió el hechizo.',
+        });
+    }
     if (outcome.conceal) this.stealth.conceal(outcome.conceal.target, outcome.conceal.until);
     if (outcome.revealAt) {
       const found = this.stealth.revealArea(
@@ -571,6 +629,19 @@ export class GameLoop {
       }
     }
     if (result.itemChanges) this.items.publish(result.itemChanges, result.attacker.id);
+    // La Armadura reactiva le devolvió parte del golpe al atacante.
+    if (result.reflected) {
+      this.mobiles.broadcastHealth(attacker);
+      if (attacker instanceof Player) {
+        this.mobiles.sendVitals(attacker);
+        this.notifier.send(attacker.id, {
+          type: 'system',
+          text: `La armadura reactiva te devolvió ${result.reflected} de daño.`,
+        });
+      }
+      if (target instanceof Player) this.mobiles.sendEffects(target);
+      if (result.reflectKilled) this.handleKill(target, attacker, now);
+    }
     if (result.hit && !result.blocked && result.damage > 0) this.disrupt(result.target);
     if (result.killed) this.handleKill(result.attacker, result.target, now);
     else if (target instanceof Player) this.warMode.defend(target, attacker);

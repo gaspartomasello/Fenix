@@ -205,6 +205,14 @@ export class Combatant {
     return had;
   }
 
+  /** Gasta parte de lo que vale un efecto (la Armadura reactiva); al llegar a 0, termina. */
+  drainEffect(kind: EffectKind, by: number): void {
+    const active = this.effects.get(kind);
+    if (!active) return;
+    if (active.amount - by <= 0) this.effects.delete(kind);
+    else this.effects.set(kind, { ...active, amount: active.amount - by });
+  }
+
   effect(kind: EffectKind): { amount: number } | undefined {
     const active = this.effects.get(kind);
     return active ? { amount: active.amount } : undefined;

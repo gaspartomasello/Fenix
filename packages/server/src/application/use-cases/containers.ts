@@ -5,6 +5,7 @@ import {
   TRAP_DAMAGE,
   STATIC_CONTAINERS,
   lockDifficulty,
+  unlockReach,
   STATICS,
   staticContainerAt,
   type ContainerLook,
@@ -83,6 +84,8 @@ export class Containers {
   private readonly traps = new Set<string>();
   /** Cofres cerrados con llave que alguien abrió con ganzúa, y cuándo (se vuelven a cerrar). */
   private readonly unlocked = new Map<string, number>();
+  /** Muebles cerrados con Cerradura mágica, y con qué dificultad. */
+  private readonly magicLocks = new Map<string, number>();
   /** Lo arma la aplicación: daña a alguien (la trampa que estalla). */
   hurt: (playerId: EntityId, amount: number) => void = () => {};
   /** Lo arma la aplicación: por qué alguien no puede abrir un recipiente (la bodega de un barco). */
@@ -161,12 +164,48 @@ export class Containers {
     );
   }
 
+  /** Cerradura mágica: cierra un mueble abierto (más difícil de forzar con más Magia). */
+  magicLock(casterId: EntityId, containerId: string, magery: number): void {
+    const name = this.nameOf(containerId) ?? 'el mueble';
+    if (this.lockOf(containerId) > 0)
+      return this.say(casterId, `${capitalize(name)} ya está cerrado con llave.`);
+    this.magicLocks.set(containerId, Math.max(100, Math.floor(magery * 0.8)));
+    for (const [playerId, ids] of this.open)
+      if (ids.has(containerId)) this.close(playerId, containerId);
+    this.say(casterId, `Cerraste ${name} con magia.`);
+  }
+
+  /** Abrir cerradura: abre la cerradura si no es más difícil de lo que alcanza la Magia. */
+  magicUnlock(casterId: EntityId, containerId: string, magery: number): void {
+    const name = this.nameOf(containerId) ?? 'el mueble';
+    const difficulty = this.lockOf(containerId);
+    if (difficulty === 0)
+      return this.say(casterId, `${capitalize(name)} no está cerrado con llave.`);
+    if (difficulty > unlockReach(magery))
+      return this.say(casterId, `La cerradura de ${name} es demasiado difícil para tu Magia.`);
+    this.unlock(containerId);
+    this.say(casterId, `¡Clic! La cerradura de ${name} se abrió.`);
+  }
+
+  /** Telequinesis sobre un mueble: si tiene trampa, estalla lejos de quien la hizo saltar. */
+  springTrap(casterId: EntityId, containerId: string): void {
+    const name = this.nameOf(containerId) ?? 'el mueble';
+    this.say(
+      casterId,
+      this.traps.delete(containerId)
+        ? `La trampa de ${name} estalla lejos de vos, sin hacerte daño.`
+        : `Moviste la tapa de ${name} desde lejos: no tenía trampa.`,
+    );
+  }
+
   /**
    * Dificultad de la cerradura de un mueble (0 si está abierto). Solo los
    * cofres tienen llave; los abiertos con ganzúa se vuelven a cerrar cuando
    * se reponen.
    */
   lockOf(containerId: string): number {
+    const magic = this.magicLocks.get(containerId);
+    if (magic !== undefined) return magic;
     const difficulty = this.difficultyOf(containerId);
     if (difficulty === 0) return 0;
     const at = this.unlocked.get(containerId);
@@ -175,6 +214,7 @@ export class Containers {
 
   /** La cerradura cedió: queda abierto hasta que el cofre se reponga. */
   unlock(containerId: string): void {
+    if (this.magicLocks.delete(containerId)) return;
     this.unlocked.set(containerId, this.clock.now());
   }
 

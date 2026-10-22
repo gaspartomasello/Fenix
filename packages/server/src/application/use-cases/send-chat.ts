@@ -21,7 +21,8 @@ export class SendChat {
     this.notifier.sendMany(listeners, {
       type: 'chat',
       id: playerId,
-      name: player.name,
+      // Con Incógnito, los que lo oyen hablar ven el nombre falso (el grupo y el gremio, el de verdad).
+      name: channel === 'say' ? (player.disguise?.name ?? player.name) : player.name,
       text,
       channel,
     });

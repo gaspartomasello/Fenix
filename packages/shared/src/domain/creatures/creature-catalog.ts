@@ -27,6 +27,7 @@ export const CREATURE_KINDS = [
   'brigand',
   // Invocaciones del octavo círculo
   'energy-vortex',
+  'blade-spirits',
   'air-elemental',
   'earth-elemental',
   'fire-elemental',
@@ -617,6 +618,16 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     skill: 800,
     weapon: { name: 'descarga', minDamage: 10, maxDamage: 18, swingMs: 2000, skill: 'wrestling' },
     moveMs: 250,
+    humanoid: false,
+  }),
+  'blade-spirits': summon('blade-spirits', 'espíritu de espadas', {
+    maxHits: 45,
+    strength: 80,
+    dexterity: 110,
+    armor: 8,
+    skill: 700,
+    weapon: { name: 'hojas', minDamage: 6, maxDamage: 13, swingMs: 1600, skill: 'swordsmanship' },
+    moveMs: 260,
     humanoid: false,
   }),
   'air-elemental': summon('air-elemental', 'elemental de aire', {

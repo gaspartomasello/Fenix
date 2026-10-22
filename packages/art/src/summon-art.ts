@@ -31,6 +31,7 @@ import {
 export type SummonKind = Extract<
   CreatureKind,
   | 'energy-vortex'
+  | 'blade-spirits'
   | 'air-elemental'
   | 'earth-elemental'
   | 'fire-elemental'
@@ -41,6 +42,7 @@ export type SummonKind = Extract<
 export function isSummonKind(kind: CreatureKind): kind is SummonKind {
   return (
     kind === 'energy-vortex' ||
+    kind === 'blade-spirits' ||
     kind === 'air-elemental' ||
     kind === 'earth-elemental' ||
     kind === 'fire-elemental' ||
@@ -52,6 +54,7 @@ export function isSummonKind(kind: CreatureKind): kind is SummonKind {
 /** Tamaño de cada una respecto de una persona. */
 const ZOOM: Readonly<Record<SummonKind, number>> = {
   'energy-vortex': 1.15,
+  'blade-spirits': 1.2,
   'air-elemental': 1.18,
   'earth-elemental': 1.25,
   'fire-elemental': 1.18,
@@ -95,6 +98,9 @@ export function drawSummonFrame(
   switch (kind) {
     case 'energy-vortex':
       drawVortex(canvas, phase);
+      break;
+    case 'blade-spirits':
+      drawBladeSpirits(canvas, phase);
       break;
     case 'daemon':
       drawDaemon(canvas, humanoidRig(frame, false));
@@ -142,6 +148,55 @@ function drawVortex(canvas: VolumeCanvas, phase: number): void {
         ? tone(spark, 0.8 + s.light * 0.2)
         : glowing(energy)(s),
     );
+  }
+}
+
+/**
+ * Espíritu de espadas: un remolino de hojas de acero que giran alrededor de
+ * un centro de luz pálida, cada anillo hacia un lado.
+ */
+function drawBladeSpirits(canvas: VolumeCanvas, phase: number): void {
+  const steel = ramp([176, 186, 204]);
+  const edge = ramp([244, 248, 255]);
+  const wind = ramp([96, 116, 156]);
+  // El remolino de aire: anillos finos que brillan, anchos arriba y finos abajo.
+  for (let i = 0; i < 9; i++) {
+    const y = 4 + i * 5.2;
+    const radius = 1.4 + i * 0.45;
+    const tilt = axesAlong([Math.sin(i * 1.3 + phase) * 0.35, 1, Math.cos(i * 1.3 + phase) * 0.35]);
+    canvas.ellipsoid(
+      [Math.sin(i + phase * 1.5) * 0.8, y, 0],
+      tilt,
+      [radius, 0.5, radius * 0.8],
+      (s) =>
+        Math.sin(Math.atan2(s.p[2], s.p[0] - Math.sin(i + phase * 1.5) * 0.8) * 2 + phase * 2 + i) >
+        0.2
+          ? tone(wind, 0.45 + s.light * 0.4)
+          : tone(edge, 0.75),
+    );
+  }
+  // Las hojas: sables que giran de costado, cada anillo hacia un lado.
+  const rings = 5;
+  for (let r = 0; r < rings; r++) {
+    const y = 8 + r * 8.5;
+    const radius = 5 + r * 1.9;
+    const spin = (r % 2 === 0 ? 1 : -1) * phase * 0.8 + r * 0.9;
+    const blades = 3 + (r % 2);
+    for (let b = 0; b < blades; b++) {
+      const angle = spin + (b / blades) * Math.PI * 2;
+      const root: Vec3 = [Math.cos(angle) * 1.8, y, Math.sin(angle) * 1.8];
+      const along = angle + 1.25;
+      const tip: Vec3 = [
+        Math.cos(angle) * radius + Math.cos(along) * 4.5,
+        y + Math.sin(angle * 2 + r) * 2.6,
+        Math.sin(angle) * radius + Math.sin(along) * 4.5,
+      ];
+      canvas.limb(root, tip, 1.2, 0.2, (s) =>
+        s.light > 0.8 ? tone(edge, 1) : tone(steel, 0.4 + s.light * 0.6),
+      );
+      // Guarda y empuñadura, del lado de adentro.
+      canvas.sphere(root, 0.9, solid(ramp([200, 160, 70])));
+    }
   }
 }
 

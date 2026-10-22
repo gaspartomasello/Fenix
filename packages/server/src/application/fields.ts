@@ -117,6 +117,25 @@ export class Fields {
     return hits;
   }
 
+  /** Disipar campo: deshace el tile de muro o campo que hay en `at`. */
+  dispel(at: Position): boolean {
+    for (const field of this.fields) {
+      const tile = field.tiles.find((t) => t.at.x === at.x && t.at.y === at.y);
+      if (!tile) continue;
+      if (FIELDS[field.kind].barrier) this.world.map.setBarrier(at, false);
+      const changes = emptyChanges();
+      if (this.world.items.remove(tile.id))
+        changes.groundRemoved.push({ id: tile.id, position: at });
+      this.items.publish(changes, '');
+      const rest = field.tiles.filter((t) => t !== tile);
+      this.fields = this.fields
+        .map((f) => (f === field ? { ...f, tiles: rest } : f))
+        .filter((f) => f.tiles.length > 0);
+      return true;
+    }
+    return false;
+  }
+
   private occupiedByField(p: Position): boolean {
     return this.fields.some((f) => f.tiles.some((t) => t.at.x === p.x && t.at.y === p.y));
   }

@@ -193,9 +193,11 @@ export class World {
     if (mobile instanceof Player) {
       return {
         ...mobile.toSnapshot(),
-        equipment: this.items.lookOf(mobile.id),
-        hues: this.items.huesOf(mobile.id),
-        guildTag: this.guilds.of(mobile.name)?.tag ?? null,
+        // Transformado no se le ve el equipo; disfrazado, tampoco el gremio.
+        equipment: mobile.form ? {} : this.items.lookOf(mobile.id),
+        hues: mobile.form ? {} : this.items.huesOf(mobile.id),
+        guildTag:
+          mobile.form || mobile.disguise ? null : (this.guilds.of(mobile.name)?.tag ?? null),
       };
     }
     if (mobile instanceof Npc) {

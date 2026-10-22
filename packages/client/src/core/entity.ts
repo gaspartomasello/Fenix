@@ -93,6 +93,8 @@ export class Entity {
   private _war: boolean;
   /** Criatura con dueño (invocación o montura suelta): de quién es. */
   readonly ownerId: EntityId | null;
+  /** Una persona transformada en animal o criatura (Transformación). */
+  readonly polymorphed: boolean;
 
   constructor(snapshot: MobileSnapshot) {
     this.id = snapshot.id;
@@ -111,6 +113,7 @@ export class Entity {
     this._mount = snapshot.mount ?? null;
     this._war = snapshot.war ?? false;
     this.ownerId = snapshot.ownerId ?? null;
+    this.polymorphed = snapshot.polymorphed === true;
   }
 
   /** En qué va montado (null: a pie). */
@@ -143,7 +146,7 @@ export class Entity {
 
   /** Es otra persona (ni criatura ni personaje del pueblo). */
   get isPlayer(): boolean {
-    return this.body === 'human' && this.npc === null;
+    return (this.body === 'human' || this.polymorphed) && this.npc === null;
   }
 
   setStatus(notoriety: Notoriety, guildTag: string | null): void {

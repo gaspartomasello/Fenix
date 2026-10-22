@@ -2829,3 +2829,60 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   'basalt-window-x': { model: BASALT_WINDOW.x },
   'basalt-window-y': { model: BASALT_WINDOW.y },
 };
+
+// ── Muro de piedra (hechizo) ─────────────────────────────────────────
+
+/**
+ * Un tramo del Muro de piedra del hechizo: piedras toscas apiladas que
+ * cruzan el tile por el medio, a lo largo de x (0) o de z (2). Es alto como
+ * una pared y recto, así la hilera de cinco tiles se ve como un muro.
+ */
+export function drawFieldWall(along: 0 | 2): PixelImage {
+  const frame = STANDARD_FRAME;
+  const canvas = new VolumeCanvas(
+    frame.width,
+    frame.height,
+    new WorldProjection(frame.ground.x, frame.ground.y),
+  );
+  const rough = ramp([132, 126, 116]);
+  const height = 44;
+  const thick = 4.2;
+  const course = 7.5;
+  // Hiladas de piedras de largo desparejo, trabadas como una pirca.
+  for (let row = 0; row * course < height; row++) {
+    const y = row * course + course / 2;
+    let t = -H - (row % 2) * 3.2;
+    let k = 0;
+    while (t < H) {
+      const length = 5 + noise(row, k, 7) * 5;
+      const end = Math.min(H, t + length);
+      const start = Math.max(-H, t);
+      const mid = (start + end) / 2;
+      const half = (end - start) / 2 - 0.35;
+      if (half > 0.6) {
+        const bulge = thick + (noise(row, k, 9) - 0.5) * 1.4;
+        const center: Vec3 = along === 0 ? [mid, y, 0] : [0, y, mid];
+        const size: Vec3 =
+          along === 0 ? [half, course / 2 - 0.3, bulge] : [bulge, course / 2 - 0.3, half];
+        const seed = row * 31 + k * 7;
+        canvas.box(center, UP, size, rocky(rough, seed));
+      }
+      t += length;
+      k++;
+    }
+  }
+  // Coronación despareja: algunas piedras sueltas arriba.
+  for (let k = 0; k < 3; k++) {
+    const t = -H * 0.6 + k * H * 0.6 + (noise(k, 3, 3) - 0.5) * 2;
+    const at: Vec3 = along === 0 ? [t, height + 1.6, 0] : [0, height + 1.6, t];
+    canvas.ellipsoid(at, UP, [2.6, 1.8, 3], rocky(rough, 90 + k));
+  }
+  const body = canvas.toImage(OUTLINE);
+  const image = new PixelImage(frame.width, frame.height);
+  softShadow(image, frame, 18, 7);
+  image.draw(body, 0, 0);
+  return image;
+}
+
+/** Lienzo del tramo de Muro de piedra (el mismo de los objetos fijos). */
+export const FIELD_WALL_FRAME: StaticFrame = STANDARD_FRAME;

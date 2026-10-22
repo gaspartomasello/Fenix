@@ -11,7 +11,7 @@ import type { MountKind } from '../domain/mounts/mount-catalog';
 import type { ContainerLook } from '../domain/world/statics';
 import type { ChatChannel, SocialCommand } from '../domain/social/groups';
 import type { Notoriety } from '../domain/social/reputation';
-import type { SpellKey } from '../domain/magic/spell-catalog';
+import type { PolymorphForm, SpellKey } from '../domain/magic/spell-catalog';
 import type { SkillKey, SkillValues } from '../domain/skills/skill-catalog';
 import type { CharacterCreation } from '../domain/character/creation';
 import type { ActiveSkill } from '../domain/skills/stealth';
@@ -63,6 +63,8 @@ export interface MobileSnapshot {
   readonly ownerId?: EntityId | null;
   /** Jugador en modo guerra: se dibuja en guardia. */
   readonly war?: boolean;
+  /** Jugador transformado (Transformación): parece una criatura, pero es una persona. */
+  readonly polymorphed?: true;
 }
 
 export interface ItemSnapshot {
@@ -206,6 +208,8 @@ export interface CastSpellRequest {
   readonly scrollId?: EntityId;
   /** Hechizos de viaje: la runa de la mochila. */
   readonly runeId?: EntityId;
+  /** Transformación: en qué animal o criatura. */
+  readonly form?: PolymorphForm;
 }
 
 /** Usar un objeto sobre alguien (por ejemplo, vendarlo). */
@@ -738,6 +742,15 @@ export interface SocialMessage {
   readonly notoriety: Notoriety;
 }
 
+/**
+ * Alguien cambió de nombre, de cara o de forma (Incógnito, Transformación):
+ * se lo vuelve a dibujar con estos datos. Al propio jugador también le llega.
+ */
+export interface MobileLookMessage {
+  readonly type: 'mobileLook';
+  readonly mobile: MobileSnapshot;
+}
+
 /** Alguien se subió (o se bajó, con `mount` null) de una montura. */
 export interface MountChangedMessage {
   readonly type: 'mountChanged';
@@ -958,6 +971,7 @@ export type ServerMessage =
   | CorpseMessage
   | CorpseClosedMessage
   | MountChangedMessage
+  | MobileLookMessage
   | HiddenChangedMessage
   | WarModeChangedMessage
   | DoorMessage

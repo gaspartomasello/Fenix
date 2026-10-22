@@ -62,6 +62,11 @@ export interface CharacterViewState {
 /** Representación visual de un personaje o criatura: sombra, sprite, nombre, vida y textos. */
 export class CharacterView {
   readonly container = new Container();
+  /**
+   * Nombre, vida, lo que dice y los números de daño: van en otra capa, por
+   * encima de todo el mundo, así ningún techo ni pared los tapa.
+   */
+  readonly labels = new Container();
   private readonly sprite = new Sprite();
   private readonly targetRing = new Graphics()
     .ellipse(0, 0, 17, 8)
@@ -114,15 +119,8 @@ export class CharacterView {
     this.nameLabel.anchor.set(0.5, 1);
     this.syncLayout();
 
-    this.container.addChild(
-      this.targetRing,
-      this.shadow,
-      this.sprite,
-      this.healthBar,
-      this.nameLabel,
-      this.overhead,
-      this.combatTexts,
-    );
+    this.container.addChild(this.targetRing, this.shadow, this.sprite);
+    this.labels.addChild(this.healthBar, this.nameLabel, this.overhead, this.combatTexts);
   }
 
   get spriteHeight(): number {
@@ -209,7 +207,9 @@ export class CharacterView {
 
   /** Criatura viva que se puede atacar (la montura propia no). */
   get isAliveCreature(): boolean {
-    return this.entity.body !== 'human' && !this.entity.dead && !this.ownPet;
+    return (
+      this.entity.body !== 'human' && !this.entity.polymorphed && !this.entity.dead && !this.ownPet
+    );
   }
 
   /** El cuerpo de una criatura muerta (se revisa con doble clic). */
@@ -236,8 +236,10 @@ export class CharacterView {
     const lunge = this.entity.lungeOffset(now);
     const screen = this.ground.toScreen({ x: position.x + lunge.x, y: position.y + lunge.y });
     this.container.position.set(screen.x, screen.y);
+    this.labels.position.set(screen.x, screen.y);
     // En un piso de arriba del edificio donde uno está, no se ve.
     this.container.visible = !this.ground.hidden(position);
+    this.labels.visible = this.container.visible;
     if (!this.entity.dead) this.seenAlive = true;
     else if (this.seenAlive) {
       this.seenAlive = false;
@@ -287,6 +289,7 @@ export class CharacterView {
 
   destroy(): void {
     this.container.destroy({ children: true });
+    this.labels.destroy({ children: true });
   }
 
   /**

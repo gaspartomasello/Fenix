@@ -15,13 +15,14 @@ export class Doors {
     private readonly notifier: Notifier,
   ) {}
 
-  use(playerId: EntityId, position: Position): void {
+  /** Abrir o cerrar; `range` es más largo con Telequinesis. */
+  use(playerId: EntityId, position: Position, range = DOOR_RANGE): void {
     const player = this.world.get(playerId);
     if (!player) return;
     const map = this.world.map;
     const kind = map.doorAt(position);
     if (!kind) return;
-    if (tileDistance(player.position, position) > DOOR_RANGE)
+    if (tileDistance(player.position, position) > range)
       return this.say(playerId, 'Acercate a la puerta para abrirla.');
     const partner = doorPartner(kind, position);
     const leaves = partner && map.doorAt(partner) ? [position, partner] : [position];
