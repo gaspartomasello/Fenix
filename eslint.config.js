@@ -1,3 +1,4 @@
+import { readdirSync } from 'node:fs';
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
 import globals from 'globals';
@@ -130,6 +131,86 @@ const layerRules = [
   },
 ];
 
+/**
+ * Módulos aislados (docs/ARQUITECTURA.md): en la aplicación del servidor
+ * cada funcionalidad vive en `features/<nombre>/` y se enchufa al núcleo
+ * (`kernel/`) con su `<nombre>.module.ts`. Ninguna importa a otra: lo que
+ * necesitan de otra lo piden al núcleo (servicios, eventos, reglas). El
+ * núcleo no conoce a las funcionalidades, y `GameApplication` solo a la
+ * sesión; la lista completa de módulos está únicamente en `game.ts`.
+ */
+const APPLICATION = 'packages/server/src/application';
+const OUTSIDE_APPLICATION = {
+  group: ['**/infrastructure/**', 'ws', 'node:*'],
+  message: 'La aplicación solo conoce puertos, no infraestructura.',
+};
+const FEATURES = readdirSync(new URL(`./${APPLICATION}/features`, import.meta.url), {
+  withFileTypes: true,
+})
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name);
+
+const moduleRules = [
+  ...FEATURES.map((feature) => ({
+    files: [`${APPLICATION}/features/${feature}/**/*.ts`],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [WHOLE_SHARED],
+          patterns: [
+            OUTSIDE_APPLICATION,
+            {
+              regex: `^\\.\\./(?!${feature}/|\\.\\./)|/features/(?!${feature}/)`,
+              message: `"${feature}" no importa otras funcionalidades: pedile al núcleo un servicio o escuchá un evento.`,
+            },
+            {
+              regex: '^\\.\\./\\.\\./(game|game-application)$',
+              message: 'Una funcionalidad no conoce el armado del juego.',
+            },
+          ],
+        },
+      ],
+    },
+  })),
+  {
+    files: [`${APPLICATION}/kernel/**/*.ts`],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [WHOLE_SHARED],
+          patterns: [
+            OUTSIDE_APPLICATION,
+            {
+              regex: '^\\.\\./(features/|game$|game-application$)',
+              message: 'El núcleo no conoce a los módulos: ellos lo conocen a él.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: [`${APPLICATION}/game-application.ts`],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [WHOLE_SHARED],
+          patterns: [
+            OUTSIDE_APPLICATION,
+            {
+              regex: '^\\./features/(?!session/)|^\\./game$',
+              message: 'GameApplication solo conoce la sesión; los módulos se los pasa game.ts.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+];
+
 export default tseslint.config(
   { ignores: ['**/dist/**', '**/dist-solo/**', '**/node_modules/**', '**/coverage/**'] },
   js.configs.recommended,
@@ -151,5 +232,6 @@ export default tseslint.config(
     rules: { 'no-restricted-imports': ['error', { paths: [WHOLE_SHARED] }] },
   },
   ...layerRules,
+  ...moduleRules,
   prettier,
 );

@@ -10,7 +10,10 @@ MMORPG web inspirado en Ultima Online / Sphere. Leé `docs/ARQUITECTURA.md` ante
 - **Servidor autoritativo**: toda regla de juego se valida en el servidor. Si el cliente predice,
   usa la misma función de `@fenix/shared`.
 - **Módulos aislados**: una funcionalidad nueva entra como módulo nuevo con su caso de uso, sin
-  tocar por dentro a los existentes.
+  tocar por dentro a los existentes. En el servidor: `application/features/<nombre>/` con su
+  `<nombre>.module.ts`, sumado a `ALL_MODULES` en `game.ts`. Lo que necesita de otro módulo lo
+  pide al núcleo (`kernel/`: eventos, servicios, reglas, usos de objetos), nunca con un import
+  cruzado; el lint lo impide. No se cablea nada en `GameApplication`.
 - **Arte y contenido**: el arte es procedural en `@fenix/art` (sin DOM); los mapas se editan con
   Tiled en `@fenix/content` (ver `docs/MAPAS.md`). Si cambia el arte, regenerar los tilesets.
 - **Sin assets de EA**: nada de gráficos, mapas, sonidos o nombres de Ultima Online. Arte propio

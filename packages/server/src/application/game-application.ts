@@ -89,6 +89,11 @@ export class GameApplication {
     }
   }
 
+  /** ¿Algún módulo atiende este pedido? (para las pruebas del armado) */
+  handles(type: GameMessage): boolean {
+    return this.handlers.has(type);
+  }
+
   /** Avanza el mundo: cada módulo hace lo suyo, y se guarda cada tanto. */
   tick(now: number): void {
     for (const module of this.modules) module.tick?.(now);
