@@ -17,7 +17,7 @@ import {
   RecordingNotifier,
   SequentialIds,
 } from '../test-support/fakes';
-import { GameApplication } from './game-application';
+import { createGame } from './game';
 
 /** Campo de 12×6 con el caballerizo al lado de donde aparece el jugador. */
 function createStable(store = new FakeCharacterStore()) {
@@ -31,7 +31,7 @@ function createStable(store = new FakeCharacterStore()) {
   const ids = new SequentialIds();
   const world = new World(map, { x: 2, y: 2 });
   world.addNpc(new Npc('bautista', 'stablemaster', { x: 3, y: 1 }));
-  const app = new GameApplication({
+  const app = createGame({
     world,
     worldClock: new WorldClock(0),
     clock,

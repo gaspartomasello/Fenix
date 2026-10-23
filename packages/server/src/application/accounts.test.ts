@@ -18,7 +18,7 @@ import {
   RecordingNotifier,
   SequentialIds,
 } from '../test-support/fakes';
-import { GameApplication } from './game-application';
+import { createGame } from './game';
 import type { AccountRecord, AccountStore, PasswordHasher } from './ports';
 
 class MemoryAccountStore implements AccountStore {
@@ -43,7 +43,7 @@ function createServer(characters = new FakeCharacterStore(), accounts = new Memo
     terrain: new Array<Terrain>(144).fill(Terrain.Grass),
   });
   const world = new World(map, { x: 4, y: 4 });
-  const app = new GameApplication({
+  const app = createGame({
     world,
     worldClock: new WorldClock(0),
     clock: new FakeClock(0),

@@ -13,6 +13,8 @@ import {
 import { emptyChanges } from '../../../domain/items/items';
 import type { World } from '../../../domain/world';
 import type { ItemNotifications } from '../../kernel/item-notifications';
+import type { GameServices } from '../../kernel/services';
+import type { Guards } from '../../kernel/guards';
 import type { Clock, IdGenerator, Notifier, RandomSource } from '../../ports';
 
 /** Cada cuánto se revisa que quien tiene un recipiente abierto siga pudiendo verlo. */
@@ -83,10 +85,6 @@ export class Containers {
   private readonly unlocked = new Map<string, number>();
   /** Muebles cerrados con Cerradura mágica, y con qué dificultad. */
   private readonly magicLocks = new Map<string, number>();
-  /** Lo arma la aplicación: daña a alguien (la trampa que estalla). */
-  hurt: (playerId: EntityId, amount: number) => void = () => {};
-  /** Lo arma la aplicación: por qué alguien no puede abrir un recipiente (la bodega de un barco). */
-  refusal: (playerId: EntityId, containerId: string) => string | null = () => null;
   private nextCheckAt = 0;
 
   constructor(
@@ -96,8 +94,12 @@ export class Containers {
     private readonly random: RandomSource,
     private readonly notifications: ItemNotifications,
     private readonly notifier: Notifier,
+    /** Reglas de otros módulos que no dejan abrir un recipiente (la bodega de un barco ajeno). */
+    private readonly guards: Guards<[playerId: EntityId, containerId: string]>,
+    /** El daño de una trampa que estalla. */
+    private readonly combat: GameServices['combat'],
   ) {
-    notifications.onContainerChanged = (id) => this.refresh(id);
+    notifications.watchContainers((id) => this.refresh(id));
   }
 
   /** Abrir: una bolsa (su id) o un mueble (`static:x:y`). */
@@ -109,7 +111,7 @@ export class Containers {
     if (!name) return;
     const denied = this.world.items.containerAccess(player, containerId, this.nearBanker(playerId));
     if (denied) return this.say(playerId, denied);
-    const refused = this.refusal(playerId, containerId);
+    const refused = this.guards.refusal(playerId, containerId);
     if (refused) return this.say(playerId, refused);
     if (this.lockOf(containerId) > 0)
       return this.say(
@@ -120,7 +122,7 @@ export class Containers {
       const [min, max] = TRAP_DAMAGE;
       const amount = min + Math.floor(this.random.next() * (max - min + 1));
       this.say(playerId, `¡Una trampa mágica estalla al abrir ${name}! (${amount})`);
-      this.hurt(playerId, amount);
+      this.combat.hurt(player, amount, this.clock.now());
       if (player.combat.isDead) return;
     }
     if (staticContainerAt(containerId)) this.stock(containerId);

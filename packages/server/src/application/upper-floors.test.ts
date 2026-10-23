@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { GameApplication } from './game-application';
+import { createGame } from './game';
 
 /** Una calle y, lejos en el mapa, el primer piso de una casa que se ve en la calle. */
 function createTown() {
@@ -26,7 +26,7 @@ function createTown() {
     ],
   });
   const world = new World(map, { x: 5, y: 5 });
-  const app = new GameApplication({
+  const app = createGame({
     world,
     worldClock: new WorldClock(0),
     clock: new FakeClock(0),

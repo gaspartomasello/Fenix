@@ -11,8 +11,8 @@ import type { MoveMode } from '@fenix/shared/rules/movement';
 import { freeSpotNear } from '../../../domain/persistence/saved-character';
 import type { Player } from '../../../domain/player';
 import type { World } from '../../../domain/world';
-import type { Gates } from '../portals/gates';
-import type { Stealth } from '../stealth/stealth';
+import type { Guards } from '../../kernel/guards';
+import type { GameServices } from '../../kernel/services';
 import type { ItemNotifications } from '../../kernel/item-notifications';
 import type { MobileNotifications } from '../../kernel/mobile-notifications';
 import type { Clock, Notifier } from '../../ports';
@@ -28,19 +28,18 @@ export interface MovePlayerInput {
 }
 
 export class MovePlayer {
-  /** Lo arma la aplicación: por qué no puede pisar ese tile (subir a un barco ajeno). */
-  refusal: (player: Player, from: Position, to: Position) => string | null = () => null;
-
   constructor(
     private readonly world: World,
     private readonly clock: Clock,
     private readonly notifier: Notifier,
     private readonly notifications: ItemNotifications,
     private readonly mobiles: MobileNotifications,
+    /** Reglas de otros módulos que niegan un paso (subir a un barco ajeno). */
+    private readonly guards: Guards<[player: Player, from: Position, to: Position]>,
     /** Portales abiertos con el hechizo Portal. */
-    private readonly gates?: Gates,
+    private readonly portals?: Pick<GameServices['portals'], 'destinationFrom'>,
     /** Escondido: cada paso gasta Sigilo (o lo descubre). */
-    private readonly stealth?: Stealth,
+    private readonly stealth?: Pick<GameServices['stealth'], 'step'>,
   ) {}
 
   execute({ playerId, direction, mode, seq }: MovePlayerInput): void {
@@ -74,7 +73,7 @@ export class MovePlayer {
       return;
     }
     const effectiveMode = player.mount ? mode : effectiveMoveMode(mode, stamina, load.canRun);
-    const refused = this.refusal(player, player.position, step(player.position, direction));
+    const refused = this.guards.refusal(player, player.position, step(player.position, direction));
     if (refused) this.notifier.send(playerId, { type: 'system', text: refused });
     const outcome = refused
       ? { ok: false as const }
@@ -112,7 +111,7 @@ export class MovePlayer {
     // Entrada o salida de una mazmorra: al pisar el tile, aparece del otro lado.
     // Lo mismo al pisar un portal abierto con el hechizo.
     const destination =
-      this.world.map.teleportAt(player.position) ?? this.gates?.destinationFrom(player.position);
+      this.world.map.teleportAt(player.position) ?? this.portals?.destinationFrom(player.position);
     if (destination) this.teleport(player, destination);
   }
 

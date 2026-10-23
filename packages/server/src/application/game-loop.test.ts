@@ -6,11 +6,11 @@ import { Terrain } from '@fenix/shared/world/terrain';
 import { TileMap } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
 import { Creature, RESPAWN_MS } from '../domain/creatures/creature';
-import { EMPTY_CORPSE_MS } from './features/corpses/corpses';
+import { EMPTY_CORPSE_MS } from '../domain/creatures/creature';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { GameApplication } from './game-application';
+import { createGame } from './game';
 
 /** Pasillo de 12×3 de pasto con un santuario en el extremo este. */
 function createArena() {
@@ -23,7 +23,7 @@ function createArena() {
   const clock = new FakeClock(0);
   const notifier = new RecordingNotifier();
   const world = new World(map, { x: 1, y: 1 });
-  const app = new GameApplication({
+  const app = createGame({
     world,
     worldClock: new WorldClock(0),
     clock,
@@ -165,7 +165,7 @@ describe('ciclo del juego: combate', () => {
       regions: [{ name: 'Pueblo', x: 0, y: 0, width: 4, height: 3 }],
     });
     const world = new World(safe, { x: 1, y: 1 });
-    const app = new GameApplication({
+    const app = createGame({
       world,
       worldClock: new WorldClock(0),
       clock: arena.clock,

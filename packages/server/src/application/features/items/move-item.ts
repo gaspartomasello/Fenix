@@ -2,7 +2,7 @@ import type { EntityId, ItemDestination } from '@fenix/shared/protocol/messages'
 import type { World } from '../../../domain/world';
 import type { ItemNotifications } from '../../kernel/item-notifications';
 import type { Notifier } from '../../ports';
-import type { EconomyActions } from '../economy/economy-actions';
+import type { GameServices } from '../../kernel/services';
 
 /** Arrastrar y soltar un objeto: al suelo, a la mochila o al equipo. */
 export class MoveItem {
@@ -10,7 +10,7 @@ export class MoveItem {
     private readonly world: World,
     private readonly notifications: ItemNotifications,
     private readonly notifier: Notifier,
-    private readonly economy: EconomyActions,
+    private readonly banking: GameServices['banking'],
   ) {}
 
   execute(playerId: EntityId, itemId: EntityId, to: ItemDestination): void {
@@ -23,7 +23,7 @@ export class MoveItem {
       });
       return;
     }
-    const nearBanker = this.economy.nearBanker(player);
+    const nearBanker = this.banking.nearBanker(player);
     const result = this.world.items.move(player, itemId, to, this.world.map, nearBanker);
     if (!result.ok) {
       this.notifier.send(playerId, { type: 'system', text: result.reason });

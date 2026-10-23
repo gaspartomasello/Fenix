@@ -9,8 +9,7 @@ import { captureCharacter, parseSavedCharacter } from '../domain/persistence/sav
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { GameApplication } from './game-application';
-import type { GameLoop } from './features/combat/game-loop';
+import { createGame } from './game';
 
 function createTowns() {
   const map = new TileMap({
@@ -29,7 +28,7 @@ function createTowns() {
     world.addNpc(new Npc(`v${i}`, 'townsfolk', { x: 6, y: 5 }, `Vecino ${i}`));
   world.addNpc(new Npc('lejos', 'townsfolk', { x: 30, y: 5 }, 'Lejana'));
   const notifier = new RecordingNotifier();
-  const app = new GameApplication({
+  const app = createGame({
     world,
     worldClock: new WorldClock(0),
     clock: new FakeClock(0),
@@ -95,11 +94,11 @@ describe('misiones de los vecinos', () => {
     const goal = offer.quest.goal;
     if (goal.kind !== 'slay') throw new Error('tipo');
     app.handle(ana, { type: 'acceptQuest', npcId: offer.npcId });
-    const loop = (app as unknown as { loop: GameLoop }).loop;
+    const combat = app.kernel.services.get('combat');
     for (let i = 0; i < goal.count; i++) {
       const creature = new Creature(`presa-${i}`, goal.creature, { x: 10, y: 10 }, null);
       world.addCreature(creature);
-      loop.slay(creature, player, 0);
+      combat.slay(creature, player, 0);
     }
     expect(journal()[0]?.progress).toBe(goal.count);
     const before = gold();

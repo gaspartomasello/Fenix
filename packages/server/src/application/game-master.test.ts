@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { GameApplication } from './game-application';
+import { createGame } from './game';
 
 function createApp() {
   const map = new TileMap({
@@ -19,7 +19,7 @@ function createApp() {
   const world = new World(map, { x: 10, y: 10 });
   const notifier = new RecordingNotifier();
   const clock = new FakeClock(0);
-  const app = new GameApplication({
+  const app = createGame({
     world,
     worldClock: new WorldClock(0),
     clock,

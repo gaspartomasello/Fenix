@@ -1,15 +1,13 @@
 import { describeItem, type ItemKind } from '@fenix/shared/items/item-catalog';
 import { withinReach } from '@fenix/shared/items/item-rules';
 import type { EntityId } from '@fenix/shared/protocol/messages';
-import { Creature } from '../../../domain/creatures/creature';
+import { Creature, EMPTY_CORPSE_MS } from '../../../domain/creatures/creature';
 import type { World } from '../../../domain/world';
 import type { ItemNotifications } from '../../kernel/item-notifications';
 import type { Clock, IdGenerator, Notifier } from '../../ports';
 
 /** Cuánto queda un cuerpo con botín antes de deshacerse (y lo que tenga, con él). */
 export const LOOTED_CORPSE_MS = 120_000;
-/** Un cuerpo vacío (sin botín, o ya revisado) queda tirado un rato y se deshace. */
-export const EMPTY_CORPSE_MS = 20_000;
 
 /**
  * Cuerpos que se revisan, como en UO: el botín de una criatura queda dentro
@@ -28,7 +26,7 @@ export class Corpses {
     private readonly items: ItemNotifications,
     private readonly notifier: Notifier,
   ) {
-    items.onCorpseChanged = (corpseId) => this.refresh(corpseId);
+    items.watchCorpses((corpseId) => this.refresh(corpseId));
   }
 
   /** Guarda el botín en el cuerpo y decide cuánto dura. Devuelve si quedó algo adentro. */

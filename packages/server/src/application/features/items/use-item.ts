@@ -6,7 +6,7 @@ import type { World } from '../../../domain/world';
 import type { ItemNotifications } from '../../kernel/item-notifications';
 import type { MobileNotifications } from '../../kernel/mobile-notifications';
 import type { Clock, IdGenerator, Notifier, RandomSource } from '../../ports';
-import type { EconomyActions } from '../economy/economy-actions';
+import type { ItemUses } from '../../kernel/item-uses';
 
 /** Lo que suena al tocar un instrumento. */
 const TUNES: readonly string[] = [
@@ -17,19 +17,12 @@ const TUNES: readonly string[] = [
   'una tonada antigua que nadie recuerda dónde nació.',
 ];
 
-/** Doble clic sobre un objeto, o usarlo sobre alguien (vendas). */
+/**
+ * Doble clic sobre un objeto, o usarlo sobre alguien (vendas). Lo que hace
+ * el doble clic sobre cada clase de objeto lo registra el módulo dueño
+ * (`ItemUses`); acá queda lo común: comer, beber, ponerse y sacarse cosas.
+ */
 export class UseItem {
-  /** Lo arma la aplicación: abrir una bolsa o una caja. */
-  openContainer: (playerId: EntityId, containerId: string) => void = () => {};
-  /** Lo arma la aplicación: abrir un libro para leer o escribir. */
-  openBook: (playerId: EntityId, itemId: EntityId) => void = () => {};
-  /** Leer un pergamino de maestría (lo resuelven las leyendas). */
-  readMastery: (playerId: EntityId, itemId: EntityId) => void = () => {};
-  /** Lo arma la aplicación: leer un mapa del tesoro. */
-  openTreasureMap: (playerId: EntityId, itemId: EntityId) => void = () => {};
-  /** Lo arma la aplicación: botar el barco de una maqueta. */
-  launchShip: (playerId: EntityId, itemId: EntityId) => void = () => {};
-
   constructor(
     private readonly world: World,
     private readonly clock: Clock,
@@ -38,13 +31,14 @@ export class UseItem {
     private readonly notifications: ItemNotifications,
     private readonly notifier: Notifier,
     private readonly mobiles: MobileNotifications,
-    private readonly economy: EconomyActions,
+    private readonly uses: ItemUses,
   ) {}
 
   /** Tocar un instrumento: lo escuchan todos los que están cerca. */
-  private play(playerId: EntityId, kind: ItemKind): void {
+  play(playerId: EntityId, itemId: EntityId): void {
     const player = this.world.get(playerId);
-    if (!player) return;
+    const kind: ItemKind | undefined = this.world.items.get(itemId)?.kind;
+    if (!player || !kind) return;
     const tune = TUNES[Math.floor(this.random.next() * TUNES.length)] ?? TUNES[0];
     const text = `${player.name} toca ${ITEMS[kind].article === 'una' ? 'la' : 'el'} ${ITEMS[kind].name}: ${tune}`;
     for (const id of this.mobiles.watchers(player))
@@ -61,35 +55,11 @@ export class UseItem {
       });
       return;
     }
-    // Doble clic sobre el mineral: fundirlo en una forja cercana.
     const item = this.world.items.get(itemId);
-    if (item?.kind === 'iron-ore' && item.ownerId() === playerId) {
-      this.economy.smelt(playerId);
-      return;
-    }
-    // Doble clic sobre una bolsa: se abre.
-    if (item && ITEMS[item.kind].capacity) {
-      this.openContainer(playerId, itemId);
-      return;
-    }
-    if (item && ITEMS[item.kind].use === 'music' && item.ownerId() === playerId) {
-      this.play(playerId, item.kind);
-      return;
-    }
-    if (item && ITEMS[item.kind].use === 'mastery' && item.ownerId() === playerId) {
-      this.readMastery(playerId, itemId);
-      return;
-    }
-    if (item && ITEMS[item.kind].use === 'book') {
-      this.openBook(playerId, itemId);
-      return;
-    }
-    if (item && ITEMS[item.kind].use === 'ship') {
-      this.launchShip(playerId, itemId);
-      return;
-    }
-    if (item && ITEMS[item.kind].use === 'map') {
-      this.openTreasureMap(playerId, itemId);
+    // Lo que tiene un uso propio (una bolsa, un libro, un mapa…) lo resuelve su módulo.
+    const own = item ? this.uses.find(item, playerId) : null;
+    if (own) {
+      own(playerId, itemId);
       return;
     }
     const result = this.world.items.use(player, itemId);

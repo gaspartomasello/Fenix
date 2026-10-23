@@ -4,7 +4,7 @@ import type { EntityId } from '@fenix/shared/protocol/messages';
 import type { Npc } from '../../../domain/npcs/npc';
 import type { Player } from '../../../domain/player';
 import type { World } from '../../../domain/world';
-import type { Legends } from './legends';
+import { rumorOf, type Legends } from './legends';
 import type { Notifier, RandomSource } from '../../ports';
 
 /** A qué distancia un vecino escucha lo que le dicen. */
@@ -170,7 +170,7 @@ export class NpcTalk {
 
   /** Un rumor: la leyenda que sabe (y el jugador la anota) o algo suelto. */
   private rumor(player: Player, npc: Npc, temper: Temper): string {
-    const legend = this.legends.rumorOf(npc);
+    const legend = rumorOf(npc);
     if (legend) {
       this.legends.heard(player, legend);
       const lead =

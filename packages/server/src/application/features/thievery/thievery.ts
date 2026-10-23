@@ -19,7 +19,7 @@ import type { ItemNotifications } from '../../kernel/item-notifications';
 import type { MobileNotifications } from '../../kernel/mobile-notifications';
 import type { Clock, IdGenerator, Notifier, RandomSource } from '../../ports';
 import type { SocialNotifications } from '../../kernel/social-notifications';
-import type { Containers } from '../containers/containers';
+import type { GameServices } from '../../kernel/services';
 
 /** Cuánto vale "haber fisgoneado" a alguien para después robarle. */
 const SNOOP_MEMORY_MS = 2 * 60 * 1000;
@@ -41,15 +41,15 @@ export class Thievery {
   private readonly snooped = new Map<string, number>();
   /** Hasta cuándo cada víctima queda alerta (no se le puede volver a robar). */
   private readonly alert = new Map<EntityId, number>();
-  /** Lo arma la aplicación: descubre al ladrón escondido. */
-  reveal: (playerId: EntityId, text: string) => void = () => {};
-
   constructor(
     private readonly world: World,
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
     private readonly random: RandomSource,
-    private readonly containers: Containers,
+    /** Las cerraduras de los cofres. */
+    private readonly containers: GameServices['containers'],
+    /** Descubrir al ladrón escondido. */
+    private readonly stealth: GameServices['stealth'],
     private readonly items: ItemNotifications,
     private readonly mobiles: MobileNotifications,
     private readonly social: SocialNotifications,
@@ -207,7 +207,7 @@ export class Thievery {
   /** Te descubrieron: criminal (si la víctima es inocente o un vecino) y fuera del escondite. */
   private caught(player: Player, victim: Player | Npc, text: string): void {
     this.say(player, text);
-    this.reveal(player.id, 'Te descubrieron.');
+    this.stealth.reveal(player, 'Te descubrieron.');
     const innocent = victim instanceof Npc || victim.reputation.notoriety === 'innocent';
     if (innocent && player.reputation.markCriminal(this.clock.now())) {
       this.say(player, 'Ahora sos criminal: los guardias te buscan y atacarte no es delito.');

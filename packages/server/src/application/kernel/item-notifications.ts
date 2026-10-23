@@ -8,15 +8,23 @@ import type { Notifier } from '../ports';
  * mochila, a su dueño; lo que alguien tiene puesto, a quienes lo ven.
  */
 export class ItemNotifications {
-  /** Lo arma `Corpses`: avisa que cambió lo que hay dentro de un cuerpo. */
-  onCorpseChanged: (corpseId: EntityId) => void = () => {};
-  /** Lo arma `Containers`: avisa que cambió lo que hay dentro de un recipiente. */
-  onContainerChanged: (containerId: string) => void = () => {};
+  private readonly corpseWatchers: ((corpseId: EntityId) => void)[] = [];
+  private readonly containerWatchers: ((containerId: string) => void)[] = [];
 
   constructor(
     private readonly world: World,
     private readonly notifier: Notifier,
   ) {}
+
+  /** Avisar a quien muestra los cuerpos cuando cambia lo que hay dentro de uno. */
+  watchCorpses(watch: (corpseId: EntityId) => void): void {
+    this.corpseWatchers.push(watch);
+  }
+
+  /** Avisar a quien muestra los recipientes cuando cambia lo que hay dentro de uno. */
+  watchContainers(watch: (containerId: string) => void): void {
+    this.containerWatchers.push(watch);
+  }
 
   publish(changes: ItemChanges, actorId: EntityId): void {
     for (const { id, position } of changes.groundRemoved) {
@@ -44,8 +52,10 @@ export class ItemNotifications {
     }
     for (const ownerId of owners) this.sendInventory(ownerId);
     for (const ownerId of changes.looks) this.sendLook(ownerId);
-    for (const corpseId of changes.corpses) this.onCorpseChanged(corpseId);
-    for (const containerId of changes.containers) this.onContainerChanged(containerId);
+    for (const corpseId of changes.corpses)
+      for (const watch of this.corpseWatchers) watch(corpseId);
+    for (const containerId of changes.containers)
+      for (const watch of this.containerWatchers) watch(containerId);
     if (changes.message) this.notifier.send(actorId, { type: 'system', text: changes.message });
   }
 

@@ -46,6 +46,7 @@ import { Ship } from '../../../domain/ships/ship';
 import type { World } from '../../../domain/world';
 import type { ItemNotifications } from '../../kernel/item-notifications';
 import type { MobileNotifications } from '../../kernel/mobile-notifications';
+import type { GameServices } from '../../kernel/services';
 import type { Clock, IdGenerator, Notifier, RandomSource } from '../../ports';
 
 /** Cada cuánto se revisa qué barcos ve cada jugador. */
@@ -67,13 +68,6 @@ export class Ships {
   /** Barcos que cambiaron (casco, nombre) y hay que volver a mandar. */
   private readonly dirty = new Set<EntityId>();
   private nextVisibilityAt = 0;
-  /** Lo arma la aplicación: mueve a un jugador al instante (al subir, al navegar). */
-  teleport: (player: Player, position: Position) => void = () => {};
-  /** Lo arma la aplicación: daña a alguien (los cañonazos). */
-  hurt: (target: Mobile, amount: number) => void = () => {};
-  /** Lo arma la aplicación: abre un recipiente (la bodega). */
-  openContainer: (playerId: EntityId, containerId: string) => void = () => {};
-
   constructor(
     private readonly world: World,
     private readonly clock: Clock,
@@ -82,6 +76,8 @@ export class Ships {
     private readonly items: ItemNotifications,
     private readonly mobiles: MobileNotifications,
     private readonly notifier: Notifier,
+    /** Mover gente (subir, navegar, nadar a la costa), dañar (cañonazos) y abrir la bodega. */
+    private readonly services: Pick<GameServices, 'movement' | 'combat' | 'containers'>,
   ) {}
 
   // ── Botar y guardar ────────────────────────────────────────────────
@@ -140,7 +136,7 @@ export class Ships {
       return this.say(player.id, 'Primero vaciá la bodega.');
     if (ship.occupies(player.position)) {
       const land = this.nearestLand(player.position);
-      if (land) this.teleport(player, land);
+      if (land) this.services.movement.teleport(player, land);
     }
     const changes = emptyChanges();
     this.remove(ship, changes);
@@ -187,7 +183,7 @@ export class Ships {
       .filter((t) => !this.world.isOccupied(t))
       .sort((a, b) => tileDistance(a, player.position) - tileDistance(b, player.position))[0];
     if (!spot) return this.say(playerId, 'No queda lugar en la cubierta.');
-    this.teleport(player, spot);
+    this.services.movement.teleport(player, spot);
     this.say(playerId, `Subiste a «${ship.name}».`);
   }
 
@@ -301,7 +297,7 @@ export class Ships {
     this.items.publish(changes, '');
     for (const mobile of aboard) {
       const to = carry(mobile.position);
-      if (mobile instanceof Player) this.teleport(mobile, to);
+      if (mobile instanceof Player) this.services.movement.teleport(mobile, to);
       else this.shift(mobile, to);
     }
   }
@@ -327,7 +323,7 @@ export class Ships {
         if (!ship.occupies(player.position)) return this.say(playerId, 'Tenés que estar a bordo.');
         if (!levelAtLeast(this.levelOf(player, ship), 'officer'))
           return this.say(playerId, 'Solo los oficiales y el capitán abren la bodega.');
-        if (ship.holdId) this.openContainer(playerId, ship.holdId);
+        if (ship.holdId) this.services.containers.openFor(playerId, ship.holdId);
         return;
     }
   }
@@ -387,7 +383,8 @@ export class Ships {
         .filter((m) => m.position.x === p.x && m.position.y === p.y && !m.combat.isDead);
       if (struck.length > 0) {
         hit = true;
-        for (const m of struck) this.hurt(m, this.roll(CANNON_MOBILE_DAMAGE));
+        for (const m of struck)
+          this.services.combat.hurt(m, this.roll(CANNON_MOBILE_DAMAGE), this.clock.now());
         break;
       }
       const terrain = this.world.map.terrainAt(p);
@@ -422,7 +419,7 @@ export class Ships {
       if (!land) continue;
       if (m instanceof Player) {
         this.say(m.id, `¡«${ship.name}» se hunde! Nadás hasta la costa.`);
-        this.teleport(m, land);
+        this.services.movement.teleport(m, land);
       } else this.shift(m, land);
     }
   }

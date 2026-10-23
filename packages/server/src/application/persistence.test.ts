@@ -13,7 +13,7 @@ import {
   SequentialIds,
 } from '../test-support/fakes';
 import { AUTOSAVE_MS } from './features/session/character-persistence';
-import { GameApplication } from './game-application';
+import { createGame } from './game';
 import type { CharacterStore, PasswordHasher } from './ports';
 
 /** Hasher trivial para que los tests sean rápidos. */
@@ -30,7 +30,7 @@ function createServer(characters: CharacterStore, passwords?: PasswordHasher) {
   });
   const clock = new FakeClock(0);
   const world = new World(map, { x: 1, y: 1 });
-  const app = new GameApplication({
+  const app = createGame({
     world,
     worldClock: new WorldClock(0),
     clock,

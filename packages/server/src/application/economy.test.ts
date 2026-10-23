@@ -7,7 +7,7 @@ import { Npc } from '../domain/npcs/npc';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { GameApplication } from './game-application';
+import { createGame } from './game';
 
 /**
  * Taller de 8×4: el jugador aparece en (1,1), con un roble y una roca al
@@ -31,7 +31,7 @@ function createWorkshop() {
   const world = new World(map, { x: 1, y: 1 });
   world.addNpc(new Npc('herrero', 'blacksmith', { x: 2, y: 0 }));
   world.addNpc(new Npc('banquera', 'banker', { x: 0, y: 2 }));
-  const app = new GameApplication({
+  const app = createGame({
     world,
     worldClock: new WorldClock(0),
     clock,

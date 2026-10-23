@@ -8,7 +8,8 @@ import { Npc } from '../domain/npcs/npc';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { GameApplication } from './game-application';
+import { rumorOf } from './features/lore/legends';
+import { createGame } from './game';
 
 /** Un pueblo chico al oeste y la Capilla Olvidada al este. */
 function createLand() {
@@ -26,7 +27,7 @@ function createLand() {
   const clock = new FakeClock(0);
   const notifier = new RecordingNotifier();
   const world = new World(map, { x: 4, y: 4 });
-  const app = new GameApplication({
+  const app = createGame({
     world,
     worldClock: new WorldClock(0),
     clock,
@@ -81,8 +82,6 @@ describe('etapa 56: hablar con los vecinos y las leyendas', () => {
     const player = f.world.get(f.ana);
     if (!player) throw new Error('sin jugador');
     // Un mendigo que sabe el rumor del grimorio (cada vecino sabe uno, según su nombre).
-    const legends = (f.app as unknown as { legends: { rumorOf(n: Npc): { id: string } | null } })
-      .legends;
     const teller = [
       'Lorenzo',
       'Anselmo',
@@ -94,7 +93,7 @@ describe('etapa 56: hablar con los vecinos y las leyendas', () => {
       'Viejo',
     ]
       .map((name) => new Npc('mendigo', 'beggar', { x: 5, y: 4 }, name))
-      .find((n) => legends.rumorOf(n)?.id === 'silent-grimoire');
+      .find((n) => rumorOf(n)?.id === 'silent-grimoire');
     if (!teller) throw new Error('ningún mendigo sabe el rumor');
     f.world.addNpc(teller);
     f.say('¿sabés algún rumor?');
@@ -112,7 +111,7 @@ describe('etapa 56: hablar con los vecinos y las leyendas', () => {
     expect(boss).toBeDefined();
     if (!boss) return;
     boss.combat.takeDamage(10_000);
-    f.app['loop'].onCreatureSlain(player, boss);
+    f.app.kernel.events.emit('creatureSlain', { killer: player, creature: boss });
     expect(player.legends.get(legend)).toBe(LEGEND_FOUND);
     expect(f.world.items.countInBackpack(f.ana, 'silent-grimoire')).toBe(1);
     player.teleport({ x: 8, y: 4 });

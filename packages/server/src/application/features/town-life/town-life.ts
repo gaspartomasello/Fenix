@@ -8,6 +8,7 @@ import { Player } from '../../../domain/player';
 import type { World } from '../../../domain/world';
 import type { MobileNotifications } from '../../kernel/mobile-notifications';
 import type { Notifier } from '../../ports';
+import type { GameServices } from '../../kernel/services';
 
 /** A qué distancia un guardia ve a un criminal o a una fiera dentro de la ciudad. */
 export const GUARD_SIGHT = 14;
@@ -32,7 +33,8 @@ export class TownLife {
     private readonly mobiles: MobileNotifications,
     private readonly notifier: Notifier,
     private readonly random: () => number,
-    private readonly slay: (victim: Mobile, by: Mobile, now: number) => void,
+    /** Los guardias ajustician: la muerte la resuelve el combate. */
+    private readonly combat: GameServices['combat'],
   ) {}
 
   tick(now: number): void {
@@ -91,7 +93,7 @@ export class TownLife {
     const name = target instanceof Player ? target.name : `el ${target.name}`;
     for (const id of new Set([...this.mobiles.watchers(guard), ...this.mobiles.watchers(target)]))
       this.notifier.send(id, { type: 'system', text: `${guard.name} ajustició a ${name}.` });
-    this.slay(target, guard, now);
+    this.combat.slay(target, guard, now);
     // Vuelve a su puesto un rato después.
     guard.goal = guard.home;
     guard.nextMoveAt = now + 3000;

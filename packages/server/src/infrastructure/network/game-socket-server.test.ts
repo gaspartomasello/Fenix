@@ -5,7 +5,7 @@ import { decodeServerMessage, encodeMessage } from '@fenix/shared/protocol/codec
 import type { ClientMessage, ServerMessage } from '@fenix/shared/protocol/messages';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
-import { GameApplication } from '../../application/game-application';
+import { createGame } from '../../application/game';
 import { World } from '../../domain/world';
 import { WorldClock } from '../../domain/world-clock';
 import { generateIslandMap } from '../content/procedural-map';
@@ -74,7 +74,7 @@ describe('GameSocketServer (integración)', () => {
   beforeEach(async () => {
     const { map, spawnPoint } = generateIslandMap({ width: 48, height: 48, seed: 7 });
     const sessions = new SessionRegistry();
-    const app = new GameApplication({
+    const app = createGame({
       world: new World(map, spawnPoint),
       worldClock: new WorldClock(0),
       clock: new SystemClock(),

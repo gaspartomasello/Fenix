@@ -49,15 +49,6 @@ export class Legends {
     private readonly notifier: Notifier,
   ) {}
 
-  /** La leyenda cuyo rumor sabe este vecino (una por vecino, según su nombre). */
-  rumorOf(npc: Npc): Legend | null {
-    const known = LEGEND_IDS.map((id) => LEGENDS[id]).filter((l) =>
-      l.rumor.roles.includes(npc.role),
-    );
-    if (known.length === 0) return null;
-    return known[hash(npc.name) % known.length] ?? null;
-  }
-
   /** El vecino contó el rumor: el jugador ya conoce la leyenda. */
   heard(player: Player, legend: Legend): void {
     if (player.legends.has(legend.id)) return;
@@ -242,4 +233,11 @@ function hash(text: string): number {
   let h = 5;
   for (const c of text) h = (h * 33 + c.charCodeAt(0)) >>> 0;
   return h;
+}
+
+/** La leyenda cuyo rumor sabe un vecino (una por vecino, según su nombre). */
+export function rumorOf(npc: Npc): Legend | null {
+  const known = LEGEND_IDS.map((id) => LEGENDS[id]).filter((l) => l.rumor.roles.includes(npc.role));
+  if (known.length === 0) return null;
+  return known[hash(npc.name) % known.length] ?? null;
 }

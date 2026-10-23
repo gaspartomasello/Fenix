@@ -5,11 +5,10 @@ import { tileDistance, type Position } from '@fenix/shared/geometry/position';
 import { describeItem } from '@fenix/shared/items/item-catalog';
 import { poisonDurationMs } from '@fenix/shared/magic/effects';
 import { SPELLS, type SpellKey } from '@fenix/shared/magic/spell-catalog';
-import type { EntityId } from '@fenix/shared/protocol/messages';
 import { hasLineOfSight } from '@fenix/shared/rules/line-of-sight';
 import { ATTRIBUTE_NAMES } from '@fenix/shared/skills/stat-gain';
 import { CREATURE_FAME } from '@fenix/shared/social/reputation';
-import { TREASURE_MAP_DROPS, type TreasureLevel } from '@fenix/shared/treasure/treasure';
+import { TREASURE_MAP_DROPS } from '@fenix/shared/treasure/treasure';
 import { missingAmmo, trySwing, type SwingResult } from '../../../domain/combat/combat';
 import { resolveBandage } from '../../../domain/healing/bandage';
 import {
@@ -18,7 +17,12 @@ import {
   startCreatureCast,
 } from '../../../domain/creatures/creature-magic';
 import { commitAggression } from '../../kernel/aggression';
-import { CORPSE_MS, Creature, RESPAWN_MS } from '../../../domain/creatures/creature';
+import {
+  CORPSE_MS,
+  Creature,
+  EMPTY_CORPSE_MS,
+  RESPAWN_MS,
+} from '../../../domain/creatures/creature';
 import { canMoveTo, chooseStep, updateTarget } from '../../../domain/creatures/creature-ai';
 import { rollLoot } from '../../../domain/creatures/loot';
 import {
@@ -30,12 +34,11 @@ import {
 import type { Mobile } from '../../../domain/mobile';
 import { Player } from '../../../domain/player';
 import type { World } from '../../../domain/world';
-import { EMPTY_CORPSE_MS, type Corpses } from '../corpses/corpses';
-import type { Gates } from '../portals/gates';
+import type { EventBus } from '../../kernel/event-bus';
+import type { GameEvents } from '../../kernel/game-events';
+import type { GameServices } from '../../kernel/services';
 import { Fields, type FieldHit } from './fields';
-import type { Stealth } from '../stealth/stealth';
 import type { WarMode } from './war-mode';
-import type { MountActions } from '../mounts/mount-actions';
 import type { ItemNotifications } from '../../kernel/item-notifications';
 import type { MobileNotifications } from '../../kernel/mobile-notifications';
 import type { IdGenerator, Notifier, RandomSource } from '../../ports';
@@ -57,20 +60,6 @@ export class GameLoop {
   private readonly shrines: readonly Position[];
   /** Muros y campos mágicos. */
   private readonly fields: Fields;
-  /** Lo arma la aplicación: poner o sacar una trampa mágica en un mueble. */
-  onTrap: (casterId: EntityId, containerId: string, armed: boolean) => void = () => {};
-  /** Lo arma la aplicación: Cerradura mágica o Abrir cerradura sobre un mueble. */
-  onLock: (casterId: EntityId, containerId: string, locked: boolean, magery: number) => void =
-    () => {};
-  /** Lo arma la aplicación: Telequinesis sobre una puerta o un mueble. */
-  onTelekinesis: (casterId: EntityId, position: Position) => void = () => {};
-  /** Lo arma la aplicación: una criatura murió a manos de un jugador (misiones de caza). */
-  onCreatureKilled: (killer: Player, creature: Creature) => void = () => {};
-  /** Cualquier criatura que mata un jugador (también las que no reaparecen, como los jefes). */
-  onCreatureSlain: (killer: Player, creature: Creature) => void = () => {};
-  /** Lo arma la aplicación: una criatura dejó un mapa del tesoro en su cuerpo. */
-  onTreasureMap: (corpseId: EntityId, level: TreasureLevel) => void = () => {};
-
   constructor(
     private readonly world: World,
     private readonly mobiles: MobileNotifications,
@@ -79,12 +68,12 @@ export class GameLoop {
     private readonly ids: IdGenerator,
     private readonly random: RandomSource,
     private readonly social: SocialNotifications,
-    /** Mueve a un jugador al instante, avisando a quienes lo ven. */
-    private readonly teleport: (player: Player, position: Position) => void,
-    private readonly corpses: Corpses,
-    private readonly mounts: MountActions,
-    private readonly gates: Gates,
-    private readonly stealth: Stealth,
+    /** Lo que le importa a otros módulos (muertes, hechizos sobre muebles…) se avisa acá. */
+    private readonly events: EventBus<GameEvents>,
+    private readonly services: Pick<
+      GameServices,
+      'movement' | 'corpses' | 'mounts' | 'portals' | 'stealth'
+    >,
     private readonly warMode: WarMode,
   ) {
     this.shrines = world.map.statics.filter((s) => s.kind === 'shrine');
@@ -95,9 +84,7 @@ export class GameLoop {
     for (const player of this.world.allPlayers()) this.tickPlayer(player, now);
     for (const creature of this.world.allCreatures()) this.tickCreature(creature, now);
     this.landDelayedSpells(now);
-    this.gates.tick(now);
     for (const hit of this.fields.tick(now, this.roll)) this.fieldHit(hit, now);
-    this.stealth.tick(now);
   }
 
   /** Hechizos lanzados que todavía no cayeron (la Explosión). */
@@ -321,8 +308,9 @@ export class GameLoop {
   ): void {
     const spell = SPELLS[spellKey];
     const { target, amount, killed, resisted, effectsChanged, moveTo, message } = outcome;
-    if (moveTo) this.teleport(player, moveTo);
-    if (outcome.gate) this.gates.open(outcome.gate.from, outcome.gate.to, now, player.id);
+    if (moveTo) this.services.movement.teleport(player, moveTo);
+    if (outcome.gate)
+      this.services.portals.open(outcome.gate.from, outcome.gate.to, now, player.id);
     if (outcome.field) {
       const raised = this.fields.raise(
         outcome.field.kind,
@@ -334,10 +322,15 @@ export class GameLoop {
       if (raised === 0)
         this.notifier.send(player.id, { type: 'system', text: 'No hubo lugar para levantarlo.' });
     }
-    if (outcome.trap) this.onTrap(player.id, outcome.trap.containerId, outcome.trap.armed);
-    if (outcome.lock)
-      this.onLock(player.id, outcome.lock.containerId, outcome.lock.locked, outcome.lock.magery);
-    if (outcome.telekinesis) this.onTelekinesis(player.id, outcome.telekinesis);
+    if (outcome.trap)
+      this.events.emit('magicTrap', {
+        casterId: player.id,
+        containerId: outcome.trap.containerId,
+        armed: outcome.trap.armed,
+      });
+    if (outcome.lock) this.events.emit('magicLock', { casterId: player.id, ...outcome.lock });
+    if (outcome.telekinesis)
+      this.events.emit('telekinesis', { casterId: player.id, position: outcome.telekinesis });
     if (outcome.dispelField && !this.fields.dispel(outcome.dispelField))
       this.notifier.send(player.id, { type: 'system', text: 'Ahí no hay ningún campo mágico.' });
     for (const creature of outcome.dispelled ?? []) {
@@ -370,9 +363,10 @@ export class GameLoop {
           text: 'Tu Reflejo mágico devolvió el hechizo.',
         });
     }
-    if (outcome.conceal) this.stealth.conceal(outcome.conceal.target, outcome.conceal.until);
+    if (outcome.conceal)
+      this.services.stealth.conceal(outcome.conceal.target, outcome.conceal.until);
     if (outcome.revealAt) {
-      const found = this.stealth.revealArea(
+      const found = this.services.stealth.revealArea(
         outcome.revealAt.position,
         outcome.revealAt.radius,
         player,
@@ -384,7 +378,7 @@ export class GameLoop {
     }
     // Un hechizo de daño descubre al que estaba escondido.
     if (spell.target === 'harmful' && outcome.target instanceof Player && outcome.target !== player)
-      this.stealth.reveal(outcome.target, 'Un hechizo te descubrió.');
+      this.services.stealth.reveal(outcome.target, 'Un hechizo te descubrió.');
     if (outcome.summoned) this.mobiles.appear(outcome.summoned);
     if (outcome.revived && target instanceof Player) {
       this.mobiles.sendVitals(target);
@@ -448,7 +442,7 @@ export class GameLoop {
           return;
         }
         this.mobiles.disappear(creature);
-        this.corpses.remove(creature.id);
+        this.services.corpses.remove(creature.id);
         creature.gone = true;
         creature.respawnAt = now + RESPAWN_MS;
       }
@@ -601,9 +595,10 @@ export class GameLoop {
     // Una criatura salvaje sin pelea se da vuelta contra quien la golpea (persona o invocación).
     const { attacker, target } = result;
     // Pegar, o recibir un golpe, descubre al escondido.
-    if (attacker instanceof Player) this.stealth.reveal(attacker, 'Atacaste y te descubriste.');
+    if (attacker instanceof Player)
+      this.services.stealth.reveal(attacker, 'Atacaste y te descubriste.');
     if (target instanceof Player && result.hit && !result.blocked)
-      this.stealth.reveal(target, 'Te golpearon y te descubrieron.');
+      this.services.stealth.reveal(target, 'Te golpearon y te descubrieron.');
     if (target instanceof Creature && !target.ownerId && target.combat.targetId === null)
       target.combat.targetId = attacker.id;
     if (target instanceof Creature && target.isPet) this.warnPetOwner(target, attacker, now);
@@ -654,7 +649,7 @@ export class GameLoop {
       victim.pendingBandage = null;
       this.mobiles.sendEffects(victim);
       victim.combat.targetId = null;
-      this.mounts.dismountOnDeath(victim);
+      this.services.mounts.dismountOnDeath(victim);
       this.mobiles.broadcastHealth(victim);
       this.mobiles.sendVitals(victim);
       this.mobiles.sendTarget(victim);
@@ -690,8 +685,9 @@ export class GameLoop {
       const fame = CREATURE_FAME[creature.body] ?? 0;
       killer.reputation.award(fame, fame);
       this.social.sendSocial(killer);
-      if (!creature.temporary && !creature.ownerId) this.onCreatureKilled(killer, creature);
-      if (!creature.ownerId) this.onCreatureSlain(killer, creature);
+      if (!creature.temporary && !creature.ownerId)
+        this.events.emit('creatureKilled', { killer, creature });
+      if (!creature.ownerId) this.events.emit('creatureSlain', { killer, creature });
     }
     this.dropLoot(creature);
   }
@@ -730,8 +726,9 @@ export class GameLoop {
     const map = TREASURE_MAP_DROPS[creature.definition.kind];
     const withMap = map && !creature.temporary && this.roll() < map.chance ? map : null;
     if (withMap) drops.push({ kind: 'treasure-map', amount: 1 });
-    if (!this.corpses.fill(creature, drops)) return;
-    if (withMap) this.onTreasureMap(creature.id, withMap.level);
+    if (!this.services.corpses.fill(creature, drops)) return;
+    if (withMap)
+      this.events.emit('treasureMapDropped', { corpseId: creature.id, level: withMap.level });
     const names = drops.map((d) => describeItem(d.kind, d.amount));
     for (const id of this.mobiles.watchers(creature)) {
       this.notifier.send(id, {
