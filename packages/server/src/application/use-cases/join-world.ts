@@ -1,4 +1,15 @@
-import { encodeMap, validateCharacterName, type Appearance, type EntityId } from '@fenix/shared';
+import {
+  DEFAULT_APPEARANCE,
+  ITEMS,
+  STARTING_BANK_GOLD,
+  creationSkills,
+  encodeMap,
+  startingKit,
+  validateCharacterName,
+  type Appearance,
+  type CharacterCreation,
+  type EntityId,
+} from '@fenix/shared';
 import { STARTING_KIT } from '../../domain/items/starting-kit';
 import { equipTestCharacter, isTestCharacter } from '../../domain/testing/test-character';
 import { restoreCharacter } from '../../domain/persistence/saved-character';
@@ -16,6 +27,12 @@ export interface JoinWorldInput {
 }
 
 export type JoinWorldResult = { ok: true; playerId: EntityId } | { ok: false; reason: string };
+
+/** La cuenta con la que se entra: su nombre y el hash de su contraseña. */
+export interface JoinAccount {
+  readonly name: string;
+  readonly passwordHash: string | null;
+}
 
 export class JoinWorld {
   constructor(
@@ -55,9 +72,86 @@ export class JoinWorld {
     return { ok: true, playerId: player.id };
   }
 
+  /** Entra con un personaje de la cuenta (uno sin guardar se crea con lo de siempre). */
+  enter(name: string, account: JoinAccount): JoinWorldResult {
+    const problem = this.roomFor(name);
+    if (problem) return { ok: false, reason: problem };
+    const saved = this.persistence.find(name);
+    const random = (): number => this.random.next();
+    const player = saved
+      ? restoreCharacter(saved, this.world, () => this.ids.next(), random, this.clock.now())
+      : this.createCharacter(name, undefined, random);
+    return this.admit(player, account);
+  }
+
+  /**
+   * Crea un personaje como en UO: atributos repartidos, tres habilidades
+   * elegidas (60, 50 y 50) y el equipo que corresponde, todo "de equipo
+   * inicial" (no se pierde ni se da); además, oro en el banco.
+   */
+  create(creation: CharacterCreation, account: JoinAccount): JoinWorldResult {
+    const problem = this.roomFor(creation.name);
+    if (problem) return { ok: false, reason: problem };
+    if (this.persistence.find(creation.name))
+      return { ok: false, reason: 'Ya existe un personaje con ese nombre.' };
+    const player = this.world.spawn(
+      {
+        id: this.ids.next(),
+        name: creation.name,
+        appearance: creation.appearance,
+        skills: creationSkills(creation.skills),
+        attributes: creation.attributes,
+      },
+      () => this.random.next(),
+    );
+    const owner = { type: 'backpack', ownerId: player.id, position: { x: 0, y: 0 } } as const;
+    for (const { kind, amount } of startingKit(creation.skills)) {
+      const item = this.world.items.add(this.ids.next(), kind, amount, owner);
+      item.newbie = true;
+    }
+    this.arrangeBackpack(player.id);
+    // Se pone lo que se viste y se empuña (armas, armadura, escudo, capa), como en UO.
+    for (const item of this.world.items.backpackOf(player.id)) {
+      const slot = ITEMS[item.kind].slot;
+      if (!slot || ITEMS[item.kind].light) continue;
+      const taken = this.world.items
+        .equipmentOf(player.id)
+        .some((i) => i.location.type === 'equipment' && i.location.slot === slot);
+      if (!taken)
+        this.world.items.move(player, item.id, { type: 'equipment', slot }, this.world.map);
+    }
+    this.world.items.add(this.ids.next(), 'gold', STARTING_BANK_GOLD, {
+      type: 'bank',
+      ownerId: player.id,
+      position: { x: 0, y: 0 },
+    });
+    return this.admit(player, account);
+  }
+
+  /** Por qué no puede entrar ese personaje ahora (null: puede). */
+  private roomFor(name: string): string | null {
+    if (this.world.isFull()) return 'El servidor está lleno.';
+    if (this.world.isNameTaken(name)) return 'Ese personaje ya está en el mundo.';
+    return null;
+  }
+
+  private admit(player: Player, account: JoinAccount): JoinWorldResult {
+    this.persistence.register(player, account.passwordHash, account.name);
+    if (isTestCharacter(player.name, this.testCharacters))
+      equipTestCharacter(player, this.world, () => this.ids.next());
+    return { ok: true, playerId: player.id };
+  }
+
   /** Personaje nuevo: aparece en el pueblo con el equipo inicial. */
-  private createCharacter(name: string, appearance: Appearance, random: () => number): Player {
-    const player = this.world.spawn({ id: this.ids.next(), name, appearance }, random);
+  private createCharacter(
+    name: string,
+    appearance: Appearance | undefined,
+    random: () => number,
+  ): Player {
+    const player = this.world.spawn(
+      { id: this.ids.next(), name, appearance: appearance ?? DEFAULT_APPEARANCE },
+      random,
+    );
     for (const { kind, amount } of STARTING_KIT) {
       this.world.items.add(this.ids.next(), kind, amount, {
         type: 'backpack',

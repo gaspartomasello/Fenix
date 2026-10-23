@@ -194,7 +194,10 @@ objetivo y turno de golpe. El cliente solo elige objetivo (`attack`); el golpe l
   mazmorras no) y vuelven a su lugar si se alejan demasiado. Las que huyen se alejan con poca
   vida y las que lanzan hechizos guardan distancia;
 - usa las habilidades de cada criatura (`abilities` en el catálogo, `creature-magic.ts`): veneno al
-  morder, hechizos (y curarse), aliento de fuego, regeneración y resistencia mágica;
+  morder, hechizos (y curarse), aliento de fuego, regeneración y resistencia mágica. Las que
+  lanzan hechizos tienen inteligencia (`intelligence` en el catálogo: más fuertes, más maná),
+  gastan el maná del hechizo, lo recuperan de a poco y, si reciben un golpe mientras conjuran,
+  pierden la concentración y el hechizo falla;
 - resuelve golpes con `resolveAttack` (acierto por destreza, daño del arma, la armadura absorbe);
   el arco dispara desde lejos y gasta una flecha por tiro;
 - regenera vitales, guarda el botín dentro del cuerpo de las criaturas muertas y las hace
@@ -535,6 +538,28 @@ verifica la contraseña al entrar, guarda al registrarse, cada 30 segundos y al 
 Implementaciones: `JsonFileCharacterStore` (servidor, escritura atómica y agrupada),
 `KeyValueCharacterStore` (modo solo, sobre `localStorage`) y `ScryptPasswordHasher`. El modo
 solo no pide contraseña: el servidor embebido se compone sin hasher.
+
+### Cuentas y creación de personajes
+
+Se entra con una **cuenta** (nombre y contraseña) que guarda hasta cinco personajes
+(`ACCOUNT_CHARACTERS`). El puerto `AccountStore` guarda `AccountRecord` (nombre, hash y lista de
+personajes): `JsonFileAccountStore` (`cuentas.json`) en el servidor y `KeyValueAccountStore`
+(`fenix.cuentas`) en el modo solo. El caso de uso `Accounts` entra o crea la cuenta, arma la
+lista (`account`), crea, juega y borra personajes; `ClientSession` pasa de "sin cuenta" a
+"en la cuenta" y de ahí al mundo (mensajes `login`, `createCharacter`, `play`,
+`deleteCharacter`; el viejo `join` sigue andando para las pruebas). Un personaje de antes de las
+cuentas pasa a la cuenta de su mismo nombre la primera vez que se entra con su contraseña. La
+cuenta de un personaje de prueba ya lo trae.
+
+La creación es como en UO (`shared/domain/character/creation.ts`): 120 puntos de atributos (de
+10 a 80 cada uno) y tres habilidades, una en 60 y dos en 50. El equipo sale de `startingKit`:
+lo de todos (100 vendas, comida, pociones, antorcha) más lo de cada habilidad (armas y armadura
+para combate, libro y 150 de cada reactivo para Magia, herramientas y materiales para los
+oficios…); además, 2000 monedas en el banco. Las armas, la armadura y el escudo se ponen solos.
+
+Todo ese equipo es **de equipo inicial** (`Item.newbie`, se guarda y se muestra en el nombre):
+no se puede tirar al suelo, ni guardar fuera de las cosas propias (mochila, equipo, banco y sus
+bolsas), ni vender; tampoco se mezcla en una pila con lo comprado, así no se "contagia".
 
 ### Fauna
 

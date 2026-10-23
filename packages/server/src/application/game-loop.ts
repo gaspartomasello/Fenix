@@ -146,8 +146,21 @@ export class GameLoop {
     this.mobiles.sendEffects(player);
   }
 
-  /** Un golpe corta la concentración de quien está lanzando, salvo con Protección. */
+  /**
+   * Un golpe corta la concentración de quien está lanzando, salvo con
+   * Protección. A las criaturas también: un mago esquelético al que le pegan
+   * pierde el hechizo (y el maná que gastó), como en UO.
+   */
   private disrupt(mobile: Mobile): void {
+    if (mobile instanceof Creature && mobile.pendingCast) {
+      mobile.pendingCast = null;
+      for (const id of this.mobiles.watchers(mobile))
+        this.notifier.send(id, {
+          type: 'system',
+          text: `${capitalize(mobile.definition.article === 'una' ? 'la' : 'el')} ${mobile.name} pierde la concentración.`,
+        });
+      return;
+    }
     if (!(mobile instanceof Player) || !mobile.pendingCast) return;
     if (mobile.combat.effect('protection')) return;
     mobile.pendingCast = null;
@@ -421,6 +434,15 @@ export class GameLoop {
         this.mobiles.broadcastHealth(creature);
       }
     }
+    // Las que saben magia recuperan maná despacio (un punto cada 2 segundos).
+    if (abilities.spells && creature.combat.current.mana < creature.combat.current.maxMana) {
+      creature.manaCarry += elapsed / CREATURE_MANA_MS;
+      const whole = Math.floor(creature.manaCarry);
+      if (whole > 0) {
+        creature.manaCarry -= whole;
+        creature.combat.restoreMana(whole);
+      }
+    }
     const cast = resolveCreatureCast(creature, this.world, now, this.roll);
     if (cast) {
       this.mobiles.spellEffect(creature, cast.target, cast.spell, cast.amount, cast.resisted);
@@ -646,6 +668,9 @@ export class GameLoop {
     this.notifier.send(player.id, { type: 'system', text: '¡Volviste a la vida!' });
   }
 }
+
+/** Cada cuánto recupera un punto de maná una criatura que lanza hechizos. */
+const CREATURE_MANA_MS = 2000;
 
 /** Cada cuánto se repite el aviso de que atacan a la montura. */
 const PET_WARNING_MS = 20_000;

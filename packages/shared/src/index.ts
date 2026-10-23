@@ -11,6 +11,7 @@ export * from './domain/rules/visibility';
 export * from './domain/character/appearance';
 export * from './domain/character/name';
 export * from './domain/character/password';
+export * from './domain/character/creation';
 export * from './domain/items/equipment';
 export * from './domain/items/item-catalog';
 export * from './domain/items/item-rules';

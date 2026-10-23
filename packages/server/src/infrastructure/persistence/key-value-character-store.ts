@@ -18,8 +18,7 @@ export class KeyValueCharacterStore extends MemoryCharacterStore {
     super(KeyValueCharacterStore.read(storage));
   }
 
-  override save(...args: Parameters<MemoryCharacterStore['save']>): void {
-    super.save(...args);
+  protected override changed(): void {
     try {
       this.storage.setItem(STORAGE_KEY, JSON.stringify(this.all()));
     } catch {

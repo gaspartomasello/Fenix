@@ -33,6 +33,23 @@ export interface CharacterStore {
   /** Busca por nombre, sin distinguir mayúsculas. */
   find(name: string): SavedCharacter | undefined;
   save(character: SavedCharacter): void;
+  /** Lo borra para siempre (al borrar un personaje de la cuenta). */
+  remove(name: string): void;
+}
+
+/** Una cuenta: su contraseña y los nombres de sus personajes. */
+export interface AccountRecord {
+  readonly name: string;
+  /** Hash de la contraseña; null en el modo solo, que no la pide. */
+  readonly passwordHash: string | null;
+  readonly characters: readonly string[];
+}
+
+/** Dónde se guardan las cuentas (junto a los personajes). */
+export interface AccountStore {
+  /** Busca por nombre, sin distinguir mayúsculas. */
+  find(name: string): AccountRecord | undefined;
+  save(account: AccountRecord): void;
 }
 
 /** Hash de contraseñas: nunca se guardan en texto plano. */

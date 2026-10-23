@@ -17,8 +17,7 @@ export class JsonFileCharacterStore extends MemoryCharacterStore {
     super(JsonFileCharacterStore.read(path));
   }
 
-  override save(...args: Parameters<MemoryCharacterStore['save']>): void {
-    super.save(...args);
+  protected override changed(): void {
     this.timer ??= setTimeout(() => this.flush(), WRITE_DELAY_MS);
   }
 

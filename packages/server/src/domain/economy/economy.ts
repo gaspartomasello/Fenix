@@ -238,12 +238,13 @@ export function sell(
   if (!item || item.location.type !== 'backpack' || item.location.ownerId !== player.id) {
     return fail('Solo podés vender lo que tenés en la mochila.');
   }
+  if (item.newbie) return fail('Es tu equipo inicial: no se vende.');
   const offer = VENDORS[vendor.role].buys.find((o) => o.kind === item.kind);
   if (!offer) return fail(`${vendor.name} no compra eso.`);
   const total = offer.price * item.amount;
   const changes = emptyChanges();
   const label = describeItem(item.kind, item.amount);
-  world.items.consumeFromBackpack(player.id, item.kind, item.amount, changes);
+  world.items.destroy(item.id, changes);
   world.items.addToBackpack(player.id, 'gold', total, ids, changes);
   return { ok: true, message: `Vendiste ${label} por ${total} monedas.`, changes };
 }

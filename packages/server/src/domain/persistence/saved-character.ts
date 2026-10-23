@@ -66,6 +66,8 @@ export interface SavedItem {
   readonly treasure?: TreasureMark;
   /** Maqueta de barco: el barco que guarda. */
   readonly ship?: ShipRecord;
+  /** Equipo inicial: no se pierde al morir ni se puede dar. */
+  readonly newbie?: true;
   /** Bolsa o caja: lo que lleva adentro (con su lugar en la ventana). */
   readonly contents?: readonly SavedItem[];
 }
@@ -76,6 +78,8 @@ export interface SavedCharacter {
   readonly name: string;
   /** Hash de la contraseña; null en el modo solo, que no la pide. */
   readonly passwordHash: string | null;
+  /** La cuenta a la que pertenece (los personajes viejos no la tienen). */
+  readonly account?: string;
   readonly appearance: Appearance;
   readonly position: Position;
   readonly direction: Direction;
@@ -100,6 +104,7 @@ export function captureCharacter(
   player: Player,
   world: World,
   passwordHash: string | null,
+  account?: string,
 ): SavedCharacter {
   const owned = [
     ...world.items.backpackOf(player.id),
@@ -114,6 +119,7 @@ export function captureCharacter(
     version: SAVE_VERSION,
     name: player.name,
     passwordHash,
+    ...(account ? { account } : {}),
     appearance: player.appearance,
     position: player.position,
     world: world.mapId,
@@ -137,6 +143,7 @@ export function captureCharacter(
           ...(item.hue !== null ? { hue: item.hue } : {}),
           ...(item.treasure ? { treasure: item.treasure } : {}),
           ...(item.ship ? { ship: item.ship } : {}),
+          ...(item.newbie ? { newbie: true as const } : {}),
           ...(ITEMS[item.kind].capacity ? { contents: savedContents(world, item.id) } : {}),
         };
         if (location.type === 'equipment')
@@ -234,6 +241,7 @@ function savedContents(world: World, containerId: string, depth = 0): SavedItem[
         ...(inner.mark ? { mark: inner.mark } : {}),
         ...(inner.book ? { book: inner.book } : {}),
         ...(inner.hue !== null ? { hue: inner.hue } : {}),
+        ...(inner.newbie ? { newbie: true as const } : {}),
         ...(inner.treasure ? { treasure: inner.treasure } : {}),
         ...(inner.ship ? { ship: inner.ship } : {}),
         ...(ITEMS[inner.kind].capacity
@@ -293,6 +301,7 @@ function parseItem(value: unknown, depth = 0): SavedItem | null {
     ...(hue !== undefined ? { hue } : {}),
     ...(treasure ? { treasure } : {}),
     ...(ship ? { ship } : {}),
+    ...(value.newbie === true ? { newbie: true as const } : {}),
     ...(contents.length > 0 ? { contents } : {}),
   };
   if (location.type === 'equipment' && isEquipmentSlot(location.slot))
@@ -380,6 +389,7 @@ export function parseSavedCharacter(value: unknown): SavedCharacter | null {
     version: SAVE_VERSION,
     name,
     passwordHash,
+    ...(typeof value.account === 'string' ? { account: value.account } : {}),
     appearance,
     position: { x: Math.round(position.x), y: Math.round(position.y) },
     direction,
@@ -453,6 +463,7 @@ export function restoreCharacter(
       restored.hue = item.hue ?? null;
       restored.treasure = item.treasure ?? null;
       restored.ship = item.ship ?? null;
+      restored.newbie = item.newbie === true;
     } else {
       const restored = world.items.add(nextId(), item.kind, item.amount, {
         type: location.type === 'bank' ? 'bank' : 'backpack',
@@ -464,6 +475,7 @@ export function restoreCharacter(
       restored.hue = item.hue ?? null;
       restored.treasure = item.treasure ?? null;
       restored.ship = item.ship ?? null;
+      restored.newbie = item.newbie === true;
       restoreContents(world, restored.id, item.contents ?? [], nextId);
     }
   }
@@ -515,6 +527,7 @@ function restoreContents(
     restored.hue = inner.hue ?? null;
     restored.treasure = inner.treasure ?? null;
     restored.ship = inner.ship ?? null;
+    restored.newbie = inner.newbie === true;
     restoreContents(world, restored.id, inner.contents ?? [], nextId);
   }
 }

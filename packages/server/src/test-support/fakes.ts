@@ -77,4 +77,8 @@ export class FakeCharacterStore implements CharacterStore {
     this.saves.push(character.name);
     this.characters.set(character.name.toLocaleLowerCase(), character);
   }
+
+  remove(name: string): void {
+    this.characters.delete(name.toLocaleLowerCase());
+  }
 }

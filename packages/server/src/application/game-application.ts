@@ -12,7 +12,9 @@ import { GameLoop } from './game-loop';
 import { ItemNotifications } from './item-notifications';
 import { MobileNotifications } from './mobile-notifications';
 import { CharacterPersistence } from './character-persistence';
+import { Accounts } from './use-cases/accounts';
 import type {
+  AccountStore,
   CharacterStore,
   Clock,
   IdGenerator,
@@ -49,6 +51,8 @@ export interface GameApplicationDeps {
   readonly notifier: Notifier;
   /** Dónde guardar los personajes; sin almacén no se guarda nada. */
   readonly characters?: CharacterStore;
+  /** Cuentas (cada una con hasta cinco personajes); sin almacén, en memoria. */
+  readonly accounts?: AccountStore;
   /** Con hasher, cada personaje tiene contraseña (servidor en línea). */
   readonly passwords?: PasswordHasher;
   /** Personajes de prueba: entran con todo al máximo (solo para probar el juego). */
@@ -63,6 +67,8 @@ export interface GameApplicationDeps {
  */
 export class GameApplication {
   private readonly joinWorld: JoinWorld;
+  /** Cuentas y creación de personajes (antes de entrar al mundo). */
+  readonly accounts: Accounts;
   private readonly leaveWorld: LeaveWorld;
   private readonly gameMaster: GameMaster;
   private readonly townLife: TownLife;
@@ -102,6 +108,7 @@ export class GameApplication {
     random,
     notifier,
     characters,
+    accounts,
     passwords,
     testCharacters = [],
     admins = [],
@@ -125,6 +132,13 @@ export class GameApplication {
       notifier,
       notifications,
       this.persistence,
+      testCharacters,
+    );
+    this.accounts = new Accounts(
+      accounts,
+      this.persistence,
+      passwords,
+      this.joinWorld,
       testCharacters,
     );
     this.leaveWorld = new LeaveWorld(world, notifier);
@@ -270,6 +284,11 @@ export class GameApplication {
       appearance: message.appearance,
       password: message.password,
     });
+  }
+
+  /** ¿Hay un personaje con ese nombre en el mundo? */
+  isOnline(name: string): boolean {
+    return this.world.isNameTaken(name);
   }
 
   /** Llamar después de asociar la conexión al jugador recién creado. */
@@ -425,6 +444,10 @@ export class GameApplication {
         this.mounts.releasePet(playerId);
         break;
       case 'join':
+      case 'login':
+      case 'createCharacter':
+      case 'play':
+      case 'deleteCharacter':
         // Ya está en el mundo: se ignora un segundo ingreso.
         break;
     }

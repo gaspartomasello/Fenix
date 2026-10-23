@@ -17,6 +17,7 @@ export type Authentication =
  */
 export class CharacterPersistence {
   private readonly hashes = new Map<EntityId, string | null>();
+  private readonly accounts = new Map<EntityId, string>();
   private nextAutosaveAt = 0;
 
   constructor(
@@ -42,20 +43,39 @@ export class CharacterPersistence {
   }
 
   /** Empieza a seguir a un jugador recién conectado y lo guarda (así reserva el nombre). */
-  register(player: Player, passwordHash: string | null): void {
+  register(player: Player, passwordHash: string | null, account?: string): void {
     this.hashes.set(player.id, passwordHash);
+    if (account) this.accounts.set(player.id, account);
     this.save(player);
+  }
+
+  /** El personaje guardado con ese nombre, si hay. */
+  find(name: string): SavedCharacter | null {
+    return this.store?.find(name) ?? null;
+  }
+
+  /** Borra un personaje guardado (al borrarlo de la cuenta). */
+  remove(name: string): void {
+    this.store?.remove(name);
   }
 
   save(player: Player): void {
     if (!this.store || !this.hashes.has(player.id)) return;
-    this.store.save(captureCharacter(player, this.world, this.hashes.get(player.id) ?? null));
+    this.store.save(
+      captureCharacter(
+        player,
+        this.world,
+        this.hashes.get(player.id) ?? null,
+        this.accounts.get(player.id),
+      ),
+    );
   }
 
   /** Guarda y deja de seguir al jugador (al desconectarse). */
   release(player: Player): void {
     this.save(player);
     this.hashes.delete(player.id);
+    this.accounts.delete(player.id);
   }
 
   saveAll(): void {

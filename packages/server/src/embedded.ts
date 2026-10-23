@@ -7,6 +7,7 @@ import {
   KeyValueCharacterStore,
   type KeyValueStorage,
 } from './infrastructure/persistence/key-value-character-store';
+import { KeyValueAccountStore } from './infrastructure/persistence/account-stores';
 import { ClientSession } from './infrastructure/network/client-session';
 import { SessionRegistry } from './infrastructure/network/session-registry';
 import { SeededRandom } from './infrastructure/system/seeded-random';
@@ -63,7 +64,12 @@ export function createEmbeddedServer(options: EmbeddedServerOptions = {}): Embed
     ids,
     random: new SeededRandom(Date.now()),
     notifier: sessions,
-    ...(options.storage ? { characters: new KeyValueCharacterStore(options.storage) } : {}),
+    ...(options.storage
+      ? {
+          characters: new KeyValueCharacterStore(options.storage),
+          accounts: new KeyValueAccountStore(options.storage),
+        }
+      : {}),
     ...(options.testCharacters ? { testCharacters: options.testCharacters } : {}),
   });
 

@@ -428,14 +428,14 @@ describe('etapa 10: hechizos, efectos, vendas y oficios', () => {
     expect(f.last('effects', ana)?.attributes.intelligence).toBe(
       player.combat.baseAttributes.intelligence,
     );
-    // La suma de los tres no pasa de 225.
+    // La suma de los tres no pasa de 235.
     const total = (): number => {
       const { strength, dexterity, intelligence } = player.combat.baseAttributes;
       return strength + dexterity + intelligence;
     };
-    while (player.combat.baseAttributes.strength < 100) player.combat.raiseAttribute('strength');
-    while (total() < 224) player.combat.raiseAttribute('dexterity');
+    while (player.combat.baseAttributes.strength < 120) player.combat.raiseAttribute('strength');
+    while (total() < 234) player.combat.raiseAttribute('dexterity');
     for (let i = 0; i < 200; i++) player.skills.tryGain('magery', () => 0);
-    expect(total()).toBe(225);
+    expect(total()).toBe(235);
   });
 });
