@@ -33,6 +33,7 @@ import { TownLife } from './use-cases/town-life';
 import { Books } from './use-cases/books';
 import { Dyeing } from './use-cases/dyeing';
 import { TreasureHunt } from './use-cases/treasure-hunt';
+import { Ships } from './use-cases/ships';
 import { Quests } from './use-cases/quests';
 import { Containers } from './use-cases/containers';
 import { MovePlayer } from './use-cases/move-player';
@@ -69,6 +70,7 @@ export class GameApplication {
   private readonly books: Books;
   private readonly dyeing: Dyeing;
   private readonly treasure: TreasureHunt;
+  private readonly ships: Ships;
   private readonly quests: Quests;
   private readonly movePlayer: MovePlayer;
   private readonly sendChat: SendChat;
@@ -227,6 +229,13 @@ export class GameApplication {
     );
     this.loop.onCreatureKilled = (killer, creature) => this.quests.creatureKilled(killer, creature);
     this.loop.onTreasureMap = (corpseId, level) => this.treasure.chartCorpse(corpseId, level);
+    this.ships = new Ships(world, clock, ids, random, notifications, this.mobiles, notifier);
+    this.ships.teleport = (player, position) => this.movePlayer.teleport(player, position);
+    this.ships.hurt = (target, amount) => this.loop.hurt(target, amount, clock.now());
+    this.ships.openContainer = (playerId, id) => this.containers.openFor(playerId, id);
+    this.useItem.launchShip = (playerId, id) => this.ships.launch(playerId, id);
+    this.movePlayer.refusal = (player, from, to) => this.ships.refusal(player, from, to);
+    this.containers.refusal = (playerId, id) => this.ships.containerRefusal(playerId, id);
     this.loop.onTrap = (casterId, containerId, armed) =>
       this.containers.setTrap(casterId, containerId, armed);
     this.containers.hurt = (playerId, amount) => {
@@ -246,6 +255,7 @@ export class GameApplication {
     this.townLife.tick(now);
     this.containers.tick(now);
     this.treasure.tick(now);
+    this.ships.tick(now);
     this.persistence.autosave(now);
   }
 
@@ -272,6 +282,7 @@ export class GameApplication {
       this.mobiles.sendEffects(player);
       this.social.sendSocial(player);
       this.quests.sendJournal(player);
+      this.ships.afterJoin(playerId);
     }
   }
 
@@ -288,6 +299,8 @@ export class GameApplication {
         break;
       case 'chat':
         this.sendChat.execute(playerId, message.text, message.channel);
+        // Las órdenes al timonel se dan en voz alta, como en UO.
+        if ((message.channel ?? 'say') === 'say') this.ships.hear(playerId, message.text);
         // Hablar en voz alta descubre al escondido (al grupo o al gremio, no).
         if ((message.channel ?? 'say') === 'say')
           this.revealPlayer(playerId, 'Hablaste y te oyeron.');
@@ -362,6 +375,18 @@ export class GameApplication {
         break;
       case 'dye':
         this.dyeing.dye(playerId, message.itemId, message.hue);
+        break;
+      case 'shipOrder':
+        this.ships.order(playerId, message.shipId, message.order);
+        break;
+      case 'boardShip':
+        this.ships.board(playerId, message.shipId);
+        break;
+      case 'shipAction':
+        this.ships.action(playerId, message.shipId, message.action);
+        break;
+      case 'shipSecurity':
+        this.ships.security(playerId, message.shipId, message.change);
         break;
       case 'dig':
         this.treasure.dig(playerId, message.toolId, message.position);
@@ -540,6 +565,7 @@ export class GameApplication {
     }
     this.corpses.forget(playerId);
     this.containers.forget(playerId);
+    this.ships.forget(playerId);
     this.leaveWorld.execute(playerId);
   }
 }

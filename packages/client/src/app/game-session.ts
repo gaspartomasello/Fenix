@@ -36,6 +36,8 @@ import type { ItemActions } from '../ui/backpack-window';
 import { BankWindow } from '../ui/bank-window';
 import { BookWindow } from '../ui/book-window';
 import { TreasureMapWindow } from '../ui/treasure-map-window';
+import { ShipWindow } from '../ui/ship-window';
+import { WorldShips } from './world-ships';
 import { DyeWindow } from '../ui/dye-window';
 import { QuestJournal, QuestOfferWindow } from '../ui/quest-windows';
 import { ContainerWindow } from '../ui/container-window';
@@ -188,6 +190,7 @@ export class GameSession {
     const worldContainers = new WorldContainers(this.game, renderer, tooltip);
     const worldMounts = new WorldMounts(this.game, renderer, tooltip);
     new WorldSigns(renderer, tooltip);
+    new WorldShips(this.game, renderer, tooltip);
     const worldItems = new WorldItems(this.game, renderer, drag, tooltip);
     // Con el dedo: joystick para caminar y los controles táctiles (ver setUpTouch).
     const touch = prefersTouch();
@@ -633,6 +636,21 @@ export class GameSession {
     );
     this.game.on('treasureMapOpened', (contents) => treasureMap.open(contents));
     this.hosts.ui.append(treasureMap.window.element);
+    const shipWindow = new ShipWindow({
+      order: (id, order) => this.game.shipOrder(id, order),
+      action: (id, action) => this.game.shipAction(id, action),
+      security: (id, change) => this.game.shipSecurity(id, change),
+    });
+    this.game.on('shipPanelOpened', ({ shipId, level, security }) =>
+      shipWindow.open(
+        shipId,
+        level,
+        security,
+        this.game.ships.find((s) => s.id === shipId),
+      ),
+    );
+    this.game.on('shipsChanged', (ships) => shipWindow.update(ships));
+    this.hosts.ui.append(shipWindow.window.element);
     const containers = new Map<string, ContainerWindow>();
     let opened = 0;
     this.game.on('containerChanged', ({ containerId, container, opened: requested }) => {

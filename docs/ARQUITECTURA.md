@@ -492,6 +492,38 @@ temporales, que no reaparecen). El cofre se deshace solo después de `TREASURE_C
 venden el herrero y Marta; Marta también compra mapas. Los administradores ven las coordenadas de la
 marca al leer el mapa.
 
+### Barcos tripulados
+
+Los barcos siguen el modelo de UO (se revisó el código de ServUO para las reglas): se compran como
+maqueta a Bruno el armador (`shipwright`), se botan con doble clic en el agua más cercana y los
+navegan varios personajes juntos. Hay balandra (5 × 3, sin cañones) y galeón (7 × 3, un cañón
+por banda); ver `SHIPS`.
+
+- **Permisos** (`ShipSecurity`): el dueño es siempre capitán. Los niveles son pasajero (sube),
+  tripulante (gobierna, dispara, repara), oficial (abre la bodega) y capitán (permisos, nombre,
+  guardar). Se dan con nombre o a cualquiera, al grupo o al gremio del dueño; «sin permiso» con
+  nombre deja afuera aunque sea del grupo (`shipLevel`). Para subir caminando a una cubierta ajena
+  hace falta permiso (`MovePlayer.refusal`).
+- **Timón**: cualquier tripulante a bordo da órdenes en voz alta como al timonel de UO («adelante»,
+  «despacio atrás», «un paso a babor», «virar a estribor», «dar la vuelta», «alto»;
+  `parseShipOrder`) o con la ventana del barco. El caso de uso `Ships` mueve el barco tile por tile
+  (más lento «despacio») y lleva todo lo que hay encima: gente, criaturas y objetos. Solo entra en
+  agua libre, sin muelles, rocas ni otros barcos.
+- **Cubierta**: `TileMap.setDeck` vuelve caminables los tiles de agua que ocupa un barco, en el
+  servidor y en el cliente (que conoce los barcos por `ships` y `shipMoved`), así la predicción de
+  movimiento coincide.
+- **Cañones, casco y bodega**: cada disparo gasta una bala (de la mochila o de la bodega), sale
+  derecho por esa banda hasta `CANNON_RANGE` y daña el primer barco o a la gente que encuentra.
+  Con el casco en cero, el barco se hunde y los de a bordo nadan hasta la costa. Reparar gasta
+  tablas y tela. La bodega es un recipiente fijo en la popa, solo para oficiales.
+- **Guardar**: el capitán, cerca de la costa, sin nadie más a bordo y con la bodega vacía, lo
+  guarda en su maqueta (con nombre, casco y permisos). Mientras está en el agua, el guardado del
+  personaje incluye la maqueta en el banco (por si el servidor se reinicia); al volver a entrar, si
+  el barco sigue en el agua, la copia se descarta (`Ships.afterJoin`). Lo que haya en la bodega
+  no sobrevive a un reinicio.
+- El dibujo del barco se arma con la proa hacia +x y se gira con `RotatedProjection`: la luz
+  queda fija en el mundo para las cuatro direcciones.
+
 ### Persistencia
 
 Un personaje se guarda como datos planos (`SavedCharacter`, en `domain/persistence`):

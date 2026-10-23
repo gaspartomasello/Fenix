@@ -212,6 +212,76 @@ export class WorldProjection implements Projection {
   }
 }
 
+/**
+ * La misma proyección con el modelo girado sobre la vertical (`quarter`
+ * cuartos de vuelta). La luz queda fija en el mundo: un barco que vira se ve
+ * iluminado desde el mismo lado.
+ */
+export class RotatedProjection implements Projection {
+  readonly zoom: number;
+  readonly viewDir: Vec3;
+  readonly lightDir: Vec3;
+
+  constructor(
+    private readonly base: Projection,
+    private readonly quarter: 0 | 1 | 2 | 3,
+  ) {
+    this.zoom = base.zoom;
+    this.viewDir = this.back(base.viewDir);
+    this.lightDir = this.back(base.lightDir);
+  }
+
+  /** Del modelo al mundo. */
+  private turn(v: Vec3): Vec3 {
+    const [x, y, z] = v;
+    switch (this.quarter) {
+      case 1:
+        return [-z, y, x];
+      case 2:
+        return [-x, y, -z];
+      case 3:
+        return [z, y, -x];
+      default:
+        return v;
+    }
+  }
+
+  /** Del mundo al modelo. */
+  private back(v: Vec3): Vec3 {
+    const [x, y, z] = v;
+    switch (this.quarter) {
+      case 1:
+        return [z, y, -x];
+      case 2:
+        return [-x, y, -z];
+      case 3:
+        return [-z, y, x];
+      default:
+        return v;
+    }
+  }
+
+  point(p: Vec3): Vec3 {
+    return this.base.point(this.turn(p));
+  }
+
+  forward(v: Vec3): Vec3 {
+    return this.base.forward(this.turn(v));
+  }
+
+  dual(v: Vec3): Vec3 {
+    return this.base.dual(this.turn(v));
+  }
+
+  modelNormal(gradient: Vec3): Vec3 {
+    return this.back(this.base.modelNormal(gradient));
+  }
+
+  unproject(x: number, y: number, z: number): Vec3 {
+    return this.back(this.base.unproject(x, y, z));
+  }
+}
+
 function col(m: readonly Vec3[], i: 0 | 1 | 2): Vec3 {
   return [m[0]?.[i] ?? 0, m[1]?.[i] ?? 0, m[2]?.[i] ?? 0];
 }

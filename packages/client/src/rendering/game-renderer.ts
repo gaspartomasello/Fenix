@@ -3,6 +3,7 @@ import {
   STATIC_CONTAINERS,
   type EntityId,
   type GroundItemSnapshot,
+  type ShipSnapshot,
   type Position,
   type TileMap,
 } from '@fenix/shared';
@@ -17,6 +18,7 @@ import { ItemLayer } from './item-layer';
 import { Ground } from './ground';
 import { renderResolution, type ScreenPoint } from './iso';
 import { Lighting } from './lighting';
+import { ShipLayer } from './ship-layer';
 import { StaticLayer } from './static-layer';
 import { TerrainLayer } from './terrain-layer';
 import { TextureCache } from './texture-cache';
@@ -58,6 +60,7 @@ export class GameRenderer {
   private terrain: TerrainLayer | null = null;
   private statics: StaticLayer | null = null;
   private readonly groundItems = new ItemLayer(this.textures, this.entityLayer, this.ground);
+  private readonly ships = new ShipLayer(this.textures, this.ground);
   private readonly effects = new EffectsLayer((id, now) => {
     for (const entity of this.game.allEntities())
       if (entity.id === id) return entity.renderPosition(now);
@@ -97,6 +100,11 @@ export class GameRenderer {
   /** Levanta un objeto del suelo (se deja de ver) mientras se lo arrastra. */
   liftGroundItem(id: EntityId): () => void {
     return this.groundItems.lift(id);
+  }
+
+  /** El barco bajo un punto de la pantalla (un tile de su cubierta). */
+  shipAt(point: ScreenPoint): ShipSnapshot | undefined {
+    return this.game.shipAt(this.screenToTile(point));
   }
 
   /** Texto del cartel bajo un punto de la pantalla (el poste sube un poco sobre su tile). */
@@ -245,6 +253,7 @@ export class GameRenderer {
     this.statics?.update(view, nearby, near, grown(view, DISCARD_MARGIN));
 
     this.effects.update(now);
+    this.ships.update();
     // De fantasma el mundo se ve gris, como en UO.
     this.scene.tint = self.dead ? GHOST_TINT : 0xffffff;
     const time = this.game.worldTime();
@@ -335,12 +344,17 @@ export class GameRenderer {
         this.views.forEach((view) => view.destroy());
         this.views.clear();
         this.groundItems.clear();
+        this.ships.clear();
         this.setMap(newMap);
         for (const entity of this.game.allEntities()) this.addView(entity);
       }),
       this.game.on('entityAdded', (entity) => this.addView(entity)),
       this.game.on('spellEffect', ({ spell, casterId, targetId }) =>
         this.effects.addSpell(spell, casterId, targetId, performance.now()),
+      ),
+      this.game.on('shipsChanged', (ships) => this.ships.apply(ships)),
+      this.game.on('cannonShot', ({ from, to, hit }) =>
+        this.effects.addShot(from, to, hit, performance.now()),
       ),
       this.game.on('arrowShot', ({ attackerId, targetId }) =>
         this.effects.addArrow(attackerId, targetId, performance.now()),
@@ -359,7 +373,7 @@ export class GameRenderer {
     this.ground.setMap(map);
     this.terrain = new TerrainLayer(map, this.textures, this.ground);
     this.statics = new StaticLayer(map, this.textures, this.entityLayer, this.ground);
-    this.scene.addChild(this.terrain.container, this.entityLayer);
+    this.scene.addChild(this.terrain.container, this.ships.container, this.entityLayer);
   }
 
   private addView(entity: Entity): void {

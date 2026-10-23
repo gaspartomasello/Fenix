@@ -106,6 +106,11 @@ export const BASE_ITEM_KINDS = [
   'treasure-map',
   'shovel',
   'treasure-chest',
+  // Barcos: maquetas para botarlos, la bodega y las balas de los cañones
+  'sloop-deed',
+  'galleon-deed',
+  'ship-hold',
+  'cannonball',
   'black-pearl',
   'blood-moss',
   'garlic',
@@ -176,6 +181,7 @@ export type ItemUse =
   | 'dye'
   | 'map'
   | 'dig'
+  | 'ship'
   | 'none';
 
 /** Lo que hace una poción al tomarla. */
@@ -308,6 +314,31 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
     use: 'map',
   },
   shovel: { name: 'pala', plural: 'palas', article: 'una', use: 'dig' },
+  'sloop-deed': {
+    name: 'maqueta de balandra',
+    plural: 'maquetas de balandra',
+    article: 'una',
+    use: 'ship',
+  },
+  'galleon-deed': {
+    name: 'maqueta de galeón',
+    plural: 'maquetas de galeón',
+    article: 'una',
+    use: 'ship',
+  },
+  'ship-hold': {
+    name: 'bodega del barco',
+    plural: 'bodegas de barco',
+    article: 'una',
+    fixed: true,
+    capacity: 80,
+  },
+  cannonball: {
+    name: 'bala de cañón',
+    plural: 'balas de cañón',
+    article: 'una',
+    stackable: true,
+  },
   'treasure-chest': {
     name: 'cofre del tesoro',
     plural: 'cofres del tesoro',

@@ -52,6 +52,7 @@ const ICON_FIT: Partial<Record<ItemKind, number>> = {
   nightshade: 1.5,
   'scribe-pen': 1.2,
   'empty-bottle': 1.05,
+  cannonball: 1.15,
   shovel: 0.72,
 };
 
@@ -62,6 +63,22 @@ const GOLD = ramp([212, 170, 64]);
 const WOOD = ramp([124, 84, 48]);
 const GRIP = ramp([74, 48, 30]);
 const PAPER = ramp([222, 212, 186]);
+
+/** Maqueta de barco sobre un soporte: el casco, un mástil por cada `masts` y su vela. */
+function shipModel(c: VolumeCanvas, stripe: Ramp, masts: number): void {
+  c.box([0, 1, 0], lying(0.5), [6, 1, 2.4], solid(WOOD));
+  const hull = (s: { p: Vec3; light: number }) =>
+    Math.abs(s.p[1] - 5) < 0.6 ? tone(stripe, s.light) : tone(ramp([128, 84, 48]), s.light);
+  c.ellipsoid([0, 4.6, 0], lying(0.5), [8, 3, 2.8], hull);
+  c.box([0, 6.6, 0], lying(0.5), [6.4, 0.4, 2.2], solid(ramp([176, 136, 88])));
+  for (let m = 0; m < masts; m++) {
+    const along = masts === 1 ? 0 : m === 0 ? 2.6 : -2.4;
+    const x = Math.cos(0.5) * along;
+    const z = -Math.sin(0.5) * along;
+    c.limb([x, 6.6, z], [x, 17, z], 0.5, 0.4, solid(WOOD));
+    c.box([x + 0.4, 12.6, z], lying(-1.07), [3.4, 3.6, 0.2], solid(ramp([236, 228, 206])));
+  }
+}
 
 /** Ejes de una pieza acostada en el suelo, girada `angle` sobre la vertical. */
 function lying(angle: number): readonly [Vec3, Vec3, Vec3] {
@@ -867,6 +884,29 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
       [0.4, -1.8],
     ] as const)
       c.ellipsoid([x, 7.4, z], lying(0.6), [1.1, 0.35, 1.1], metal(GOLD));
+  },
+  'sloop-deed'(c) {
+    shipModel(c, ramp([40, 90, 140]), 1);
+  },
+  'galleon-deed'(c) {
+    shipModel(c, ramp([150, 40, 36]), 2);
+  },
+  'ship-hold'(c) {
+    // Escotilla de la bodega: un marco de madera con tapa de tablas y una argolla.
+    c.box([0, 1.4, 0], lying(0), [7, 1.4, 6], solid(ramp([96, 64, 38])));
+    c.box([0, 3, 0], lying(0), [5.6, 0.5, 4.6], (s) =>
+      tone(ramp([150, 108, 64]), s.light, Math.abs(((s.p[2] + 20) % 2.3) - 1.15) < 0.2 ? -1 : 0),
+    );
+    c.ellipsoid([0, 3.8, 0], lying(0), [1.4, 0.4, 1.4], metal(DARK_STEEL));
+  },
+  cannonball(c) {
+    for (const at of [
+      [-2, 2.2, 1],
+      [2.2, 2.2, 0.6],
+      [0, 2.2, -2.2],
+      [0, 5.4, -0.2],
+    ] as Vec3[])
+      c.sphere(at, 2.4, metal(ramp([62, 62, 70])));
   },
   'black-pearl'(c) {
     for (const at of [

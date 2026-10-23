@@ -12,6 +12,7 @@ export const NPC_ROLES = [
   'carpenter',
   'provisioner',
   'tailor',
+  'shipwright',
   // Gente del pueblo que no comercia: vecinos que caminan y guardias.
   'townsfolk',
   'guard',
@@ -284,6 +285,23 @@ export const VENDORS: Readonly<Record<NpcRole, VendorDefinition>> = {
       lute: 25,
       drum: 15,
       flute: 12,
+    }),
+  },
+  shipwright: {
+    role: 'shipwright',
+    name: 'Bruno el armador',
+    greeting: '¿Buscás barco? Una balandra para empezar o un galeón con cañones.',
+    sells: offers({
+      'sloop-deed': 1200,
+      'galleon-deed': 4500,
+      cannonball: 12,
+      boards: 4,
+      cloth: 4,
+    }),
+    buys: offers({
+      'sloop-deed': 600,
+      'galleon-deed': 2200,
+      cannonball: 4,
     }),
   },
   tailor: {

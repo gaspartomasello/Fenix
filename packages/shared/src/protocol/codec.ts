@@ -10,6 +10,7 @@ import { isMountKind } from '../domain/mounts/mount-catalog';
 import { isChatChannel, isSocialCommand } from '../domain/social/groups';
 import { isDirection } from '../domain/geometry/direction';
 import { isMoveMode } from '../domain/rules/movement';
+import { isShipLevel, isShipOrder } from '../domain/ships/ships';
 import type { Position } from '../domain/geometry/position';
 import type {
   ClientMessage,
@@ -17,6 +18,8 @@ import type {
   ItemDestination,
   ServerMessage,
   ServerMessageType,
+  ShipAction,
+  ShipSecurityChange,
 } from './messages';
 
 /** Tamaño máximo aceptado para un mensaje entrante del cliente (bytes). */
@@ -200,6 +203,27 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
         return { ok: true, message: { type: 'dig', toolId: data.toolId, position } };
       break;
     }
+    case 'shipOrder':
+      if (isId(data.shipId) && isShipOrder(data.order))
+        return { ok: true, message: { type: 'shipOrder', shipId: data.shipId, order: data.order } };
+      break;
+    case 'boardShip':
+      if (isId(data.shipId))
+        return { ok: true, message: { type: 'boardShip', shipId: data.shipId } };
+      break;
+    case 'shipAction':
+      if (isId(data.shipId) && isShipAction(data.action))
+        return {
+          ok: true,
+          message: { type: 'shipAction', shipId: data.shipId, action: data.action },
+        };
+      break;
+    case 'shipSecurity': {
+      const change = asShipSecurityChange(data.change);
+      if (isId(data.shipId) && change)
+        return { ok: true, message: { type: 'shipSecurity', shipId: data.shipId, change } };
+      break;
+    }
     case 'buy':
       if (
         isId(data.vendorId) &&
@@ -335,6 +359,10 @@ const SERVER_TYPE_FLAGS: Readonly<Record<ServerMessageType, true>> = {
   containerClosed: true,
   book: true,
   treasureMap: true,
+  ships: true,
+  shipMoved: true,
+  shipPanel: true,
+  cannonShot: true,
   questOffer: true,
   quests: true,
   joinRejected: true,
@@ -418,6 +446,47 @@ function parseGmCommand(raw: unknown): GmCommand | null {
       return count(c.radius, 30) ? { kind: 'clear', radius: c.radius } : null;
     case 'announce':
       return text(c.text, 300) ? { kind: 'announce', text: c.text } : null;
+    default:
+      return null;
+  }
+}
+
+const SHIP_ACTIONS: readonly ShipAction[] = [
+  'panel',
+  'fire-port',
+  'fire-starboard',
+  'repair',
+  'dock',
+  'hold',
+];
+
+function isShipAction(value: unknown): value is ShipAction {
+  return typeof value === 'string' && (SHIP_ACTIONS as readonly string[]).includes(value);
+}
+
+/** Nombres de personajes y de barcos que manda el capitán: texto corto. */
+function asShortName(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0 && value.length <= 30
+    ? value.trim()
+    : null;
+}
+
+function asShipSecurityChange(value: unknown): ShipSecurityChange | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const change = value as Record<string, unknown>;
+  const name = asShortName(change.name);
+  switch (change.kind) {
+    case 'set':
+      return name && isShipLevel(change.level) ? { kind: 'set', name, level: change.level } : null;
+    case 'remove':
+      return name ? { kind: 'remove', name } : null;
+    case 'rename':
+      return name ? { kind: 'rename', name } : null;
+    case 'default':
+      return (change.who === 'everyone' || change.who === 'party' || change.who === 'guild') &&
+        isShipLevel(change.level)
+        ? { kind: 'default', who: change.who, level: change.level }
+        : null;
     default:
       return null;
   }

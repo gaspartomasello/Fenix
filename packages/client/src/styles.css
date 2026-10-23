@@ -2485,3 +2485,90 @@ body {
   width: 240px;
   text-align: center;
 }
+
+/* Ventana del barco: timón con flechas, cañones, tareas y tripulación. */
+.ship-window {
+  width: min(360px, calc(100vw - 16px));
+}
+
+.ship-summary {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+}
+
+.ship-hull {
+  height: 8px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.ship-hull-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #b8742e, #e0b060);
+}
+
+.ship-section {
+  margin-top: 8px;
+}
+
+.ship-section h3 {
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+}
+
+.ship-helm {
+  display: grid;
+  grid-template-columns: repeat(3, 40px);
+  gap: 4px;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.ship-helm-button {
+  height: 36px;
+  font-size: 1.1rem;
+}
+
+.ship-row,
+.ship-speeds,
+.ship-defaults {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.ship-speeds .ship-button[aria-checked='true'] {
+  outline: 2px solid #e0b060;
+}
+
+.ship-default {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.75rem;
+}
+
+.ship-input {
+  flex: 1;
+  min-width: 120px;
+}
+
+.ship-manifest {
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ship-manifest li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.ship-manifest-name {
+  flex: 1;
+  text-transform: capitalize;
+}

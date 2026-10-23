@@ -19,6 +19,13 @@ import type { MoveMode } from '../domain/rules/movement';
 import type { CompactMapData } from '../domain/world/map-codec';
 import type { Quest, QuestProgress } from '../domain/quests/quests';
 import type { TreasureMark } from '../domain/treasure/treasure';
+import type {
+  ShipFacing,
+  ShipKind,
+  ShipLevel,
+  ShipOrder,
+  ShipSecurity,
+} from '../domain/ships/ships';
 
 export type EntityId = string;
 
@@ -189,6 +196,45 @@ export interface DigRequest {
   readonly type: 'dig';
   readonly toolId: EntityId;
   readonly position: Position;
+}
+
+/** Una orden al timonel del barco en que se está a bordo. */
+export interface ShipOrderRequest {
+  readonly type: 'shipOrder';
+  readonly shipId: EntityId;
+  readonly order: ShipOrder;
+}
+
+/** Subir a un barco que está cerca. */
+export interface BoardShipRequest {
+  readonly type: 'boardShip';
+  readonly shipId: EntityId;
+}
+
+export type ShipAction = 'panel' | 'fire-port' | 'fire-starboard' | 'repair' | 'dock' | 'hold';
+
+/** Lo demás que se hace en un barco: cañones, reparar, guardarlo, abrir la bodega. */
+export interface ShipActionRequest {
+  readonly type: 'shipAction';
+  readonly shipId: EntityId;
+  readonly action: ShipAction;
+}
+
+/** Cambios que hace el capitán: permisos y nombre. */
+export type ShipSecurityChange =
+  | { readonly kind: 'set'; readonly name: string; readonly level: ShipLevel }
+  | { readonly kind: 'remove'; readonly name: string }
+  | {
+      readonly kind: 'default';
+      readonly who: 'everyone' | 'party' | 'guild';
+      readonly level: ShipLevel;
+    }
+  | { readonly kind: 'rename'; readonly name: string };
+
+export interface ShipSecurityRequest {
+  readonly type: 'shipSecurity';
+  readonly shipId: EntityId;
+  readonly change: ShipSecurityChange;
 }
 
 export interface BuyRequest {
@@ -374,6 +420,10 @@ export type ClientMessage =
   | UseOnRequest
   | GatherRequest
   | DigRequest
+  | ShipOrderRequest
+  | BoardShipRequest
+  | ShipActionRequest
+  | ShipSecurityRequest
   | BuyRequest
   | SellRequest
   | CraftRequest
@@ -658,6 +708,50 @@ export interface BookMessage {
   readonly writable: boolean;
 }
 
+/** Un barco tal como lo ven los demás. */
+export interface ShipSnapshot {
+  readonly id: EntityId;
+  readonly kind: ShipKind;
+  readonly x: number;
+  readonly y: number;
+  readonly facing: ShipFacing;
+  readonly name: string;
+  readonly owner: string;
+  readonly hits: number;
+  readonly maxHits: number;
+}
+
+/** Los barcos que se ven (todos: los que faltan ya no se ven). */
+export interface ShipsMessage {
+  readonly type: 'ships';
+  readonly ships: readonly ShipSnapshot[];
+}
+
+/** Un barco avanzó o viró. */
+export interface ShipMovedMessage {
+  readonly type: 'shipMoved';
+  readonly id: EntityId;
+  readonly x: number;
+  readonly y: number;
+  readonly facing: ShipFacing;
+}
+
+/** La ventana del barco: el permiso de quien la abre y, si es capitán, los permisos. */
+export interface ShipPanelMessage {
+  readonly type: 'shipPanel';
+  readonly shipId: EntityId;
+  readonly level: ShipLevel;
+  readonly security?: ShipSecurity;
+}
+
+/** Un cañonazo: de dónde a dónde voló la bala y si dio en algo. */
+export interface CannonShotMessage {
+  readonly type: 'cannonShot';
+  readonly from: Position;
+  readonly to: Position;
+  readonly hit: boolean;
+}
+
 /** Un mapa del tesoro abierto: dónde está marcado el cofre. */
 export interface TreasureMapMessage {
   readonly type: 'treasureMap';
@@ -706,6 +800,10 @@ export type ServerMessage =
   | ContainerClosedMessage
   | BookMessage
   | TreasureMapMessage
+  | ShipsMessage
+  | ShipMovedMessage
+  | ShipPanelMessage
+  | CannonShotMessage
   | QuestOfferMessage
   | QuestsMessage
   | JoinRejectedMessage
