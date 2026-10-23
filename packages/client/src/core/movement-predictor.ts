@@ -1,6 +1,7 @@
 import {
   isMountKind,
   canStep,
+  slideDirection,
   moveDuration,
   positionsEqual,
   step,
@@ -32,7 +33,13 @@ export class MovementPredictor {
   }
 
   /** Devuelve el mensaje a enviar, o null si todavía no puede dar el paso. */
-  tryStep(self: Entity, direction: Direction, mode: MoveMode, now: number): MoveRequest | null {
+  tryStep(
+    self: Entity,
+    wanted: Direction,
+    mode: MoveMode,
+    now: number,
+    lean?: Direction,
+  ): MoveRequest | null {
     if (now < this.nextStepAt || this.pending.size >= MAX_PENDING_STEPS) return null;
     // Sobre la boca de una cueva (u otro teletransporte) se espera a que el
     // servidor nos lleve: no se predicen pasos desde un lugar que vamos a dejar.
@@ -44,6 +51,8 @@ export class MovementPredictor {
     this.seq += 1;
     this.pending.add(this.seq);
 
+    // Si choca en diagonal, resbala por la pared hacia el lado libre (como en UO).
+    const direction = slideDirection(this.map, self.position, wanted, lean) ?? wanted;
     if (canStep(this.map, self.position, direction)) {
       self.moveTo(step(self.position, direction), direction, duration, now, mode);
     } else {

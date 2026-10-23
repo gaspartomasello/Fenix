@@ -40,3 +40,25 @@ export function canStep(map: TileMap, from: Position, direction: Direction): boo
   const sideB = { x: from.x, y: from.y + offset.y };
   return map.isWalkable(sideA) || map.isWalkable(sideB);
 }
+
+/**
+ * Resbalar contra una pared, como en UO: un paso en diagonal de la grilla
+ * (arriba, abajo, izquierda o derecha en la pantalla) que choca prueba las
+ * dos direcciones vecinas y sigue por la que esté libre; si las dos lo
+ * están, va hacia donde tira más el jugador (`lean`). De frente contra algo
+ * (norte, sur, este u oeste de la grilla) no hay hacia dónde resbalar: se
+ * frena. Devuelve la dirección en que se puede dar el paso, o null.
+ */
+export function slideDirection(
+  map: TileMap,
+  from: Position,
+  direction: Direction,
+  lean?: Direction,
+): Direction | null {
+  if (canStep(map, from, direction)) return direction;
+  if (direction % 2 === 0) return null;
+  const left = ((direction + 7) % 8) as Direction;
+  const right = ((direction + 1) % 8) as Direction;
+  const order = lean === right ? [right, left] : [left, right];
+  return order.find((d) => canStep(map, from, d)) ?? null;
+}

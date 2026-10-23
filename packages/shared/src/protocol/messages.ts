@@ -416,6 +416,13 @@ export interface ReadBookRequest {
   readonly itemId: EntityId;
 }
 
+/** Elegir el color de la tina de tintura, en su panel de colores. */
+export interface TintTubRequest {
+  readonly type: 'tintTub';
+  readonly tubId: EntityId;
+  readonly hue: number;
+}
+
 /** Teñir una prenda propia con la tina de tintura (gasta una tintura). */
 export interface DyeRequest {
   readonly type: 'dye';
@@ -502,6 +509,7 @@ export type ClientMessage =
   | AbandonQuestRequest
   | WriteBookRequest
   | DyeRequest
+  | TintTubRequest
   | OpenCorpseRequest
   | LootAllRequest
   | BuyMountRequest

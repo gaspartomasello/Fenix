@@ -323,11 +323,12 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     c.limb([0, 5.2, 0], [0, 8, 0], 1.1, 0.9, (s) => tone(glass, s.light));
   },
   // Bolsas de cuero atadas con un cordón, y una caja de tablas con tapa.
-  bag(c) {
-    sack(c, ramp([150, 104, 60]), 4.4, 5.2);
+  // El cuero toma el color con que se tiñó (si no, el suyo).
+  bag(c, color) {
+    sack(c, color, 4.4, 5.2);
   },
-  pouch(c) {
-    sack(c, ramp([120, 76, 46]), 3, 3.6);
+  pouch(c, color) {
+    sack(c, color, 3, 3.6);
   },
   'wooden-box'(c) {
     const wood = ramp([150, 108, 64]);
@@ -864,7 +865,7 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
       c.limb([x, 3.4, z], [x, 4.4, z], 0.6, 0.6, solid(ramp([150, 110, 70])));
     }
   },
-  'dye-tub'(c) {
+  'dye-tub'(c, color) {
     // Tina de madera con aros y el agua de color adentro.
     const wood = ramp([140, 96, 56]);
     c.limb([0, 0, 0], [0, 3.6, 0], 4.6, 5, (s) =>
@@ -872,8 +873,9 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
         ? tone(DARK_STEEL, s.light)
         : tone(wood, s.light),
     );
+    // El agua, del color que se eligió en el panel de la tina.
     c.ellipsoid([0, 3.5, 0], lying(0), [4.3, 0.3, 4.3], (s) =>
-      tone(ramp([60, 90, 170]), s.light, (s.x + s.y) % 4 ? 0 : 1),
+      tone(color, s.light, (s.x + s.y) % 4 ? 0 : 1),
     );
   },
   dagger(c) {

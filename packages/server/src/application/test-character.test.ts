@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
+import { equipTestCharacter } from '../domain/testing/test-character';
 import { GameApplication } from './game-application';
 
 function createApp() {
@@ -36,7 +37,7 @@ function createApp() {
 }
 
 describe('personaje de prueba', () => {
-  it('Gaspar entra con todo al máximo, oro y reactivos de sobra', () => {
+  it('Gaspar entra con todo al máximo y reactivos de sobra en su bolsa, sin oro', () => {
     const { world, join } = createApp();
     const gaspar = join('gaspar');
     expect(gaspar.skills.get('magery')).toBe(1000);
@@ -47,10 +48,32 @@ describe('personaje de prueba', () => {
       intelligence: 120,
     });
     expect(gaspar.combat.current.mana).toBe(120);
-    expect(world.items.countInBackpack(gaspar.id, 'gold')).toBe(999_999);
+    expect(world.items.countInBackpack(gaspar.id, 'gold')).toBe(0);
     expect(world.items.countInBackpack(gaspar.id, 'nightshade')).toBe(1000);
+    const bag = world.items.backpackOf(gaspar.id).find((i) => i.kind === 'bag');
+    expect(world.items.contentsOf(bag?.id ?? '').some((i) => i.kind === 'nightshade')).toBe(true);
     // Entra vestido (camisa y pantalón), no en ropa interior.
     expect(world.items.lookOf(gaspar.id)).toMatchObject({ torso: 'shirt', legs: 'trousers' });
+  });
+
+  it('a Gaspar se le saca el oro una sola vez: lo que gane después lo conserva', () => {
+    const { world, join } = createApp();
+    const gaspar = join('Gaspar');
+    gaspar.testKit = 1;
+    world.items.add('oro-viejo', 'gold', 60_000, {
+      type: 'bank',
+      ownerId: gaspar.id,
+      position: { x: 0, y: 0 },
+    });
+    equipTestCharacter(gaspar, world, () => 'id-nuevo');
+    expect(world.items.bankOf(gaspar.id).some((i) => i.kind === 'gold')).toBe(false);
+    world.items.add('oro-ganado', 'gold', 30, {
+      type: 'backpack',
+      ownerId: gaspar.id,
+      position: { x: 0, y: 0 },
+    });
+    equipTestCharacter(gaspar, world, () => 'id-otro');
+    expect(world.items.countInBackpack(gaspar.id, 'gold')).toBe(30);
   });
 
   it('los demás entran normales', () => {

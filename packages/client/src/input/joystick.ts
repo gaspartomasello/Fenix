@@ -1,4 +1,4 @@
-import { screenVectorToDirection } from '../rendering/iso';
+import { screenVectorLean, screenVectorToDirection } from '../rendering/iso';
 import type { MovementIntent } from './movement-intent';
 
 /** Radio del recorrido de la perilla, en pixeles CSS. */
@@ -98,5 +98,10 @@ export function joystickIntent(vector: { x: number; y: number } | null): Movemen
   if (strength < DEAD_ZONE) return null;
   const direction = screenVectorToDirection(vector.x, vector.y);
   if (direction === null) return null;
-  return { direction, mode: strength >= RUN_FROM ? 'run' : 'walk' };
+  const lean = screenVectorLean(vector.x, vector.y);
+  return {
+    direction,
+    mode: strength >= RUN_FROM ? 'run' : 'walk',
+    ...(lean === null ? {} : { lean }),
+  };
 }

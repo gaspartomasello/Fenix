@@ -99,6 +99,10 @@ describe('cuentas', () => {
     expect(world.items.lookOf(player.id).legs).toBe('trousers');
     expect(player.combat.baseAttributes).toEqual({ strength: 40, dexterity: 30, intelligence: 50 });
     expect(world.items.countInBackpack(player.id, 'black-pearl')).toBe(150);
+    // Los reactivos empiezan en su bolsa, como en UO.
+    const bag = world.items.backpackOf(player.id).find((i) => i.kind === 'bag');
+    expect(world.items.contentsOf(bag?.id ?? '').map((i) => i.kind)).toContain('black-pearl');
+    expect(world.items.backpackOf(player.id).some((i) => i.kind === 'black-pearl')).toBe(false);
     expect(world.items.countInBackpack(player.id, 'bandage')).toBe(200);
     expect(world.items.backpackOf(player.id).some((i) => i.kind === 'spellbook')).toBe(true);
     expect(world.items.bankOf(player.id).find((i) => i.kind === 'gold')?.amount).toBe(
@@ -127,10 +131,11 @@ describe('cuentas', () => {
       () => 'perla-comprada',
       changes as never,
     );
-    const pearls = world.items.backpackOf(player.id).filter((i) => i.kind === 'black-pearl');
+    // Los iniciales están en la bolsa de reactivos; lo comprado, suelto en la mochila.
+    const pearls = world.items.carried(player.id).filter((i) => i.kind === 'black-pearl');
     expect(pearls.map((p) => [p.amount, p.newbie])).toEqual([
-      [150, true],
       [10, false],
+      [150, true],
     ]);
   });
 

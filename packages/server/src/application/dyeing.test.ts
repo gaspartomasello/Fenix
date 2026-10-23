@@ -1,4 +1,12 @@
-import { DEFAULT_APPEARANCE, Terrain, TileMap, type PlayerEquipmentMessage } from '@fenix/shared';
+import {
+  DEFAULT_APPEARANCE,
+  DYE_FAMILIES,
+  Terrain,
+  TileMap,
+  dyeName,
+  isDyeHue,
+  type PlayerEquipmentMessage,
+} from '@fenix/shared';
 import { describe, expect, it } from 'vitest';
 import { captureCharacter, parseSavedCharacter } from '../domain/persistence/saved-character';
 import { World } from '../domain/world';
@@ -28,7 +36,11 @@ function createRoom() {
   if (!result.ok) throw new Error(result.reason);
   app.announceJoin(result.playerId);
   const ana = result.playerId;
-  const give = (id: string, kind: 'dye-tub' | 'dyes' | 'shirt' | 'plate-helm', amount = 1) =>
+  const give = (
+    id: string,
+    kind: 'dye-tub' | 'dyes' | 'shirt' | 'plate-helm' | 'bag',
+    amount = 1,
+  ) =>
     world.items.add(id, kind, amount, { type: 'backpack', ownerId: ana, position: { x: 0, y: 0 } });
   return { world, app, notifier, ana, give };
 }
@@ -36,11 +48,16 @@ function createRoom() {
 describe('tinturas', () => {
   it('con la tina y tinturas se tiñe la ropa puesta, los demás la ven y se guarda', () => {
     const { world, app, notifier, ana, give } = createRoom();
-    give('tina', 'dye-tub');
+    const tub = give('tina', 'dye-tub');
     give('tinturas', 'dyes', 2);
     const shirt = give('camisa', 'shirt');
     app.handle(ana, { type: 'useItem', itemId: shirt.id });
     expect(shirt.location.type).toBe('equipment');
+    // Sin elegir el color en el panel de la tina, no tiñe.
+    app.handle(ana, { type: 'dye', itemId: shirt.id, hue: 0xb02a2a });
+    expect(shirt.hue).toBeNull();
+    app.handle(ana, { type: 'tintTub', tubId: tub.id, hue: 0xb02a2a });
+    expect(tub.hue).toBe(0xb02a2a);
     app.handle(ana, { type: 'dye', itemId: shirt.id, hue: 0xb02a2a });
     expect(shirt.hue).toBe(0xb02a2a);
     expect(world.items.countInBackpack(ana, 'dyes')).toBe(1);
@@ -69,5 +86,28 @@ describe('tinturas', () => {
     app.handle(ana, { type: 'dye', itemId: shirt.id, hue: 0x123456 });
     expect(shirt.hue).toBeNull();
     expect(world.items.countInBackpack(ana, 'dyes')).toBe(3);
+  });
+
+  it('el panel de la tina tiene cada tono con sus matices y los grises, todos con nombre', () => {
+    expect(DYE_FAMILIES.length).toBe(19);
+    const all = DYE_FAMILIES.flatMap((f) => f.hues);
+    expect(new Set(all).size).toBe(all.length);
+    expect(all.every(isDyeHue)).toBe(true);
+    expect(dyeName(DYE_FAMILIES[0]?.hues[5] ?? 0)).toBe('rojo muy oscuro');
+    // Los colores de antes siguen valiendo.
+    expect(isDyeHue(0x7a1424)).toBe(true);
+  });
+
+  it('la tina toma el color elegido y con ella se tiñe también una bolsa', () => {
+    const { world, app, ana, give } = createRoom();
+    const tub = give('tina', 'dye-tub');
+    give('tinturas', 'dyes', 1);
+    const bag = give('bolsa', 'bag');
+    const green = DYE_FAMILIES.find((f) => f.name === 'esmeralda')?.hues[2] ?? 0;
+    app.handle(ana, { type: 'tintTub', tubId: tub.id, hue: green });
+    expect(tub.hue).toBe(green);
+    app.handle(ana, { type: 'dye', itemId: bag.id, hue: green });
+    expect(bag.hue).toBe(green);
+    expect(world.items.countInBackpack(ana, 'dyes')).toBe(0);
   });
 });

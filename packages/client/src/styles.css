@@ -2621,7 +2621,7 @@ body {
 
 /* ── Tina de tintura ── */
 .dye-window {
-  width: min(340px, calc(100vw - 16px));
+  width: min(400px, calc(100vw - 16px));
 }
 
 .dye-step {
@@ -3017,4 +3017,80 @@ body {
   height: 56px;
   object-fit: none;
   object-position: 50% 82%;
+}
+
+/* ── Etapa 66: bolsas y panel de colores de la tina ───────────────── */
+
+/* La bolsa sobre la que se está por soltar algo (va adentro). */
+.item-icon--drop {
+  outline: 2px solid var(--color-accent, #e8c66a);
+  outline-offset: 1px;
+  border-radius: var(--radius);
+  background: rgba(232, 198, 106, 0.18);
+}
+
+/* Panel de colores de la tina: una columna por tono, de claro a oscuro. */
+.hue-panel {
+  display: grid;
+  grid-template-columns: repeat(19, 1fr);
+  gap: 2px;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius);
+}
+
+.hue-column {
+  display: grid;
+  gap: 2px;
+}
+
+.hue-swatch {
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.hue-swatch[aria-checked='true'] {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+  position: relative;
+  z-index: 1;
+}
+
+.hue-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 0.85rem;
+}
+
+.hue-preview {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--color-panel-border);
+  border-radius: var(--radius);
+}
+
+.hue-preview-name,
+.hue-tub-name {
+  flex: 1;
+}
+
+.hue-tub {
+  width: 36px;
+  height: 36px;
+  image-rendering: auto;
+}
+
+/* En el celular el panel es más ancho que la ventana: se desliza de costado. */
+@media (max-width: 480px) {
+  .hue-panel {
+    grid-template-columns: repeat(19, 18px);
+    overflow-x: auto;
+  }
 }

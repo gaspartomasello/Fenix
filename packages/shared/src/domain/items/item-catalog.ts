@@ -342,8 +342,25 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
     stackable: true,
   },
   bandage: { name: 'venda', plural: 'vendas', article: 'una', stackable: true, use: 'bandage' },
-  bag: { name: 'bolsa', plural: 'bolsas', article: 'una', use: 'container', capacity: 40 },
-  pouch: { name: 'bolsita', plural: 'bolsitas', article: 'una', use: 'container', capacity: 15 },
+  // Las bolsas son de cuero: se pueden teñir, como en UO.
+  bag: {
+    name: 'bolsa',
+    plural: 'bolsas',
+    article: 'una',
+    use: 'container',
+    capacity: 40,
+    color: 0x96683c,
+    dyeable: true,
+  },
+  pouch: {
+    name: 'bolsita',
+    plural: 'bolsitas',
+    article: 'una',
+    use: 'container',
+    capacity: 15,
+    color: 0x784c2e,
+    dyeable: true,
+  },
   'wooden-box': {
     name: 'caja de madera',
     plural: 'cajas de madera',
@@ -683,7 +700,14 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
     0x8e949c,
   ),
   dyes: { name: 'tintura', plural: 'tinturas', article: 'una', stackable: true },
-  'dye-tub': { name: 'tina de tintura', plural: 'tinas de tintura', article: 'una', use: 'dye' },
+  'dye-tub': {
+    name: 'tina de tintura',
+    plural: 'tinas de tintura',
+    article: 'una',
+    use: 'dye',
+    // El agua: hasta que se le elige un color en el panel.
+    color: 0x3c5aaa,
+  },
 
   spellbook: {
     name: 'libro de hechizos',

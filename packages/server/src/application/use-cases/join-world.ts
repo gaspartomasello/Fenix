@@ -12,6 +12,8 @@ import {
   type EntityId,
 } from '@fenix/shared';
 import { STARTING_KIT } from '../../domain/items/starting-kit';
+import { emptyChanges } from '../../domain/items/items';
+import { bagReagents } from '../../domain/items/reagent-bag';
 import { equipTestCharacter, isTestCharacter } from '../../domain/testing/test-character';
 import { restoreCharacter } from '../../domain/persistence/saved-character';
 import { Player } from '../../domain/player';
@@ -112,6 +114,8 @@ export class JoinWorld {
       const item = this.world.items.add(this.ids.next(), kind, amount, owner);
       item.newbie = true;
     }
+    // Los reactivos, en su bolsa (como en UO).
+    bagReagents(player, this.world, () => this.ids.next(), emptyChanges(), true);
     this.arrangeBackpack(player.id);
     // Se pone lo que se viste y se empuña (armas, armadura, escudo, capa), como en UO.
     for (const item of this.world.items.backpackOf(player.id)) {
@@ -225,7 +229,7 @@ export class JoinWorld {
     if (isTestCharacter(player.name, this.testCharacters))
       this.notifier.send(playerId, {
         type: 'system',
-        text: 'Personaje de prueba: habilidades y atributos al máximo, oro y reactivos de sobra.',
+        text: 'Personaje de prueba: habilidades y atributos al máximo y reactivos de sobra.',
       });
   }
 

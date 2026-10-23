@@ -1,5 +1,5 @@
 import { CHEST_ART, POUCH_ART, type ContainerArt } from '@fenix/art';
-import { BACKPACK_AREA, ITEM_ICON_SIZE } from '@fenix/shared';
+import { BACKPACK_AREA, ITEMS, ITEM_ICON_SIZE } from '@fenix/shared';
 import type { ContainerContents } from '../core/client-game';
 import { destinationFor, type ItemActions } from './backpack-window';
 import { itemLabel } from './item-label';
@@ -81,6 +81,8 @@ export class ContainerWindow {
         );
         if (item.amount > 1)
           icon.append(el('span', { className: 'item-amount', text: String(item.amount) }));
+        // Una bolsa de adentro: lo que se suelta encima también va adentro de ella.
+        if (ITEMS[item.kind].capacity) icon.dataset.bag = item.id;
         icon.style.left = `${item.position.x}px`;
         icon.style.top = `${item.position.y}px`;
         icon.style.width = `${ITEM_ICON_SIZE}px`;
