@@ -1,7 +1,14 @@
 import type { Position } from '../geometry/position';
 import type { Direction } from '../geometry/direction';
-import { DOORS, SEATS, STATICS, type StaticKind, type StaticPlacement } from './statics';
-import { TERRAINS, type Terrain } from './terrain';
+import {
+  DOORS,
+  SEATS,
+  STATICS,
+  blocksSight,
+  type StaticKind,
+  type StaticPlacement,
+} from './statics';
+import { TERRAINS, Terrain } from './terrain';
 
 /** Zona con nombre (un pueblo, un bosque…). */
 export interface RegionData {
@@ -20,6 +27,11 @@ export interface RegionData {
    * se ve el nombre, pero no protege como un pueblo.
    */
   readonly wild?: boolean;
+  /**
+   * Piso alto de un edificio (1 = primer piso): queda en otro lugar del mapa y
+   * se llega por la escalera. Desde un piso no se apunta a otro.
+   */
+  readonly floor?: number;
 }
 
 /** Cartel con texto (los destinos de un cruce de caminos). */
@@ -69,6 +81,8 @@ export class TileMap {
   private readonly terrain: readonly Terrain[];
   private readonly heights: readonly number[] | undefined;
   private readonly blocked: Uint8Array;
+  /** Tiles que tapan la vista por un objeto fijo (paredes, rejas, puertas). */
+  private readonly opaque: Uint8Array;
   /** Asientos por tile (sillas, bancos, tronos). */
   private readonly seats = new Map<number, Direction | 'any'>();
   /** Puertas por tile, y cuáles están abiertas (lo único del mapa que cambia). */
@@ -94,7 +108,16 @@ export class TileMap {
     this.teleporters = data.teleporters ?? [];
     this.signs = data.signs ?? [];
     this.blocked = new Uint8Array(data.width * data.height);
+    this.opaque = new Uint8Array(data.width * data.height);
     for (const placed of this.statics) {
+      if (blocksSight(placed.kind)) {
+        const side = STATICS[placed.kind].footprint;
+        for (let dy = 0; dy < side; dy++)
+          for (let dx = 0; dx < side; dx++) {
+            const tile = { x: placed.x + dx, y: placed.y + dy };
+            if (this.contains(tile)) this.opaque[tile.y * this.width + tile.x] = 1;
+          }
+      }
       const seat = SEATS[placed.kind];
       if (seat !== undefined) this.seats.set(placed.y * this.width + placed.x, seat);
       if (DOORS[placed.kind]) this.doors.set(placed.y * this.width + placed.x, placed.kind);
@@ -197,6 +220,24 @@ export class TileMap {
     if (this.decks.has(i)) return true;
     if (!TERRAINS[terrain].walkable) return false;
     return this.blocked[i] === 0 || this.openDoors.has(i);
+  }
+
+  /** ¿Este tile tapa la vista? (una pared, una puerta cerrada, la roca de una montaña) */
+  blocksSight(position: Position): boolean {
+    const terrain = this.terrainAt(position);
+    if (terrain === undefined) return true;
+    if (terrain === Terrain.Rock || terrain === Terrain.Mountain) return true;
+    const i = position.y * this.width + position.x;
+    return this.opaque[i] !== 0 && !this.openDoors.has(i);
+  }
+
+  /**
+   * El nivel del tile: el piso alto donde está (su zona) o la planta baja
+   * (cadena vacía). Dos lugares de distinto nivel no se ven entre sí.
+   */
+  levelAt(position: Position): string {
+    const region = this.regionAt(position);
+    return region?.floor ? `${region.name}#${region.floor}` : '';
   }
 
   regionAt(position: Position): RegionData | undefined {

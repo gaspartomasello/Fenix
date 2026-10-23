@@ -17,6 +17,7 @@ import {
   spellDurationMs,
   spellSuccessChance,
   summonDurationMs,
+  hasLineOfSight,
   tileDistance,
   STATIC_CONTAINERS,
   staticContainerId,
@@ -117,6 +118,7 @@ export function startCast(
         return fail('Elegí a alguien vivo.');
       if (tileDistance(target.position, player.position) > SPELL_RANGE)
         return fail('Está demasiado lejos.');
+      if (otherLevel(world, player.position, target.position)) return fail(OTHER_LEVEL);
       targetId = target.id;
       break;
     }
@@ -127,6 +129,7 @@ export function startCast(
       if (target instanceof Npc) return fail(`No podés atacar a ${target.name}.`);
       if (tileDistance(target.position, player.position) > SPELL_RANGE)
         return fail('Está demasiado lejos.');
+      if (otherLevel(world, player.position, target.position)) return fail(OTHER_LEVEL);
       if (target instanceof Player) {
         const refusal = pvpRefusal(player, target, world);
         if (refusal) return fail(refusal);
@@ -159,6 +162,7 @@ export function startCast(
         return fail('Ya tenés demasiadas criaturas invocadas.');
       if (tileDistance(request.position, player.position) > SPELL_RANGE)
         return fail('Está demasiado lejos.');
+      if (otherLevel(world, player.position, request.position)) return fail(OTHER_LEVEL);
       const kind = spell.effect.kind;
       if (kind === 'trap') {
         // La trampa va en un cofre o mueble del mundo.
@@ -195,6 +199,8 @@ export function startCast(
 
 export type CastOutcome =
   | { kind: 'fizzled' }
+  /** Algo tapó la vista del objetivo (una pared, una reja): el hechizo se pierde. */
+  | { kind: 'blocked' }
   | { kind: 'lost-target' }
   /** Salió, pero cae más tarde (Explosión): lo agenda el ciclo del juego. */
   | { kind: 'delayed'; delayed: DelayedSpell }
@@ -248,6 +254,13 @@ export interface AreaHit {
   readonly resisted: boolean;
 }
 
+const OTHER_LEVEL = 'Está en otro piso: desde acá no se puede apuntar.';
+
+/** ¿Están en distinto nivel (un piso alto y la calle)? */
+function otherLevel(world: World, a: Position, b: Position): boolean {
+  return world.map.levelAt(a) !== world.map.levelAt(b);
+}
+
 /** Vida con la que vuelve quien es resucitado con el hechizo. */
 export const RESURRECTION_HEALTH = 0.5;
 
@@ -285,6 +298,9 @@ export function resolveCast(
   ) {
     return { kind: 'lost-target' };
   }
+  // Como en UO: si al terminar de conjurar el objetivo no está a la vista, el hechizo falla.
+  const aim = pending.position ?? (target.id === player.id ? null : target.position);
+  if (aim && !hasLineOfSight(world.map, player.position, aim)) return { kind: 'blocked' };
   if (random() >= spellSuccessChance(spell, magery)) return { kind: 'fizzled' };
 
   const harmful = spell.target === 'harmful';
