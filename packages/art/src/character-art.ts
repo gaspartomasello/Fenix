@@ -89,6 +89,9 @@ const SHIRTS: ReadonlySet<ItemKind> = new Set<ItemKind>([
   'dress',
 ]);
 const BONE = ramp([226, 218, 196]);
+/** Hueso viejo de la armadura: amarillento, con las sombras verdosas. */
+const OLD_BONE = ramp([212, 200, 150]);
+const BONE_GAP = ramp([40, 34, 30]);
 
 const WOOD = ramp([118, 78, 44]);
 const LEATHER_DARK = ramp([92, 60, 36]);
@@ -129,6 +132,12 @@ const OUTFITS: Readonly<Partial<Record<NpcRole, Outfit>>> = {
   stablemaster: 'apron',
   woodcutter: 'woodcutter',
   carpenter: 'apron',
+  alchemist: 'robe',
+  bowyer: 'vest',
+  baker: 'apron',
+  butcher: 'apron',
+  jeweler: 'vest',
+  farmer: 'woodcutter',
 };
 
 /** Camisa a cuadros rojos y negros del leñador. */
@@ -286,9 +295,14 @@ function drawLegs(
       if (shorts && s.p[1] < leg.knee[1] - 0.5) return tone(p.skin, s.light);
       if (bone) {
         // Placas de hueso atadas, con la rodilla de calavera.
+        // Muslo de placas atadas con tiras; la canillera, una sola pieza con borde.
         const nearKnee = Math.hypot(...sub(s.p, leg.knee)) < 2.6;
-        if (nearKnee) return tone(BONE, s.light + 0.1, 1);
-        return Math.round(s.p[1]) % 3 === 0 ? tone(LEATHER_DARK, s.light) : tone(BONE, s.light);
+        if (nearKnee) return tone(OLD_BONE, s.light + 0.1, 1);
+        if (s.p[1] < leg.knee[1])
+          return Math.abs(s.p[1] - (leg.knee[1] + leg.ankle[1]) / 2) < 0.4
+            ? tone(LEATHER_DARK, s.light)
+            : tone(OLD_BONE, s.light);
+        return Math.round(s.p[1]) % 3 === 0 ? tone(LEATHER_DARK, s.light) : tone(OLD_BONE, s.light);
       }
       if (plate) {
         const nearKnee = Math.hypot(...sub(s.p, leg.knee)) < 2.6;
@@ -299,6 +313,19 @@ function drawLegs(
     };
     canvas.limb(leg.hip, leg.knee, 3.3 * thick, 2.7 * thick, legMaterial);
     canvas.limb(leg.knee, leg.ankle, 2.7 * thick, 2.2 * thick, legMaterial);
+    if (bone) {
+      // Rodillera de hueso abombada, con una púa hacia adelante.
+      const forward = normalize(sub(leg.toe, leg.ankle));
+      const cap = add(leg.knee, scale(forward, 1.6));
+      canvas.sphere(cap, 2 * thick, solid(OLD_BONE));
+      canvas.limb(
+        cap,
+        add(add(cap, scale(forward, 2.6)), [0, 1, 0]),
+        0.7,
+        0.15,
+        solid(OLD_BONE, 1),
+      );
+    }
     canvas.ellipsoid(
       lerp(leg.ankle, leg.toe, 0.55),
       axesAlong(sub(leg.toe, leg.ankle)),
@@ -367,9 +394,13 @@ function torsoMaterial({ rig, palette: p, equipment, outfit, female, robed }: Fi
       return metal(STEEL)(s);
     }
     if (armor === 'bone-armor' && y > -4) {
-      // Costillar de hueso sobre cuero oscuro, con el esternón al medio.
-      if (front && Math.abs(local[0]) < 0.6) return tone(BONE, s.light + 0.15, 1);
-      return ((y + 20) % 2.4) / 2.4 < 0.55 ? tone(BONE, s.light) : tone(LEATHER_DARK, s.light);
+      // Costillar: costillas que bajan en curva desde el esternón, con huecos
+      // oscuros entre una y otra; atrás, el espinazo sobre cuero.
+      if (front && Math.abs(local[0]) < 0.7) return tone(OLD_BONE, s.light + 0.15, 1);
+      if (!front && n[2] < -0.35 && Math.abs(local[0]) < 0.8) return tone(OLD_BONE, s.light, 1);
+      const rib = ((y + Math.abs(local[0]) * 0.45 + 20) % 2.2) / 2.2;
+      if (rib < 0.58) return tone(OLD_BONE, s.light, rib < 0.12 ? 1 : 0);
+      return tone(front ? BONE_GAP : LEATHER_DARK, s.light);
     }
     if (armor === 'ringmail' && y > -4) {
       // Anillas cosidas en hileras sobre cuero.
@@ -475,15 +506,47 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
   const torso = equipment.torso;
   if (torso && torso !== 'robe') {
     // Hombreras: más grandes en el peto de placas.
-    const pad = metalTorso ? metal(STEEL) : solid(ramp(wornColor(torso) ?? [122, 78, 42]), 1);
-    const big = torso === 'plate-chest' || torso === 'female-plate' ? 1.2 : 1;
+    const bone = torso === 'bone-armor';
+    const pad = metalTorso
+      ? metal(STEEL)
+      : bone
+        ? solid(OLD_BONE)
+        : solid(ramp(wornColor(torso) ?? [122, 78, 42]), 1);
+    const big = torso === 'plate-chest' || torso === 'female-plate' ? 1.2 : bone ? 1.15 : 1;
     for (const side of [1, -1] as const) {
+      const top = add(rig.arms[side].shoulder, chest.dir([side * 0.4, 0.8, 0]));
       canvas.ellipsoid(
-        add(rig.arms[side].shoulder, chest.dir([side * 0.4, 0.8, 0])),
+        top,
         chest.axes,
         scale(female ? [2.8, 2.1, 2.9] : [3.2, 2.4, 3.3], big),
         pad,
       );
+      // La hombrera de hueso tiene púas curvas hacia arriba y afuera.
+      if (bone)
+        for (const [dx, dz] of [
+          [0.2, 0.9],
+          [0.8, -0.1],
+          [0.3, -1],
+        ] as const)
+          canvas.limb(
+            add(top, chest.dir([side * dx * 2.6, 2, dz * 2.2])),
+            add(top, chest.dir([side * (dx * 2.6 + 2.2), 5.2, dz * 3])),
+            0.75,
+            0.15,
+            solid(OLD_BONE, 1),
+          );
+    }
+    if (bone) {
+      // Faldón de tiras de cuero rojo oscuro que cuelga del cinturón.
+      const strap = ramp([118, 40, 34]);
+      for (let i = 0; i < 9; i++) {
+        const a = -Math.PI * 0.85 + (i / 8) * Math.PI * 1.7;
+        const from = rig.pelvis.at([Math.sin(a) * 5.2, -0.6, Math.cos(a) * 3.9]);
+        const to = rig.pelvis.at([Math.sin(a) * 5.8, -6, Math.cos(a) * 4.5]);
+        canvas.limb(from, to, 0.95, 0.85, (s) =>
+          tone(i % 2 ? strap : LEATHER_DARK, s.light, s.p[1] < to[1] + 0.8 ? 1 : 0),
+        );
+      }
     }
   }
   if (outfit === 'apron') {
@@ -512,15 +575,18 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
 
 function drawArms(
   canvas: VolumeCanvas,
-  { rig, palette: p, outfit, female, metalTorso }: Figure,
+  { rig, palette: p, outfit, female, metalTorso, equipment }: Figure,
 ): void {
-  const sleeve: Material = metalTorso
-    ? metal(STEEL)
-    : outfit === 'vest'
-      ? solid(LINEN)
-      : outfit === 'woodcutter'
-        ? plaid
-        : solid(p.cloth);
+  const boneArmor = equipment.torso === 'bone-armor';
+  const sleeve: Material = boneArmor
+    ? (s) => tone(LEATHER_DARK, s.light)
+    : metalTorso
+      ? metal(STEEL)
+      : outfit === 'vest'
+        ? solid(LINEN)
+        : outfit === 'woodcutter'
+          ? plaid
+          : solid(p.cloth);
   // Herrero y tabernero trabajan con las mangas arremangadas.
   const bareForearms = outfit === 'apron' || outfit === 'innkeeper' || outfit === 'woodcutter';
   const thin = female ? 0.85 : 1;
@@ -528,6 +594,22 @@ function drawArms(
     const arm = rig.arms[side];
     canvas.limb(arm.shoulder, arm.elbow, 2.75 * thin, 2.1 * thin, sleeve);
     canvas.limb(arm.elbow, arm.hand, 2.1 * thin, 1.8 * thin, bareForearms ? solid(p.skin) : sleeve);
+    if (boneArmor) {
+      // Brazales de hueso con bandas y una púa en el codo.
+      const bracer: Material = (s) =>
+        Math.round((s.p[1] - arm.hand[1]) * 1.1) % 3 === 0
+          ? tone(BONE_GAP, s.light)
+          : tone(OLD_BONE, s.light);
+      canvas.limb(lerp(arm.elbow, arm.hand, 0.2), arm.hand, 2.4 * thin, 2.1 * thin, bracer);
+      canvas.sphere(arm.elbow, 1.9 * thin, solid(OLD_BONE));
+      canvas.limb(
+        arm.elbow,
+        add(arm.elbow, scale(normalize(sub(arm.elbow, arm.hand)), 3)),
+        0.8,
+        0.15,
+        solid(OLD_BONE, 1),
+      );
+    }
     canvas.sphere(arm.hand, 1.8 * thin, solid(p.skin));
   }
 }

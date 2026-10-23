@@ -16,6 +16,14 @@ import type { Descent, MapRegion, PlacedItem } from './tiled-map-loader';
 import type { Ascent, FloorUse } from './upper-floors';
 
 /** Nombres de los vecinos. */
+/** Apodos de los mendigos de la plaza. */
+const BEGGAR_NAMES = [
+  'el Tuerto Anselmo',
+  'la vieja Remedios',
+  'Lorenzo el Manco',
+  'el Ciego Baltasar',
+];
+
 const TOWNSFOLK_NAMES = [
   'Marta',
   'Julián',
@@ -695,22 +703,47 @@ export function buildCity(spec: CitySpec): City {
   lots.sort(
     (a, b) => distance(center(a), { x: cx, y: cy }) - distance(center(b), { x: cx, y: cy }),
   );
+  // Los oficios de cada pueblo, de los más necesarios a los más raros: si no
+  // alcanzan las casas, quedan afuera los últimos.
   const shops: NpcRole[] = style.lawless
-    ? ['innkeeper', 'blacksmith']
+    ? ['innkeeper', 'blacksmith', 'alchemist', 'bowyer']
     : spec.size === 'large'
       ? [
           'innkeeper',
           'banker',
           'blacksmith',
           'mage',
+          'healer',
           'provisioner',
-          'tailor',
           'carpenter',
+          'tailor',
+          'bowyer',
+          'alchemist',
+          'baker',
+          'butcher',
+          'jeweler',
+          'scribe',
+          'fisherman',
           'shipwright',
         ]
       : spec.size === 'small'
-        ? ['innkeeper', 'banker', 'blacksmith', 'mage']
-        : ['innkeeper', 'banker', 'blacksmith', 'mage', 'provisioner', 'tailor', 'shipwright'];
+        ? ['innkeeper', 'banker', 'blacksmith', 'mage', 'healer', 'carpenter', 'baker', 'bowyer']
+        : [
+            'innkeeper',
+            'banker',
+            'blacksmith',
+            'mage',
+            'healer',
+            'provisioner',
+            'carpenter',
+            'tailor',
+            'bowyer',
+            'alchemist',
+            'baker',
+            'butcher',
+            'fisherman',
+            'shipwright',
+          ];
   const houses: Room[] = [];
   for (const lot of lots) {
     const house = building(plan, style, lot, cx, cy, random);
@@ -750,9 +783,15 @@ export function buildCity(spec: CitySpec): City {
       }
     });
   }
+  // La casa más alejada de la plaza quedó abandonada: sin techo, con telarañas,
+  // escombros y una pared rota (en los pueblos medianos y grandes).
+  const abandoned =
+    !style.lawless && spec.size !== 'small' && homes.length > 3 ? homes.at(-1) : undefined;
+  if (abandoned) furnishAbandoned(plan, abandoned, random);
   // Algunas casas tienen un piso alto, con escalera de madera o de mano.
   let twoStorey = spec.size === 'large' ? 3 : spec.size === 'medium' ? 2 : 1;
   for (const home of homes.slice(spec.starterItems ? 1 : 0)) {
+    if (home === abandoned) continue;
     if (!style.lawless && twoStorey > 0 && roomy(home)) {
       const small = home.x1 - home.x0 < 5;
       upstairs(plan, spec, home, 'home', 'una casa', 1, small ? 'ladder-up' : 'stairs-wood');
@@ -761,7 +800,8 @@ export function buildCity(spec: CitySpec): City {
     furnishHome(plan, home, random, style);
   }
   // Las demás casas y negocios, con su techo plano (se ven desde afuera, como en UO).
-  if (!style.lawless) for (const house of houses) roofOnly(plan, spec, house);
+  if (!style.lawless)
+    for (const house of houses) if (house !== abandoned) roofOnly(plan, spec, house);
   // Faroles a lo largo de las avenidas (en el refugio, solo las fogatas de las carpas).
   for (let t = 4; !style.lawless && t < Math.max(width, height); t += 7) {
     for (const [x, y] of [
@@ -834,6 +874,12 @@ export function buildCity(spec: CitySpec): City {
     if (!free(at.x, at.y)) continue;
     const name = names.splice(Math.floor(random.next() * names.length), 1)[0] as string;
     plan.npcs.push({ role: 'townsfolk', position: at, name });
+  }
+  // Un mendigo pide en una esquina de la plaza (sabe cosas que otros no).
+  if (!style.lawless && spec.size !== 'small') {
+    const corner = { x: cx - plazaR - 1, y: cy + plazaR };
+    if (free(corner.x, corner.y))
+      plan.npcs.push({ role: 'beggar', position: corner, name: pick(BEGGAR_NAMES) });
   }
   if (!style.lawless) {
     // Dos guardias adentro de cada puerta y dos en la plaza.
@@ -1155,10 +1201,11 @@ function buildCastle(plan: Plan, style: Style, q: Rect, cityName: string, cx: nu
   const barracks: Rect = { x0: walls.x0 + 2, y0: gateY + 3, x1: keep.x0 - 3, y1: walls.y1 - 1 };
   if (barracks.x1 - barracks.x0 >= 6 && barracks.y1 - barracks.y0 >= 3) {
     plan.fill(barracks, Terrain.Wood);
-    const door = { x: Math.floor((barracks.x0 + barracks.x1) / 2), y: barracks.y0 };
+    // La puerta, al este (se ve desde el patio).
+    const door = { x: barracks.x1 + 1, y: Math.floor((barracks.y0 + barracks.y1) / 2) + 1 };
     plan.enclose(barracks, STONE, [door]);
     plan.ground(door.x, door.y, Terrain.Wood);
-    plan.door(door, 'x');
+    plan.door(door, 'y');
     for (let x = barracks.x0 + 1; x <= barracks.x1; x += 2) plan.put(x, barracks.y1, 'bed');
     plan.put(barracks.x0 + 1, barracks.y0 + 1, 'weapon-rack');
     plan.put(barracks.x0 + 3, barracks.y0 + 1, 'weapon-rack');
@@ -1281,31 +1328,32 @@ function building(
   const kit = sandstone ? SANDSTONE : style.walls;
   const floor = sandstone ? Terrain.Sandstone : style.floor;
   plan.fill(house, floor);
-  // La puerta, en la pared del lado de la plaza.
+  // La puerta, en una pared que se ve (la del sur o la del este: las del norte
+  // y el oeste quedan tapadas por la casa en la vista isométrica). Se prefiere
+  // la que mira a la plaza, si afuera hay paso.
   const mid = center(house);
   const towardX = cx - mid.x;
   const towardY = cy - mid.y;
-  const side =
-    Math.abs(towardX) > Math.abs(towardY) ? (towardX > 0 ? 'e' : 'w') : towardY > 0 ? 's' : 'n';
+  const outsideOf = (side: 'e' | 's'): Position =>
+    side === 'e' ? { x: house.x1 + 2, y: mid.y } : { x: mid.x, y: house.y1 + 2 };
+  const open = (p: Position): boolean =>
+    plan.isFree(p.x, p.y) && plan.terrain[p.y * plan.width + p.x] !== Terrain.Water;
+  const preferred: 'e' | 's' =
+    towardX > 0 && (towardY <= 0 || towardX > towardY)
+      ? 'e'
+      : towardY > 0
+        ? 's'
+        : w > h
+          ? 's'
+          : 'e';
+  const other: 'e' | 's' = preferred === 'e' ? 's' : 'e';
+  const side: 'e' | 's' = open(outsideOf(preferred)) || !open(outsideOf(other)) ? preferred : other;
   const door: Position =
-    side === 'e'
-      ? { x: house.x1 + 1, y: mid.y }
-      : side === 'w'
-        ? { x: house.x0, y: mid.y }
-        : side === 's'
-          ? { x: mid.x, y: house.y1 + 1 }
-          : { x: mid.x, y: house.y0 };
-  const entry: Position =
-    side === 'e'
-      ? { x: house.x1, y: mid.y }
-      : side === 'w'
-        ? { x: house.x0 + 1, y: mid.y }
-        : side === 's'
-          ? { x: mid.x, y: house.y1 }
-          : { x: mid.x, y: house.y0 + 1 };
+    side === 'e' ? { x: house.x1 + 1, y: mid.y } : { x: mid.x, y: house.y1 + 1 };
+  const entry: Position = side === 'e' ? { x: house.x1, y: mid.y } : { x: mid.x, y: house.y1 };
   plan.enclose(house, kit, [door]);
   plan.ground(door.x, door.y, floor);
-  plan.door(door, side === 'n' || side === 's' ? 'x' : 'y');
+  plan.door(door, side === 's' ? 'x' : 'y');
   plan.windows(house, kit, door);
   return {
     kit,
@@ -1588,6 +1636,84 @@ function furnishShop(plan: Plan, role: NpcRole, room: Room, random: SeededRandom
       put(room.x1 - 1, room.y1, 'chair-n');
       break;
     }
+    case 'alchemist': {
+      // Alquimia: mesas con alambiques, estantes de pociones y un caldero humeante.
+      alongWalls(plan, room, 'potion-shelf-x', 'potion-shelf-y');
+      put(spot.x - 1, spot.y - 1, 'alchemy-table');
+      put(spot.x + 1, spot.y - 1, 'alchemy-table');
+      put(room.x1, room.y1, 'cauldron');
+      put(room.x0, room.y1, 'barrel');
+      put(room.x1 - 1, room.y1, 'crate');
+      break;
+    }
+    case 'healer': {
+      // Enfermería: camas para los heridos, velas, una alfombra y un estante de remedios.
+      for (let y = room.y0; y <= room.y1; y += 2) put(room.x0, y, 'bed');
+      put(room.x1, room.y0, 'potion-shelf-y');
+      put(room.x1, room.y1, 'candelabra');
+      put(spot.x, spot.y + 1, 'carpet');
+      put(room.x1 - 1, room.y0, 'chest');
+      break;
+    }
+    case 'bowyer': {
+      // Taller de arcos: banco de trabajo, armero con arcos, tablas y troncos.
+      put(room.x0, room.y0, 'workbench');
+      put(room.x1, room.y0, 'weapon-rack');
+      put(room.x1 - 1, room.y0, 'weapon-rack');
+      put(room.x0, room.y1, 'log-pile');
+      put(room.x1, room.y1, 'plank-stack');
+      put(spot.x + 1, spot.y + 1, 'stool');
+      break;
+    }
+    case 'baker': {
+      // Panadería: el horno (hogar), mesas con el pan, bolsas de harina y barriles.
+      put(room.x0, room.y0, 'hearth');
+      put(room.x0 + 1, room.y0, 'hearth');
+      for (let x = spot.x - 1; x <= spot.x + 1; x++) put(x, spot.y + 1, 'counter');
+      put(room.x1, room.y0, 'barrel');
+      put(room.x1, room.y1, 'crate');
+      put(room.x0, room.y1, 'table');
+      break;
+    }
+    case 'butcher': {
+      // Carnicería: mesa de cortar, barriles con sal, un tonel y el fogón.
+      put(spot.x - 1, spot.y + 1, 'table');
+      put(spot.x + 1, spot.y + 1, 'counter');
+      put(room.x0, room.y0, 'barrel');
+      put(room.x0 + 1, room.y0, 'barrel');
+      put(room.x1, room.y0, 'keg');
+      put(room.x1, room.y1, 'hearth');
+      break;
+    }
+    case 'fisherman': {
+      // Pescadería: barriles de pescado salado, cajones y redes colgadas.
+      put(room.x0, room.y0, 'barrel');
+      put(room.x0 + 1, room.y0, 'barrel');
+      put(room.x1, room.y0, 'crate');
+      put(room.x1, room.y1, 'crate');
+      put(room.x0, room.y1, 'keg');
+      put(spot.x + 1, spot.y + 1, 'counter');
+      break;
+    }
+    case 'jeweler': {
+      // Joyería: mostrador, cofres cerrados, candelabros y una alfombra fina.
+      for (let x = spot.x - 1; x <= spot.x + 1; x++) put(x, spot.y + 1, 'counter');
+      put(room.x0, room.y0, 'chest');
+      put(room.x1, room.y0, 'chest');
+      put(room.x0, room.y1, 'candelabra');
+      put(room.x1, room.y1, 'candelabra');
+      put(spot.x, spot.y - 1, 'carpet');
+      break;
+    }
+    case 'scribe': {
+      // Escribanía: bibliotecas en las paredes, mesa con taburete y velas.
+      alongWalls(plan, room, 'bookshelf-x', 'bookshelf-y');
+      put(spot.x + 1, spot.y, 'table');
+      put(spot.x + 1, spot.y + 1, 'stool');
+      put(room.x1, room.y1, 'candelabra');
+      put(room.x0, room.y1, 'chest');
+      break;
+    }
     default:
       break;
   }
@@ -1613,6 +1739,36 @@ function furnishHome(plan: Plan, room: Room, random: SeededRandom, style: Style)
   else put(room.x0, room.y1, 'crate');
   if (random.next() < 0.4) alongWalls(plan, room, 'bookshelf-x', null, 3);
   if (random.next() < 0.3) put(room.x1, room.y1, 'carpet');
+}
+
+/**
+ * Una casa abandonada: los muebles que quedaron, rotos y llenos de telarañas,
+ * escombros en el piso, un agujero en la pared del fondo y huesos de algún
+ * animal. Sin techo: se derrumbó.
+ */
+function furnishAbandoned(plan: Plan, room: Room, random: SeededRandom): void {
+  const keep = reserved(room);
+  const put = (x: number, y: number, kind: StaticKind): boolean =>
+    furniture(plan, keep, x, y, kind);
+  for (const [x, y] of [
+    [room.x0, room.y0],
+    [room.x1, room.y0],
+    [room.x0, room.y1],
+  ] as const)
+    put(x, y, 'cobweb');
+  put(room.x1, room.y1, 'chest');
+  put(room.x0 + 1, room.y0, 'bed');
+  for (let i = 0; i < 4; i++) {
+    const x = room.x0 + Math.floor(random.next() * (room.x1 - room.x0 + 1));
+    const y = room.y0 + Math.floor(random.next() * (room.y1 - room.y0 + 1));
+    put(x, y, i === 0 ? 'bones' : i === 1 ? 'stool' : 'rubble');
+  }
+  // La pared del norte se vino abajo en un tramo: se puede entrar por ahí.
+  const hole = room.x0 + Math.floor((room.x1 - room.x0) / 2);
+  if (hole !== room.door.x) plan.put(hole, room.northWall, 'rubble');
+  for (let x = room.x0; x <= room.x1; x++)
+    for (let y = room.y0; y <= room.y1; y++)
+      if (plan.isFree(x, y) && random.next() < 0.18) plan.ground(x, y, Terrain.Dirt);
 }
 
 /**

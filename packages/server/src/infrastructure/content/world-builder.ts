@@ -34,7 +34,7 @@ import { generateFloors, type Ascent, type UpperFloor } from './upper-floors';
  * Versión de la forma del mundo: si cambia, los personajes guardados en el
  * mundo anterior aparecen en la capital (su posición vieja ya no sirve).
  */
-const WORLD_VERSION = 7;
+const WORLD_VERSION = 8;
 
 export interface WorldBuildOptions {
   /** Ancho del continente (y alto, si no se da `height`). */
