@@ -32,6 +32,8 @@ export type ChatInput =
   | { readonly kind: 'invulnerable' }
   /** Comandos del administrador del juego (el servidor revisa que lo sea). */
   | { readonly kind: 'gm'; readonly command: GmCommand }
+  /** `/rastrear`: abrir la ventana de Rastrear. */
+  | { readonly kind: 'tracking' }
   /** `/eliminar`: tocar un objeto propio para borrarlo (el servidor revisa que sea administrador). */
   | { readonly kind: 'gmDelete' }
   /** `/matar`, y `/curar` o `/resucitar` sin nombre: sobre el blanco elegido. */
@@ -55,6 +57,7 @@ export const CHAT_HELP = [
   '/liberar — dejar ir a tu montura (para siempre)',
   '/esconderse — esconderte (habilidad Esconderse)',
   '/mirar — buscar a los escondidos cerca (habilidad Mirar)',
+  '/rastrear — buscar rastros de animales, monstruos, personas o vecinos (habilidad Rastrear)',
   '/hora 22 — cambiar la hora del mundo (solo personajes de prueba)',
   '/cueva o /cueva fondo — ir a la mazmorra (solo personajes de prueba)',
   '/invul — volverte invulnerable (nombre amarillo) o dejar de serlo (solo personajes de prueba)',
@@ -120,6 +123,8 @@ export function parseChatInput(raw: string): ChatInput {
       return { kind: 'useSkill', skill: 'hiding' };
     case 'mirar':
       return { kind: 'useSkill', skill: 'detect-hidden' };
+    case 'rastrear':
+      return { kind: 'tracking' };
     case 'hora': {
       const hour = Number(args.replace(',', '.'));
       return args && Number.isFinite(hour) && hour >= 0 && hour < 24

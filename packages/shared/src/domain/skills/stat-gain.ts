@@ -21,6 +21,7 @@ export const SKILL_STATS: Readonly<
   hiding: ['dexterity'],
   stealth: ['dexterity'],
   'detect-hidden': ['intelligence'],
+  tracking: ['intelligence', 'dexterity'],
   lockpicking: ['dexterity'],
   snooping: ['dexterity'],
   stealing: ['dexterity'],

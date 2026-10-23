@@ -7,6 +7,7 @@ import { BOOK_PAGES, cleanBookPage, cleanBookTitle } from '../domain/items/books
 import { isDyeHue } from '../domain/items/dyes';
 import { isSpellKey } from '../domain/magic/spell-catalog';
 import { isActiveSkill } from '../domain/skills/stealth';
+import { isTrackingCategory } from '../domain/skills/tracking';
 import { isMountKind } from '../domain/mounts/mount-catalog';
 import { isChatChannel, isSocialCommand } from '../domain/social/groups';
 import { isDirection } from '../domain/geometry/direction';
@@ -365,6 +366,14 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       if (typeof data.war === 'boolean')
         return { ok: true, message: { type: 'setWarMode', war: data.war } };
       break;
+    case 'track':
+      if (isTrackingCategory(data.category))
+        return { ok: true, message: { type: 'track', category: data.category } };
+      break;
+    case 'followTrack':
+      if (isId(data.targetId))
+        return { ok: true, message: { type: 'followTrack', targetId: data.targetId } };
+      break;
     case 'useSkill':
       if (isActiveSkill(data.skill))
         return {
@@ -396,6 +405,8 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
 const SERVER_TYPE_FLAGS: Readonly<Record<ServerMessageType, true>> = {
   welcome: true,
   gmCatalog: true,
+  tracking: true,
+  trackPoint: true,
   container: true,
   containerClosed: true,
   book: true,

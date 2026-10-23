@@ -2803,3 +2803,64 @@ body {
 .catalog-group[hidden] {
   display: none;
 }
+
+/* Rastrear: la ventana y la flecha alrededor del personaje. */
+.tracking-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.tracking-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: min(320px, 80vw);
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.tracking-entry {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 6px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  color: inherit;
+  cursor: pointer;
+  margin-bottom: 3px;
+}
+.tracking-entry:hover,
+.tracking-entry:focus-visible {
+  background: rgba(255, 220, 140, 0.16);
+}
+.tracking-where {
+  opacity: 0.8;
+  font-size: 0.9em;
+}
+.tracking-pointer {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 5;
+  text-align: center;
+}
+.tracking-arrow {
+  color: #ffd76a;
+  font-size: 26px;
+  line-height: 1;
+  text-shadow:
+    0 0 3px #000,
+    0 0 6px #000;
+}
+.tracking-label {
+  color: #fff3c8;
+  font-size: 12px;
+  white-space: nowrap;
+  text-shadow: 0 0 3px #000;
+}
+.tracking-pointer[hidden] {
+  display: none;
+}

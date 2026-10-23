@@ -43,6 +43,7 @@ import { ShipWindow } from '../ui/ship-window';
 import { WorldShips } from './world-ships';
 import { DyeWindow } from '../ui/dye-window';
 import { ItemCatalogWindow } from '../ui/item-catalog-window';
+import { TrackingArrow, TrackingWindow } from '../ui/tracking-window';
 import { QuestJournal, QuestOfferWindow } from '../ui/quest-windows';
 import { ContainerWindow } from '../ui/container-window';
 import { CorpseWindow } from '../ui/corpse-window';
@@ -273,6 +274,26 @@ export class GameSession {
     this.setUpSocial();
     this.setUpQuests();
     const chat = new ChatPanel((text) => this.game.say(text));
+    // Rastrear: la ventana para elegir qué buscar y la flecha hacia el rastro que se sigue.
+    const trackingArrow = new TrackingArrow();
+    const trackingWindow = new TrackingWindow(
+      (category) => this.game.track(category),
+      (sighting) => {
+        trackingArrow.follow(sighting.id, sighting.name);
+        this.game.followTrack(sighting.id);
+      },
+    );
+    this.hosts.ui.append(trackingWindow.window.element, trackingArrow.element);
+    this.game.on('trackingRequested', () => trackingWindow.open());
+    this.game.on('trackingFound', ({ category, found }) => trackingWindow.show(category, found));
+    this.game.on('trackPoint', (point) => {
+      if ('lost' in point) {
+        if (trackingArrow.followingId === point.targetId) {
+          trackingArrow.lose();
+          chat.append({ kind: 'system', text: 'Perdiste el rastro.' });
+        }
+      } else trackingArrow.point(point.targetId, point.name, { x: point.x, y: point.y });
+    });
     const menu = this.setUpInventory(
       drag,
       worldItems,
@@ -295,6 +316,12 @@ export class GameSession {
       if (intent) this.game.requestStep(intent.direction, intent.mode);
       this.game.update();
       renderer.render(clock());
+      const bounds = renderer.canvas.getBoundingClientRect();
+      const center = renderer.selfScreenPosition();
+      trackingArrow.update(this.game.self?.position ?? null, {
+        x: bounds.left + center.x,
+        y: bounds.top + center.y,
+      });
 
       const self = this.game.self;
       if (self) {

@@ -41,6 +41,9 @@ import {
   type GroundItemSnapshot,
   type ItemDestination,
   type ItemKind,
+  type TrackPointMessage,
+  type TrackSighting,
+  type TrackingCategory,
   type MountKind,
   type MoveMode,
   type RegionData,
@@ -138,6 +141,12 @@ export interface ClientGameEvents extends Record<string, unknown> {
   itemCatalogOpened: null;
   /** `/eliminar`: elegir el objeto propio que se va a borrar. */
   deletePickRequested: null;
+  /** `/rastrear` (o la habilidad Rastrear): abrir la ventana para elegir qué buscar. */
+  trackingRequested: null;
+  /** Lo que encontró al Rastrear. */
+  trackingFound: { category: TrackingCategory; found: readonly TrackSighting[] };
+  /** Dónde está el rastro que sigue (o que lo perdió). */
+  trackPoint: TrackPointMessage;
 }
 
 /** Lo que hay en el cuerpo que se está revisando. */
@@ -267,8 +276,20 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
 
   /** Usar una habilidad a propósito (Esconderse, Mirar). */
   useSkill(skill: ActiveSkill, targetId?: EntityId): void {
+    // Rastrear primero pide qué buscar (la ventana de Rastrear).
+    if (skill === 'tracking') return void this.emit('trackingRequested', null);
     if (this.self)
       this.gateway.send({ type: 'useSkill', skill, ...(targetId ? { targetId } : {}) });
+  }
+
+  /** Buscar rastros de una clase (habilidad Rastrear). */
+  track(category: TrackingCategory): void {
+    if (this.self) this.gateway.send({ type: 'track', category });
+  }
+
+  /** Seguir uno de los rastros encontrados. */
+  followTrack(targetId: EntityId): void {
+    if (this.self) this.gateway.send({ type: 'followTrack', targetId });
   }
 
   /** Forzar con la ganzúa la cerradura del cofre de esa posición. */
@@ -419,6 +440,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         return;
       case 'gmDelete':
         this.emit('deletePickRequested', null);
+        return;
+      case 'tracking':
+        this.emit('trackingRequested', null);
         return;
       case 'gmTarget': {
         const targetId = this.targetId;
@@ -746,6 +770,12 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       }
       case 'gmCatalog':
         this.emit('itemCatalogOpened', null);
+        break;
+      case 'tracking':
+        this.emit('trackingFound', { category: message.category, found: message.found });
+        break;
+      case 'trackPoint':
+        this.emit('trackPoint', message);
         break;
       case 'door':
         if (this._map?.setDoorOpen(message.position, message.open))
