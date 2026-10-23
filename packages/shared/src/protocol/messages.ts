@@ -363,10 +363,18 @@ export interface SetWarModeRequest {
   readonly war: boolean;
 }
 
-/** Usar una habilidad a propósito (Esconderse, Mirar). */
+/** Usar una habilidad a propósito (Esconderse, Mirar; Fisgonear y Robar, sobre alguien). */
 export interface UseSkillRequest {
   readonly type: 'useSkill';
   readonly skill: ActiveSkill;
+  readonly targetId?: EntityId;
+}
+
+/** Forzar la cerradura del cofre en esa posición con una ganzúa. */
+export interface PickLockRequest {
+  readonly type: 'pickLock';
+  readonly toolId: EntityId;
+  readonly position: Position;
 }
 
 /** Revisar el cuerpo de una criatura muerta (doble clic). */
@@ -452,6 +460,7 @@ export type ClientMessage =
   | StopAttackRequest
   | CastSpellRequest
   | UseOnRequest
+  | PickLockRequest
   | GatherRequest
   | DigRequest
   | ShipOrderRequest

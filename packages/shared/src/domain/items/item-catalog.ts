@@ -170,6 +170,7 @@ export const BASE_ITEM_KINDS = [
   'pickaxe',
   'fishing-pole',
   'smith-hammer',
+  'lockpick',
   'sewing-kit',
   'saw',
   'fletching-kit',
@@ -216,6 +217,7 @@ export type ItemUse =
   | 'map'
   | 'dig'
   | 'ship'
+  | 'lockpick'
   | 'none';
 
 /** Lo que hace una poción al tomarla. */
@@ -350,6 +352,7 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
     use: 'map',
   },
   shovel: { name: 'pala', plural: 'palas', article: 'una', use: 'dig' },
+  lockpick: { name: 'ganzúa', plural: 'ganzúas', article: 'una', stackable: true, use: 'lockpick' },
   'sloop-deed': {
     name: 'maqueta de balandra',
     plural: 'maquetas de balandra',

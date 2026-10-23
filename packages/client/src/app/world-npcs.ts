@@ -6,6 +6,8 @@ import type { WorldTooltip } from '../ui/world-tooltip';
 /** Tocar a un personaje del pueblo abre su tienda o el banco. */
 export class WorldNpcs {
   private readonly abort = new AbortController();
+  /** Mientras se elige a alguien (para robar, vendar…), tocar un vecino no abre su tienda. */
+  busy: () => boolean = () => false;
 
   constructor(
     private readonly game: ClientGame,
@@ -29,6 +31,7 @@ export class WorldNpcs {
 
   private onPointerDown(e: PointerEvent): void {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (this.busy()) return;
     const id = this.renderer.npcAt(this.local(e));
     const role = id ? this.game.entity(id)?.npc : null;
     if (!id || !role) return;

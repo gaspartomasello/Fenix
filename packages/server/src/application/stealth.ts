@@ -36,7 +36,7 @@ export class Stealth {
     if (!player) return;
     if (player.combat.isDead) return this.say(player, 'Los fantasmas no pueden hacer eso.');
     if (skill === 'hiding') this.hide(player);
-    else this.detect(player);
+    else if (skill === 'detect-hidden') this.detect(player);
   }
 
   /** Esconderse: tirada de Esconderse; no se puede con alguien atacándote de cerca, ni montado. */

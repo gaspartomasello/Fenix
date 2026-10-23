@@ -335,6 +335,7 @@ export const VENDORS: Readonly<Record<NpcRole, VendorDefinition>> = {
       flute: 30,
       'fishing-pole': 15,
       shovel: 20,
+      lockpick: 12,
     }),
     buys: offers({
       'treasure-map': 40,

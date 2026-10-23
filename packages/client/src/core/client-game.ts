@@ -260,8 +260,14 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   }
 
   /** Usar una habilidad a propósito (Esconderse, Mirar). */
-  useSkill(skill: ActiveSkill): void {
-    if (this.self) this.gateway.send({ type: 'useSkill', skill });
+  useSkill(skill: ActiveSkill, targetId?: EntityId): void {
+    if (this.self)
+      this.gateway.send({ type: 'useSkill', skill, ...(targetId ? { targetId } : {}) });
+  }
+
+  /** Forzar con la ganzúa la cerradura del cofre de esa posición. */
+  pickLock(toolId: EntityId, position: { x: number; y: number }): void {
+    if (this.self) this.gateway.send({ type: 'pickLock', toolId, position });
   }
 
   get selfId(): EntityId | null {

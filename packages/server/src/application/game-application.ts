@@ -7,6 +7,7 @@ import { Corpses } from './corpses';
 import { MountActions } from './use-cases/mount-actions';
 import { Gates } from './gates';
 import { Stealth } from './stealth';
+import { Thievery } from './thievery';
 import { WarMode } from './war-mode';
 import { GameLoop } from './game-loop';
 import { ItemNotifications } from './item-notifications';
@@ -92,6 +93,7 @@ export class GameApplication {
   private readonly doors: Doors;
   private readonly mounts: MountActions;
   private readonly stealth: Stealth;
+  private readonly thievery: Thievery;
   private readonly mobiles: MobileNotifications;
   private readonly world: World;
   private readonly persistence: CharacterPersistence;
@@ -204,6 +206,18 @@ export class GameApplication {
     );
     this.containers = new Containers(world, clock, ids, random, notifications, notifier);
     this.useItem.openContainer = (playerId, id) => this.containers.openFor(playerId, id);
+    this.thievery = new Thievery(
+      world,
+      clock,
+      ids,
+      random,
+      this.containers,
+      notifications,
+      this.mobiles,
+      this.social,
+      notifier,
+    );
+    this.thievery.reveal = (playerId, text) => this.revealPlayer(playerId, text);
     this.books = new Books(world, notifications, notifier);
     this.dyeing = new Dyeing(world, notifications, notifier);
     this.useItem.openBook = (playerId, id) => this.books.read(playerId, id);
@@ -354,7 +368,14 @@ export class GameApplication {
           this.revealPlayer(playerId, 'Lanzar un hechizo te descubrió.');
         break;
       case 'useSkill':
-        this.stealth.use(playerId, message.skill);
+        if (message.skill === 'snooping' || message.skill === 'stealing') {
+          if (!message.targetId) break;
+          if (message.skill === 'snooping') this.thievery.snoop(playerId, message.targetId);
+          else this.thievery.steal(playerId, message.targetId);
+        } else this.stealth.use(playerId, message.skill);
+        break;
+      case 'pickLock':
+        this.thievery.pickLock(playerId, message.toolId, message.position);
         break;
       case 'setWarMode':
         this.attack.setWarMode(playerId, message.war);

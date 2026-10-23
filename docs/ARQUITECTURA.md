@@ -430,6 +430,23 @@ bolsas e instrumentos, y compra gemas. La ventana de la tienda muestra el daño,
 cuánto alimenta cada objeto, separa los estantes (armas, armaduras, comida, otros) en las
 tiendas grandes, calcula el total al comprar varios y tiene «Vender todo».
 
+### El oficio del ladrón
+
+- **Habilidades nuevas** (grupo «Ladrón»): Forzar cerraduras, Fisgonear y Robar. Las reglas
+  (probabilidades, dificultad de cada cerradura) están en `shared/domain/skills/thievery.ts`;
+  el caso de uso, en `server/application/thievery.ts`.
+- **Cofres con llave**: la dificultad sale del lugar (`lockDifficulty`), así que siempre es la
+  misma. En las ruinas, casas abandonadas y mazmorras casi todos están cerrados y son
+  difíciles; en los pueblos, uno de cada tres. Fuera de todo lugar con nombre no hay cerraduras.
+  Lo guardado con llave trae oro y, a veces, gemas. Con una ganzúa (`pickLock`, se elige el
+  cofre) se tira Forzar cerraduras contra la dificultad; al fallar, a veces se rompe la ganzúa.
+  El cofre abierto se vuelve a cerrar cuando se repone.
+- **Fisgonear** y **Robar** se usan sobre la persona de al lado (un jugador o un vecino; a los
+  guardias no): `useSkill` lleva `targetId` y el cliente deja elegir también a los vecinos. A
+  un jugador se le roba algo de la mochila (nunca el equipo inicial); a un vecino, sus monedas o
+  algo de su oficio. Fisgonear antes o estar escondido ayuda. Si te pescan quedás como criminal
+  (los guardias se encargan) y la víctima queda atenta un rato.
+
 ### Equipo completo y ventana de personaje
 
 - **Lugares del equipo** (`EQUIPMENT_SLOTS`): además de cabeza, capa, torso, manos, piernas

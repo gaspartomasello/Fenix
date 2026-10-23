@@ -6,8 +6,13 @@
  */
 
 /** Habilidades que se usan a propósito (con un botón o un comando). */
-export const ACTIVE_SKILLS = ['hiding', 'detect-hidden'] as const;
+export const ACTIVE_SKILLS = ['hiding', 'detect-hidden', 'snooping', 'stealing'] as const;
 export type ActiveSkill = (typeof ACTIVE_SKILLS)[number];
+
+/** Habilidades que se usan sobre alguien (fisgonear y robar): se elige a quién. */
+export function skillNeedsTarget(skill: ActiveSkill): boolean {
+  return skill === 'snooping' || skill === 'stealing';
+}
 
 export function isActiveSkill(value: unknown): value is ActiveSkill {
   return typeof value === 'string' && (ACTIVE_SKILLS as readonly string[]).includes(value);
