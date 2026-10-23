@@ -88,6 +88,10 @@ La barra de atajos también está en la computadora, arriba de los botones: tecl
 clic para usar, clic derecho para cambiar. Con el libro de hechizos abierto, 1 a 8 siguen siendo
 los hechizos de su página, y el botón **Atajo** de cada hechizo lo manda a la barra.
 
+Para pelear sin apuntar con el mouse: **E** ataca a la siguiente criatura cercana y **Q** a la
+anterior (lo mismo que **⟳** en el celular, en los dos sentidos). Como el botón de atacar, nunca
+elige personas, vecinos ni criaturas con dueño.
+
 ## Cómo se verificó
 
 Con Playwright, emulando un celular táctil acostado de 844×390 y uno angosto de 667×375:

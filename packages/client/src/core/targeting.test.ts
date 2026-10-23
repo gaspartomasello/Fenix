@@ -27,9 +27,14 @@ describe('botón de atacar', () => {
     // Tocar de nuevo sigue con la misma mientras viva.
     expect(nextAutoTarget(near, from, 'cerca')).toBe('cerca');
     // «Siguiente» las recorre.
-    expect(nextAutoTarget(near, from, 'cerca', true)).toBe('medio');
-    expect(nextAutoTarget(near, from, 'medio', true)).toBe('lejos');
-    expect(nextAutoTarget(near, from, 'lejos', true)).toBe('cerca');
+    expect(nextAutoTarget(near, from, 'cerca', 1)).toBe('medio');
+    expect(nextAutoTarget(near, from, 'medio', 1)).toBe('lejos');
+    expect(nextAutoTarget(near, from, 'lejos', 1)).toBe('cerca');
+    // Hacia atrás (tecla Q): de la más cercana vuelve a la más lejana.
+    expect(nextAutoTarget(near, from, 'cerca', -1)).toBe('lejos');
+    expect(nextAutoTarget(near, from, 'lejos', -1)).toBe('medio');
+    expect(nextAutoTarget(near, from, null, -1)).toBe('lejos');
+    expect(nextAutoTarget(near, from, null, 1)).toBe('cerca');
     expect(nextAutoTarget([mob('muerta', 1, { dead: true })], from, null)).toBeNull();
   });
 });

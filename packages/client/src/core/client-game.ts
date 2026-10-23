@@ -764,7 +764,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
    * Botón de atacar (celular): la criatura salvaje más cercana (o la que ya
    * estaba peleando); con `next`, la siguiente más cercana.
    */
-  attackNearest(next = false): void {
+  attackNearest(step: -1 | 0 | 1 = 0): void {
     const self = this.self;
     if (!self) return;
     if (self.dead) {
@@ -772,7 +772,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       return;
     }
     const others = [...this.entities.values()].filter((e) => e.id !== self.id);
-    const id = nextAutoTarget(others, self.position, this._targetId, next);
+    const id = nextAutoTarget(others, self.position, this._targetId, step);
     if (id) this.attack(id);
     else this.notify('No hay criaturas cerca para atacar.');
   }

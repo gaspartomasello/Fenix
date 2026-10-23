@@ -17,7 +17,8 @@ export const AUTO_TARGET_RANGE = 12;
 /**
  * El botón de atacar (pensado para el celular, sin apuntar con el dedo):
  * elige la criatura salvaje viva más cercana y sigue con ella mientras viva.
- * Con `next`, pasa a la siguiente más cercana (así se recorren todas). Nunca
+ * Con `step` 1 pasa a la siguiente más cercana y con -1 a la anterior (así se
+ * recorren todas, en la PC con E y Q). Nunca
  * elige personas, gente del pueblo ni criaturas con dueño (atacarlas tiene
  * consecuencias: eso se hace a propósito, tocándolas).
  */
@@ -25,7 +26,7 @@ export function nextAutoTarget(
   candidates: Iterable<TargetCandidate>,
   from: Position,
   current: EntityId | null,
-  next = false,
+  step: -1 | 0 | 1 = 0,
 ): EntityId | null {
   const near = [...candidates]
     .filter(
@@ -42,6 +43,9 @@ export function nextAutoTarget(
     );
   if (near.length === 0) return null;
   const index = near.findIndex((c) => c.id === current);
-  if (!next && index >= 0) return current;
-  return (near[(index + 1) % near.length] ?? near[0])?.id ?? null;
+  if (step === 0 && index >= 0) return current;
+  // Sin objetivo, la anterior empieza por la más lejana.
+  const start = index >= 0 ? index : step < 0 ? 0 : -1;
+  const target = (start + (step < 0 ? -1 : 1) + near.length) % near.length;
+  return near[target]?.id ?? null;
 }

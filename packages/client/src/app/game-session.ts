@@ -306,6 +306,7 @@ export class GameSession {
       renderer,
     );
     if (touch) this.setUpTouch(menu, chat);
+    else this.setUpTargetKeys();
     this.setUpVitals();
     const status = new StatusBar();
     if (this.hud) status.dock(this.hud.element);
@@ -455,7 +456,19 @@ export class GameSession {
     this.game.on('effectsChanged', refresh);
   }
 
-  /** Ventana social y modo guerra. */
+  /** PC: E ataca a la siguiente criatura cercana y Q a la anterior. */
+  private setUpTargetKeys(): void {
+    window.addEventListener('keydown', (e) => {
+      const typing =
+        e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+      if (typing || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+      const step = e.code === 'KeyE' ? 1 : e.code === 'KeyQ' ? -1 : 0;
+      if (step === 0) return;
+      e.preventDefault();
+      this.game.attackNearest(step);
+    });
+  }
+
   /** Misiones de los vecinos: la oferta al hablarles y el diario (tecla J). */
   private setUpQuests(): void {
     const offer = new QuestOfferWindow((npcId) => this.game.acceptQuest(npcId));
@@ -467,6 +480,7 @@ export class GameSession {
     this.hudExtras.push({ label: 'Misiones', key: 'j', onPress: () => journal.window.toggle() });
   }
 
+  /** Ventana social y modo guerra. */
   private setUpSocial(): void {
     const social = new SocialWindow((command, name, tag) =>
       this.game.socialCommand(command, name, tag),
@@ -843,7 +857,7 @@ export class GameSession {
     const rest = buttons.filter((b) => !quick.includes(b) && b.label !== 'Salir');
     const hud = new TouchHud({
       attack: () => this.game.attackNearest(),
-      nextTarget: () => this.game.attackNearest(true),
+      nextTarget: () => this.game.attackNearest(1),
       stopAttack: () => this.game.stopAttack(),
       hasTarget: () => this.game.targetId !== null,
       quick,
