@@ -883,6 +883,8 @@ export function buildCity(spec: CitySpec): City {
       plan.descents.push({ kind: 'sewer', position: grate, town: spec.name, size: spec.size });
     }
   }
+  // Pasadizos secretos: en algunas casas de la capital, una baldosa floja baja a las catacumbas.
+  if (spec.size === 'large' && !style.lawless) secretPassages(plan, spec, homes, 2);
   return plan.toCity(regions, spec.style === 'capital' || spec.starterItems ? spawn : null, spawn);
 }
 
@@ -1317,6 +1319,40 @@ function building(
     northWall: house.y0,
     westWall: house.x0,
   };
+}
+
+/** Pone una baldosa floja (y dónde se aparece al volver) en un rincón libre de algunas casas. */
+function secretPassages(plan: Plan, spec: CitySpec, homes: readonly Room[], count: number): void {
+  let left = count;
+  for (const home of homes) {
+    if (left === 0) return;
+    // Que no sea una casa con escalera (ahí está el lugar de aparecer al bajar).
+    if (plan.ascents.some((a) => a.stairs && a.origin.x === home.x0 && a.origin.y === home.y0))
+      continue;
+    const keep = reserved(home);
+    let placed = false;
+    for (let y = home.y0; y <= home.y1 && !placed; y++)
+      for (let x = home.x0; x <= home.x1 && !placed; x++) {
+        if (keep.has(`${x},${y}`) || !plan.isFree(x, y)) continue;
+        const back = [
+          { x: x + 1, y },
+          { x: x - 1, y },
+          { x, y: y + 1 },
+          { x, y: y - 1 },
+        ].find((p) => inRect(home, p.x, p.y) && plan.isFree(p.x, p.y));
+        if (!back) continue;
+        plan.put(x, y, 'loose-flagstone');
+        plan.descents.push({
+          kind: 'secret',
+          position: { x, y },
+          back,
+          town: spec.name,
+          size: spec.size,
+        });
+        placed = true;
+      }
+    if (placed) left--;
+  }
 }
 
 /** La escalera de las casas de piedra es de piedra; la de las demás, de madera. */

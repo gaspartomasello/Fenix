@@ -217,6 +217,13 @@ export const STATIC_KINDS = [
   'sandstone-wall-post',
   'sandstone-window-x',
   'sandstone-window-y',
+  // Bajo la ciudad: alcantarillas, catacumbas y pasadizos secretos
+  'sewer-wall',
+  'slime',
+  'noxious-hole',
+  'skull-pile',
+  'cracked-wall',
+  'loose-flagstone',
 ] as const;
 
 export type StaticKind = (typeof STATIC_KINDS)[number];
@@ -492,6 +499,13 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   'sandstone-wall-post': define('sandstone-wall-post', 'pared de arenisca', true),
   'sandstone-window-x': define('sandstone-window-x', 'ventana', true, 2),
   'sandstone-window-y': define('sandstone-window-y', 'ventana', true, 2),
+  'sewer-wall': define('sewer-wall', 'muro de piedra', true),
+  slime: define('slime', 'baba', false),
+  'noxious-hole': define('noxious-hole', 'un agujero que despide gases', false),
+  'skull-pile': define('skull-pile', 'montón de calaveras', true),
+  // Un pasadizo secreto: parece pared, pero se pasa.
+  'cracked-wall': define('cracked-wall', 'pared agrietada', false),
+  'loose-flagstone': define('loose-flagstone', 'baldosa floja', false),
   cobweb: define('cobweb', 'telaraña', false),
   ship: define('ship', 'barco mercante', true, 4, 3),
   'pirate-ship': define('pirate-ship', 'barco pirata', true, 4, 3),

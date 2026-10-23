@@ -442,6 +442,17 @@ cofre y unas ruinas viejas. Lo generan `generateCrypt` y `generateSewer` (`under
 `world-builder` los pone uno debajo del otro al este de la cueva, cada uno con su región
 oscura (`dungeon: true`), sus criaturas y dos teletransportes (bajar y volver por la escalera).
 
+**Bajo la capital** hay además **catacumbas** (`generateCatacombs`): túneles de adoquines que
+serpentean entre muros de piedra con musgo, osarios con montones de calaveras y no-muertos y
+una cámara al fondo con un cofre. Se unen por **pasadizos** (`Passage`): una pared agrietada
+(`cracked-wall`, parece pared pero se pasa) en la alcantarilla y otra en la cripta del
+cementerio llevan a las catacumbas, y en algunas casas una **baldosa floja**
+(`loose-flagstone`, una bajada `secret`) baja a ellas; desde abajo, una escalera de mano sube
+de vuelta a la casa. `undercityLinks` (`world-builder`) arma esos teletransportes. La
+alcantarilla tiene la estética de UO (arte propio): veredas de adoquines (`Cobblestone`),
+canales de agua verde y turbia que se cruzan a pie (`SewerWater`), muros de bloques con musgo
+(`sewer-wall`), baba y agujeros que despiden gases.
+
 ### Pisos altos y línea de visión
 
 Algunos edificios tienen pisos altos, como en UO: la posada (un piso con cuartos), la torre

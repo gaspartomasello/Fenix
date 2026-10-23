@@ -37,6 +37,8 @@ export const Terrain = {
   Leaves: 34,
   SparseGrass: 35,
   Mountain: 36,
+  Cobblestone: 37,
+  SewerWater: 38,
 } as const;
 
 export type Terrain = (typeof Terrain)[keyof typeof Terrain];
@@ -317,6 +319,22 @@ export const TERRAINS: Readonly<Record<Terrain, TerrainDefinition>> = {
     name: 'montaña',
     walkable: false,
     blendPriority: 4.2,
+  },
+  // Bajo la ciudad: adoquines redondeados y el agua verde de las alcantarillas.
+  [Terrain.Cobblestone]: {
+    id: Terrain.Cobblestone,
+    key: 'cobblestone',
+    name: 'adoquines',
+    walkable: true,
+    blendPriority: -1,
+  },
+  [Terrain.SewerWater]: {
+    id: Terrain.SewerWater,
+    key: 'sewer-water',
+    name: 'agua de la alcantarilla',
+    // Sucia pero baja: se cruza a pie, como en las alcantarillas de UO.
+    walkable: true,
+    blendPriority: 0.2,
   },
 };
 

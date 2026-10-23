@@ -13,6 +13,18 @@ export interface Underground {
   /** Dónde aparece quien baja (dos pasos delante de la escalera). */
   readonly arrival: Position;
   readonly lairs: readonly { readonly kind: CreatureKind; readonly position: Position }[];
+  /**
+   * Pasadizos a otros lugares bajo la ciudad: una pared agrietada o una
+   * escalera (`at`) y dónde se aparece quien llega por ahí (`arrival`).
+   */
+  readonly passages?: readonly Passage[];
+}
+
+/** Un pasadizo: a las catacumbas, a la alcantarilla, a la cripta o a una casa de arriba. */
+export interface Passage {
+  readonly to: 'catacombs' | 'sewer' | 'crypt' | 'house';
+  readonly at: Position;
+  readonly arrival: Position;
 }
 
 /** Quién vive en la cripta según el tamaño de la ciudad, y quién la gobierna al fondo. */
@@ -55,6 +67,13 @@ class Grid {
         this.terrain[y * this.width + x] = ground;
   }
 
+  /** Un pasadizo en la pared: una grieta que se pasa, en un tile de roca que toca el piso. */
+  passage(x: number, y: number): void {
+    this.terrain[y * this.width + x] = Terrain.Cobblestone;
+    this.taken.add(`${x},${y}`);
+    this.statics.push({ kind: 'cracked-wall', x, y });
+  }
+
   put(kind: StaticPlacement['kind'], x: number, y: number): boolean {
     const key = `${x},${y}`;
     if (this.taken.has(key) || !this.floor(x, y)) return false;
@@ -73,8 +92,8 @@ class Grid {
     this.lairs.push({ kind, position: { x, y } });
   }
 
-  /** La roca que toca el suelo se vuelve pared. */
-  walls(): void {
+  /** La roca que toca el suelo se vuelve pared (de roca, o los muros de piedra con musgo). */
+  walls(kind: StaticPlacement['kind'] = 'cave-wall'): void {
     for (let y = 0; y < this.height; y++)
       for (let x = 0; x < this.width; x++) {
         if (this.floor(x, y) || this.terrain[y * this.width + x] === Terrain.Water) continue;
@@ -86,7 +105,7 @@ class Grid {
             if (nx >= 0 && ny >= 0 && nx < this.width && ny < this.height && this.floor(nx, ny))
               touches = true;
           }
-        if (touches) this.statics.push({ kind: 'cave-wall', x, y });
+        if (touches && !this.taken.has(`${x},${y}`)) this.statics.push({ kind, x, y });
       }
   }
 }
@@ -101,6 +120,8 @@ export function generateCrypt(
   town: string,
   size: 'large' | 'medium' | 'small',
   seed: number,
+  /** La cripta de la capital tiene una grieta que da a las catacumbas. */
+  toCatacombs = false,
 ): Underground {
   const random = new SeededRandom(seed);
   const niches = size === 'large' ? 5 : size === 'medium' ? 4 : 3;
@@ -152,6 +173,11 @@ export function generateCrypt(
   if (boss) g.live(boss, cx, top + 4);
   guards.forEach((kind, i) => g.live(kind, cx + (i % 2 === 0 ? -3 : 3), top + 3));
 
+  const passages: Passage[] = [];
+  if (toCatacombs) {
+    g.passage(cx - 4, 4);
+    passages.push({ to: 'catacombs', at: { x: cx - 4, y: 4 }, arrival: { x: cx - 3, y: 4 } });
+  }
   g.walls();
   return {
     name: `Cripta de ${town}`,
@@ -162,6 +188,7 @@ export function generateCrypt(
     ladder,
     arrival,
     lairs: g.lairs,
+    passages,
   };
 }
 
@@ -176,17 +203,18 @@ export function generateSewer(town: string, seed: number): Underground {
   const width = 58;
   const height = 46;
   const g = new Grid(width, height);
-  const walk = Terrain.StoneTiles;
+  // Veredas de adoquines a los costados de canales de agua verde y turbia.
+  const walk = Terrain.Cobblestone;
   // Canales: dos de este a oeste y tres de norte a sur, con vereda a cada lado.
   const rows = [10, 24, 38];
   const cols = [8, 29, 50];
   for (const y of rows) {
     g.dig(3, y - 2, width - 4, y + 2, walk);
-    for (let x = 3; x <= width - 4; x++) g.terrain[y * width + x] = Terrain.ShallowWater;
+    for (let x = 3; x <= width - 4; x++) g.terrain[y * width + x] = Terrain.SewerWater;
   }
   for (const x of cols) {
     g.dig(x - 2, 3, x + 2, height - 4, walk);
-    for (let y = 3; y <= height - 4; y++) g.terrain[y * width + x] = Terrain.ShallowWater;
+    for (let y = 3; y <= height - 4; y++) g.terrain[y * width + x] = Terrain.SewerWater;
   }
   // Puentes de tablas sobre los canales, cada tanto.
   for (const y of rows)
@@ -263,9 +291,25 @@ export function generateSewer(town: string, seed: number): Underground {
       g.put('brazier', x - 2, y - 2);
       if (random.next() < 0.5) g.put('cobweb', x + 2, y + 2);
     }
+  // Baba sobre las veredas y agujeros que despiden gases.
+  for (let i = 0; i < 18; i++) {
+    const vertical = random.next() < 0.5;
+    const line = vertical
+      ? (cols[Math.floor(random.next() * cols.length)] ?? 8)
+      : (rows[Math.floor(random.next() * rows.length)] ?? 10);
+    const along = 5 + Math.floor(random.next() * ((vertical ? height : width) - 10));
+    const off = random.next() < 0.5 ? -1 : 1;
+    const kind = i % 4 === 0 ? 'noxious-hole' : 'slime';
+    if (vertical) g.put(kind, line + off, along);
+    else g.put(kind, along, line + off);
+  }
+  // Una pared agrietada en la vereda del este: un pasadizo a las catacumbas.
+  const crack = { x: width - 3, y: rows[1] !== undefined ? rows[1] - 2 : 22 };
+  g.passage(crack.x, crack.y);
 
-  g.walls();
+  g.walls('sewer-wall');
   return {
+    passages: [{ to: 'catacombs', at: crack, arrival: { x: crack.x - 1, y: crack.y } }],
     name: `Alcantarillas de ${town}`,
     width,
     height,
@@ -274,5 +318,147 @@ export function generateSewer(town: string, seed: number): Underground {
     ladder,
     arrival,
     lairs: g.lairs,
+  };
+}
+
+/** Quién vive en las catacumbas: en los osarios, por los túneles y en la cámara del fondo. */
+const CATACOMB_DWELLERS: readonly CreatureKind[] = [
+  'skeleton',
+  'zombie',
+  'ghoul',
+  'skeleton',
+  'wraith',
+];
+
+/**
+ * Las catacumbas debajo de la capital: túneles de adoquines que serpentean
+ * entre muros de piedra con musgo, osarios con montones de calaveras y
+ * no-muertos, y una cámara al fondo con un cofre. Se llega por una grieta de
+ * la alcantarilla, por otra de la cripta del cementerio y por las baldosas
+ * flojas de algunas casas, que tienen su escalera para volver.
+ */
+export function generateCatacombs(town: string, houses: number, seed: number): Underground {
+  const random = new SeededRandom(seed);
+  const width = 64;
+  const height = 52;
+  const g = new Grid(width, height);
+  const tunnel = Terrain.Cobblestone;
+  const hall = Terrain.Flagstone;
+  const pick = <T>(list: readonly T[]): T => list[Math.floor(random.next() * list.length)] as T;
+
+  // Un túnel que serpentea de un punto a otro (dos tiles de ancho).
+  const burrow = (from: Position, to: Position): void => {
+    let { x, y } = from;
+    for (let i = 0; i < 400 && (x !== to.x || y !== to.y); i++) {
+      g.dig(x, y, x + 1, y + 1, tunnel);
+      const straight = random.next() < 0.72;
+      const horizontal = straight
+        ? Math.abs(to.x - x) >= Math.abs(to.y - y)
+        : Math.abs(to.x - x) < Math.abs(to.y - y);
+      if (horizontal && x !== to.x) x += Math.sign(to.x - x);
+      else if (y !== to.y) y += Math.sign(to.y - y);
+      else x += Math.sign(to.x - x);
+    }
+    g.dig(to.x, to.y, to.x + 1, to.y + 1, tunnel);
+  };
+
+  // El osario grande del medio.
+  const cx = Math.floor(width / 2);
+  const cy = Math.floor(height / 2);
+  g.dig(cx - 5, cy - 4, cx + 5, cy + 4, hall);
+  for (const [dx, dy] of [
+    [-5, -4],
+    [5, -4],
+    [-5, 4],
+    [5, 4],
+  ] as const)
+    g.put('skull-pile', cx + dx, cy + dy);
+  g.put('brazier', cx - 5, cy);
+  g.put('brazier', cx + 5, cy);
+  g.live('skeleton-mage', cx, cy - 2);
+  g.live('skeleton', cx - 2, cy + 2);
+  g.live('skeleton', cx + 2, cy + 2);
+
+  // Los pasadizos: a la alcantarilla (oeste), a la cripta (este) y a las casas (norte).
+  const sewerEnd = { x: 3, y: 10 };
+  const cryptEnd = { x: width - 5, y: height - 12 };
+  burrow({ x: cx - 5, y: cy }, sewerEnd);
+  burrow({ x: cx + 4, y: cy }, cryptEnd);
+  const passages: Passage[] = [];
+  g.passage(sewerEnd.x - 1, sewerEnd.y);
+  passages.push({ to: 'sewer', at: { x: sewerEnd.x - 1, y: sewerEnd.y }, arrival: sewerEnd });
+  g.passage(cryptEnd.x + 2, cryptEnd.y);
+  passages.push({
+    to: 'crypt',
+    at: { x: cryptEnd.x + 2, y: cryptEnd.y },
+    arrival: { x: cryptEnd.x + 1, y: cryptEnd.y },
+  });
+  for (let i = 0; i < houses; i++) {
+    const end = { x: 8 + Math.floor(((width - 16) * (i + 0.5)) / Math.max(1, houses)), y: 3 };
+    burrow({ x: cx + (i % 2 ? 2 : -2), y: cy - 4 }, end);
+    // Una escalera de mano que sube a la baldosa floja de la casa.
+    g.put('ladder', end.x, end.y);
+    passages.push({ to: 'house', at: end, arrival: { x: end.x, y: end.y + 1 } });
+  }
+
+  // Osarios a los costados de los túneles: calaveras, huesos y algún no-muerto.
+  const rooms = [
+    { x: 10, y: 34 },
+    { x: 46, y: 8 },
+    { x: 14, y: 20 },
+    { x: 42, y: 30 },
+  ];
+  rooms.forEach((r, i) => {
+    g.dig(r.x - 3, r.y - 3, r.x + 3, r.y + 3, hall);
+    burrow({ x: r.x, y: r.y }, { x: cx + (i % 2 ? 4 : -5), y: cy + (i < 2 ? 3 : -3) });
+    for (const [dx, dy] of [
+      [-3, -3],
+      [3, -3],
+      [-3, 3],
+    ] as const)
+      g.put('skull-pile', r.x + dx, r.y + dy);
+    g.put('bones', r.x + 2, r.y + 2);
+    g.put('cobweb', r.x + 3, r.y - 2);
+    g.put('sarcophagus', r.x, r.y - 3);
+    g.live(pick(CATACOMB_DWELLERS), r.x - 1, r.y);
+    g.live(pick(CATACOMB_DWELLERS), r.x + 1, r.y + 1);
+  });
+
+  // La cámara del fondo, con el cofre y quien lo cuida.
+  const vault = { x: cx, y: height - 7 };
+  g.dig(vault.x - 4, vault.y - 3, vault.x + 4, vault.y + 3, Terrain.MarbleDark);
+  burrow({ x: cx, y: cy + 4 }, { x: vault.x, y: vault.y - 3 });
+  g.put('chest', vault.x, vault.y + 3);
+  g.put('candelabra', vault.x - 4, vault.y - 3);
+  g.put('candelabra', vault.x + 4, vault.y - 3);
+  g.put('skull-pile', vault.x - 4, vault.y + 3);
+  g.put('skull-pile', vault.x + 4, vault.y + 3);
+  g.live('wraith', vault.x, vault.y);
+  g.live('skeleton-mage', vault.x - 2, vault.y + 1);
+
+  // Por los túneles: huesos, baba, telarañas y ratas o zombis que deambulan.
+  for (let i = 0; i < 40; i++) {
+    const x = 2 + Math.floor(random.next() * (width - 4));
+    const y = 2 + Math.floor(random.next() * (height - 4));
+    if (g.terrain[y * width + x] !== tunnel) continue;
+    const roll = random.next();
+    if (roll < 0.3) g.put('bones', x, y);
+    else if (roll < 0.45) g.put('slime', x, y);
+    else if (roll < 0.55) g.put('cobweb', x, y);
+    else if (roll < 0.75) g.live(pick(['zombie', 'skeleton', 'rat'] as const), x, y);
+  }
+
+  g.walls('sewer-wall');
+  return {
+    name: `Catacumbas de ${town}`,
+    width,
+    height,
+    terrain: g.terrain,
+    statics: g.statics,
+    // La primera escalera hacia arriba hace de salida "principal".
+    ladder: passages.find((p) => p.to === 'house')?.at ?? sewerEnd,
+    arrival: sewerEnd,
+    lairs: g.lairs,
+    passages,
   };
 }

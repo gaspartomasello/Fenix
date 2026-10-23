@@ -20,7 +20,14 @@ import {
   type TownPlan,
 } from './procedural-map';
 import { buildCity } from './city-builder';
-import { generateCrypt, generateSewer, type Underground } from './underground';
+import {
+  generateCatacombs,
+  generateCrypt,
+  generateSewer,
+  type Passage,
+  type Underground,
+} from './underground';
+import type { Descent } from './tiled-map-loader';
 import { generateFloors, type Ascent, type UpperFloor } from './upper-floors';
 
 /**
@@ -199,13 +206,24 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
   const left = size + DUNGEON_GAP;
   // Más a la derecha, uno debajo del otro, lo que hay bajo los pueblos: las
   // criptas de los cementerios y la alcantarilla de la capital.
-  const below = continent.descents.map((d, i) => ({
-    descent: d,
-    place:
-      d.kind === 'sewer'
-        ? generateSewer(d.town, seed + 101 + i)
-        : generateCrypt(d.town, d.size, seed + 103 + i * 7),
-  }));
+  // Los pueblos con alcantarilla (la capital) tienen además catacumbas, unidas por pasadizos.
+  const sewerTowns = new Set(
+    continent.descents.filter((d) => d.kind === 'sewer').map((d) => d.town),
+  );
+  const secrets = continent.descents.filter((d) => d.kind === 'secret');
+  const below: { descent: Descent | null; place: Underground }[] = continent.descents
+    .filter((d) => d.kind !== 'secret')
+    .map((d, i) => ({
+      descent: d,
+      place:
+        d.kind === 'sewer'
+          ? generateSewer(d.town, seed + 101 + i)
+          : generateCrypt(d.town, d.size, seed + 103 + i * 7, sewerTowns.has(d.town)),
+    }));
+  for (const town of sewerTowns) {
+    const houses = secrets.filter((d) => d.town === town).length;
+    below.push({ descent: null, place: generateCatacombs(town, houses, seed + 211) });
+  }
   const pocketLeft = left + dungeon.width + DUNGEON_GAP;
   const pockets: { place: Underground; at: Position }[] = [];
   let pocketTop = 0;
@@ -331,7 +349,7 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
       // Bajar por la cripta o la reja, y volver por la escalera a un paso de la bajada.
       ...below.flatMap(({ descent }, i) => {
         const pocket = pockets[i];
-        if (!pocket) return [];
+        if (!pocket || !descent) return [];
         const to = inPocket(pocket.at);
         const back =
           descent.kind === 'crypt'
@@ -342,6 +360,9 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
           { ...to(pocket.place.ladder), to: back },
         ];
       }),
+      // Pasadizos bajo la ciudad: grietas entre alcantarilla, catacumbas y cripta, y
+      // escaleras de las catacumbas a las baldosas flojas de las casas.
+      ...undercityLinks(below, pockets, secrets),
       // Subir por la escalera y bajar por el hueco, piso por piso.
       ...upper.flatMap(({ ascent, floors }) =>
         floors.flatMap(({ floor, at }, k) => {
@@ -445,4 +466,59 @@ function lairHomes(
     }
   }
   return homes;
+}
+
+/**
+ * Los teletransportes de los pasadizos bajo una ciudad: cada grieta de la
+ * alcantarilla y de la cripta lleva a la de las catacumbas (y al revés), y
+ * cada escalera de las catacumbas sube a la baldosa floja de una casa.
+ */
+function undercityLinks(
+  below: readonly { descent: Descent | null; place: Underground }[],
+  pockets: readonly { place: Underground; at: Position }[],
+  secrets: readonly Descent[],
+): { x: number; y: number; to: Position }[] {
+  const town = (place: Underground): string => place.name.replace(/^[^ ]+ de /, '');
+  const links: { x: number; y: number; to: Position }[] = [];
+  const placeOf = (place: Underground) => pockets.find((p) => p.place === place);
+  const shift = (at: Position, p: Position): Position => ({ x: p.x + at.x, y: p.y + at.y });
+  for (const { place } of below) {
+    if (!place.name.startsWith('Catacumbas')) continue;
+    const catacombs = placeOf(place);
+    if (!catacombs) continue;
+    const passages = place.passages ?? [];
+    const pair = (
+      mine: Passage | undefined,
+      other: Underground | undefined,
+      theirs: 'catacombs',
+    ) => {
+      const otherAt = other && placeOf(other);
+      const their = other?.passages?.find((p) => p.to === theirs);
+      if (!mine || !otherAt || !their) return;
+      links.push({ ...shift(catacombs.at, mine.at), to: shift(otherAt.at, their.arrival) });
+      links.push({ ...shift(otherAt.at, their.at), to: shift(catacombs.at, mine.arrival) });
+    };
+    const sameTown = (prefix: string) =>
+      below.find((b) => b.place.name.startsWith(prefix) && town(b.place) === town(place))?.place;
+    pair(
+      passages.find((p) => p.to === 'sewer'),
+      sameTown('Alcantarillas'),
+      'catacombs',
+    );
+    pair(
+      passages.find((p) => p.to === 'crypt'),
+      sameTown('Cripta'),
+      'catacombs',
+    );
+    const houses = secrets.filter((d) => d.town === town(place));
+    passages
+      .filter((p) => p.to === 'house')
+      .forEach((p, i) => {
+        const house = houses[i];
+        if (!house) return;
+        links.push({ ...house.position, to: shift(catacombs.at, p.arrival) });
+        links.push({ ...shift(catacombs.at, p.at), to: house.back ?? house.position });
+      });
+  }
+  return links;
 }

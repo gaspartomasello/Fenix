@@ -43,8 +43,11 @@ export interface PlacedItem {
 
 /** Una bajada: pisándola se llega a la cripta o a la alcantarilla del pueblo. */
 export interface Descent {
-  readonly kind: 'crypt' | 'sewer';
+  /** `secret`: una baldosa floja en una casa que baja a las catacumbas. */
+  readonly kind: 'crypt' | 'sewer' | 'secret';
   readonly position: Position;
+  /** Dónde se aparece al volver (si no, al lado de la bajada). */
+  readonly back?: Position;
   readonly town: string;
   readonly size: 'large' | 'medium' | 'small';
 }
