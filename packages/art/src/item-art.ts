@@ -31,7 +31,8 @@ const ZOOM: Readonly<Record<ItemStyle, number>> = { ground: 1.9, icon: 2.5 };
 /** Ajuste del tamaño del ícono para que los objetos largos entren y los chicos se vean. */
 const ICON_FIT: Partial<Record<ItemKind, number>> = {
   longsword: 0.66,
-  halberd: 0.72,
+  halberd: 0.76,
+  spear: 0.8,
   quarterstaff: 0.62,
   'war-axe': 0.72,
   ruby: 1.3,
@@ -58,9 +59,9 @@ const ICON_FIT: Partial<Record<ItemKind, number>> = {
   'battle-axe': 0.7,
   'two-handed-axe': 0.66,
   'large-battle-axe': 0.66,
-  bardiche: 0.64,
-  'war-fork': 0.68,
-  'short-spear': 0.78,
+  bardiche: 0.78,
+  'war-fork': 0.88,
+  'short-spear': 1,
   'hammer-pick': 0.76,
   'viking-sword': 0.74,
   crossbow: 0.78,
@@ -142,6 +143,16 @@ function haft(
     y,
     to[2] + d[2] * along + n[2] * out,
   ];
+}
+
+/**
+ * Hacia dónde apunta, acostada, un arma de asta para que en el ícono quede
+ * derecha (vertical), como las de UO: compensa el giro de la cámara.
+ */
+const STANDING: Vec3 = [Math.sin(0.45), 0, Math.cos(0.45)];
+/** Un punto a lo largo del asta derecha: `k` positivo hacia abajo (el regatón). */
+function alongPole(k: number): Vec3 {
+  return [STANDING[0] * k, 0.6, STANDING[2] * k];
 }
 
 /** Acero de hoja de hacha con el filo (lo más lejos del mango) claro. */
@@ -388,18 +399,12 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
       );
   },
   halberd(c) {
-    // Asta larga, hoja de hacha y punta de lanza.
-    c.limb([-8, 0.6, 4.4], [6.6, 0.6, -3.2], 0.55, 0.55, solid(WOOD));
-    const d = normalize([14.6, 0, -7.6]);
-    const n: Vec3 = [-d[2], 0, d[0]];
-    const at = (along: number, out: number): Vec3 => [
-      4 + d[0] * along + n[0] * out,
-      0.9,
-      -1.9 + d[2] * along + n[2] * out,
-    ];
-    c.polygon([at(-2.2, 0.3), at(2, 0.3), at(1.6, 5), at(-2.6, 4.2)], metal(STEEL));
-    c.polygon([at(-1, -0.3), at(1, -0.3), at(0, -2.4)], metal(STEEL));
-    c.polygon([at(2.6, 0), at(3.8, 1), at(7, 0), at(3.8, -1)], metal(STEEL));
+    // De pie, como en UO: asta larga, hoja de hacha, gancho atrás y punta de lanza.
+    const at = haft(c, alongPole(11), alongPole(-11), 0.55);
+    c.polygon([at(-2.6, 0.3), at(1.6, 0.3), at(1.2, 5), at(-3, 4.2)], axeSteel(at(-0.6, 0), 4.2));
+    c.polygon([at(-1.2, -0.3), at(0.8, -0.3), at(-0.2, -2.6)], metal(STEEL));
+    c.polygon([at(1.6, 0), at(2.8, 1), at(6.6, 0), at(2.8, -1)], metal(STEEL));
+    c.limb(at(-12, 0, 0.9), at(-11, 0, 0.9), 0.75, 0.75, solid(GRIP));
   },
   club(c) {
     // Palo nudoso que engorda hacia la punta.
@@ -826,15 +831,11 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     );
   },
   spear(c) {
-    c.limb([-8, 0.6, 4.4], [5.4, 0.6, -2.6], 0.55, 0.55, solid(WOOD));
-    const d = normalize([13.4, 0, -7]);
-    const n: Vec3 = [-d[2], 0, d[0]];
-    const at = (along: number, out: number): Vec3 => [
-      5.4 + d[0] * along + n[0] * out,
-      0.8,
-      -2.6 + d[2] * along + n[2] * out,
-    ];
-    c.polygon([at(0, 0), at(1.4, 1.2), at(4.2, 0), at(1.4, -1.2)], metal(STEEL));
+    // De pie: asta larga con una punta de hoja y un regatón abajo.
+    const at = haft(c, alongPole(11), alongPole(-10), 0.5);
+    c.polygon([at(0, 0), at(1.6, 1.3), at(5, 0), at(1.6, -1.3)], metal(STEEL));
+    c.limb(at(-0.4, 0), at(0.4, 0), 0.75, 0.75, metal(DARK_STEEL));
+    c.limb(at(-19, 0), at(-19.8, 0), 0.6, 0.2, metal(DARK_STEEL));
   },
   mace(c) {
     c.limb([-5.4, 0.7, 3], [2.6, 0.7, -1.2], 0.6, 0.6, solid(GRIP));
@@ -942,23 +943,24 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     c.sphere(at(1.4, 0), 0.9, metal(GOLD));
   },
   bardiche(c) {
-    // Asta muy larga con una hoja alargada de filo curvo atada en dos puntos.
-    const at = haft(c, [-8.4, 0.6, 4.4], [6.4, 0.6, -3.4], 0.55);
+    // De pie: asta muy larga y una hoja alargada de filo curvo atada en dos puntos.
+    const at = haft(c, alongPole(11), alongPole(-11), 0.55);
     c.polygon(
-      [at(-5.4, 0.3), at(0.8, 0.3), at(1.8, 2.6), at(-1.6, 3.8), at(-6.2, 2.4)],
-      axeSteel(at(-2.4, 0), 3),
+      [at(-6.4, 0.3), at(0.6, 0.3), at(1.6, 2.8), at(-1.8, 4.2), at(-7.2, 2.6)],
+      axeSteel(at(-3, 0), 3.2),
     );
-    for (const along of [-4.8, 0.2]) c.sphere(at(along, 0), 0.6, metal(DARK_STEEL));
+    for (const along of [-5.6, 0]) c.sphere(at(along, 0), 0.6, metal(DARK_STEEL));
   },
   'war-fork'(c) {
-    // Horquilla: asta y dos púas paralelas.
-    const at = haft(c, [-8, 0.6, 4.2], [4.4, 0.6, -2.2], 0.55);
+    // De pie: asta y dos púas paralelas.
+    const at = haft(c, alongPole(10), alongPole(-8), 0.55);
     c.limb(at(0, -1.4), at(0, 1.4), 0.5, 0.5, metal(DARK_STEEL));
-    for (const out of [-1.2, 1.2]) c.limb(at(0, out), at(4.4, out), 0.4, 0.12, metal(STEEL));
+    for (const out of [-1.2, 1.2]) c.limb(at(0, out), at(4.6, out), 0.4, 0.12, metal(STEEL));
   },
   'short-spear'(c) {
-    const at = haft(c, [-6, 0.6, 3.2], [4, 0.6, -1.8], 0.55);
-    c.polygon([at(0, 0), at(1.2, 1), at(3.6, 0), at(1.2, -1)], metal(STEEL));
+    // De pie, más corta que la lanza.
+    const at = haft(c, alongPole(8), alongPole(-7), 0.55);
+    c.polygon([at(0, 0), at(1.2, 1), at(3.8, 0), at(1.2, -1)], metal(STEEL));
     c.limb(at(-0.2, 0), at(-1, 0), 0.75, 0.75, solid(GRIP));
   },
   'hammer-pick'(c) {

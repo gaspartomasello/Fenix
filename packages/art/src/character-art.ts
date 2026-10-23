@@ -1175,23 +1175,25 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
   const up = normalize(cross(side, dir));
   if (kind === 'spear' || kind === 'halberd') {
     // Asta larga que sale por detrás de la mano y punta en forma de hoja.
-    canvas.limb(along(-9), along(18), 0.6, 0.6, solid(WOOD));
-    const tip = along(18);
+    canvas.limb(along(-10), along(22), 0.6, 0.6, solid(WOOD));
+    const tip = along(22);
     canvas.polygon(
-      [tip, add(along(20), scale(side, 1.3)), along(24), add(along(20), scale(side, -1.3))],
+      [tip, add(along(24), scale(side, 1.3)), along(28), add(along(24), scale(side, -1.3))],
       metal(STEEL),
     );
-    // La alabarda suma una hoja de hacha bajo la punta.
-    if (kind === 'halberd')
+    // La alabarda suma una hoja de hacha bajo la punta y un gancho atrás.
+    if (kind === 'halberd') {
       canvas.polygon(
         [
-          along(14),
-          along(18),
-          add(along(18.6), scale(side, 4.4)),
-          add(along(13.4), scale(side, 4)),
+          along(17.5),
+          along(22),
+          add(along(22.6), scale(side, 4.4)),
+          add(along(17), scale(side, 4)),
         ],
         metal(STEEL),
       );
+      canvas.polygon([along(19), along(21), add(along(19.6), scale(side, -2.4))], metal(STEEL));
+    }
     return;
   }
   if (kind === 'quarterstaff') {
