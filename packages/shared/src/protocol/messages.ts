@@ -320,6 +320,10 @@ export type GmCommand =
     }
   | { readonly kind: 'creatures' }
   | { readonly kind: 'item'; readonly item: string; readonly amount: number }
+  /** Abrir la ventana con todos los objetos del juego (`/objetos`). */
+  | { readonly kind: 'catalog' }
+  /** Borrar un objeto propio (de la mochila, una bolsa o lo puesto) con `/eliminar`. */
+  | { readonly kind: 'delete'; readonly itemId: EntityId }
   | { readonly kind: 'mount'; readonly mount: string }
   | { readonly kind: 'slay'; readonly targetId: EntityId }
   | { readonly kind: 'heal'; readonly name?: string; readonly targetId?: EntityId }
@@ -858,6 +862,11 @@ export interface CorpseClosedMessage {
   readonly corpseId: EntityId;
 }
 
+/** El servidor confirma que es administrador: el cliente abre la ventana de todos los objetos. */
+export interface GmCatalogMessage {
+  readonly type: 'gmCatalog';
+}
+
 export interface SystemMessage {
   readonly type: 'system';
   readonly text: string;
@@ -907,6 +916,7 @@ export type ServerMessage =
   | HiddenChangedMessage
   | WarModeChangedMessage
   | DoorMessage
+  | GmCatalogMessage
   | SystemMessage;
 
 export type ServerMessageType = ServerMessage['type'];

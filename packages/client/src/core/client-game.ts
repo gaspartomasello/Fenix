@@ -134,6 +134,10 @@ export interface ClientGameEvents extends Record<string, unknown> {
   treasureMapOpened: { name: string; mark: TreasureMark; hint: string };
   /** Una puerta se abrió o se cerró. */
   doorChanged: { position: Position; open: boolean };
+  /** El servidor confirmó que es administrador: abrir la ventana de todos los objetos. */
+  itemCatalogOpened: null;
+  /** `/eliminar`: elegir el objeto propio que se va a borrar. */
+  deletePickRequested: null;
 }
 
 /** Lo que hay en el cuerpo que se está revisando. */
@@ -413,6 +417,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       case 'gm':
         this.gateway.send({ type: 'gm', command: input.command });
         return;
+      case 'gmDelete':
+        this.emit('deletePickRequested', null);
+        return;
       case 'gmTarget': {
         const targetId = this.targetId;
         if (input.action === 'slay') {
@@ -593,6 +600,16 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     this.gateway.send({ type: 'openContainer', containerId });
   }
 
+  /** Crear objetos en la mochila (administrador, desde la ventana de todos los objetos). */
+  createItem(kind: ItemKind, amount: number): void {
+    this.gateway.send({ type: 'gm', command: { kind: 'item', item: kind, amount } });
+  }
+
+  /** Borrar un objeto propio (administrador, `/eliminar`). */
+  deleteItem(itemId: EntityId): void {
+    this.gateway.send({ type: 'gm', command: { kind: 'delete', itemId } });
+  }
+
   /** Teñir una prenda propia. */
   dye(itemId: EntityId, hue: number): void {
     this.gateway.send({ type: 'dye', itemId, hue });
@@ -727,6 +744,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this.emit('ready', { selfId: message.selfId, map: this._map });
         break;
       }
+      case 'gmCatalog':
+        this.emit('itemCatalogOpened', null);
+        break;
       case 'door':
         if (this._map?.setDoorOpen(message.position, message.open))
           this.emit('doorChanged', { position: message.position, open: message.open });

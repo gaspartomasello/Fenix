@@ -53,11 +53,40 @@ const ICON_HALF = 22;
 export class DragController {
   private readonly ghost: HTMLImageElement;
   private lastTap: { id: string; at: number } | null = null;
+  /** Modo "elegí un objeto": el próximo toque devuelve el objeto en vez de usarlo. */
+  private picking: { onPick: (id: string) => void; onCancel: () => void } | null = null;
+  private readonly abort = new AbortController();
 
   constructor(host: HTMLElement) {
     this.ghost = el('img', { className: 'drag-ghost', attrs: { alt: '', 'aria-hidden': 'true' } });
     this.ghost.hidden = true;
     host.append(this.ghost);
+    window.addEventListener(
+      'keydown',
+      (e) => {
+        if (e.key === 'Escape' && this.picking) {
+          e.stopImmediatePropagation();
+          this.cancelPick();
+        }
+      },
+      { signal: this.abort.signal, capture: true },
+    );
+  }
+
+  get isPicking(): boolean {
+    return this.picking !== null;
+  }
+
+  /** El próximo toque sobre un objeto (mochila, bolsa, equipo) lo elige. Escape cancela. */
+  pickItem(onPick: (id: string) => void, onCancel: () => void): void {
+    this.cancelPick();
+    this.picking = { onPick, onCancel };
+  }
+
+  cancelPick(): void {
+    const picking = this.picking;
+    this.picking = null;
+    picking?.onCancel();
   }
 
   /** Empieza a seguir un puntero apretado sobre un objeto. */
@@ -108,6 +137,7 @@ export class DragController {
   }
 
   destroy(): void {
+    this.abort.abort();
     this.ghost.remove();
   }
 
@@ -116,6 +146,13 @@ export class DragController {
   }
 
   private registerTap(source: DragSource): void {
+    if (this.picking) {
+      const { onPick } = this.picking;
+      this.picking = null;
+      this.lastTap = null;
+      onPick(source.id);
+      return;
+    }
     const now = performance.now();
     if (this.lastTap && this.lastTap.id === source.id && now - this.lastTap.at < DOUBLE_TAP_MS) {
       this.lastTap = null;

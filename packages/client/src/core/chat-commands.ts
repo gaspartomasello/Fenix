@@ -32,6 +32,8 @@ export type ChatInput =
   | { readonly kind: 'invulnerable' }
   /** Comandos del administrador del juego (el servidor revisa que lo sea). */
   | { readonly kind: 'gm'; readonly command: GmCommand }
+  /** `/eliminar`: tocar un objeto propio para borrarlo (el servidor revisa que sea administrador). */
+  | { readonly kind: 'gmDelete' }
   /** `/matar`, y `/curar` o `/resucitar` sin nombre: sobre el blanco elegido. */
   | { readonly kind: 'gmTarget'; readonly action: 'slay' | 'heal' | 'resurrect' }
   | { readonly kind: 'help' }
@@ -60,6 +62,8 @@ export const CHAT_HELP = [
   '/crear criatura [cantidad] — hacer aparecer criaturas salvajes al lado (/criaturas, la lista)',
   '/invocar criatura [cantidad] — criaturas que te siguen y pelean para vos',
   '/objeto nombre [cantidad] — crear objetos en tu mochila',
+  '/objetos — ventana con todos los objetos del juego (un clic los crea en tu mochila)',
+  '/eliminar — tocar un objeto de tu mochila (o lo que tenés puesto) para borrarlo',
   '/montura tipo — darte una montura',
   '/matar — matar a tu blanco; /curar y /resucitar [nombre] — a tu blanco, a alguien o a vos',
   '/traer nombre — traer a alguien a tu lado; /irjunto nombre — ir hasta alguien',
@@ -152,6 +156,10 @@ export function parseChatInput(raw: string): ChatInput {
         ? { kind: 'gm', command: { kind: 'item', item: text, amount } }
         : needs('el objeto (por ejemplo: /objeto oro 1000)');
     }
+    case 'objetos':
+      return { kind: 'gm', command: { kind: 'catalog' } };
+    case 'eliminar':
+      return { kind: 'gmDelete' };
     case 'montura':
       return args
         ? { kind: 'gm', command: { kind: 'mount', mount: args } }

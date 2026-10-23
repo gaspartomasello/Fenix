@@ -78,6 +78,8 @@ describe('comandos del chat', () => {
       kind: 'gm',
       command: { kind: 'item', item: 'oro', amount: 1000 },
     });
+    expect(parseChatInput('/objetos')).toEqual({ kind: 'gm', command: { kind: 'catalog' } });
+    expect(parseChatInput('/eliminar')).toEqual({ kind: 'gmDelete' });
     expect(parseChatInput('/matar')).toEqual({ kind: 'gmTarget', action: 'slay' });
     expect(parseChatInput('/curar Ana')).toEqual({
       kind: 'gm',

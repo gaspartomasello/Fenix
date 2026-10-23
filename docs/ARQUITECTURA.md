@@ -381,6 +381,12 @@ servidor lo revisa en cada comando. Desde el chat: `/crear criatura [n]` (salvaj
 `/limpiar [radio]` (saca las criaturas creadas cerca) y `/anuncio texto`. Los nombres se buscan
 sin mayúsculas ni tildes: igual, que empiece así o que lo contenga.
 
+`/objetos` pide al servidor la ventana de todos los objetos (`gm` `catalog`; si es administrador,
+responde `gmCatalog` y el cliente abre `ItemCatalogWindow`): agrupados, con buscador y cantidad,
+un clic los crea en la mochila. `/eliminar` pone el `DragController` en modo «elegí un objeto»:
+el próximo toque sobre un ícono propio (mochila, bolsa o equipo) manda `gm` `delete`; el
+servidor solo borra lo que está entre las cosas del administrador (una bolsa, con su contenido).
+
 ### Recipientes
 
 Como en UO, hay cosas que guardan cosas: bolsas, saquitos y cajas que se llevan en la
@@ -484,6 +490,28 @@ tiendas grandes, calcula el total al comprar varios y tiene «Vender todo».
   `detail`: con más de 1 las calcomanías crecen, las manos tienen dedos y pulgar (cerradas si
   empuñan algo) y las telas caen sin escalones. Para agarrar una prenda del dibujo se comparan
   dibujos chicos de la misma pose, con y sin la prenda.
+
+### Samurái, legionario, templario, mangual y escudos grandes
+
+- **Juegos nuevos** (catálogo, `ARMOR_RATING`, `METAL_ARMOR`, herrería y herrero): cada uno
+  protege casi lo mismo que el juego completo de placas (42) y es de metal.
+  - **Samurái**, placas laqueadas en rojo: yelmo (cabeza), máscara (cuello: cubre de la nariz
+    al mentón y la garganta), coraza con faldón (torso), hombreras (brazos), faldar (piernas:
+    paneles sobre los muslos) y canilleras (pies: tablillas sobre la caña).
+  - **Legionario**: yelmo con penacho y carrilleras, coraza de bandas con la túnica roja
+    debajo, brazales de bandas y grebas con el faldón de tiras de cuero.
+  - **Templario**: yelmo de techo plano con mirilla y cruz, loriga de malla con la sobreveste
+    blanca y la cruz roja (y su faldón hasta la rodilla), mangas, manoplas y calzas de malla.
+- **Escudos**: el legionario (rectangular, curvo, con umbo y alas doradas) y el templario
+  (de plancha, blanco con la cruz). Todos los escudos, salvo la rodela, son ahora grandes, como
+  los de justa: cubren del pecho a la rodilla y miran casi al frente.
+- **Mangual** (`flail`, maza): mango con zunchos y tres cadenas con bolas de púas que caen (o
+  vuelan con el golpe). **Katana** nueva: hoja curva con el filo templado claro, guarda de
+  hierro con borde dorado y mango envuelto en rombos.
+- **Arte**: íconos en `item-art.ts` (`katana`, `flail`, `lamellar`, `kabuto`…); yelmos y
+  máscara en `humanoid-head.ts` (`drawKabuto`, `drawGalea`, `drawGreatHelm`, `drawMempo`);
+  el resto en `character-art.ts` (`lacquer`, `crossPattee`, `drawKatana`).
+- Lista de todos los objetos: `docs/OBJETOS.md` (se regenera desde el catálogo).
 
 ### Pueblos vivos
 

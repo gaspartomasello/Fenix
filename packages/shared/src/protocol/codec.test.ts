@@ -11,6 +11,15 @@ describe('decodeClientMessage', () => {
     });
   });
 
+  it('acepta los comandos de administrador para ver todos los objetos y eliminar uno', () => {
+    const catalog = { type: 'gm', command: { kind: 'catalog' } };
+    expect(decodeClientMessage(JSON.stringify(catalog))).toEqual({ ok: true, message: catalog });
+    const remove = { type: 'gm', command: { kind: 'delete', itemId: 'i1' } };
+    expect(decodeClientMessage(JSON.stringify(remove))).toEqual({ ok: true, message: remove });
+    const bad = { type: 'gm', command: { kind: 'delete', itemId: 7 } };
+    expect(decodeClientMessage(JSON.stringify(bad)).ok).toBe(false);
+  });
+
   it('acepta viajes de prueba a un lugar con nombre, con un nombre razonable', () => {
     const ok = decodeClientMessage(
       JSON.stringify({ type: 'testTravel', to: 'place', place: 'Roca Alta' }),

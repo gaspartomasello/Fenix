@@ -2744,3 +2744,62 @@ body {
   flex: 1;
   text-transform: capitalize;
 }
+
+/* Ventana de todos los objetos (administrador, /objetos). */
+.catalog-tools {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.catalog-search {
+  flex: 1;
+  min-width: 0;
+}
+.catalog-amount {
+  width: 72px;
+}
+.catalog-list {
+  width: min(560px, 86vw);
+  max-height: min(60vh, 520px);
+  overflow-y: auto;
+}
+.catalog-title {
+  margin: 8px 0 4px;
+  font-size: 0.95em;
+}
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 4px;
+}
+.catalog-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 2px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  color: inherit;
+  font-size: 0.78em;
+  cursor: pointer;
+}
+.catalog-item:hover,
+.catalog-item:focus-visible {
+  background: rgba(255, 220, 140, 0.16);
+}
+.catalog-item img {
+  width: 44px;
+  height: 44px;
+  image-rendering: auto;
+}
+.catalog-name {
+  text-align: center;
+  line-height: 1.15;
+}
+.catalog-item[hidden],
+.catalog-group[hidden] {
+  display: none;
+}
