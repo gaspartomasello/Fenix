@@ -11,6 +11,7 @@ export const SPELL_KEYS = [
   'magic-arrow',
   'light',
   'weaken',
+  'reactive-armor',
   // Segundo círculo
   'agility',
   'cunning',
@@ -26,6 +27,9 @@ export const SPELL_KEYS = [
   'poison',
   'teleport',
   'wall-of-stone',
+  'magic-lock',
+  'telekinesis',
+  'unlock',
   // Cuarto círculo
   'curse',
   'greater-heal',
@@ -39,6 +43,11 @@ export const SPELL_KEYS = [
   'mind-blast',
   'paralyze',
   'poison-field',
+  'blade-spirits',
+  'dispel-field',
+  'incognito',
+  'magic-reflection',
+  'summon-creature',
   // Sexto círculo
   'energy-bolt',
   'explosion',
@@ -47,6 +56,7 @@ export const SPELL_KEYS = [
   'reveal',
   'mass-curse',
   'paralyze-field',
+  'dispel',
   // Séptimo círculo
   'flamestrike',
   'mana-vampire',
@@ -54,6 +64,8 @@ export const SPELL_KEYS = [
   'chain-lightning',
   'meteor-swarm',
   'energy-field',
+  'mass-dispel',
+  'polymorph',
   // Octavo círculo
   'earthquake',
   'energy-vortex',
@@ -184,8 +196,32 @@ export type SpellEffect =
   | { readonly kind: 'trap'; readonly armed: boolean }
   /** Devuelve la vida a un fantasma. */
   | { readonly kind: 'resurrect' }
-  /** Invoca una criatura que pelea para el lanzador por un tiempo. */
-  | { readonly kind: 'summon'; readonly creature: CreatureKind };
+  /**
+   * Invoca una criatura que pelea para el lanzador por un tiempo. Con
+   * `choices`, sale una al azar de esas (Invocar criatura).
+   */
+  | {
+      readonly kind: 'summon';
+      readonly creature: CreatureKind;
+      readonly choices?: readonly CreatureKind[];
+    }
+  /** Absorbe parte de los golpes cuerpo a cuerpo y se la devuelve a quien pega. */
+  | { readonly kind: 'reactive-armor' }
+  /** Devuelve el próximo hechizo dañino a quien lo lanzó. */
+  | { readonly kind: 'magic-reflection' }
+  /** Cierra con magia (o abre) la cerradura de un cofre o mueble. */
+  | { readonly kind: 'lock'; readonly locked: boolean }
+  /** Mueve desde lejos: abre o cierra una puerta, o hace saltar la trampa de un mueble. */
+  | { readonly kind: 'telekinesis' }
+  /** Deshace un tile de un muro o campo mágico. */
+  | { readonly kind: 'dispel-field' }
+  /** Hace desaparecer a una criatura invocada (o a todas las de alrededor del lugar). */
+  | { readonly kind: 'dispel' }
+  | { readonly kind: 'mass-dispel'; readonly radius: number }
+  /** Otra cara y otro nombre por un rato: nadie sabe quién es. */
+  | { readonly kind: 'incognito' }
+  /** Toma la forma de un animal o una criatura por un rato. */
+  | { readonly kind: 'polymorph' };
 
 export interface Reagent {
   readonly kind: BaseItemKind;
@@ -260,6 +296,54 @@ function spell(
   };
 }
 
+/** Animales que puede traer Invocar criatura, como en UO. */
+export const SUMMONED_BEASTS: readonly CreatureKind[] = [
+  'wolf',
+  'brown-bear',
+  'gorilla',
+  'giant-spider',
+  'cougar',
+  'alligator',
+];
+
+/**
+ * Formas que se pueden tomar con Transformación. Hecho caballo, se corre
+ * como montado.
+ */
+export const POLYMORPH_FORMS = [
+  'horse-chestnut',
+  'wolf',
+  'panther',
+  'gorilla',
+  'black-bear',
+  'grizzly',
+  'polar-bear',
+  'orc',
+  'lizardman',
+  'troll',
+  'skeleton',
+] as const satisfies readonly CreatureKind[];
+export type PolymorphForm = (typeof POLYMORPH_FORMS)[number];
+
+export function isPolymorphForm(value: unknown): value is PolymorphForm {
+  return typeof value === 'string' && (POLYMORPH_FORMS as readonly string[]).includes(value);
+}
+
+/** Probabilidad de que Disipar haga desaparecer una invocación: 30 % sin práctica, segura con la Magia al máximo. */
+export function dispelChance(magery: number): number {
+  return Math.max(0.3, Math.min(1, 0.3 + (magery / 1000) * 0.7));
+}
+
+/** Cuánto daño absorbe la Armadura reactiva antes de gastarse: de 10 a 30 según la Magia. */
+export function reactiveArmorPool(magery: number): number {
+  return 10 + Math.floor(magery / 50);
+}
+
+/** Dificultad máxima de cerradura que abre Abrir cerradura (la de una ganzúa con la misma habilidad). */
+export function unlockReach(magery: number): number {
+  return Math.floor(magery * 0.8);
+}
+
 const ALL_ATTRIBUTES: readonly AttributeKey[] = ['strength', 'dexterity', 'intelligence'];
 
 const LIST: readonly SpellDefinition[] = [
@@ -332,6 +416,16 @@ const LIST: readonly SpellDefinition[] = [
     'harmful',
     { kind: 'attribute', attributes: ['strength'], sign: -1 },
     'Baja la fuerza del objetivo por un rato.',
+  ),
+  spell(
+    'reactive-armor',
+    1,
+    'Armadura reactiva',
+    'Pellis Reddit',
+    ['GA', 'SS', 'SA'],
+    'self',
+    { kind: 'reactive-armor' },
+    'Una coraza que absorbe parte de los golpes y le devuelve el daño a quien te pega.',
   ),
 
   spell(
@@ -435,6 +529,36 @@ const LIST: readonly SpellDefinition[] = [
     { kind: 'teleport' },
     'Te lleva al instante a un lugar cercano que puedas ver.',
   ),
+  spell(
+    'magic-lock',
+    3,
+    'Cerradura mágica',
+    'Sera Clausa',
+    ['BM', 'GA', 'SA'],
+    'location',
+    { kind: 'lock', locked: true },
+    'Cierra con magia un cofre o mueble: solo se abre con Abrir cerradura o una ganzúa.',
+  ),
+  spell(
+    'telekinesis',
+    3,
+    'Telequinesis',
+    'Manus Longa',
+    ['BM', 'MR'],
+    'location',
+    { kind: 'telekinesis' },
+    'Mueve cosas desde lejos: abre o cierra una puerta, o hace saltar la trampa de un cofre sin acercarte.',
+  ),
+  spell(
+    'unlock',
+    3,
+    'Abrir cerradura',
+    'Sera Aperta',
+    ['BM', 'SA'],
+    'location',
+    { kind: 'lock', locked: false },
+    'Abre la cerradura de un cofre, si no es demasiado difícil para tu Magia.',
+  ),
 
   spell(
     'curse',
@@ -507,6 +631,56 @@ const LIST: readonly SpellDefinition[] = [
     { kind: 'paralyze' },
     'El objetivo queda inmóvil hasta que pase el efecto o lo golpeen.',
   ),
+  spell(
+    'blade-spirits',
+    5,
+    'Espíritu de espadas',
+    'Lamina Saltat',
+    ['BP', 'MR', 'NS'],
+    'location',
+    { kind: 'summon', creature: 'blade-spirits' },
+    'Un remolino de hojas filosas que corta a todo enemigo cercano.',
+  ),
+  spell(
+    'dispel-field',
+    5,
+    'Disipar campo',
+    'Murus Cadat',
+    ['BP', 'GA', 'SS', 'SA'],
+    'location',
+    { kind: 'dispel-field' },
+    'Deshace un tramo de un muro o campo mágico.',
+  ),
+  spell(
+    'incognito',
+    5,
+    'Incógnito',
+    'Facies Aliena',
+    ['BM', 'GA', 'NS'],
+    'self',
+    { kind: 'incognito' },
+    'Te cambia la cara, el pelo y el nombre por un rato: nadie sabe quién sos.',
+  ),
+  spell(
+    'magic-reflection',
+    5,
+    'Reflejo mágico',
+    'Speculum Animae',
+    ['GA', 'MR', 'SS'],
+    'self',
+    { kind: 'magic-reflection' },
+    'El próximo hechizo dañino que te lancen vuelve contra quien lo lanzó.',
+  ),
+  spell(
+    'summon-creature',
+    5,
+    'Invocar criatura',
+    'Bestia Veni',
+    ['BM', 'MR', 'SS'],
+    'location',
+    { kind: 'summon', creature: 'wolf', choices: SUMMONED_BEASTS },
+    'Llama a un animal salvaje que pelea a tu lado un rato.',
+  ),
 
   spell(
     'energy-bolt',
@@ -559,6 +733,16 @@ const LIST: readonly SpellDefinition[] = [
     { kind: 'reveal' },
     'Descubre a los que están escondidos alrededor del lugar que elijas.',
   ),
+  spell(
+    'dispel',
+    6,
+    'Disipar',
+    'Vinculum Solvo',
+    ['GA', 'MR', 'SA'],
+    'harmful',
+    { kind: 'dispel' },
+    'Hace desaparecer a una criatura invocada.',
+  ),
 
   spell(
     'flamestrike',
@@ -589,6 +773,26 @@ const LIST: readonly SpellDefinition[] = [
     'rune',
     { kind: 'gate' },
     'Abre un portal al lugar de una runa marcada: cualquiera puede cruzarlo, un rato.',
+  ),
+  spell(
+    'mass-dispel',
+    7,
+    'Disipar en grupo',
+    'Vincula Omnia Solvo',
+    ['BP', 'GA', 'MR', 'SA'],
+    'location',
+    { kind: 'mass-dispel', radius: 6 },
+    'Hace desaparecer a las criaturas invocadas alrededor del lugar que elijas.',
+  ),
+  spell(
+    'polymorph',
+    7,
+    'Transformación',
+    'Forma Mutat',
+    ['BM', 'MR', 'SS'],
+    'self',
+    { kind: 'polymorph' },
+    'Tomás la forma de un animal o una criatura por un rato.',
   ),
 
   spell(

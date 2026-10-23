@@ -5,7 +5,7 @@ import { isEquipmentSlot } from '../domain/items/equipment';
 import { isItemKind } from '../domain/items/item-catalog';
 import { BOOK_PAGES, cleanBookPage, cleanBookTitle } from '../domain/items/books';
 import { isDyeHue } from '../domain/items/dyes';
-import { isSpellKey } from '../domain/magic/spell-catalog';
+import { isPolymorphForm, isSpellKey } from '../domain/magic/spell-catalog';
 import { isActiveSkill } from '../domain/skills/stealth';
 import { isTrackingCategory } from '../domain/skills/tracking';
 import { isMountKind } from '../domain/mounts/mount-catalog';
@@ -196,6 +196,7 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       if (data.targetId !== undefined && !isId(data.targetId)) break;
       if (data.scrollId !== undefined && !isId(data.scrollId)) break;
       if (data.runeId !== undefined && !isId(data.runeId)) break;
+      if (data.form !== undefined && !isPolymorphForm(data.form)) break;
       const position = data.position === undefined ? undefined : asPosition(data.position);
       if (position === null) break;
       return {
@@ -207,6 +208,7 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
           ...(position ? { position } : {}),
           ...(isId(data.scrollId) ? { scrollId: data.scrollId } : {}),
           ...(isId(data.runeId) ? { runeId: data.runeId } : {}),
+          ...(isPolymorphForm(data.form) ? { form: data.form } : {}),
         },
       };
     }
@@ -444,6 +446,7 @@ const SERVER_TYPE_FLAGS: Readonly<Record<ServerMessageType, true>> = {
   corpse: true,
   corpseClosed: true,
   mountChanged: true,
+  mobileLook: true,
   hiddenChanged: true,
   warModeChanged: true,
   door: true,

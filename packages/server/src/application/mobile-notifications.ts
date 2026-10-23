@@ -110,6 +110,14 @@ export class MobileNotifications {
     this.notifier.send(player.id, { type: 'combatTarget', targetId: player.combat.targetId });
   }
 
+  /** Cambió el nombre, la cara o la forma de un jugador: lo ven de nuevo (él también). */
+  look(player: Player): void {
+    this.notifier.sendMany(new Set([...this.watchers(player), player.id]), {
+      type: 'mobileLook',
+      mobile: this.world.snapshotOf(player),
+    });
+  }
+
   appear(mobile: Mobile): void {
     this.notifier.sendMany(this.watchers(mobile), {
       type: 'mobileAppeared',

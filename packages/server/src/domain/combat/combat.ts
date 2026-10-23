@@ -35,6 +35,10 @@ export interface SwingResult {
   readonly ranged: boolean;
   /** Munición gastada (flechas). */
   readonly itemChanges: ItemChanges | null;
+  /** Daño que la Armadura reactiva del objetivo le devolvió al atacante. */
+  readonly reflected?: number;
+  /** El daño devuelto mató al atacante. */
+  readonly reflectKilled?: boolean;
 }
 
 export function weaponFor(mobile: Mobile, world: World): Weapon {
@@ -114,13 +118,24 @@ export function trySwing(
   );
   // A un invulnerable los golpes no le entran (se ven como parados).
   const immune = target.combat.invulnerable;
-  const killed =
-    outcome.hit && !outcome.blocked && !immune ? target.combat.takeDamage(outcome.damage) : false;
+  const landed = outcome.hit && !outcome.blocked && !immune;
+  // Armadura reactiva (solo cuerpo a cuerpo): se queda con la mitad del golpe
+  // y se la devuelve a quien pega, hasta gastarse.
+  let damage = outcome.damage;
+  let reflected = 0;
+  let reflectKilled = false;
+  const reactive = target.combat.effect('reactive-armor');
+  if (landed && reactive && range <= MELEE_RANGE && damage > 0) {
+    reflected = Math.min(reactive.amount, Math.ceil(damage / 2));
+    damage -= reflected;
+    target.combat.drainEffect('reactive-armor', reflected);
+    reflectKilled = attacker.combat.takeDamage(reflected);
+  }
+  const killed = landed ? target.combat.takeDamage(damage) : false;
 
   const gains: SkillGain[] = [];
   if (attacker instanceof Player) {
     // Anatomía se aprende pegando de verdad (golpes que entran).
-    const landed = outcome.hit && !outcome.blocked;
     const practiced: SkillKey[] = [
       weapon.skill,
       'tactics',
@@ -142,10 +157,11 @@ export function trySwing(
     target,
     hit: outcome.hit,
     blocked: outcome.blocked || immune,
-    damage: immune ? 0 : outcome.damage,
+    damage: immune ? 0 : damage,
     killed,
     gains,
     ranged: range > MELEE_RANGE,
     itemChanges,
+    ...(reflected > 0 ? { reflected, reflectKilled } : {}),
   };
 }

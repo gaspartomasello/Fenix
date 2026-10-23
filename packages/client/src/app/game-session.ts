@@ -55,6 +55,7 @@ import { ShopWindow } from '../ui/shop-window';
 import { TilePicker } from './tile-picker';
 import { HotbarBar, type HotbarOptions } from '../ui/hotbar-bar';
 import { RunePicker } from '../ui/rune-picker';
+import { PolymorphPicker } from '../ui/polymorph-picker';
 import { Joystick } from '../input/joystick';
 import { TouchHud, enterFullscreen, prefersTouch } from '../ui/touch-hud';
 import {
@@ -519,7 +520,10 @@ export class GameSession {
     const runes = new RunePicker((spell, runeId, scrollId) =>
       this.game.castSpell(spell, { runeId, ...(scrollId ? { scrollId } : {}) }),
     );
-    this.hosts.ui.append(runes.window.element);
+    const polymorph = new PolymorphPicker((form, scrollId) =>
+      this.game.castSpell('polymorph', { form, ...(scrollId ? { scrollId } : {}) }),
+    );
+    this.hosts.ui.append(runes.window.element, polymorph.window.element);
     const cast = (spell: SpellKey, scrollId?: string): void => {
       const definition = SPELLS[spell];
       const from = scrollId ? { scrollId } : {};
@@ -532,10 +536,12 @@ export class GameSession {
           return;
         }
         case 'self':
-          this.game.castSpell(spell, from);
+          // Transformación: primero se elige la forma.
+          if (definition.effect.kind === 'polymorph') polymorph.open(scrollId);
+          else this.game.castSpell(spell, from);
           return;
         case 'location':
-          banner.show(`${definition.name}: tocá el lugar al que querés ir (Escape cancela).`);
+          banner.show(`${definition.name}: ${locationPrompt(spell)} (Escape cancela).`);
           tilePicker.pick((position) => {
             done();
             this.game.castSpell(spell, { ...from, position });
@@ -1022,6 +1028,27 @@ function keepViewport(): void {
 
 const HOTBAR_STORAGE_KEY = 'fenix.atajos';
 const ATTACK_RING_STORAGE_KEY = 'fenix.atajos-atacar';
+
+/** Qué hay que tocar para un hechizo que va a un lugar. */
+function locationPrompt(spell: SpellKey): string {
+  switch (SPELLS[spell].effect.kind) {
+    case 'teleport':
+      return 'tocá el lugar al que querés ir';
+    case 'trap':
+    case 'lock':
+      return 'tocá el cofre o mueble';
+    case 'telekinesis':
+      return 'tocá la puerta, el cofre o el mueble';
+    case 'field':
+      return 'tocá dónde levantarlo';
+    case 'dispel-field':
+      return 'tocá el muro o campo que querés deshacer';
+    case 'summon':
+      return 'tocá dónde querés que aparezca';
+    default:
+      return 'tocá el lugar';
+  }
+}
 
 function readStorage(key: string): string | null {
   try {

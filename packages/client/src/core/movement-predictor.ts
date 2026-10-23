@@ -1,4 +1,5 @@
 import {
+  isMountKind,
   canStep,
   moveDuration,
   positionsEqual,
@@ -37,7 +38,8 @@ export class MovementPredictor {
     // servidor nos lleve: no se predicen pasos desde un lugar que vamos a dejar.
     if (this.pending.size > 0 && this.map.teleportAt(self.position)) return null;
 
-    const duration = moveDuration(mode, self.mount !== null);
+    // Transformado en caballo (Transformación) corre como montado.
+    const duration = moveDuration(mode, self.mount !== null || isMountKind(self.body));
     this.nextStepAt = now + duration;
     this.seq += 1;
     this.pending.add(this.seq);

@@ -9,6 +9,8 @@ export interface TargetCandidate {
   readonly npc: unknown;
   /** Criatura con dueño (invocación o montura): no se elige sola. */
   readonly ownerId: EntityId | null;
+  /** Persona transformada: tampoco se elige sola. */
+  readonly polymorphed?: boolean;
 }
 
 /** Hasta dónde busca el botón de atacar. */
@@ -35,6 +37,7 @@ export function nextAutoTarget(
         !c.dead &&
         !c.npc &&
         c.ownerId === null &&
+        !c.polymorphed &&
         tileDistance(c.position, from) <= AUTO_TARGET_RANGE,
     )
     .sort(

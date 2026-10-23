@@ -9,8 +9,10 @@ import {
   type Attributes,
   type SkillKey,
   type SpellKey,
+  type PolymorphForm,
   RUN_STEPS_PER_STAMINA,
   canStep,
+  isMountKind,
   moveDuration,
   step,
   type Appearance,
@@ -49,6 +51,8 @@ export interface PendingCast {
   readonly position?: Position;
   /** Con qué runa (viajes). */
   readonly runeId?: EntityId;
+  /** En qué se transforma (Transformación). */
+  readonly form?: PolymorphForm;
   readonly resolveAt: number;
 }
 
@@ -99,6 +103,10 @@ export class Player implements Mobile {
   carried = 0;
   /** No le pesa nada: los personajes de prueba no tienen límite de carga. */
   unburdened = false;
+  /** Incógnito: el nombre y la cara con que lo ven los demás mientras dura. */
+  disguise: { name: string; appearance: Appearance } | null = null;
+  /** Transformación: la forma de animal o criatura que tomó. */
+  form: PolymorphForm | null = null;
 
   /** Cómo lo ven los demás: invulnerable (amarillo) o según su reputación. */
   get notoriety(): Notoriety {
@@ -143,7 +151,8 @@ export class Player implements Mobile {
     this.moved?.();
     this.nextMoveAt =
       Math.max(this.nextMoveAt, now - MOVE_IDLE_CREDIT_MS) +
-      moveDuration(mode, this.mount !== null);
+      // Transformado en caballo corre como si fuera montado.
+      moveDuration(mode, this.mount !== null || (this.form !== null && isMountKind(this.form)));
     return { ok: true };
   }
 
@@ -187,11 +196,11 @@ export class Player implements Mobile {
   toSnapshot(): Omit<MobileSnapshot, 'equipment'> {
     return {
       id: this.id,
-      name: this.name,
+      name: this.disguise?.name ?? this.name,
       position: this._position,
       direction: this._direction,
-      appearance: this.appearance,
-      body: this.body,
+      appearance: this.disguise?.appearance ?? this.appearance,
+      body: this.form ?? this.body,
       health: this.combat.health,
       dead: this.combat.isDead,
       npc: null,
@@ -199,6 +208,7 @@ export class Player implements Mobile {
       guildTag: null,
       mount: this.mount,
       war: this.warMode,
+      ...(this.form ? { polymorphed: true as const } : {}),
     };
   }
 }

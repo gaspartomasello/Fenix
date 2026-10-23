@@ -53,6 +53,7 @@ import {
   type ServerMessage,
   type SkillValues,
   type SpellKey,
+  type PolymorphForm,
   type Vitals,
   type WorldTime,
 } from '@fenix/shared';
@@ -189,6 +190,8 @@ export interface CastTarget {
   readonly scrollId?: EntityId;
   /** Hechizos de viaje: la runa de la mochila. */
   readonly runeId?: EntityId;
+  /** Transformación: en qué animal o criatura. */
+  readonly form?: PolymorphForm;
 }
 
 export interface Inventory {
@@ -571,6 +574,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       ...(target.position ? { position: target.position } : {}),
       ...(target.scrollId ? { scrollId: target.scrollId } : {}),
       ...(target.runeId ? { runeId: target.runeId } : {}),
+      ...(target.form ? { form: target.form } : {}),
     });
   }
 
@@ -1069,6 +1073,20 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       case 'playerEquipment':
         this.entities.get(message.id)?.setEquipment(message.equipment, message.hues);
         break;
+      case 'mobileLook': {
+        // Otra cara, otro nombre u otra forma: se lo vuelve a dibujar donde está.
+        const before = this.entities.get(message.mobile.id);
+        if (!before) break;
+        const entity = new Entity({
+          ...message.mobile,
+          position: before.position,
+          direction: before.direction,
+        });
+        this.entities.set(entity.id, entity);
+        this.emit('entityRemoved', entity.id);
+        this.emit('entityAdded', entity);
+        break;
+      }
       case 'mountChanged':
         this.entities.get(message.id)?.setMount(message.mount);
         break;

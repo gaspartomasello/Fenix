@@ -1,4 +1,5 @@
 import {
+  CREATURES,
   MAX_SUMMONS,
   SPELLS,
   SPELL_RANGE,
@@ -21,6 +22,9 @@ import {
   tileDistance,
   STATIC_CONTAINERS,
   staticContainerId,
+  dispelChance,
+  reactiveArmorPool,
+  type PolymorphForm,
   type EntityId,
   type FieldKind,
   type ItemKind,
@@ -33,6 +37,7 @@ import { freeSpotNear } from '../persistence/saved-character';
 import type { Mobile } from '../mobile';
 import { Npc } from '../npcs/npc';
 import { Player } from '../player';
+import { randomDisguise } from './disguise';
 import { pvpRefusal } from '../social/pvp';
 import type { World } from '../world';
 
@@ -43,6 +48,8 @@ export interface CastRequest {
   readonly scrollId?: EntityId;
   /** Runa de la mochila (Marcar, Recordar, Portal). */
   readonly runeId?: EntityId;
+  /** Forma elegida para Transformación. */
+  readonly form?: PolymorphForm;
 }
 
 export type StartCastResult =
@@ -102,6 +109,11 @@ export function startCast(
     }
   }
 
+  if (spell.effect.kind === 'polymorph') {
+    if (!request.form) return fail('Elegí en qué querés transformarte.');
+    if (player.mount) return fail('Bajate de la montura para transformarte.');
+  }
+
   let targetId = player.id;
   let position: Position | undefined;
   let runeId: EntityId | undefined;
@@ -127,6 +139,8 @@ export function startCast(
       if (!target || target.id === player.id || target.combat.isDead || world.isHidden(target))
         return fail('Elegí a quién lanzarle el hechizo.');
       if (target instanceof Npc) return fail(`No podés atacar a ${target.name}.`);
+      if (spell.effect.kind === 'dispel' && !isSummoned(target))
+        return fail('Solo se pueden disipar criaturas invocadas.');
       if (tileDistance(target.position, player.position) > SPELL_RANGE)
         return fail('Está demasiado lejos.');
       if (otherLevel(world, player.position, target.position)) return fail(OTHER_LEVEL);
@@ -164,15 +178,20 @@ export function startCast(
         return fail('Está demasiado lejos.');
       if (otherLevel(world, player.position, request.position)) return fail(OTHER_LEVEL);
       const kind = spell.effect.kind;
-      if (kind === 'trap') {
-        // La trampa va en un cofre o mueble del mundo.
+      if (kind === 'trap' || kind === 'lock') {
+        // La trampa y la cerradura van en un cofre o mueble del mundo.
         if (!staticContainerAt(request.position, world))
           return fail('Elegí un cofre, un barril o un mueble que guarde cosas.');
+      } else if (kind === 'telekinesis') {
+        if (!world.map.doorAt(request.position) && !staticContainerAt(request.position, world))
+          return fail('Elegí una puerta, un cofre o un mueble.');
       } else if (kind === 'field') {
         if (!world.map.isWalkable(request.position)) return fail('No se puede levantar ahí.');
       } else if (
-        // Revelar va a cualquier lugar; para ir o invocar, tiene que estar libre.
+        // Revelar y disipar van a cualquier lugar; para ir o invocar, tiene que estar libre.
         kind !== 'reveal' &&
+        kind !== 'dispel-field' &&
+        kind !== 'mass-dispel' &&
         (!world.map.isWalkable(request.position) || world.isOccupied(request.position, player.id))
       )
         return fail('No podés ir ahí.');
@@ -192,6 +211,7 @@ export function startCast(
     targetId,
     ...(position ? { position } : {}),
     ...(runeId ? { runeId } : {}),
+    ...(spell.effect.kind === 'polymorph' && request.form ? { form: request.form } : {}),
     resolveAt: now + spell.castMs,
   };
   return { ok: true, itemChanges: changes, aggressionAgainst };
@@ -234,6 +254,18 @@ export type CastOutcome =
       field?: { kind: FieldKind; at: Position; from: Position };
       /** Trampa puesta o sacada en un mueble (lo hace el caso de uso de los recipientes). */
       trap?: { containerId: string; armed: boolean };
+      /** Cerradura mágica puesta o abierta (lo hace el caso de uso de los recipientes). */
+      lock?: { containerId: string; locked: boolean; magery: number };
+      /** Telequinesis: la puerta o el mueble que se movió desde lejos. */
+      telekinesis?: Position;
+      /** Disipar campo: el tile del muro o campo a deshacer. */
+      dispelField?: Position;
+      /** Invocaciones que desaparecen (Disipar). */
+      dispelled?: readonly Creature[];
+      /** Le cambió el nombre, la cara o la forma al lanzador: hay que avisarlo a los que lo ven. */
+      lookChanged?: boolean;
+      /** Reflejo mágico: quién devolvió el hechizo (el lanzador lo recibe). */
+      reflectedBy?: Mobile;
     };
 
 /** Un hechizo lanzado que todavía no cayó. */
@@ -290,7 +322,7 @@ export function resolveCast(
 
   // Resurrección va a un fantasma; todo lo demás, a alguien vivo.
   const wantsGhost = spell.effect.kind === 'resurrect';
-  const target = world.getMobile(pending.targetId);
+  let target = world.getMobile(pending.targetId);
   if (
     !target ||
     target.combat.isDead !== wantsGhost ||
@@ -304,6 +336,17 @@ export function resolveCast(
   if (random() >= spellSuccessChance(spell, magery)) return { kind: 'fizzled' };
 
   const harmful = spell.target === 'harmful';
+  // Reflejo mágico: un hechizo dañino contra uno solo vuelve contra quien lo lanzó.
+  let reflectedBy: Mobile | undefined;
+  if (
+    harmful &&
+    target !== player &&
+    REFLECTABLE.has(spell.effect.kind) &&
+    target.combat.removeEffect('magic-reflection')
+  ) {
+    reflectedBy = target;
+    target = player;
+  }
   const resisted = harmful && random() < resistChance(magicResistOf(target), spell.circle);
   const success = (
     extra: Partial<Extract<CastOutcome, { kind: 'success' }>> = {},
@@ -313,8 +356,11 @@ export function resolveCast(
     amount: 0,
     killed: false,
     resisted,
-    effectsChanged: [],
     ...extra,
+    effectsChanged: reflectedBy
+      ? [...(extra.effectsChanged ?? []), reflectedBy]
+      : (extra.effectsChanged ?? []),
+    ...(reflectedBy ? { reflectedBy } : {}),
   });
   const duration = (ms: number): number => (resisted ? Math.round(ms / 2) : ms);
   const effect = spell.effect;
@@ -506,12 +552,84 @@ export function resolveCast(
         world.summonsOf(player.id).length >= MAX_SUMMONS
       )
         return { kind: 'lost-target' };
-      const creature = new Creature(ids(), effect.creature, position, {
+      const kind = effect.choices
+        ? (effect.choices[Math.floor(random() * effect.choices.length)] ?? effect.creature)
+        : effect.creature;
+      const creature = new Creature(ids(), kind, position, {
         ownerId: player.id,
         expiresAt: now + summonDurationMs(magery),
       });
       world.addCreature(creature);
       return success({ target: creature, summoned: creature });
+    }
+    case 'reactive-armor':
+      target.combat.applyEffect(
+        'reactive-armor',
+        reactiveArmorPool(magery),
+        spellDurationMs(magery),
+        now,
+      );
+      return success({ effectsChanged: [target] });
+    case 'magic-reflection':
+      target.combat.applyEffect('magic-reflection', 1, spellDurationMs(magery) * 2, now);
+      return success({ effectsChanged: [target] });
+    case 'lock': {
+      const at = pending.position;
+      if (!at || !staticContainerAt(at, world)) return { kind: 'lost-target' };
+      return success({
+        lock: { containerId: staticContainerId(at), locked: effect.locked, magery },
+      });
+    }
+    case 'telekinesis': {
+      const at = pending.position;
+      if (!at) return { kind: 'lost-target' };
+      return success({ telekinesis: at });
+    }
+    case 'dispel-field': {
+      const at = pending.position;
+      if (!at) return { kind: 'lost-target' };
+      return success({ dispelField: at });
+    }
+    case 'dispel': {
+      if (!isSummoned(target)) return success({ message: 'Eso no es una criatura invocada.' });
+      provoke(target, player);
+      if (random() >= dispelChance(magery))
+        return success({ message: `${capitalize(target.name)} resistió el hechizo.` });
+      return success({ dispelled: [target] });
+    }
+    case 'mass-dispel': {
+      const at = pending.position ?? player.position;
+      const gone: Creature[] = [];
+      for (const mobile of world.mobilesNear(at)) {
+        if (!isSummoned(mobile) || mobile.ownerId === player.id) continue;
+        if (tileDistance(mobile.position, at) > effect.radius) continue;
+        if (random() < dispelChance(magery)) gone.push(mobile);
+      }
+      return success({
+        dispelled: gone,
+        ...(gone.length === 0 ? { message: 'No desapareció ninguna invocación.' } : {}),
+      });
+    }
+    case 'incognito':
+      if (player.form) return success({ message: 'No podés cambiarte la cara transformado.' });
+      player.disguise = randomDisguise(player.appearance, random);
+      player.combat.applyEffect('incognito', 0, spellDurationMs(magery) * 2, now);
+      return success({
+        effectsChanged: [player],
+        lookChanged: true,
+        message: `Ahora te ven como ${player.disguise.name}.`,
+      });
+    case 'polymorph': {
+      const form = pending.form;
+      if (!form) return { kind: 'lost-target' };
+      if (player.mount) return success({ message: 'Bajate de la montura para transformarte.' });
+      player.form = form;
+      player.combat.applyEffect('polymorph', 0, spellDurationMs(magery) * 2, now);
+      return success({
+        effectsChanged: [player],
+        lookChanged: true,
+        message: `Te transformaste en ${CREATURES[form].article} ${CREATURES[form].name}.`,
+      });
     }
     case 'create-food': {
       const food = CREATED_FOOD[Math.floor(random() * CREATED_FOOD.length)] ?? 'apple';
@@ -525,6 +643,23 @@ export function resolveCast(
     }
   }
 }
+
+/** Hechizos dañinos que el Reflejo mágico devuelve (los de área, no). */
+const REFLECTABLE: ReadonlySet<string> = new Set([
+  'damage',
+  'attribute',
+  'poison',
+  'paralyze',
+  'mana-drain',
+  'dispel',
+]);
+
+/** Una criatura que llegó invocada con un hechizo (no las monturas). */
+function isSummoned(mobile: Mobile): mobile is Creature {
+  return mobile instanceof Creature && mobile.ownerId !== null && mobile.expiresAt !== null;
+}
+
+const capitalize = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 
 /** El mueble que guarda cosas en ese tile, si hay. */
 function staticContainerAt(at: Position, world: World): boolean {

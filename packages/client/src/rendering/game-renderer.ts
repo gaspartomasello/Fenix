@@ -14,6 +14,7 @@ import type { ClientGame } from '../core/client-game';
 import type { Entity, FractionalPosition } from '../core/entity';
 import { CharacterView } from './character-view';
 import { EffectsLayer } from './effects-layer';
+import { FieldLayer } from './field-layer';
 import { FloorLayer } from './floor-layer';
 import { ItemLayer } from './item-layer';
 import { Ground } from './ground';
@@ -53,6 +54,8 @@ export class GameRenderer {
   private readonly world = new Container();
   /** Hechizos y flechas: van sobre la luz (brillan de noche) con la misma cámara que el mundo. */
   private readonly glowing = new Container();
+  /** Nombres, vida y textos sobre las cabezas: arriba de todo (ningún techo los tapa) y sin oscurecerse de noche. */
+  private readonly labelLayer = new Container();
   /** Terreno y entidades: lo que se oscurece de noche. */
   private readonly scene = new Container();
   private readonly entityLayer = new Container({ sortableChildren: true });
@@ -64,6 +67,7 @@ export class GameRenderer {
   private statics: StaticLayer | null = null;
   private floors: FloorLayer | null = null;
   private readonly groundItems = new ItemLayer(this.textures, this.entityLayer, this.ground);
+  private readonly fields = new FieldLayer(this.textures, this.entityLayer, this.ground);
   private readonly ships = new ShipLayer(this.textures, this.ground);
   private readonly effects = new EffectsLayer((id, now) => {
     for (const entity of this.game.allEntities())
@@ -264,6 +268,7 @@ export class GameRenderer {
     this.statics?.update(view, nearby, near, grown(view, DISCARD_MARGIN));
 
     this.effects.update(now);
+    this.fields.update(now);
     this.ships.update();
     // De fantasma el mundo se ve gris, como en UO.
     this.scene.tint = self.dead ? GHOST_TINT : 0xffffff;
@@ -294,6 +299,7 @@ export class GameRenderer {
 
   /** Quienes llevan una antorcha o un farol en la mano: alumbran a su alrededor. */
   private *carriedLights(now: number): Iterable<{ at: FractionalPosition; radius: number }> {
+    yield* this.fields.lights();
     for (const entity of this.game.allEntities()) {
       const held = entity.equipment.leftHand;
       const radius = held ? ITEMS[held].light : undefined;
@@ -338,23 +344,26 @@ export class GameRenderer {
     this.textures.onCreate = (texture) => this.app.renderer.texture.initSource(texture.source);
     host.appendChild(this.app.canvas);
     this.world.addChild(this.scene);
-    this.glowing.addChild(this.effects.container);
+    this.glowing.addChild(this.effects.container, this.labelLayer);
     this.app.stage.addChild(this.world, this.lighting.overlay, this.glowing);
 
     const map = this.game.map;
     if (map) this.setMap(map);
     for (const entity of this.game.allEntities()) this.addView(entity);
     this.groundItems.apply([...this.game.groundItems()], []);
+    this.fields.apply([...this.game.groundItems()], []);
 
     this.unsubscribe.push(
-      this.game.on('groundItemsChanged', ({ added, removed }) =>
-        this.groundItems.apply(added, removed),
-      ),
+      this.game.on('groundItemsChanged', ({ added, removed }) => {
+        this.groundItems.apply(added, removed);
+        this.fields.apply(added, removed);
+      }),
       this.game.on('doorChanged', ({ position }) => this.statics?.refreshDoor(position)),
       this.game.on('ready', ({ map: newMap }) => {
         this.views.forEach((view) => view.destroy());
         this.views.clear();
         this.groundItems.clear();
+        this.fields.clear();
         this.ships.clear();
         this.setMap(newMap);
         for (const entity of this.game.allEntities()) this.addView(entity);
@@ -400,6 +409,7 @@ export class GameRenderer {
     );
     this.views.set(entity.id, view);
     this.entityLayer.addChild(view.container);
+    this.labelLayer.addChild(view.labels);
   }
 
   /** Centra la cámara y devuelve el rectángulo visible en coordenadas del mundo. */

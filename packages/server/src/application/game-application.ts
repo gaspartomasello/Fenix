@@ -1,4 +1,10 @@
-import { formatGameTime, type ClientMessage, type EntityId, type Position } from '@fenix/shared';
+import {
+  SPELL_RANGE,
+  formatGameTime,
+  type ClientMessage,
+  type EntityId,
+  type Position,
+} from '@fenix/shared';
 import { isTestCharacter } from '../domain/testing/test-character';
 import type { WorldClock } from '../domain/world-clock';
 import type { World } from '../domain/world';
@@ -277,6 +283,14 @@ export class GameApplication {
     this.containers.refusal = (playerId, id) => this.ships.containerRefusal(playerId, id);
     this.loop.onTrap = (casterId, containerId, armed) =>
       this.containers.setTrap(casterId, containerId, armed);
+    this.loop.onLock = (casterId, containerId, locked, magery) =>
+      locked
+        ? this.containers.magicLock(casterId, containerId, magery)
+        : this.containers.magicUnlock(casterId, containerId, magery);
+    this.loop.onTelekinesis = (casterId, position) => {
+      if (this.world.map.doorAt(position)) this.doors.use(casterId, position, SPELL_RANGE);
+      else this.containers.springTrap(casterId, `static:${position.x}:${position.y}`);
+    };
     this.containers.hurt = (playerId, amount) => {
       const player = world.get(playerId);
       if (player) this.loop.hurt(player, amount, clock.now());
@@ -378,6 +392,7 @@ export class GameApplication {
           ...(message.position ? { position: message.position } : {}),
           ...(message.scrollId ? { scrollId: message.scrollId } : {}),
           ...(message.runeId ? { runeId: message.runeId } : {}),
+          ...(message.form ? { form: message.form } : {}),
         });
         // Empezar a lanzar descubre al escondido.
         if (this.world.get(playerId)?.pendingCast)
