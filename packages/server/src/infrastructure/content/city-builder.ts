@@ -43,7 +43,7 @@ const TOWNSFOLK_NAMES = [
 const STRUCTURE =
   /wall|rampart|palisade|fence|tower|door|post|corner|window|mountain|crypt|fountain|ladder/;
 /** Paredes de casa (a lo largo de x o de y), donde se puede abrir una puerta. */
-const HOUSE_WALL = /^(wall|log-wall|plank-wall|basalt-wall)-(x|y)$/;
+const HOUSE_WALL = /^(wall|log-wall|plank-wall|basalt-wall|sandstone-wall)-(x|y)$/;
 
 /**
  * Ciudades generadas: cada una con su estilo según la región.
@@ -133,6 +133,14 @@ const BASALT: WallKit = {
   post: 'basalt-wall-post',
   windowX: 'basalt-window-x',
   windowY: 'basalt-window-y',
+};
+const SANDSTONE: WallKit = {
+  x: 'sandstone-wall-x',
+  y: 'sandstone-wall-y',
+  corner: 'sandstone-wall-corner',
+  post: 'sandstone-wall-post',
+  windowX: 'sandstone-window-x',
+  windowY: 'sandstone-window-y',
 };
 const RAMPART: WallKit = {
   x: 'rampart-x',
@@ -718,9 +726,9 @@ export function buildCity(spec: CitySpec): City {
     if (!room) break;
     shopRooms.push(room);
     if (!style.lawless && role === 'innkeeper')
-      upstairs(plan, spec, style, room, 'inn', 'la posada', 1, stoneStairs(style));
+      upstairs(plan, spec, room, 'inn', 'la posada', 1, stoneStairs(room));
     if (!style.lawless && role === 'mage')
-      upstairs(plan, spec, style, room, 'mage', 'la torre del mago', 2, 'spiral-stairs');
+      upstairs(plan, spec, room, 'mage', 'la torre del mago', 2, 'spiral-stairs');
     const spot = furnishShop(plan, role, room, random);
     // El banco tiene puerta de hierro.
     if (role === 'banker' && plan.statics.get(room.door.y * plan.width + room.door.x) === 'door-x')
@@ -747,11 +755,13 @@ export function buildCity(spec: CitySpec): City {
   for (const home of homes.slice(spec.starterItems ? 1 : 0)) {
     if (!style.lawless && twoStorey > 0 && roomy(home)) {
       const small = home.x1 - home.x0 < 5;
-      upstairs(plan, spec, style, home, 'home', 'una casa', 1, small ? 'ladder-up' : 'stairs-wood');
+      upstairs(plan, spec, home, 'home', 'una casa', 1, small ? 'ladder-up' : 'stairs-wood');
       twoStorey--;
     }
     furnishHome(plan, home, random, style);
   }
+  // Las demás casas y negocios, con su techo plano (se ven desde afuera, como en UO).
+  if (!style.lawless) for (const house of houses) roofOnly(plan, spec, house);
   // Faroles a lo largo de las avenidas (en el refugio, solo las fogatas de las carpas).
   for (let t = 4; !style.lawless && t < Math.max(width, height); t += 7) {
     for (const [x, y] of [
@@ -1201,6 +1211,9 @@ function cuts(from: number, to: number, step: number): number[] {
 
 /** El piso de adentro de una casa (lo que se camina) y su puerta. */
 interface Room extends Rect {
+  /** Las paredes y el piso de la casa (en la capital, de piedra o de arenisca). */
+  readonly kit: WallKit;
+  readonly floor: Terrain;
   readonly door: Position;
   /** El tile de adentro pegado a la puerta (se deja libre). */
   readonly entry: Position;
@@ -1234,6 +1247,8 @@ function building(
     plan.put(c.x + 2, c.y + 2, 'crate');
     plan.put(c.x - 1, c.y + 1, 'stool');
     return {
+      kit: style.walls,
+      floor: style.floor,
       x0: c.x - 1,
       y0: c.y - 1,
       x1: c.x + 1,
@@ -1259,7 +1274,11 @@ function building(
     x1: lot.x0 + Math.max(3, w - 1 - Math.floor(random.next() * 2)),
     y1: lot.y0 + Math.max(3, h - 1 - Math.floor(random.next() * 2)),
   };
-  plan.fill(house, style.floor);
+  // En la capital hay casas de piedra y de arenisca, mezcladas (como en UO).
+  const sandstone = style.walls === STONE && random.next() < 0.35;
+  const kit = sandstone ? SANDSTONE : style.walls;
+  const floor = sandstone ? Terrain.Sandstone : style.floor;
+  plan.fill(house, floor);
   // La puerta, en la pared del lado de la plaza.
   const mid = center(house);
   const towardX = cx - mid.x;
@@ -1282,11 +1301,13 @@ function building(
         : side === 's'
           ? { x: mid.x, y: house.y1 }
           : { x: mid.x, y: house.y0 + 1 };
-  plan.enclose(house, style.walls, [door]);
-  plan.ground(door.x, door.y, style.floor);
+  plan.enclose(house, kit, [door]);
+  plan.ground(door.x, door.y, floor);
   plan.door(door, side === 'n' || side === 's' ? 'x' : 'y');
-  plan.windows(house, style.walls, door);
+  plan.windows(house, kit, door);
   return {
+    kit,
+    floor,
     x0: house.x0 + 1,
     y0: house.y0 + 1,
     x1: house.x1,
@@ -1299,8 +1320,10 @@ function building(
 }
 
 /** La escalera de las casas de piedra es de piedra; la de las demás, de madera. */
-function stoneStairs(style: Style): StaticKind {
-  return style.walls === STONE || style.walls === BASALT ? 'stairs-stone' : 'stairs-wood';
+function stoneStairs(room: Room): StaticKind {
+  return room.kit === STONE || room.kit === BASALT || room.kit === SANDSTONE
+    ? 'stairs-stone'
+    : 'stairs-wood';
 }
 
 /**
@@ -1311,7 +1334,6 @@ function stoneStairs(style: Style): StaticKind {
 function upstairs(
   plan: Plan,
   spec: CitySpec,
-  style: Style,
   room: Room,
   use: FloorUse,
   building: string,
@@ -1344,15 +1366,43 @@ function upstairs(
       stairs,
       position: at,
       back,
+      origin: { x: room.x0, y: room.y0 },
       width: room.x1 - room.x0 + 1,
       height: room.y1 - room.y0 + 1,
       offset: { x: at.x - room.x0, y: at.y - room.y0 },
-      walls: style.walls,
-      floor: style.floor,
+      walls: room.kit,
+      floor: room.floor,
       floors,
+      roof: roofOf(room.kit),
     });
     return;
   }
+}
+
+/** Las casas de piedra tienen azotea con almenas; las de madera, un techo de tablas con baranda. */
+function roofOf(kit: WallKit): 'stone' | 'wood' {
+  return kit === LOGS || kit === PLANKS ? 'wood' : 'stone';
+}
+
+/** El techo plano de una casa de una planta (se ve desde afuera; no se sube). */
+function roofOnly(plan: Plan, spec: CitySpec, room: Room): void {
+  if (plan.ascents.some((a) => a.origin.x === room.x0 && a.origin.y === room.y0)) return;
+  plan.ascents.push({
+    town: spec.name,
+    building: 'una casa',
+    use: 'home',
+    stairs: null,
+    position: room.entry,
+    back: room.entry,
+    origin: { x: room.x0, y: room.y0 },
+    width: room.x1 - room.x0 + 1,
+    height: room.y1 - room.y0 + 1,
+    offset: { x: 0, y: 0 },
+    walls: room.kit,
+    floor: room.floor,
+    floors: 0,
+    roof: roofOf(room.kit),
+  });
 }
 
 /** Tiles del piso que no hay que tapar: la entrada y el camino hasta el centro. */

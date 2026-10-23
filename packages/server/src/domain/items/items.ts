@@ -79,9 +79,11 @@ export class Items {
     return this.byId.get(id);
   }
 
-  groundNear(position: Position): Item[] {
+  /** Lo que hay en el suelo a la vista; `seen` dice dónde se ve cada lugar (los pisos altos). */
+  groundNear(position: Position, seen: (p: Position) => Position = (p) => p): Item[] {
+    const at = seen(position);
     return this.all().filter(
-      (item) => item.location.type === 'ground' && inViewRange(item.location.position, position),
+      (item) => item.location.type === 'ground' && inViewRange(seen(item.location.position), at),
     );
   }
 

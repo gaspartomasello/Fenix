@@ -32,6 +32,19 @@ export interface RegionData {
    * se llega por la escalera. Desde un piso no se apunta a otro.
    */
   readonly floor?: number;
+  /**
+   * Dónde se ve un piso alto: cuánto se corre para quedar justo encima de su
+   * edificio (la posición a la vista es la del piso más este corrimiento).
+   * Así desde arriba se ve la calle y desde la calle se ven los pisos.
+   */
+  readonly anchor?: { readonly x: number; readonly y: number };
+}
+
+/** Una posición tal como se ve: sobre el mapa del continente y a qué altura (0 = el suelo). */
+export interface DisplayPosition {
+  readonly x: number;
+  readonly y: number;
+  readonly level: number;
 }
 
 /** Cartel con texto (los destinos de un cruce de caminos). */
@@ -81,6 +94,10 @@ export class TileMap {
   private readonly terrain: readonly Terrain[];
   private readonly heights: readonly number[] | undefined;
   private readonly blocked: Uint8Array;
+  /** Pisos altos anclados sobre sus edificios, y una cuadrícula para encontrarlos rápido. */
+  private readonly anchored: RegionData[] = [];
+  private readonly anchorGrid = new Map<number, RegionData[]>();
+  private anchoredLeft = Infinity;
   /** Tiles que tapan la vista por un objeto fijo (paredes, rejas, puertas). */
   private readonly opaque: Uint8Array;
   /** Asientos por tile (sillas, bancos, tronos). */
@@ -107,6 +124,26 @@ export class TileMap {
     this.regions = data.regions ?? [];
     this.teleporters = data.teleporters ?? [];
     this.signs = data.signs ?? [];
+    for (const region of this.regions) {
+      if (!region.anchor || !region.floor) continue;
+      this.anchored.push(region);
+      this.anchoredLeft = Math.min(this.anchoredLeft, region.x - 1);
+      for (
+        let cy = Math.floor((region.y - 1) / ANCHOR_CELL);
+        cy <= Math.floor((region.y + region.height) / ANCHOR_CELL);
+        cy++
+      )
+        for (
+          let cx = Math.floor((region.x - 1) / ANCHOR_CELL);
+          cx <= Math.floor((region.x + region.width) / ANCHOR_CELL);
+          cx++
+        ) {
+          const key = gridKey(cx, cy);
+          const list = this.anchorGrid.get(key);
+          if (list) list.push(region);
+          else this.anchorGrid.set(key, [region]);
+        }
+    }
     this.blocked = new Uint8Array(data.width * data.height);
     this.opaque = new Uint8Array(data.width * data.height);
     for (const placed of this.statics) {
@@ -222,6 +259,55 @@ export class TileMap {
     return this.blocked[i] === 0 || this.openDoors.has(i);
   }
 
+  /**
+   * Dónde se ve una posición: la de un piso alto, encima de su edificio y a
+   * su altura; cualquier otra, donde está y en el suelo.
+   */
+  displayOf<P extends { readonly x: number; readonly y: number }>(position: P): DisplayPosition {
+    const region = this.anchoredAt(position.x, position.y);
+    if (!region?.anchor) return { x: position.x, y: position.y, level: 0 };
+    return {
+      x: position.x + region.anchor.x,
+      y: position.y + region.anchor.y,
+      level: region.floor ?? 0,
+    };
+  }
+
+  /** La posición de verdad de lo que se ve en (x, y) a la altura `level` (null si ahí no hay piso). */
+  rawOf(display: { readonly x: number; readonly y: number }, level: number): Position | null {
+    if (level === 0) return { x: display.x, y: display.y };
+    for (const region of this.anchored) {
+      if (region.floor !== level || !region.anchor) continue;
+      const x = display.x - region.anchor.x;
+      const y = display.y - region.anchor.y;
+      if (
+        x >= region.x &&
+        y >= region.y &&
+        x < region.x + region.width &&
+        y < region.y + region.height
+      )
+        return { x, y };
+    }
+    return null;
+  }
+
+  /** Los pisos altos con ancla (para dibujarlos encima de sus edificios). */
+  anchoredFloors(): readonly RegionData[] {
+    return this.anchored;
+  }
+
+  /** El piso alto anclado que contiene (x, y), buscado por cuadrícula (se llama mucho al dibujar). */
+  anchoredAt(x: number, y: number): RegionData | undefined {
+    if (this.anchored.length === 0 || x < this.anchoredLeft) return undefined;
+    const list = this.anchorGrid.get(
+      gridKey(Math.floor(x / ANCHOR_CELL), Math.floor(y / ANCHOR_CELL)),
+    );
+    return list?.find(
+      (r) =>
+        x >= r.x - 0.5 && y >= r.y - 0.5 && x < r.x + r.width - 0.5 && y < r.y + r.height - 0.5,
+    );
+  }
+
   /** ¿Este tile tapa la vista? (una pared, una puerta cerrada, la roca de una montaña) */
   blocksSight(position: Position): boolean {
     const terrain = this.terrainAt(position);
@@ -278,4 +364,11 @@ export class TileMap {
       ...(this.heights ? { heights: this.heights } : {}),
     };
   }
+}
+
+/** Lado de cada celda de la cuadrícula de pisos altos. */
+const ANCHOR_CELL = 16;
+
+function gridKey(cx: number, cy: number): number {
+  return (cy + 4096) * 8192 + (cx + 4096);
 }

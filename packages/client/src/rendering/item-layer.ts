@@ -12,6 +12,8 @@ const HALF = (ITEM_ART_SIZE * CHARACTER_SCALE) / 2;
 /** Objetos tirados en el suelo, en la capa ordenada junto a personajes y objetos fijos. */
 export class ItemLayer {
   private readonly sprites = new Map<EntityId, { sprite: Sprite; item: GroundItemSnapshot }>();
+  /** Los que se están arrastrando (no se muestran hasta soltarlos). */
+  private readonly lifted = new Set<EntityId>();
 
   constructor(
     private readonly textures: TextureCache,
@@ -42,6 +44,12 @@ export class ItemLayer {
     }
   }
 
+  /** Esconde lo que está en un piso de arriba del edificio donde uno está. */
+  refreshHidden(): void {
+    for (const [id, { sprite, item }] of this.sprites)
+      sprite.visible = !this.lifted.has(id) && !this.ground.hidden(item.position);
+  }
+
   /** El objeto bajo un punto del mundo (el de más adelante si hay varios). */
   itemAt(point: ScreenPoint): GroundItemSnapshot | null {
     let best: { item: GroundItemSnapshot; z: number } | null = null;
@@ -57,7 +65,9 @@ export class ItemLayer {
   lift(id: EntityId): () => void {
     const entry = this.sprites.get(id);
     if (entry) entry.sprite.visible = false;
+    this.lifted.add(id);
     return () => {
+      this.lifted.delete(id);
       const current = this.sprites.get(id);
       if (current) current.sprite.visible = true;
     };

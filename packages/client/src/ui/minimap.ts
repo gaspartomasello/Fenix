@@ -100,7 +100,7 @@ export class Minimap {
     if (!map || !self || !ctx) return;
     const ratio = this.canvas.width / SIZE;
     const k = (ZOOMS[this.zoom] ?? 2) / Math.SQRT2;
-    const center = self.position;
+    const center = this.game.selfSeenAt() ?? self.position;
     // De tile a pantalla del minimapa: girado 45°, como la vista del juego.
     const project = (x: number, y: number): [number, number] => [
       SIZE / 2 + (x - center.x - (y - center.y)) * k,

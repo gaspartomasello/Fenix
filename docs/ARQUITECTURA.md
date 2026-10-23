@@ -450,10 +450,26 @@ de madera o de mano). `city-builder` pone la escalera en el rincón del cuarto m
 puerta y anota la subida (`Ascent`); `generateFloors` (`upper-floors.ts`) arma cada piso del
 mismo tamaño que la planta baja, con sus paredes, ventanas y muebles, la bajada (`stair-hole`)
 justo arriba de la escalera de abajo y, si sigue, otra escalera en la punta más lejana.
-`world-builder` pone los pisos en columnas a la derecha de todo, separados por roca (se ve
-negro, como el vacío), cada uno con su región (`floor: 1, 2…`, con luz de día y protegida
-como el pueblo) y los teletransportes de subir y bajar. Tipos de escalera: de madera, de
-piedra, de caracol, de mano, la bajada y la trampilla.
+`world-builder` pone los pisos en columnas a la derecha de todo (para caminar y chocar son
+lugares aparte), cada uno con su región (`floor: 1, 2…`, con luz de día y protegida como el
+pueblo), los teletransportes de subir y bajar y un **ancla** (`anchor`): cuánto se corre para
+quedar encima de su edificio. `TileMap.displayOf` da la posición a la vista (encima del
+edificio, a su altura) y `rawOf` la inversa. Tipos de escalera: de madera, de piedra, de
+caracol, de mano, la bajada y la trampilla.
+
+**Pisos a la vista**, como en UO: arriba de todo cada edificio tiene una **azotea** (techo
+plano con almenas de piedra o baranda de tablas; se sube por una escalera de mano y una
+trampilla) y las casas de una planta tienen su techo (sin acceso). En el cliente, `Ground`
+proyecta todo con `displayOf`: los pisos altos se dibujan encima de su edificio, subidos lo
+que mide una pared (`FLOOR_PX`) y por delante de su planta baja (`LEVEL_DEPTH`); el suelo de
+cada piso lo dibuja `FloorLayer` en la capa ordenada. Desde la calle se ven las fachadas y
+las azoteas; al entrar a un edificio se esconden sus pisos de arriba (`floorsAbove`), y desde
+un piso alto se ve la ciudad alrededor. En el servidor, los índices de cercanía cuentan a
+cada uno donde se ve (`World.seen`): la gente del balcón y la de la calle se ven y se oyen.
+Los subsuelos (criptas, alcantarilla, mazmorra) no tienen ancla: siguen aparte y oscuros.
+
+En la capital hay casas de piedra y de **arenisca** mezcladas (bloques claros con moldura y
+ventanas en arco, piso de baldosas de arenisca).
 
 La **línea de visión** (`hasLineOfSight`, `shared/domain/rules/line-of-sight.ts`) recorre la
 recta entre dos tiles: la tapan las paredes y sus ventanas, las puertas cerradas, las rejas,

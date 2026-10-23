@@ -205,6 +205,18 @@ export const STATIC_KINDS = [
   'ladder-up',
   'stair-hole',
   'trapdoor',
+  // Azoteas: parapeto con almenas alrededor del techo plano
+  'parapet-x',
+  'parapet-y',
+  'parapet-corner',
+  'parapet-post',
+  // Casas de arenisca (bloques claros con una moldura y ventanas en arco)
+  'sandstone-wall-x',
+  'sandstone-wall-y',
+  'sandstone-wall-corner',
+  'sandstone-wall-post',
+  'sandstone-window-x',
+  'sandstone-window-y',
 ] as const;
 
 export type StaticKind = (typeof STATIC_KINDS)[number];
@@ -470,6 +482,16 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   'ladder-up': define('ladder-up', 'escalera de mano', false),
   'stair-hole': define('stair-hole', 'bajada al piso de abajo', false),
   trapdoor: define('trapdoor', 'trampilla', false),
+  'parapet-x': define('parapet-x', 'almenas', true),
+  'parapet-y': define('parapet-y', 'almenas', true),
+  'parapet-corner': define('parapet-corner', 'almenas', true),
+  'parapet-post': define('parapet-post', 'almenas', true),
+  'sandstone-wall-x': define('sandstone-wall-x', 'pared de arenisca', true),
+  'sandstone-wall-y': define('sandstone-wall-y', 'pared de arenisca', true),
+  'sandstone-wall-corner': define('sandstone-wall-corner', 'pared de arenisca', true),
+  'sandstone-wall-post': define('sandstone-wall-post', 'pared de arenisca', true),
+  'sandstone-window-x': define('sandstone-window-x', 'ventana', true, 2),
+  'sandstone-window-y': define('sandstone-window-y', 'ventana', true, 2),
   cobweb: define('cobweb', 'telaraña', false),
   ship: define('ship', 'barco mercante', true, 4, 3),
   'pirate-ship': define('pirate-ship', 'barco pirata', true, 4, 3),

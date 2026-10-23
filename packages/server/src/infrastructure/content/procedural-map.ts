@@ -662,6 +662,7 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
         ...a,
         position: shift(a.position),
         back: shift(a.back),
+        origin: shift(a.origin),
       })),
     );
     townCreatures.push(

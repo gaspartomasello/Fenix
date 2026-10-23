@@ -137,10 +137,10 @@ export class WorldMap {
       ctx.fillText(region.name, x, y);
     }
     // Uno mismo: un punto con un anillo que late, para encontrarse de un vistazo.
-    const self = this.game.self;
-    if (self && self.position.x < area.width) {
-      const x = self.position.x * k;
-      const y = self.position.y * k;
+    const self = this.game.selfSeenAt();
+    if (self && self.x < area.width) {
+      const x = self.x * k;
+      const y = self.y * k;
       const pulse = (Date.now() % 1000) / 1000;
       ctx.strokeStyle = `rgba(255, 255, 255, ${1 - pulse})`;
       ctx.lineWidth = 2 * ratio;

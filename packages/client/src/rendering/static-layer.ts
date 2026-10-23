@@ -9,9 +9,9 @@ import {
 } from '@fenix/shared';
 import { Rectangle, Sprite, type Container } from 'pixi.js';
 import type { FractionalPosition } from '../core/entity';
-import { staticDepth } from './depth';
+import { projectedDepth, staticDepth } from './depth';
 import type { Ground } from './ground';
-import { ART_SCALE, TILE_HALF, depthOf } from './iso';
+import { ART_SCALE, TILE_HALF } from './iso';
 import type { TextureCache } from './texture-cache';
 import { CHUNK_SIZE, variantFor } from './terrain-layer';
 
@@ -83,7 +83,9 @@ export class StaticLayer {
     const byChunk = new Map<string, StaticPlacement[]>();
     for (const placement of map.statics) {
       if (INVISIBLE_STATICS.has(placement.kind)) continue;
-      const key = `${Math.floor(placement.x / CHUNK_SIZE)},${Math.floor(placement.y / CHUNK_SIZE)}`;
+      // Por bloques según dónde se ven (los pisos altos, encima de su edificio).
+      const seen = map.displayOf(placement);
+      const key = `${Math.floor(seen.x / CHUNK_SIZE)},${Math.floor(seen.y / CHUNK_SIZE)}`;
       let list = byChunk.get(key);
       if (!list) byChunk.set(key, (list = []));
       list.push(placement);
@@ -202,12 +204,17 @@ export class StaticLayer {
 
   /** Lo que está delante del personaje y se superpone con él se vuelve translúcido. */
   private fadeOccluders(focuses: readonly FractionalPosition[]): void {
-    const boxes = focuses.map((f) => ({ screen: this.ground.toScreen(f), depth: depthOf(f) }));
+    const boxes = focuses.map((f) => ({
+      screen: this.ground.toScreen(f),
+      depth: projectedDepth(f),
+    }));
     for (const chunk of this.chunks) {
       if (!chunk.sprites || !chunk.visible) continue;
       for (const { sprite, placement } of chunk.sprites) {
-        if (LOW_STATICS.has(placement.kind)) continue;
-        const depth = depthOf(front(placement));
+        // Lo de los pisos de arriba del edificio donde está uno no se ve.
+        sprite.visible = !this.ground.hidden(placement);
+        if (!sprite.visible || LOW_STATICS.has(placement.kind)) continue;
+        const depth = projectedDepth(front(placement));
         const s = this.ground.toScreen(footing(placement));
         const e = extent(placement.kind);
         const hides = boxes.some(

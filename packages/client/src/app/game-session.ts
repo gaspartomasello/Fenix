@@ -296,8 +296,8 @@ export class GameSession {
           name: self.name,
           region: this.game.currentRegion()?.name ?? 'Tierras salvajes',
           time: time ? formatGameTime(time.dayProgress) : '--:--',
-          x: self.position.x,
-          y: self.position.y,
+          x: (this.game.selfSeenAt() ?? self.position).x,
+          y: (this.game.selfSeenAt() ?? self.position).y,
           visible: this.game.visibleCount,
         });
       }
@@ -677,7 +677,7 @@ export class GameSession {
     this.hosts.ui.append(book.window.element);
     const treasureMap = new TreasureMapWindow(
       () => this.game.map,
-      () => this.game.self?.position ?? null,
+      () => this.game.selfSeenAt(),
     );
     this.game.on('treasureMapOpened', (contents) => treasureMap.open(contents));
     this.hosts.ui.append(treasureMap.window.element);
