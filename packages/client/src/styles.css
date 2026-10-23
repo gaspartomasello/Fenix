@@ -1159,6 +1159,9 @@ body {
 /* Casilleros con lo que tiene puesto, a la izquierda. */
 .paperdoll-slots {
   display: grid;
+  grid-template-columns: repeat(2, 40px);
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, 40px);
   align-content: space-between;
   gap: 0.3rem;
   padding: 0.3rem 0;
@@ -1201,9 +1204,8 @@ body {
 }
 
 .paperdoll-figure {
-  width: 132px;
-  height: 234px;
-  image-rendering: pixelated;
+  width: 176px;
+  height: 312px;
   touch-action: none;
 }
 
@@ -1365,8 +1367,20 @@ body {
 
 @media (max-width: 640px) {
   .paperdoll-figure {
-    width: 88px;
-    height: 156px;
+    width: 117px;
+    height: 208px;
+  }
+
+  .paperdoll-slots {
+    grid-template-columns: repeat(2, 28px);
+    grid-template-rows: repeat(7, 28px);
+    gap: 0.2rem;
+  }
+
+  .paperdoll-slot,
+  .paperdoll-slot img {
+    width: 28px;
+    height: 28px;
   }
 
   .paperdoll-button {

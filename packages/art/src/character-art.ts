@@ -98,6 +98,72 @@ const LEATHER_DARK = ramp([92, 60, 36]);
 const LINEN = ramp([214, 206, 186]);
 const DARK_STEEL = ramp([96, 102, 114]);
 
+/** De qué está hecha cada pieza de armadura (decide cómo se ve puesta). */
+type Stuff = 'leather' | 'studded' | 'ringmail' | 'chain' | 'plate' | 'bone';
+const STUFF: Partial<Record<ItemKind, Stuff>> = {
+  'leather-armor': 'leather',
+  'leather-leggings': 'leather',
+  'leather-gorget': 'leather',
+  'leather-sleeves': 'leather',
+  'leather-gloves': 'leather',
+  'studded-leather': 'studded',
+  'studded-gorget': 'studded',
+  'studded-sleeves': 'studded',
+  'studded-gloves': 'studded',
+  'studded-leggings': 'studded',
+  ringmail: 'ringmail',
+  'ringmail-sleeves': 'ringmail',
+  'ringmail-gloves': 'ringmail',
+  'ringmail-leggings': 'ringmail',
+  chainmail: 'chain',
+  'chain-leggings': 'chain',
+  'plate-chest': 'plate',
+  'female-plate': 'plate',
+  'plate-legs': 'plate',
+  'plate-gorget': 'plate',
+  'plate-arms': 'plate',
+  'plate-gloves': 'plate',
+  'bone-armor': 'bone',
+  'bone-leggings': 'bone',
+  'bone-arms': 'bone',
+  'bone-gloves': 'bone',
+};
+
+/**
+ * La superficie de una pieza según su material. `band` da, para cada punto,
+ * una coordenada a lo largo de la pieza: ahí van las láminas de las placas,
+ * las hileras de anillas, las costuras del cuero y las filas de tachas.
+ */
+function armorSurface(stuff: Stuff, color: Ramp, band: (p: Vec3) => number): Material {
+  const wrap = (v: number, m: number): number => ((v % m) + m) % m;
+  switch (stuff) {
+    case 'leather':
+      return (s) => tone(color, s.light, wrap(band(s.p), 2.8) < 0.3 ? -1 : 0);
+    case 'studded':
+      return (s) =>
+        wrap(band(s.p), 2.2) < 0.7 && wrap(s.p[0] + s.p[2], 1.8) < 0.7
+          ? tone(STEEL, s.light + 0.25, 1)
+          : tone(color, s.light, wrap(band(s.p), 2.2) > 2 ? -1 : 0);
+    case 'ringmail':
+      return (s) => tone(DARK_STEEL, s.light + 0.1, Math.round(band(s.p) * 1.4) % 2 ? 1 : 0);
+    case 'chain':
+      return (s) =>
+        tone(STEEL, s.light, (s.x + s.y * 2) % 3 === 0 ? -1 : (s.x + s.y) % 2 === 0 ? 1 : 0);
+    case 'plate':
+      return (s) => (wrap(band(s.p), 3) < 0.28 ? tone(DARK_STEEL, s.light) : metal(STEEL)(s));
+    case 'bone':
+      return (s) =>
+        wrap(band(s.p), 2.6) < 0.55 ? tone(BONE_GAP, s.light) : tone(OLD_BONE, s.light);
+  }
+}
+
+/** La superficie de una pieza puesta, con su color (o el teñido). */
+function pieceSurface(kind: ItemKind, band: (p: Vec3) => number): Material | null {
+  const stuff = STUFF[kind];
+  if (!stuff) return null;
+  return armorSurface(stuff, ramp(wornColor(kind) ?? [122, 78, 42]), band);
+}
+
 interface Palette {
   readonly skin: Ramp;
   readonly cloth: Ramp;
@@ -230,6 +296,7 @@ function drawFigure(
   drawLegs(canvas, figure);
   drawTorso(canvas, figure);
   drawArms(canvas, figure);
+  if (equipment.neck) drawGorget(canvas, figure.rig, equipment.neck);
   const headgear = equipment.head;
   drawHumanHead(canvas, figure.rig.head, figure.rig.neck, {
     skin: figure.palette.skin,
@@ -277,6 +344,11 @@ function drawLegs(
   const bone = equipment.legs === 'bone-leggings';
   const leather = equipment.legs === 'leather-leggings';
   const shorts = equipment.legs === 'short-pants';
+  // Perneras tachonadas, de anillas o de malla: el material de la pieza, en hileras.
+  const legPiece =
+    equipment.legs && !plate && !bone && !leather ? STUFF[equipment.legs] : undefined;
+  const mailLegs =
+    legPiece && equipment.legs ? pieceSurface(equipment.legs, (q) => q[1] * 0.9) : null;
   // Alto del calzado sobre el tobillo: sandalias y zapatos bajos, botas altas hasta la rodilla.
   const feet = equipment.feet;
   const shoeHeight =
@@ -308,11 +380,23 @@ function drawLegs(
         const nearKnee = Math.hypot(...sub(s.p, leg.knee)) < 2.6;
         return nearKnee ? tone(STEEL, s.light + 0.2, 1) : metal(STEEL)(s);
       }
+      if (mailLegs) return mailLegs(s);
       if (leather && Math.round(s.p[1]) % 5 === 0) return tone(p.pants, s.light, -1);
       return tone(skirt ? p.skin : p.pants, s.light, skirt ? -1 : 0);
     };
     canvas.limb(leg.hip, leg.knee, 3.3 * thick, 2.7 * thick, legMaterial);
     canvas.limb(leg.knee, leg.ankle, 2.7 * thick, 2.2 * thick, legMaterial);
+    if (plate) {
+      // Rodillera de placas con su ala y el empeine de la greba.
+      const forward = normalize(sub(leg.toe, leg.ankle));
+      canvas.sphere(add(leg.knee, scale(forward, 1.2)), 2.2 * thick, metal(STEEL));
+      canvas.ellipsoid(
+        add(leg.knee, scale(forward, 0.4)),
+        axesAlong(forward),
+        [2.9 * thick, 1.6, 0.8],
+        (s) => tone(STEEL, s.light + 0.15, 1),
+      );
+    }
     if (bone) {
       // Rodillera de hueso abombada, con una púa hacia adelante.
       const forward = normalize(sub(leg.toe, leg.ankle));
@@ -333,6 +417,16 @@ function drawLegs(
       solid(p.boots),
     );
   }
+  if (plate && !robed) {
+    // Escarcelas: tres láminas de placa que cuelgan del cinturón sobre los muslos.
+    for (const [i, dy] of [-1.2, -2.8, -4.4].entries())
+      canvas.ellipsoid(
+        rig.pelvis.at([0, dy, 0.2]),
+        rig.pelvis.axes,
+        [5.4 + i * 0.35, 1.05, 4.1 + i * 0.3],
+        (s) => tone(STEEL, s.light + 0.1, s.p[1] < rig.pelvis.at([0, dy - 0.7, 0])[1] ? -1 : 1),
+      );
+  }
   if (robed || skirt) {
     // Túnica hasta el suelo, o pollera hasta la rodilla: discos que se ensanchan.
     // Montado, la tela cae hasta las rodillas sobre el lomo.
@@ -349,7 +443,9 @@ function drawLegs(
     // La tela sigue a las rodillas: se corre y se abre cuando las piernas se separan.
     const knees = lerp(rig.legs[1].knee, rig.legs[-1].knee, 0.5);
     const kneeGap = Math.abs(rig.legs[1].knee[2] - rig.legs[-1].knee[2]);
-    for (let y = top; y >= bottom; y -= 1) {
+    // En la ventana de personaje, discos más juntos: la tela cae lisa, sin escalones.
+    const step = canvas.detail > 1 ? 0.35 : 1;
+    for (let y = top; y >= bottom; y -= step) {
       const t = (top - y) / Math.max(1, top - bottom);
       const follow = Math.min(1, t * 1.4);
       const center: Vec3 = [
@@ -387,10 +483,10 @@ function torsoMaterial({ rig, palette: p, equipment, outfit, female, robed }: Fi
       return tone(p.belt, s.light);
     }
     if ((armor === 'plate-chest' || armor === 'female-plate') && y > -4) {
-      // Peto de placas: láminas horizontales con borde claro y una cresta al centro.
-      const band = ((y + 20) % 3.4) / 3.4;
-      if (front && Math.abs(local[0]) < 0.5) return tone(STEEL, s.light + 0.25, 1);
-      if (band < 0.12) return tone(STEEL, s.light - 0.25, -1);
+      // Peto de placas: el pecho de una sola pieza con una cresta al centro y,
+      // abajo, la faja de láminas sobre el vientre.
+      if (front && Math.abs(local[0]) < 0.5 && y > 3.5) return tone(STEEL, s.light + 0.25, 1);
+      if (y < 4 && ((y + 20) % 1.7) / 1.7 < 0.2) return tone(STEEL, s.light - 0.25, -1);
       return metal(STEEL)(s);
     }
     if (armor === 'bone-armor' && y > -4) {
@@ -496,23 +592,33 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
   // El peto de mujer tiene el busto forjado en la placa.
   if ((female && !metalTorso) || equipment.torso === 'female-plate') {
     for (const side of [1, -1] as const) {
-      canvas.sphere(chest.at([side * 2.1, 0.8, 2.4]), 2.2, material);
+      if (canvas.detail > 1)
+        // De cerca, el busto más suave y pegado al pecho.
+        canvas.ellipsoid(chest.at([side * 2, 0.5, 2.3]), chest.axes, [2.3, 2, 1.7], material);
+      else canvas.sphere(chest.at([side * 2.1, 0.8, 2.4]), 2.2, material);
     }
   }
   // Faldón de la camisa debajo del cinturón.
   if (!robed && !skirt && !metalTorso) {
-    canvas.ellipsoid(pelvis.at([0, -2.2, 0]), pelvis.axes, [5.5, 2.6, 3.7], solid(p.cloth, -1));
+    // De cerca (ventana de personaje), un ruedo que rodea la cadera.
+    if (canvas.detail > 1)
+      canvas.ellipsoid(pelvis.at([0, -0.4, 0]), pelvis.axes, [5.7, 1.1, 4.1], solid(p.cloth));
+    else
+      canvas.ellipsoid(pelvis.at([0, -2.2, 0]), pelvis.axes, [5.5, 2.6, 3.7], solid(p.cloth, -1));
   }
   const torso = equipment.torso;
-  if (torso && torso !== 'robe') {
+  const plateArms = STUFF[equipment.arms ?? 'gold'] === 'plate';
+  if ((torso && torso !== 'robe') || plateArms) {
     // Hombreras: más grandes en el peto de placas.
     const bone = torso === 'bone-armor';
-    const pad = metalTorso
-      ? metal(STEEL)
-      : bone
-        ? solid(OLD_BONE)
-        : solid(ramp(wornColor(torso) ?? [122, 78, 42]), 1);
-    const big = torso === 'plate-chest' || torso === 'female-plate' ? 1.2 : bone ? 1.15 : 1;
+    const pad =
+      metalTorso || plateArms
+        ? metal(STEEL)
+        : bone
+          ? solid(OLD_BONE)
+          : solid(ramp(wornColor(torso ?? 'gold') ?? [122, 78, 42]), 1);
+    const big =
+      torso === 'plate-chest' || torso === 'female-plate' || plateArms ? 1.2 : bone ? 1.15 : 1;
     for (const side of [1, -1] as const) {
       const top = add(rig.arms[side].shoulder, chest.dir([side * 0.4, 0.8, 0]));
       canvas.ellipsoid(
@@ -573,28 +679,48 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
   }
 }
 
-function drawArms(
-  canvas: VolumeCanvas,
-  { rig, palette: p, outfit, female, metalTorso, equipment }: Figure,
-): void {
-  const boneArmor = equipment.torso === 'bone-armor';
-  const sleeve: Material = boneArmor
+function drawArms(canvas: VolumeCanvas, figure: Figure): void {
+  const { rig, palette: p, outfit, female, equipment } = figure;
+  const torso = equipment.torso;
+  const boneArmor = torso === 'bone-armor';
+  // Las cotas de malla y de anillas tienen media manga; el peto de placas, no.
+  const mailTorso = torso === 'chainmail' || torso === 'ringmail';
+  const cloth: Material = boneArmor
     ? (s) => tone(LEATHER_DARK, s.light)
-    : metalTorso
-      ? metal(STEEL)
-      : outfit === 'vest'
-        ? solid(LINEN)
-        : outfit === 'woodcutter'
-          ? plaid
-          : solid(p.cloth);
+    : outfit === 'vest'
+      ? solid(LINEN)
+      : outfit === 'woodcutter'
+        ? plaid
+        : solid(p.cloth);
   // Herrero y tabernero trabajan con las mangas arremangadas.
   const bareForearms = outfit === 'apron' || outfit === 'innkeeper' || outfit === 'woodcutter';
   const thin = female ? 0.85 : 1;
+  const sleeves = equipment.arms;
+  const sleeveStuff = sleeves ? STUFF[sleeves] : undefined;
   for (const side of [1, -1] as const) {
     const arm = rig.arms[side];
-    canvas.limb(arm.shoulder, arm.elbow, 2.75 * thin, 2.1 * thin, sleeve);
-    canvas.limb(arm.elbow, arm.hand, 2.1 * thin, 1.8 * thin, bareForearms ? solid(p.skin) : sleeve);
-    if (boneArmor) {
+    const along = (q: Vec3): number => Math.hypot(...sub(q, arm.shoulder));
+    const piece = sleeves ? pieceSurface(sleeves, along) : null;
+    const mail = mailTorso && torso ? pieceSurface(torso, along) : null;
+    const upper = piece ?? mail ?? cloth;
+    const lower = piece ?? (bareForearms ? solid(p.skin) : cloth);
+    const bulk = sleeveStuff === 'plate' ? 1.12 : sleeveStuff ? 1.05 : 1;
+    canvas.limb(arm.shoulder, arm.elbow, 2.75 * thin * bulk, 2.1 * thin * bulk, upper);
+    canvas.limb(arm.elbow, arm.hand, 2.1 * thin * bulk, 1.8 * thin * bulk, lower);
+    const back = normalize(sub(arm.elbow, arm.hand));
+    if (sleeveStuff === 'plate') {
+      // Codera abombada con su ala y la canillera del antebrazo con borde.
+      canvas.sphere(arm.elbow, 2.3 * thin, metal(STEEL));
+      canvas.ellipsoid(
+        add(arm.elbow, scale(back, 0.6)),
+        axesAlong(back),
+        [2.6 * thin, 2.6 * thin, 0.8],
+        (s) => tone(STEEL, s.light + 0.1, 1),
+      );
+      canvas.limb(lerp(arm.elbow, arm.hand, 0.82), arm.hand, 2.25 * thin, 2.1 * thin, (s) =>
+        tone(STEEL, s.light + 0.15, 1),
+      );
+    } else if (sleeveStuff === 'bone') {
       // Brazales de hueso con bandas y una púa en el codo.
       const bracer: Material = (s) =>
         Math.round((s.p[1] - arm.hand[1]) * 1.1) % 3 === 0
@@ -602,16 +728,124 @@ function drawArms(
           : tone(OLD_BONE, s.light);
       canvas.limb(lerp(arm.elbow, arm.hand, 0.2), arm.hand, 2.4 * thin, 2.1 * thin, bracer);
       canvas.sphere(arm.elbow, 1.9 * thin, solid(OLD_BONE));
+      canvas.limb(arm.elbow, add(arm.elbow, scale(back, 3)), 0.8, 0.15, solid(OLD_BONE, 1));
+    }
+    drawHand(canvas, figure, side, thin);
+  }
+}
+
+/**
+ * La mano: en el mundo, una bola (a ese tamaño no se distingue más); en la
+ * ventana de personaje, palma, cuatro dedos y pulgar, cerrada si empuña
+ * algo. Con guantes, del material del guante; los guanteletes de placas
+ * llevan puño acampanado y nudillera.
+ */
+function drawHand(canvas: VolumeCanvas, figure: Figure, side: 1 | -1, thin: number): void {
+  const { rig, palette: p, equipment } = figure;
+  const arm = rig.arms[side];
+  const gloves = equipment.hands;
+  const stuff = gloves ? STUFF[gloves] : undefined;
+  const forward = normalize(sub(arm.hand, arm.elbow));
+  const along = (q: Vec3): number => Math.hypot(...sub(q, arm.elbow)) * 2.2;
+  const skin = gloves ? (pieceSurface(gloves, along) ?? solid(p.skin)) : solid(p.skin);
+  if (stuff === 'plate' || stuff === 'bone') {
+    // Puño acampanado del guantelete, sobre la muñeca.
+    canvas.limb(
+      sub(arm.hand, scale(forward, 1.8)),
+      sub(arm.hand, scale(forward, 0.4)),
+      1.9 * thin,
+      2.3 * thin,
+      stuff === 'plate' ? metal(STEEL) : solid(OLD_BONE),
+    );
+  } else if (gloves) {
+    canvas.limb(
+      sub(arm.hand, scale(forward, 1.6)),
+      sub(arm.hand, scale(forward, 0.5)),
+      1.95 * thin,
+      2.05 * thin,
+      skin,
+    );
+  }
+  if (canvas.detail === 1) {
+    canvas.sphere(arm.hand, (stuff === 'plate' ? 1.95 : 1.8) * thin, skin);
+    return;
+  }
+  const holding =
+    (side === 1 && equipment.rightHand !== undefined && !heldInLeftHand(equipment.rightHand)) ||
+    (side === -1 && equipment.leftHand !== undefined);
+  const lateral = rig.chest.dir([1, 0, 0]);
+  const across = normalize(
+    sub(
+      lateral,
+      scale(forward, lateral[0] * forward[0] + lateral[1] * forward[1] + lateral[2] * forward[2]),
+    ),
+  );
+  const palm = add(arm.hand, scale(forward, 0.4));
+  canvas.ellipsoid(palm, axesAlong(forward), [1.45 * thin, 0.85 * thin, 1.25 * thin], skin);
+  if (holding) {
+    // Puño cerrado alrededor del mango.
+    canvas.ellipsoid(
+      add(palm, scale(forward, 1)),
+      axesAlong(forward),
+      [1.5 * thin, 1.1 * thin, 1 * thin],
+      skin,
+    );
+  } else {
+    // Dedos sueltos que caen apenas curvos.
+    for (const k of [-0.95, -0.32, 0.32, 0.95]) {
+      const base = add(add(palm, scale(forward, 1)), scale(across, k * 0.62 * thin));
+      const length = (k === -0.95 || k === 0.95 ? 1.5 : 1.85) * thin;
       canvas.limb(
-        arm.elbow,
-        add(arm.elbow, scale(normalize(sub(arm.elbow, arm.hand)), 3)),
-        0.8,
-        0.15,
-        solid(OLD_BONE, 1),
+        base,
+        add(add(base, scale(forward, length)), [0, -0.15, 0]),
+        0.42 * thin,
+        0.33 * thin,
+        skin,
       );
     }
-    canvas.sphere(arm.hand, 1.8 * thin, solid(p.skin));
   }
+  // Pulgar, del lado de adentro (hacia el cuerpo).
+  const inward = scale(across, -side);
+  const thumb = add(arm.hand, scale(inward, 1.1 * thin));
+  canvas.limb(
+    thumb,
+    add(add(thumb, scale(forward, 1.3 * thin)), scale(inward, 0.5)),
+    0.5 * thin,
+    0.36 * thin,
+    skin,
+  );
+  if (stuff === 'plate')
+    canvas.limb(
+      add(palm, scale(across, -1.2 * thin)),
+      add(palm, scale(across, 1.2 * thin)),
+      0.5 * thin,
+      0.5 * thin,
+      (s) => tone(STEEL, s.light + 0.2, 1),
+    );
+}
+
+/** Gola: de placas, anillos superpuestos sobre el cuello y los hombros; de cuero, un cuello alto. */
+function drawGorget(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
+  const stuff = STUFF[kind];
+  const chest = rig.chest;
+  const neckY = rig.neck[1];
+  const surface = pieceSurface(kind, (q) => (neckY - q[1]) * 1.4) ?? solid(ramp([122, 78, 42]));
+  if (stuff === 'plate') {
+    for (const [dy, rx, rz] of [
+      [-1.2, 5.6, 4.2],
+      [0, 4.6, 3.6],
+      [1.1, 3.6, 3],
+    ] as const)
+      canvas.ellipsoid(
+        add(rig.neck, chest.dir([0, dy - 0.4, 0.2])),
+        chest.axes,
+        [rx, 0.75, rz],
+        (s) => tone(STEEL, s.light + (dy > 0 ? 0.2 : 0.05), 1),
+      );
+    return;
+  }
+  canvas.ellipsoid(add(rig.neck, chest.dir([0, -0.2, 0.3])), chest.axes, [3.4, 1.8, 3.1], surface);
+  canvas.ellipsoid(add(rig.neck, chest.dir([0, -1.6, 0.4])), chest.axes, [5, 0.9, 3.8], surface);
 }
 
 // ── Equipo ──────────────────────────────────────────────────────────

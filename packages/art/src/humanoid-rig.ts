@@ -44,6 +44,7 @@ export type WalkStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 /** `guard`: en guardia (modo guerra); `guard-0..7`: caminando en guardia. */
 export type CharacterFrame =
   | 'idle'
+  | 'display'
   | 'sit'
   | 'dead'
   | 'guard'
@@ -513,8 +514,21 @@ const DEAD: BodyPose = {
   leftArm: { raise: 0.05, spread: 0.55, bend: 0.35 },
 };
 
+/**
+ * La pose de la ventana de personaje, como en UO: de pie, las piernas un poco
+ * abiertas y los brazos separados del cuerpo con los codos apenas doblados,
+ * así se ve cada prenda (mangas, guantes, lo que tiene en las manos).
+ */
+const DISPLAY: BodyPose = {
+  right: { thigh: 0, knee: 0.04, spread: 0.1 },
+  left: { thigh: 0, knee: 0.04, spread: 0.1 },
+  rightArm: { raise: 0.18, spread: 0.32, bend: 0.5 },
+  leftArm: { raise: 0.18, spread: 0.32, bend: 0.5 },
+};
+
 function poseFor(frame: CharacterFrame): BodyPose {
   if (frame === 'idle') return { right: STAND, left: STAND };
+  if (frame === 'display') return DISPLAY;
   if (frame === 'dead') return DEAD;
   if (frame === 'guard') return GUARD;
   // Caminar y correr: entre las cuatro poses clave se interpola, así hay más cuadros.
