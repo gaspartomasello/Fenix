@@ -1,13 +1,9 @@
-import {
-  ALL_DIRECTIONS,
-  CREATURE_KINDS,
-  DEFAULT_APPEARANCE,
-  Direction,
-  HAIR_STYLES,
-  ITEM_KINDS,
-  STATIC_KINDS,
-  Terrain,
-} from '@fenix/shared';
+import { DEFAULT_APPEARANCE, HAIR_STYLES } from '@fenix/shared/character/appearance';
+import { CREATURE_KINDS } from '@fenix/shared/creatures/creature-catalog';
+import { ALL_DIRECTIONS, Direction } from '@fenix/shared/geometry/direction';
+import { ITEM_KINDS } from '@fenix/shared/items/item-catalog';
+import { STATIC_KINDS } from '@fenix/shared/world/statics';
+import { Terrain } from '@fenix/shared/world/terrain';
 import { describe, expect, it } from 'vitest';
 import {
   ACTION_KINDS,

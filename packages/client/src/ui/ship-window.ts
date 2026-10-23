@@ -1,18 +1,20 @@
+import type {
+  EntityId,
+  ShipAction,
+  ShipSecurityChange,
+  ShipSnapshot,
+} from '@fenix/shared/protocol/messages';
 import {
   SHIPS,
   SHIP_LEVELS,
   SHIP_LEVEL_NAMES,
   hullCondition,
   levelAtLeast,
-  type EntityId,
   type RelativeHeading,
-  type ShipAction,
   type ShipLevel,
   type ShipOrder,
   type ShipSecurity,
-  type ShipSecurityChange,
-  type ShipSnapshot,
-} from '@fenix/shared';
+} from '@fenix/shared/ships/ships';
 import { el } from './dom';
 import { GameWindow } from './game-window';
 

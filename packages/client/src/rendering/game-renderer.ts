@@ -1,12 +1,8 @@
-import {
-  ITEMS,
-  STATIC_CONTAINERS,
-  type EntityId,
-  type GroundItemSnapshot,
-  type ShipSnapshot,
-  type Position,
-  type TileMap,
-} from '@fenix/shared';
+import type { Position } from '@fenix/shared/geometry/position';
+import { ITEMS } from '@fenix/shared/items/item-catalog';
+import type { EntityId, GroundItemSnapshot, ShipSnapshot } from '@fenix/shared/protocol/messages';
+import { STATIC_CONTAINERS } from '@fenix/shared/world/statics';
+import type { TileMap } from '@fenix/shared/world/tile-map';
 import { Application, Container, Rectangle } from 'pixi.js';
 // Evita `eval` en Pixi: necesario en páginas con Content Security Policy estricta.
 import 'pixi.js/unsafe-eval';

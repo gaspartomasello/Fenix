@@ -1,5 +1,5 @@
-import type { ClientMessage } from '@fenix/shared';
-import { encodeMessage } from '@fenix/shared';
+import type { ClientMessage } from '@fenix/shared/protocol/messages';
+import { encodeMessage } from '@fenix/shared/protocol/codec';
 import { GameApplication } from './application/game-application';
 import { WorldClock } from './domain/world-clock';
 import { createWorld } from './infrastructure/content/world-builder';

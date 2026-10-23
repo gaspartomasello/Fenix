@@ -1,13 +1,9 @@
-import {
-  DEFAULT_APPEARANCE,
-  Direction,
-  inViewRange,
-  VIEW_RANGE,
-  type EntityId,
-  type MobileSnapshot,
-  type Position,
-  type TileMap,
-} from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import { Direction } from '@fenix/shared/geometry/direction';
+import type { Position } from '@fenix/shared/geometry/position';
+import type { EntityId, MobileSnapshot } from '@fenix/shared/protocol/messages';
+import { inViewRange, VIEW_RANGE } from '@fenix/shared/rules/visibility';
+import type { TileMap } from '@fenix/shared/world/tile-map';
 import { Creature } from './creatures/creature';
 import { Items } from './items/items';
 import type { Mobile } from './mobile';

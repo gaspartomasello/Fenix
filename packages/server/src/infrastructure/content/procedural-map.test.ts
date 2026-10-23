@@ -1,4 +1,7 @@
-import { DOORS, STATICS, Terrain, type Position, type TileMap } from '@fenix/shared';
+import type { Position } from '@fenix/shared/geometry/position';
+import { DOORS, STATICS } from '@fenix/shared/world/statics';
+import { Terrain } from '@fenix/shared/world/terrain';
+import type { TileMap } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
 import { generateIslandMap } from './procedural-map';
 import { DUNGEON_NAME, buildWorld, createWorld } from './world-builder';

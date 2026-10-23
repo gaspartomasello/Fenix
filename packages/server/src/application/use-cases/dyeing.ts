@@ -1,4 +1,6 @@
-import { ITEMS, dyeName, isDyeHue, isDyeable, type EntityId } from '@fenix/shared';
+import { dyeName, isDyeHue, isDyeable } from '@fenix/shared/items/dyes';
+import { ITEMS } from '@fenix/shared/items/item-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import { emptyChanges } from '../../domain/items/items';
 import type { World } from '../../domain/world';
 import type { ItemNotifications } from '../item-notifications';

@@ -1,4 +1,6 @@
-import { MAX_BACKPACK_ITEMS, Terrain, TileMap } from '@fenix/shared';
+import { MAX_BACKPACK_ITEMS } from '@fenix/shared/items/item-rules';
+import { Terrain } from '@fenix/shared/world/terrain';
+import { TileMap } from '@fenix/shared/world/tile-map';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { Items } from './items';
 

@@ -1,5 +1,6 @@
 import { terrainBaseColor } from '@fenix/art';
-import { STATICS, type StaticKind, type TileMap } from '@fenix/shared';
+import { STATICS, type StaticKind } from '@fenix/shared/world/statics';
+import type { TileMap } from '@fenix/shared/world/tile-map';
 
 /** Color de cada objeto fijo en los mapas (los que no figuran no se dibujan). */
 function staticColor(kind: StaticKind): string | null {

@@ -1,4 +1,7 @@
-import { DEFAULT_APPEARANCE, Direction, PLAYER_ATTRIBUTES, STARTING_SKILLS } from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import { PLAYER_ATTRIBUTES } from '@fenix/shared/combat/vitals';
+import { Direction } from '@fenix/shared/geometry/direction';
+import { STARTING_SKILLS } from '@fenix/shared/skills/skill-catalog';
 import { describe, expect, it } from 'vitest';
 import { SAVE_VERSION, type SavedCharacter } from '../../domain/persistence/saved-character';
 import { ScryptPasswordHasher } from '../system/scrypt-password-hasher';

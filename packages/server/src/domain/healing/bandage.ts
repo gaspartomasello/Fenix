@@ -4,12 +4,12 @@ import {
   bandageCurePower,
   bandageDelayMs,
   canCurePoison,
-  cureChance,
   rollBandageHeal,
-  tileDistance,
-  type EntityId,
-  type SkillKey,
-} from '@fenix/shared';
+} from '@fenix/shared/combat/healing';
+import { tileDistance } from '@fenix/shared/geometry/position';
+import { cureChance } from '@fenix/shared/magic/effects';
+import type { EntityId } from '@fenix/shared/protocol/messages';
+import type { SkillKey } from '@fenix/shared/skills/skill-catalog';
 import { emptyChanges, type ItemChanges } from '../items/items';
 import type { Mobile } from '../mobile';
 import { Player } from '../player';

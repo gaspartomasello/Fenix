@@ -1,12 +1,10 @@
-import {
-  DEFAULT_APPEARANCE,
-  Direction,
-  MOUNTED_MOVE_DURATION_MS,
-  MOUNTS,
-  Terrain,
-  TileMap,
-  type EntityId,
-} from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import { Direction } from '@fenix/shared/geometry/direction';
+import { MOUNTS } from '@fenix/shared/mounts/mount-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
+import { MOUNTED_MOVE_DURATION_MS } from '@fenix/shared/rules/movement';
+import { Terrain } from '@fenix/shared/world/terrain';
+import { TileMap } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
 import { Creature } from '../domain/creatures/creature';
 import { Npc } from '../domain/npcs/npc';

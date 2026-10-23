@@ -1,4 +1,4 @@
-import { Direction } from '@fenix/shared';
+import { Direction } from '@fenix/shared/geometry/direction';
 import { describe, expect, it } from 'vitest';
 import { keysToIntent, pointerToIntent, RUN_DISTANCE_PX } from './movement-intent';
 

@@ -1,4 +1,5 @@
-import { ITEMS, describeItem, type EntityId, type ItemKind } from '@fenix/shared';
+import { ITEMS, describeItem, type ItemKind } from '@fenix/shared/items/item-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import { startBandage } from '../../domain/healing/bandage';
 import { consume } from '../../domain/items/consumables';
 import type { World } from '../../domain/world';

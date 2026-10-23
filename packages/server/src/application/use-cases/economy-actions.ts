@@ -1,10 +1,7 @@
-import {
-  VENDOR_RANGE,
-  tileDistance,
-  type EntityId,
-  type ItemKind,
-  type Position,
-} from '@fenix/shared';
+import { VENDOR_RANGE } from '@fenix/shared/economy/vendors';
+import { tileDistance, type Position } from '@fenix/shared/geometry/position';
+import type { ItemKind } from '@fenix/shared/items/item-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import { buy, craft, gather, sell, smelt, type EconomyResult } from '../../domain/economy/economy';
 import { ResourceSpots } from '../../domain/economy/resource-spots';
 import type { Player } from '../../domain/player';

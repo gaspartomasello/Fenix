@@ -1,4 +1,5 @@
-import { INVITE_MS, PARTY_MAX, type EntityId } from '@fenix/shared';
+import type { EntityId } from '@fenix/shared/protocol/messages';
+import { INVITE_MS, PARTY_MAX } from '@fenix/shared/social/groups';
 
 /** Un grupo de jugadores que comparten chat y no se atacan entre sí. */
 export class Party {

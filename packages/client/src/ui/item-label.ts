@@ -1,11 +1,6 @@
-import {
-  ITEMS,
-  armorRating,
-  describeItem,
-  weaponByKind,
-  type ItemKind,
-  type ItemSnapshot,
-} from '@fenix/shared';
+import { armorRating, weaponByKind } from '@fenix/shared/combat/weapons';
+import { ITEMS, describeItem, type ItemKind } from '@fenix/shared/items/item-catalog';
+import type { ItemSnapshot } from '@fenix/shared/protocol/messages';
 
 /** Nombre de un objeto para la interfaz: "3 manzanas"; una runa dice qué lugar guarda y un libro, su título. */
 export function itemLabel(item: ItemSnapshot): string {

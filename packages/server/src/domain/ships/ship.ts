@@ -1,19 +1,18 @@
+import { directionOffset } from '@fenix/shared/geometry/direction';
+import type { Position } from '@fenix/shared/geometry/position';
+import type { EntityId, ShipSnapshot } from '@fenix/shared/protocol/messages';
 import {
   SHIPS,
-  directionOffset,
   shipLevel,
   shipTiles,
-  type EntityId,
-  type Position,
   type RelativeHeading,
   type ShipFacing,
   type ShipKind,
   type ShipLevel,
   type ShipSecurity,
   type ShipSide,
-  type ShipSnapshot,
   type ShipVisitor,
-} from '@fenix/shared';
+} from '@fenix/shared/ships/ships';
 
 /** Lo que guarda la maqueta de un barco amarrado (y vuelve al botarlo). */
 export interface ShipRecord {

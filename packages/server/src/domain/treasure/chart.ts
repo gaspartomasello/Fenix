@@ -1,11 +1,11 @@
+import type { Position } from '@fenix/shared/geometry/position';
 import {
-  isWater,
   treasureHint,
-  type Position,
-  type TileMap,
   type TreasureLevel,
   type TreasureMark,
-} from '@fenix/shared';
+} from '@fenix/shared/treasure/treasure';
+import { isWater } from '@fenix/shared/world/terrain';
+import type { TileMap } from '@fenix/shared/world/tile-map';
 
 /** Cuántos lugares al azar se prueban antes de rendirse. */
 const TRIES = 600;

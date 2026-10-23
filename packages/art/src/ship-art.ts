@@ -1,4 +1,4 @@
-import { SHIPS, type ShipFacing, type ShipKind } from '@fenix/shared';
+import { SHIPS, type ShipFacing, type ShipKind } from '@fenix/shared/ships/ships';
 import { PixelImage, type Rgb } from './pixel-art';
 import {
   RotatedProjection,

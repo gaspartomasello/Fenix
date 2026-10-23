@@ -1,4 +1,5 @@
-import { ALL_TERRAINS, STATIC_KINDS, TERRAINS } from '@fenix/shared';
+import { STATIC_KINDS } from '@fenix/shared/world/statics';
+import { ALL_TERRAINS, TERRAINS } from '@fenix/shared/world/terrain';
 import { describe, expect, it } from 'vitest';
 import { TILED, type TiledTileset } from './tiled-format';
 import { TILESETS } from './index';

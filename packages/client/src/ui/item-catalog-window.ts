@@ -1,4 +1,6 @@
-import { ITEMS, ITEM_KINDS, SPELLS, armorRating, weaponByKind, type ItemKind } from '@fenix/shared';
+import { armorRating, weaponByKind } from '@fenix/shared/combat/weapons';
+import { ITEMS, ITEM_KINDS, type ItemKind } from '@fenix/shared/items/item-catalog';
+import { SPELLS } from '@fenix/shared/magic/spell-catalog';
 import { el } from './dom';
 import { GameWindow } from './game-window';
 import { itemDetails } from './item-label';

@@ -1,12 +1,8 @@
-import {
-  DEFAULT_APPEARANCE,
-  LEGEND_DONE,
-  LEGEND_FOUND,
-  LEGEND_SEEKING,
-  Terrain,
-  TileMap,
-  type ServerMessage,
-} from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import type { ServerMessage } from '@fenix/shared/protocol/messages';
+import { LEGEND_DONE, LEGEND_FOUND, LEGEND_SEEKING } from '@fenix/shared/quests/legends';
+import { Terrain } from '@fenix/shared/world/terrain';
+import { TileMap } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
 import { Npc } from '../domain/npcs/npc';
 import { World } from '../domain/world';

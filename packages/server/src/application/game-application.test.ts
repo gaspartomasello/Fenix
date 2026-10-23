@@ -1,12 +1,10 @@
-import {
-  DEFAULT_APPEARANCE,
-  Direction,
-  MOVE_DURATION_MS,
-  Terrain,
-  TileMap,
-  VIEW_RANGE,
-  type EntityId,
-} from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import { Direction } from '@fenix/shared/geometry/direction';
+import type { EntityId } from '@fenix/shared/protocol/messages';
+import { MOVE_DURATION_MS } from '@fenix/shared/rules/movement';
+import { VIEW_RANGE } from '@fenix/shared/rules/visibility';
+import { Terrain } from '@fenix/shared/world/terrain';
+import { TileMap } from '@fenix/shared/world/tile-map';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { STARTING_KIT } from '../domain/items/starting-kit';
 import { World } from '../domain/world';

@@ -1,4 +1,6 @@
-import { SKILL_NAMES, formatSkill, type EntityId, type SpellKey } from '@fenix/shared';
+import type { SpellKey } from '@fenix/shared/magic/spell-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
+import { SKILL_NAMES, formatSkill } from '@fenix/shared/skills/skill-catalog';
 import type { SkillGain, SwingResult } from '../domain/combat/combat';
 import type { Mobile } from '../domain/mobile';
 import { Player } from '../domain/player';

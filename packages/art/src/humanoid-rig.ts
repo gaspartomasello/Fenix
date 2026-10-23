@@ -1,4 +1,5 @@
-import { Direction, type ItemKind } from '@fenix/shared';
+import { Direction } from '@fenix/shared/geometry/direction';
+import type { ItemKind } from '@fenix/shared/items/item-catalog';
 import { Camera, VolumeCanvas, add, normalize, pitch, scale, sub, yaw, type Vec3 } from './volume';
 
 /**

@@ -1,16 +1,13 @@
-import {
-  DEFAULT_APPEARANCE,
-  Terrain,
-  TileMap,
-  SUMMONED_BEASTS,
-  Direction,
-  moveDuration,
-  decodeClientMessage,
-  staticContainerId,
-  type EntityId,
-  type ItemKind,
-  type ServerMessage,
-} from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import { Direction } from '@fenix/shared/geometry/direction';
+import type { ItemKind } from '@fenix/shared/items/item-catalog';
+import { SUMMONED_BEASTS } from '@fenix/shared/magic/spell-catalog';
+import { decodeClientMessage } from '@fenix/shared/protocol/codec';
+import type { EntityId, ServerMessage } from '@fenix/shared/protocol/messages';
+import { moveDuration } from '@fenix/shared/rules/movement';
+import { staticContainerId } from '@fenix/shared/world/statics';
+import { Terrain } from '@fenix/shared/world/terrain';
+import { TileMap } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';

@@ -1,10 +1,8 @@
-import {
-  DEFAULT_APPEARANCE,
-  LORE_BOOKS,
-  Terrain,
-  TileMap,
-  decodeClientMessage,
-} from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import { LORE_BOOKS } from '@fenix/shared/items/books';
+import { decodeClientMessage } from '@fenix/shared/protocol/codec';
+import { Terrain } from '@fenix/shared/world/terrain';
+import { TileMap } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
 import { captureCharacter, parseSavedCharacter } from '../domain/persistence/saved-character';
 import { World } from '../domain/world';

@@ -1,14 +1,13 @@
+import { inMeleeRange } from '@fenix/shared/combat/combat-rules';
 import {
   ALL_DIRECTIONS,
-  canStep,
   directionBetween,
-  inMeleeRange,
   step,
-  tileDistance,
   type Direction,
-  type EntityId,
-  type Position,
-} from '@fenix/shared';
+} from '@fenix/shared/geometry/direction';
+import { tileDistance, type Position } from '@fenix/shared/geometry/position';
+import type { EntityId } from '@fenix/shared/protocol/messages';
+import { canStep } from '@fenix/shared/rules/movement';
 import type { Mobile } from '../mobile';
 import { Npc } from '../npcs/npc';
 import { Player } from '../player';

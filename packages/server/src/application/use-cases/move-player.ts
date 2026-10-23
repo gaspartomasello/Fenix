@@ -1,16 +1,13 @@
-import {
-  effectiveMoveMode,
-  encumbrance,
-  maxWeight,
-  type Direction,
-  type EntityId,
-  type MobileMovedMessage,
-  type MobileTeleportedMessage,
-  type MoveMode,
-  type Position,
-  step,
-  tileDistance,
-} from '@fenix/shared';
+import { effectiveMoveMode } from '@fenix/shared/combat/combat-rules';
+import { type Direction, step } from '@fenix/shared/geometry/direction';
+import { type Position, tileDistance } from '@fenix/shared/geometry/position';
+import { encumbrance, maxWeight } from '@fenix/shared/items/weight';
+import type {
+  EntityId,
+  MobileMovedMessage,
+  MobileTeleportedMessage,
+} from '@fenix/shared/protocol/messages';
+import type { MoveMode } from '@fenix/shared/rules/movement';
 import { freeSpotNear } from '../../domain/persistence/saved-character';
 import type { Player } from '../../domain/player';
 import type { World } from '../../domain/world';

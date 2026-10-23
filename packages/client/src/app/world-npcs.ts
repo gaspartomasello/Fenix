@@ -1,4 +1,4 @@
-import { isMerchant, type NpcRole } from '@fenix/shared';
+import { isMerchant, type NpcRole } from '@fenix/shared/economy/vendors';
 import type { ClientGame } from '../core/client-game';
 import type { GameRenderer } from '../rendering/game-renderer';
 import type { WorldTooltip } from '../ui/world-tooltip';

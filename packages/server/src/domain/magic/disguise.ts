@@ -5,7 +5,7 @@ import {
   HAIR_STYLES,
   SKIN_TONES,
   type Appearance,
-} from '@fenix/shared';
+} from '@fenix/shared/character/appearance';
 
 /** Nombres que puede tomar quien lanza Incógnito. */
 const MALE_NAMES = [

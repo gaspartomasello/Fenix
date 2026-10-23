@@ -1,4 +1,5 @@
-import { REAGENTS, type EntityId } from '@fenix/shared';
+import { REAGENTS } from '@fenix/shared/character/creation';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import type { Player } from '../player';
 import type { World } from '../world';
 import type { ItemChanges } from './items';

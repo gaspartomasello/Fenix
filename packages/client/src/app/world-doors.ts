@@ -1,4 +1,4 @@
-import { STATICS } from '@fenix/shared';
+import { STATICS } from '@fenix/shared/world/statics';
 import type { ClientGame } from '../core/client-game';
 import type { GameRenderer } from '../rendering/game-renderer';
 import type { WorldTooltip } from '../ui/world-tooltip';

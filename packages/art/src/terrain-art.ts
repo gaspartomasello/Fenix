@@ -1,4 +1,4 @@
-import { Terrain, TERRAINS } from '@fenix/shared';
+import { Terrain, TERRAINS } from '@fenix/shared/world/terrain';
 import { PixelImage, shade, type Rgb } from './pixel-art';
 
 /**

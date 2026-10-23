@@ -1,15 +1,17 @@
 import {
-  POISON_TICK_MS,
   REGEN_INTERVAL_MS,
   fullVitals,
+  type Attributes,
+  type Vitals,
+} from '@fenix/shared/combat/vitals';
+import {
+  POISON_TICK_MS,
   poisonDamage,
   type AttributeKey,
-  type Attributes,
   type EffectKind,
   type EffectSnapshot,
-  type EntityId,
-  type Vitals,
-} from '@fenix/shared';
+} from '@fenix/shared/magic/effects';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 
 export interface RegenResult {
   readonly hits: boolean;

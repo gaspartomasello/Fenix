@@ -1,4 +1,7 @@
-import { DEFAULT_APPEARANCE, Terrain, TileMap, type GmCommand } from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import type { GmCommand } from '@fenix/shared/protocol/messages';
+import { Terrain } from '@fenix/shared/world/terrain';
+import { TileMap } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';

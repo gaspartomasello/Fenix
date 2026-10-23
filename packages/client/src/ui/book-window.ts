@@ -1,6 +1,7 @@
 import fellUrl from '@fontsource/im-fell-english/files/im-fell-english-latin-400-normal.woff2?url';
 import frakturUrl from '@fontsource/unifrakturmaguntia/files/unifrakturmaguntia-latin-400-normal.woff2?url';
-import { BOOK_PAGES, BOOK_PAGE_CHARS, BOOK_TITLE_CHARS, type EntityId } from '@fenix/shared';
+import { BOOK_PAGES, BOOK_PAGE_CHARS, BOOK_TITLE_CHARS } from '@fenix/shared/items/books';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import type { BookContents } from '../core/client-game';
 import { el } from './dom';
 import { GameWindow } from './game-window';

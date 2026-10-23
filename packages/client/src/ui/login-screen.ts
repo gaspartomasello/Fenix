@@ -1,9 +1,5 @@
-import {
-  NAME_MAX_LENGTH,
-  PASSWORD_MAX_LENGTH,
-  validateCharacterName,
-  validatePassword,
-} from '@fenix/shared';
+import { NAME_MAX_LENGTH, validateCharacterName } from '@fenix/shared/character/name';
+import { PASSWORD_MAX_LENGTH, validatePassword } from '@fenix/shared/character/password';
 import { el } from './dom';
 
 export interface LoginRequest {

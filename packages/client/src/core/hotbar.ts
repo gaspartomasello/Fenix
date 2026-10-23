@@ -1,15 +1,8 @@
-import {
-  ITEMS,
-  SKILL_NAMES,
-  SPELLS,
-  isActiveSkill,
-  isItemKind,
-  isSpellKey,
-  type BackpackItemSnapshot,
-  type ActiveSkill,
-  type ItemKind,
-  type SpellKey,
-} from '@fenix/shared';
+import { ITEMS, isItemKind, type ItemKind } from '@fenix/shared/items/item-catalog';
+import { SPELLS, isSpellKey, type SpellKey } from '@fenix/shared/magic/spell-catalog';
+import type { BackpackItemSnapshot } from '@fenix/shared/protocol/messages';
+import { SKILL_NAMES } from '@fenix/shared/skills/skill-catalog';
+import { isActiveSkill, type ActiveSkill } from '@fenix/shared/skills/stealth';
 
 /**
  * Barra de atajos: casilleros con un objeto (por tipo: "vendas", "poción de

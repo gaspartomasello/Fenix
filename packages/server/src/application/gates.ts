@@ -1,4 +1,6 @@
-import { GATE_DURATION_MS, type EntityId, type Position } from '@fenix/shared';
+import type { Position } from '@fenix/shared/geometry/position';
+import { GATE_DURATION_MS } from '@fenix/shared/magic/spell-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import { emptyChanges } from '../domain/items/items';
 import type { World } from '../domain/world';
 import type { ItemNotifications } from './item-notifications';

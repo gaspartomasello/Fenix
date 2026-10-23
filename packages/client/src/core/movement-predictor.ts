@@ -1,16 +1,9 @@
-import {
-  isMountKind,
-  canStep,
-  slideDirection,
-  moveDuration,
-  positionsEqual,
-  step,
-  type Direction,
-  type MoveMode,
-  type MoveRequest,
-  type Position,
-  type TileMap,
-} from '@fenix/shared';
+import { step, type Direction } from '@fenix/shared/geometry/direction';
+import { positionsEqual, type Position } from '@fenix/shared/geometry/position';
+import { isMountKind } from '@fenix/shared/mounts/mount-catalog';
+import type { MoveRequest } from '@fenix/shared/protocol/messages';
+import { canStep, slideDirection, moveDuration, type MoveMode } from '@fenix/shared/rules/movement';
+import type { TileMap } from '@fenix/shared/world/tile-map';
 import type { Entity } from './entity';
 
 /** Máximo de pasos sin confirmar antes de esperar al servidor. */

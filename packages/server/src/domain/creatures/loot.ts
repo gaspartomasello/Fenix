@@ -1,4 +1,5 @@
-import type { CreatureDefinition, ItemKind } from '@fenix/shared';
+import type { CreatureDefinition } from '@fenix/shared/creatures/creature-catalog';
+import type { ItemKind } from '@fenix/shared/items/item-catalog';
 
 /** Tira los dados del botín de una criatura. */
 export function rollLoot(

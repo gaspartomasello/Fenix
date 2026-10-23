@@ -1,4 +1,4 @@
-import type { EntityId } from '@fenix/shared';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import type { World } from '../../domain/world';
 import type { Notifier } from '../ports';
 

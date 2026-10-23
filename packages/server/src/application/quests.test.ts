@@ -1,10 +1,7 @@
-import {
-  DEFAULT_APPEARANCE,
-  Terrain,
-  TileMap,
-  type QuestOfferMessage,
-  type QuestsMessage,
-} from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import type { QuestOfferMessage, QuestsMessage } from '@fenix/shared/protocol/messages';
+import { Terrain } from '@fenix/shared/world/terrain';
+import { TileMap } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
 import { Creature } from '../domain/creatures/creature';
 import { Npc } from '../domain/npcs/npc';

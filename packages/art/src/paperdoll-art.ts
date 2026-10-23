@@ -1,10 +1,7 @@
-import {
-  Direction,
-  type Appearance,
-  type EquipmentHues,
-  type EquipmentLook,
-  type NpcRole,
-} from '@fenix/shared';
+import type { Appearance } from '@fenix/shared/character/appearance';
+import type { NpcRole } from '@fenix/shared/economy/vendors';
+import { Direction } from '@fenix/shared/geometry/direction';
+import type { EquipmentHues, EquipmentLook } from '@fenix/shared/protocol/messages';
 import { drawCharacterFrame } from './character-art';
 import {
   CHARACTER_ART_HEIGHT,

@@ -1,4 +1,5 @@
-import type { Direction, FaunaKind } from '@fenix/shared';
+import type { FaunaKind } from '@fenix/shared/creatures/fauna-catalog';
+import type { Direction } from '@fenix/shared/geometry/direction';
 import { OUTLINE } from './character-art';
 import { biteOffset, fur, gait, tailWag } from './creature-motion';
 import {

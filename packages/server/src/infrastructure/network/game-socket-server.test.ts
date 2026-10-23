@@ -1,12 +1,8 @@
 import type { AddressInfo } from 'node:net';
-import {
-  DEFAULT_APPEARANCE,
-  Direction,
-  decodeServerMessage,
-  encodeMessage,
-  type ClientMessage,
-  type ServerMessage,
-} from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import { Direction } from '@fenix/shared/geometry/direction';
+import { decodeServerMessage, encodeMessage } from '@fenix/shared/protocol/codec';
+import type { ClientMessage, ServerMessage } from '@fenix/shared/protocol/messages';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
 import { GameApplication } from '../../application/game-application';

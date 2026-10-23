@@ -1,4 +1,6 @@
-import { DOOR_RANGE, doorPartner, tileDistance, type EntityId, type Position } from '@fenix/shared';
+import { tileDistance, type Position } from '@fenix/shared/geometry/position';
+import type { EntityId } from '@fenix/shared/protocol/messages';
+import { DOOR_RANGE, doorPartner } from '@fenix/shared/world/statics';
 import type { World } from '../../domain/world';
 import type { Notifier } from '../ports';
 

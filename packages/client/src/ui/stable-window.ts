@@ -1,12 +1,8 @@
 import { drawMountFrame } from '@fenix/art';
-import {
-  Direction,
-  MOUNTS,
-  MOUNT_KINDS,
-  VENDORS,
-  type BackpackItemSnapshot,
-  type MountKind,
-} from '@fenix/shared';
+import { VENDORS } from '@fenix/shared/economy/vendors';
+import { Direction } from '@fenix/shared/geometry/direction';
+import { MOUNTS, MOUNT_KINDS, type MountKind } from '@fenix/shared/mounts/mount-catalog';
+import type { BackpackItemSnapshot } from '@fenix/shared/protocol/messages';
 import { toCanvas } from '../platform/canvas';
 import { el } from './dom';
 import { GameWindow } from './game-window';

@@ -1,4 +1,5 @@
-import { tileDistance, type EntityId, type Position } from '@fenix/shared';
+import { tileDistance, type Position } from '@fenix/shared/geometry/position';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 
 /** Lo que hace falta saber de alguien para elegirlo como objetivo. */
 export interface TargetCandidate {

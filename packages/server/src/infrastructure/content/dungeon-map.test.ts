@@ -1,4 +1,5 @@
-import { DOORS, STATICS, Terrain, doorPartner } from '@fenix/shared';
+import { DOORS, STATICS, doorPartner } from '@fenix/shared/world/statics';
+import { Terrain } from '@fenix/shared/world/terrain';
 import { describe, expect, it } from 'vitest';
 import { generateDungeon } from './dungeon-map';
 

@@ -1,4 +1,4 @@
-import type { ItemKind } from '@fenix/shared';
+import type { ItemKind } from '@fenix/shared/items/item-catalog';
 
 /** Lo que trae cada personaje nuevo en la mochila. */
 export const STARTING_KIT: readonly { kind: ItemKind; amount: number }[] = [

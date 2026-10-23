@@ -3,18 +3,16 @@ import {
   CREATION_ATTRIBUTE_MIN,
   CREATION_ATTRIBUTE_TOTAL,
   CREATION_SKILL_VALUES,
-  NAME_MAX_LENGTH,
-  SKILL_GROUPS,
-  SKILL_NAMES,
   STARTING_BANK_GOLD,
-  describeItem,
   startingKit,
   validateCreation,
-  type Attributes,
   type CharacterCreation,
   type CreationSkills,
-  type SkillKey,
-} from '@fenix/shared';
+} from '@fenix/shared/character/creation';
+import { NAME_MAX_LENGTH } from '@fenix/shared/character/name';
+import type { Attributes } from '@fenix/shared/combat/vitals';
+import { describeItem } from '@fenix/shared/items/item-catalog';
+import { SKILL_GROUPS, SKILL_NAMES, type SkillKey } from '@fenix/shared/skills/skill-catalog';
 import { AppearancePicker } from './appearance-picker';
 import { el } from './dom';
 

@@ -1,4 +1,5 @@
-import type { Direction, MoveMode } from '@fenix/shared';
+import type { Direction } from '@fenix/shared/geometry/direction';
+import type { MoveMode } from '@fenix/shared/rules/movement';
 import { screenVectorLean, screenVectorToDirection } from '../rendering/iso';
 
 /** Lo que el jugador quiere hacer este frame con el movimiento. */

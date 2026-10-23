@@ -1,4 +1,4 @@
-import { ALL_DIRECTIONS, directionOffset } from '@fenix/shared';
+import { ALL_DIRECTIONS, directionOffset } from '@fenix/shared/geometry/direction';
 import { describe, expect, it } from 'vitest';
 import { renderResolution, screenToTile, screenVectorToDirection, tileToScreen } from './iso';
 

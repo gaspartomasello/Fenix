@@ -1,13 +1,13 @@
 import {
   CREATURES,
-  isMountKind,
-  Direction,
   type CreatureDefinition,
   type CreatureKind,
-  type EntityId,
-  type Position,
-  type SpellKey,
-} from '@fenix/shared';
+} from '@fenix/shared/creatures/creature-catalog';
+import { Direction } from '@fenix/shared/geometry/direction';
+import type { Position } from '@fenix/shared/geometry/position';
+import type { SpellKey } from '@fenix/shared/magic/spell-catalog';
+import { isMountKind } from '@fenix/shared/mounts/mount-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import { Combatant } from '../combat/combatant';
 import type { Mobile } from '../mobile';
 

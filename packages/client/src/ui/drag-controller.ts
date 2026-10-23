@@ -1,4 +1,4 @@
-import type { EquipmentSlot } from '@fenix/shared';
+import type { EquipmentSlot } from '@fenix/shared/items/equipment';
 import { el } from './dom';
 
 /** Dónde se soltó lo que se estaba arrastrando. */

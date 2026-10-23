@@ -1,13 +1,8 @@
-import {
-  ITEMS,
-  armorOf,
-  describeWeight,
-  encumbrance,
-  weaponOf,
-  type Attributes,
-  type EquipmentLook,
-  type Vitals,
-} from '@fenix/shared';
+import type { Attributes, Vitals } from '@fenix/shared/combat/vitals';
+import { armorOf, weaponOf } from '@fenix/shared/combat/weapons';
+import { ITEMS } from '@fenix/shared/items/item-catalog';
+import { describeWeight, encumbrance } from '@fenix/shared/items/weight';
+import type { EquipmentLook } from '@fenix/shared/protocol/messages';
 import { el } from './dom';
 import { GameWindow } from './game-window';
 

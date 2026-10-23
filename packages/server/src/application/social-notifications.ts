@@ -1,4 +1,4 @@
-import type { EntityId } from '@fenix/shared';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import type { Player } from '../domain/player';
 import type { Guild } from '../domain/social/guilds';
 import type { Party } from '../domain/social/parties';

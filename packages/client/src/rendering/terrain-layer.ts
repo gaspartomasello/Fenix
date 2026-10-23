@@ -1,5 +1,6 @@
 import type { TerrainNeighbors } from '@fenix/art';
-import type { Terrain, TileMap } from '@fenix/shared';
+import type { Terrain } from '@fenix/shared/world/terrain';
+import type { TileMap } from '@fenix/shared/world/tile-map';
 import { Container, MeshSimple, Rectangle, Sprite } from 'pixi.js';
 import type { Ground } from './ground';
 import { ART_SCALE, TILE_HALF, tileToScreen } from './iso';

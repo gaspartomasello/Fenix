@@ -1,10 +1,8 @@
-import {
-  Terrain,
-  TileMap,
-  type CreatureKind,
-  type Position,
-  type StaticPlacement,
-} from '@fenix/shared';
+import type { CreatureKind } from '@fenix/shared/creatures/creature-catalog';
+import type { Position } from '@fenix/shared/geometry/position';
+import type { StaticPlacement } from '@fenix/shared/world/statics';
+import { Terrain } from '@fenix/shared/world/terrain';
+import { TileMap } from '@fenix/shared/world/tile-map';
 import type { IdGenerator } from '../../application/ports';
 import { Creature } from '../../domain/creatures/creature';
 import { Npc } from '../../domain/npcs/npc';

@@ -1,19 +1,18 @@
-import {
-  CREATURES,
-  OVERHEAD_TEXT_DURATION_MS,
-  type Appearance,
-  type Body,
-  type Direction,
-  type EntityId,
-  type EquipmentHues,
-  type EquipmentLook,
-  type NpcRole,
-  type MobileSnapshot,
-  type MountKind,
-  type MoveMode,
-  type Notoriety,
-  type Position,
-} from '@fenix/shared';
+import type { Appearance } from '@fenix/shared/character/appearance';
+import { CREATURES, type Body } from '@fenix/shared/creatures/creature-catalog';
+import type { NpcRole } from '@fenix/shared/economy/vendors';
+import type { Direction } from '@fenix/shared/geometry/direction';
+import type { Position } from '@fenix/shared/geometry/position';
+import type { MountKind } from '@fenix/shared/mounts/mount-catalog';
+import type {
+  EntityId,
+  EquipmentHues,
+  EquipmentLook,
+  MobileSnapshot,
+} from '@fenix/shared/protocol/messages';
+import { OVERHEAD_TEXT_DURATION_MS } from '@fenix/shared/rules/chat';
+import type { MoveMode } from '@fenix/shared/rules/movement';
+import type { Notoriety } from '@fenix/shared/social/reputation';
 
 /** Posición en tiles con decimales: la que se usa para dibujar entre dos tiles. */
 export interface FractionalPosition {

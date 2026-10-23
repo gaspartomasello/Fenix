@@ -1,18 +1,16 @@
+import { VENDORS } from '@fenix/shared/economy/vendors';
+import { tileDistance, type Position } from '@fenix/shared/geometry/position';
+import { ITEMS, type ItemKind } from '@fenix/shared/items/item-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import {
-  ITEMS,
   LOCKPICK_BREAK_CHANCE,
   STEAL_COOLDOWN_MS,
   STEAL_MAX_STACK,
   THIEF_RANGE,
-  VENDORS,
   pickChance,
   snoopChance,
   stealChance,
-  tileDistance,
-  type EntityId,
-  type ItemKind,
-  type Position,
-} from '@fenix/shared';
+} from '@fenix/shared/skills/thievery';
 import { emptyChanges } from '../domain/items/items';
 import { Npc } from '../domain/npcs/npc';
 import { Player } from '../domain/player';

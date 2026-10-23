@@ -1,5 +1,6 @@
 import type { EmbeddedConnection, KeyValueStorage } from '@fenix/server/embedded';
-import { decodeServerMessage, type ClientMessage } from '@fenix/shared';
+import { decodeServerMessage } from '@fenix/shared/protocol/codec';
+import type { ClientMessage } from '@fenix/shared/protocol/messages';
 import type { GameGateway, GatewayHandlers } from './game-gateway';
 
 /**

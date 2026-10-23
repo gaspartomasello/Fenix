@@ -1,11 +1,9 @@
-import {
-  DEFAULT_APPEARANCE,
-  Terrain,
-  TileMap,
-  lockDifficulty,
-  type EntityId,
-  type ItemKind,
-} from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import type { ItemKind } from '@fenix/shared/items/item-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
+import { lockDifficulty } from '@fenix/shared/skills/thievery';
+import { Terrain } from '@fenix/shared/world/terrain';
+import { TileMap } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
 import { Npc } from '../domain/npcs/npc';
 import { World } from '../domain/world';

@@ -1,11 +1,9 @@
-import {
-  DEFAULT_APPEARANCE,
-  Direction,
-  Terrain,
-  TileMap,
-  skillGainAmount,
-  type EntityId,
-} from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import { Direction } from '@fenix/shared/geometry/direction';
+import type { EntityId } from '@fenix/shared/protocol/messages';
+import { skillGainAmount } from '@fenix/shared/skills/skill-catalog';
+import { Terrain } from '@fenix/shared/world/terrain';
+import { TileMap } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
 import { Creature, RESPAWN_MS } from '../domain/creatures/creature';
 import { EMPTY_CORPSE_MS } from './corpses';

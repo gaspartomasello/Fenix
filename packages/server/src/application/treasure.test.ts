@@ -1,11 +1,8 @@
-import {
-  DEFAULT_APPEARANCE,
-  TREASURE_CHEST_MS,
-  Terrain,
-  TileMap,
-  treasureHint,
-  type TreasureMapMessage,
-} from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import type { TreasureMapMessage } from '@fenix/shared/protocol/messages';
+import { TREASURE_CHEST_MS, treasureHint } from '@fenix/shared/treasure/treasure';
+import { Terrain } from '@fenix/shared/world/terrain';
+import { TileMap } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
 import { captureCharacter, parseSavedCharacter } from '../domain/persistence/saved-character';
 import { World } from '../domain/world';

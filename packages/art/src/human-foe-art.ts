@@ -1,10 +1,7 @@
-import {
-  DEFAULT_APPEARANCE,
-  type Appearance,
-  type CreatureKind,
-  type Direction,
-  type EquipmentLook,
-} from '@fenix/shared';
+import { DEFAULT_APPEARANCE, type Appearance } from '@fenix/shared/character/appearance';
+import type { CreatureKind } from '@fenix/shared/creatures/creature-catalog';
+import type { Direction } from '@fenix/shared/geometry/direction';
+import type { EquipmentLook } from '@fenix/shared/protocol/messages';
 import { drawCharacterFrame, type CharacterFrame } from './character-art';
 import { spriteCanvas, type CanvasFactory } from './humanoid-rig';
 import type { PixelImage } from './pixel-art';

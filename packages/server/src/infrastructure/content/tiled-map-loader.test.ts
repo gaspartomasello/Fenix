@@ -1,5 +1,5 @@
 import { TILESETS, TOWN_MAP } from '@fenix/content';
-import { Terrain } from '@fenix/shared';
+import { Terrain } from '@fenix/shared/world/terrain';
 import { describe, expect, it } from 'vitest';
 import { loadTiledMap, MapFormatError } from './tiled-map-loader';
 

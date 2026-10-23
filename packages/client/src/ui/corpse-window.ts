@@ -1,5 +1,5 @@
 import { COFFIN_HEIGHT, COFFIN_INTERIOR, COFFIN_WIDTH, drawCoffin } from '@fenix/art';
-import { CORPSE_AREA, ITEM_ICON_SIZE } from '@fenix/shared';
+import { CORPSE_AREA, ITEM_ICON_SIZE } from '@fenix/shared/items/item-rules';
 import { toCanvas } from '../platform/canvas';
 import type { CorpseContents } from '../core/client-game';
 import { destinationFor, type ItemActions } from './backpack-window';

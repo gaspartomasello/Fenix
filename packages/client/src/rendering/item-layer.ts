@@ -1,5 +1,5 @@
 import { ITEM_ART_SIZE } from '@fenix/art';
-import type { EntityId, GroundItemSnapshot } from '@fenix/shared';
+import type { EntityId, GroundItemSnapshot } from '@fenix/shared/protocol/messages';
 import { Sprite, type Container } from 'pixi.js';
 import { characterDepth, groundItemDepth } from './depth';
 import { drawnAsField } from './field-layer';

@@ -1,4 +1,4 @@
-import { EFFECT_NAMES, type EffectKind } from '@fenix/shared';
+import { EFFECT_NAMES, type EffectKind } from '@fenix/shared/magic/effects';
 import type { EffectsState } from '../core/client-game';
 import { el } from './dom';
 

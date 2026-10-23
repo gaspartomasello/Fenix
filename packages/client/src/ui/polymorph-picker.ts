@@ -1,5 +1,8 @@
 import { drawCreatureFrame } from '@fenix/art';
-import { CREATURES, Direction, type EntityId, type PolymorphForm } from '@fenix/shared';
+import { CREATURES } from '@fenix/shared/creatures/creature-catalog';
+import { Direction } from '@fenix/shared/geometry/direction';
+import type { PolymorphForm } from '@fenix/shared/magic/spell-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import { toCanvas } from '../platform/canvas';
 import { el } from './dom';
 import { GameWindow } from './game-window';

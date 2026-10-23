@@ -1,11 +1,6 @@
-import {
-  ITEMS,
-  VENDORS,
-  describeItem,
-  type BackpackItemSnapshot,
-  type ItemKind,
-  type NpcRole,
-} from '@fenix/shared';
+import { VENDORS, type NpcRole } from '@fenix/shared/economy/vendors';
+import { ITEMS, describeItem, type ItemKind } from '@fenix/shared/items/item-catalog';
+import type { BackpackItemSnapshot } from '@fenix/shared/protocol/messages';
 import { el } from './dom';
 import { GameWindow } from './game-window';
 import { itemIconUrl } from './item-icons';

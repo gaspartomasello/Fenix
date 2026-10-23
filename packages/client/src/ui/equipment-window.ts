@@ -1,4 +1,6 @@
-import type { Appearance, EquipmentSlot, EquippedItemSnapshot } from '@fenix/shared';
+import type { Appearance } from '@fenix/shared/character/appearance';
+import type { EquipmentSlot } from '@fenix/shared/items/equipment';
+import type { EquippedItemSnapshot } from '@fenix/shared/protocol/messages';
 import { destinationFor, type ItemActions } from './backpack-window';
 import { el } from './dom';
 import type { DragController } from './drag-controller';

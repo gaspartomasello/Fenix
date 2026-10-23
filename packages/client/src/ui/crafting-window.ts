@@ -1,13 +1,11 @@
 import {
   CRAFT_TOOLS,
-  SKILL_NAMES,
   STATION_NAMES,
-  describeItem,
-  formatSkill,
   recipesOf,
   type CraftSkill,
-  type SkillValues,
-} from '@fenix/shared';
+} from '@fenix/shared/economy/crafting';
+import { describeItem } from '@fenix/shared/items/item-catalog';
+import { SKILL_NAMES, formatSkill, type SkillValues } from '@fenix/shared/skills/skill-catalog';
 import { el } from './dom';
 import { GameWindow } from './game-window';
 import { itemIconUrl } from './item-icons';

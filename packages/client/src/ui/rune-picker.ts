@@ -1,4 +1,5 @@
-import { SPELLS, type BackpackItemSnapshot, type EntityId, type SpellKey } from '@fenix/shared';
+import { SPELLS, type SpellKey } from '@fenix/shared/magic/spell-catalog';
+import type { BackpackItemSnapshot, EntityId } from '@fenix/shared/protocol/messages';
 import { el } from './dom';
 import { GameWindow } from './game-window';
 import { itemIconUrl } from './item-icons';

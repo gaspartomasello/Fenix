@@ -1,12 +1,7 @@
 import { BACKPACK_ART } from '@fenix/art';
-import {
-  BACKPACK_AREA,
-  ITEMS,
-  ITEM_ICON_SIZE,
-  type BackpackItemSnapshot,
-  type ItemDestination,
-  type ItemKind,
-} from '@fenix/shared';
+import { ITEMS, type ItemKind } from '@fenix/shared/items/item-catalog';
+import { BACKPACK_AREA, ITEM_ICON_SIZE } from '@fenix/shared/items/item-rules';
+import type { BackpackItemSnapshot, ItemDestination } from '@fenix/shared/protocol/messages';
 import { itemLabel } from './item-label';
 import { el } from './dom';
 import { liftElement, type DragController, type DropTarget } from './drag-controller';

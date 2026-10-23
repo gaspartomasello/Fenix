@@ -1,12 +1,6 @@
-import {
-  GUILD_NAME,
-  GUILD_TAG,
-  NOTORIETY_NAMES,
-  PARTY_MAX,
-  reputationTitle,
-  type EntityId,
-  type SocialCommand,
-} from '@fenix/shared';
+import type { EntityId } from '@fenix/shared/protocol/messages';
+import { GUILD_NAME, GUILD_TAG, PARTY_MAX, type SocialCommand } from '@fenix/shared/social/groups';
+import { NOTORIETY_NAMES, reputationTitle } from '@fenix/shared/social/reputation';
 import type { SocialState } from '../core/client-game';
 import { el } from './dom';
 import { GameWindow } from './game-window';

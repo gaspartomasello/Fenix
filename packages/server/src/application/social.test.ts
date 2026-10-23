@@ -1,13 +1,8 @@
-import {
-  CRIMINAL_MS,
-  DEFAULT_APPEARANCE,
-  MURDER_DECAY_MS,
-  Terrain,
-  TileMap,
-  type EntityId,
-  type RegionData,
-  type ServerMessage,
-} from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import type { EntityId, ServerMessage } from '@fenix/shared/protocol/messages';
+import { CRIMINAL_MS, MURDER_DECAY_MS } from '@fenix/shared/social/reputation';
+import { Terrain } from '@fenix/shared/world/terrain';
+import { TileMap, type RegionData } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
 import { Creature } from '../domain/creatures/creature';
 import { World } from '../domain/world';

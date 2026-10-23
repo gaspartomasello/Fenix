@@ -1,11 +1,7 @@
-import {
-  FIELDS,
-  FIELD_LENGTH,
-  poisonDurationMs,
-  type EntityId,
-  type FieldKind,
-  type Position,
-} from '@fenix/shared';
+import type { Position } from '@fenix/shared/geometry/position';
+import { poisonDurationMs } from '@fenix/shared/magic/effects';
+import { FIELDS, FIELD_LENGTH, type FieldKind } from '@fenix/shared/magic/spell-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import { emptyChanges } from '../domain/items/items';
 import type { Mobile } from '../domain/mobile';
 import { Npc } from '../domain/npcs/npc';

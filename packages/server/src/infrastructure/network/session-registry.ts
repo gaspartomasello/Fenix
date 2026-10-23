@@ -1,5 +1,5 @@
-import type { EntityId, ServerMessage } from '@fenix/shared';
-import { encodeMessage } from '@fenix/shared';
+import type { EntityId, ServerMessage } from '@fenix/shared/protocol/messages';
+import { encodeMessage } from '@fenix/shared/protocol/codec';
 import type { Notifier } from '../../application/ports';
 
 /** Lo mínimo que se necesita de una conexión para enviarle datos. */

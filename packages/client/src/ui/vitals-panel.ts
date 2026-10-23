@@ -1,4 +1,4 @@
-import type { Vitals } from '@fenix/shared';
+import type { Vitals } from '@fenix/shared/combat/vitals';
 import { el } from './dom';
 
 interface Bar {

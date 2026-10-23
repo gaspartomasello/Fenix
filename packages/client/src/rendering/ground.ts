@@ -1,4 +1,4 @@
-import type { DisplayPosition, RegionData, TileMap } from '@fenix/shared';
+import type { DisplayPosition, RegionData, TileMap } from '@fenix/shared/world/tile-map';
 import type { FractionalPosition } from '../core/entity';
 import { setDepthProjection } from './depth';
 import { screenToTile, tileToScreen, type ScreenPoint } from './iso';

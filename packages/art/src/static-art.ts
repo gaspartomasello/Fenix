@@ -1,4 +1,4 @@
-import type { StaticKind } from '@fenix/shared';
+import type { StaticKind } from '@fenix/shared/world/statics';
 import { PixelImage, type Rgb } from './pixel-art';
 import { TREE_SHADOWS, drawTree, type TreeSpecies } from './tree-art';
 import {

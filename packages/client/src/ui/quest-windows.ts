@@ -1,12 +1,12 @@
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import {
   MAX_QUESTS,
   describeGoal,
   describeReward,
   goalCount,
-  type EntityId,
   type Quest,
   type QuestProgress,
-} from '@fenix/shared';
+} from '@fenix/shared/quests/quests';
 import { el } from './dom';
 import { GameWindow } from './game-window';
 

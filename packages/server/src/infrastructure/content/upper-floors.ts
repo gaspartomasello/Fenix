@@ -1,4 +1,6 @@
-import { Terrain, type Position, type StaticKind, type StaticPlacement } from '@fenix/shared';
+import type { Position } from '@fenix/shared/geometry/position';
+import type { StaticKind, StaticPlacement } from '@fenix/shared/world/statics';
+import { Terrain } from '@fenix/shared/world/terrain';
 import { SeededRandom } from '../system/seeded-random';
 
 /** Para qué es el piso alto: cuartos de la posada, la torre del mago, una casa. */

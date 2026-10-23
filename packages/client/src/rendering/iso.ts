@@ -1,4 +1,4 @@
-import type { Direction } from '@fenix/shared';
+import type { Direction } from '@fenix/shared/geometry/direction';
 import type { FractionalPosition } from '../core/entity';
 
 /** Medio ancho/alto del rombo de un tile en pantalla (tiles de 44×44 como UO). */

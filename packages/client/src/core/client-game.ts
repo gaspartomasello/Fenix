@@ -1,62 +1,52 @@
+import { effectiveMoveMode } from '@fenix/shared/combat/combat-rules';
+import { PLAYER_ATTRIBUTES, type Attributes, type Vitals } from '@fenix/shared/combat/vitals';
+import { CREATURES, bodyMoveMs, isCreatureKind } from '@fenix/shared/creatures/creature-catalog';
+import { directionBetween, type Direction } from '@fenix/shared/geometry/direction';
+import type { Position } from '@fenix/shared/geometry/position';
+import { ITEMS, type ItemKind } from '@fenix/shared/items/item-catalog';
+import { encumbrance, maxWeight } from '@fenix/shared/items/weight';
+import type { EffectKind, EffectSnapshot } from '@fenix/shared/magic/effects';
 import {
   FIELDS,
-  ITEMS,
-  type ActiveSkill,
-  CREATURES,
   SPELLS,
-  TileMap,
-  decodeMap,
-  advanceTime,
-  bodyMoveMs,
-  directionBetween,
-  effectiveMoveMode,
-  encumbrance,
-  maxWeight,
-  PLAYER_ATTRIBUTES,
-  isCreatureKind,
-  isMountKind,
-  moveDuration,
-  sanitizeChatText,
-  type Attributes,
-  type BackpackItemSnapshot,
-  type ContainerLook,
-  type EffectKind,
-  type EffectSnapshot,
-  type Position,
-  type ChatChannel,
-  type SocialCommand,
-  type BookMessage,
-  type Quest,
-  type TreasureMark,
-  type ShipAction,
+  type SpellKey,
+  type PolymorphForm,
+} from '@fenix/shared/magic/spell-catalog';
+import { isMountKind, type MountKind } from '@fenix/shared/mounts/mount-catalog';
+import type {
+  BackpackItemSnapshot,
+  BookMessage,
+  ShipAction,
+  ShipSecurityChange,
+  ShipSnapshot,
+  AccountMessage,
+  SocialMessage,
+  EntityId,
+  EquippedItemSnapshot,
+  GroundItemSnapshot,
+  ItemDestination,
+  TrackPointMessage,
+  TrackSighting,
+  ServerMessage,
+} from '@fenix/shared/protocol/messages';
+import type { Quest, QuestProgress } from '@fenix/shared/quests/quests';
+import { sanitizeChatText } from '@fenix/shared/rules/chat';
+import { advanceTime, type WorldTime } from '@fenix/shared/rules/daylight';
+import { moveDuration, type MoveMode } from '@fenix/shared/rules/movement';
+import {
   type ShipLevel,
   type ShipOrder,
   type ShipSecurity,
-  type ShipSecurityChange,
-  type ShipSnapshot,
   shipTiles,
-  type QuestProgress,
-  type AccountMessage,
-  type SocialMessage,
-  type Direction,
-  type EntityId,
-  type EquippedItemSnapshot,
-  type GroundItemSnapshot,
-  type ItemDestination,
-  type ItemKind,
-  type TrackPointMessage,
-  type TrackSighting,
-  type TrackingCategory,
-  type MountKind,
-  type MoveMode,
-  type RegionData,
-  type ServerMessage,
-  type SkillValues,
-  type SpellKey,
-  type PolymorphForm,
-  type Vitals,
-  type WorldTime,
-} from '@fenix/shared';
+} from '@fenix/shared/ships/ships';
+import type { SkillValues } from '@fenix/shared/skills/skill-catalog';
+import type { ActiveSkill } from '@fenix/shared/skills/stealth';
+import type { TrackingCategory } from '@fenix/shared/skills/tracking';
+import type { ChatChannel, SocialCommand } from '@fenix/shared/social/groups';
+import type { TreasureMark } from '@fenix/shared/treasure/treasure';
+import { decodeMap } from '@fenix/shared/world/map-codec';
+import type { ContainerLook } from '@fenix/shared/world/statics';
+import { TileMap, type RegionData } from '@fenix/shared/world/tile-map';
 import { CHAT_HELP, parseChatInput } from './chat-commands';
 import { ATTACK_ANIMATION_MS, Entity } from './entity';
 import { nextAutoTarget } from './targeting';

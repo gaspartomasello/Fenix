@@ -1,12 +1,9 @@
-import {
-  ACCOUNT_CHARACTERS,
-  DEFAULT_APPEARANCE,
-  SKILL_KEYS,
-  validateCharacterName,
-  validatePassword,
-  type AccountMessage,
-  type CharacterCreation,
-} from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import { ACCOUNT_CHARACTERS, type CharacterCreation } from '@fenix/shared/character/creation';
+import { validateCharacterName } from '@fenix/shared/character/name';
+import { validatePassword } from '@fenix/shared/character/password';
+import type { AccountMessage } from '@fenix/shared/protocol/messages';
+import { SKILL_KEYS } from '@fenix/shared/skills/skill-catalog';
 import type { CharacterPersistence } from '../character-persistence';
 import type { AccountRecord, AccountStore, PasswordHasher } from '../ports';
 import type { JoinWorld, JoinWorldResult } from './join-world';

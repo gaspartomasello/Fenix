@@ -1,4 +1,4 @@
-import type { EntityId, ServerMessage } from '@fenix/shared';
+import type { EntityId, ServerMessage } from '@fenix/shared/protocol/messages';
 import type {
   CharacterStore,
   Clock,

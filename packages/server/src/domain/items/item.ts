@@ -1,16 +1,16 @@
 import type { ShipRecord } from '../ships/ship';
+import type { Position } from '@fenix/shared/geometry/position';
+import type { BookText } from '@fenix/shared/items/books';
+import type { EquipmentSlot } from '@fenix/shared/items/equipment';
+import type { ItemKind } from '@fenix/shared/items/item-catalog';
 import type {
-  BookText,
   BackpackItemSnapshot,
   EntityId,
-  EquipmentSlot,
   EquippedItemSnapshot,
   GroundItemSnapshot,
-  ItemKind,
-  Position,
   RuneMark,
-  TreasureMark,
-} from '@fenix/shared';
+} from '@fenix/shared/protocol/messages';
+import type { TreasureMark } from '@fenix/shared/treasure/treasure';
 
 /** Dónde está un objeto: en el suelo, en una mochila, puesto o dentro de un cuerpo. */
 export type ItemLocation =

@@ -1,4 +1,6 @@
-import type { Position, TileMap, TreasureMark } from '@fenix/shared';
+import type { Position } from '@fenix/shared/geometry/position';
+import type { TreasureMark } from '@fenix/shared/treasure/treasure';
+import type { TileMap } from '@fenix/shared/world/tile-map';
 import { el } from './dom';
 import { GameWindow } from './game-window';
 import { mapPicture } from './map-picture';

@@ -1,18 +1,15 @@
+import { LORE_BOOKS } from '@fenix/shared/items/books';
+import { ITEMS, SCROLL_KINDS, type ItemKind } from '@fenix/shared/items/item-catalog';
+import { TRAP_DAMAGE, unlockReach } from '@fenix/shared/magic/spell-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
+import { lockDifficulty } from '@fenix/shared/skills/thievery';
 import {
-  ITEMS,
-  LORE_BOOKS,
-  SCROLL_KINDS,
-  TRAP_DAMAGE,
   STATIC_CONTAINERS,
-  lockDifficulty,
-  unlockReach,
   STATICS,
   staticContainerAt,
   type ContainerLook,
-  type EntityId,
-  type ItemKind,
   type StaticPlacement,
-} from '@fenix/shared';
+} from '@fenix/shared/world/statics';
 import { emptyChanges } from '../../domain/items/items';
 import type { World } from '../../domain/world';
 import type { ItemNotifications } from '../item-notifications';

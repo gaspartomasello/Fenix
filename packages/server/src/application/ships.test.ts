@@ -1,13 +1,9 @@
-import {
-  DEFAULT_APPEARANCE,
-  Direction,
-  SHIPS,
-  Terrain,
-  TileMap,
-  parseShipOrder,
-  shipLevel,
-  type ShipPanelMessage,
-} from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import { Direction } from '@fenix/shared/geometry/direction';
+import type { ShipPanelMessage } from '@fenix/shared/protocol/messages';
+import { SHIPS, parseShipOrder, shipLevel } from '@fenix/shared/ships/ships';
+import { Terrain } from '@fenix/shared/world/terrain';
+import { TileMap } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
 import { captureCharacter } from '../domain/persistence/saved-character';
 import { World } from '../domain/world';

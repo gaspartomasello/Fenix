@@ -1,4 +1,6 @@
-import { DEFAULT_APPEARANCE, Terrain, TileMap } from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import { Terrain } from '@fenix/shared/world/terrain';
+import { TileMap } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
 import { Npc } from '../domain/npcs/npc';
 import { World } from '../domain/world';

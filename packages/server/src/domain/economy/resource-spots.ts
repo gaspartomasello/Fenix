@@ -1,4 +1,5 @@
-import { RESOURCE_REGROW_MS, RESOURCES_PER_SPOT, type Position } from '@fenix/shared';
+import { RESOURCE_REGROW_MS, RESOURCES_PER_SPOT } from '@fenix/shared/economy/crafting';
+import type { Position } from '@fenix/shared/geometry/position';
 
 /** Cuánto le queda a cada árbol o roca; se recuperan con el tiempo. */
 export class ResourceSpots {

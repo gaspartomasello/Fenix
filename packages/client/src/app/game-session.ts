@@ -1,4 +1,6 @@
-import { SPELLS, formatGameTime, isCraftSkill, type SpellKey } from '@fenix/shared';
+import { isCraftSkill } from '@fenix/shared/economy/crafting';
+import { SPELLS, type SpellKey } from '@fenix/shared/magic/spell-catalog';
+import { formatGameTime } from '@fenix/shared/rules/daylight';
 import { ClientGame } from '../core/client-game';
 import { InputController } from '../input/input-controller';
 import { createGateway, IS_SOLO } from '../network/create-gateway';
@@ -23,19 +25,17 @@ import { TargetingBanner } from '../ui/targeting-banner';
 import { VitalsPanel } from '../ui/vitals-panel';
 import { EffectsBar } from '../ui/effects-bar';
 import {
-  ITEMS,
   NPC_CHATTER,
-  SKILL_NAMES,
   VENDORS,
   VENDOR_RANGE,
   isMerchant,
-  reputationTitle,
-  skillNeedsTarget,
-  type ActiveSkill,
-  type ItemSnapshot,
   type NpcRole,
-  type EquipmentLook,
-} from '@fenix/shared';
+} from '@fenix/shared/economy/vendors';
+import { ITEMS } from '@fenix/shared/items/item-catalog';
+import type { ItemSnapshot, EquipmentLook } from '@fenix/shared/protocol/messages';
+import { SKILL_NAMES } from '@fenix/shared/skills/skill-catalog';
+import { skillNeedsTarget, type ActiveSkill } from '@fenix/shared/skills/stealth';
+import { reputationTitle } from '@fenix/shared/social/reputation';
 import type { ItemActions } from '../ui/backpack-window';
 import { BankWindow } from '../ui/bank-window';
 import { BookWindow } from '../ui/book-window';

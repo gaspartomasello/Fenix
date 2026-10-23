@@ -1,5 +1,6 @@
-import type { ActiveSkill } from '@fenix/shared';
-import type { ChatChannel, GmCommand, SocialCommand } from '@fenix/shared';
+import type { ActiveSkill } from '@fenix/shared/skills/stealth';
+import type { GmCommand } from '@fenix/shared/protocol/messages';
+import type { ChatChannel, SocialCommand } from '@fenix/shared/social/groups';
 
 /** Lo que significa una línea escrita en el chat. */
 export type ChatInput =
