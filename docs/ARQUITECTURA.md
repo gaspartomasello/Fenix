@@ -968,6 +968,39 @@ gremio llega a sus miembros estén donde estén).
   (`core/targeting.ts`): la criatura salvaje viva más cercana, sin personas ni criaturas con
   dueño. El diseño de la pantalla es solo CSS. El diseño de juego está en `docs/CELULAR.md`.
 
+## Hechizos de UO completos y campos con partículas (etapa 65)
+
+- **Los 64 hechizos**: se sumaron los que faltaban, cada uno en su círculo como en UO. En el
+  primero, Armadura reactiva. En el tercero, Cerradura mágica, Telequinesis y Abrir cerradura.
+  En el quinto, Espíritu de espadas, Disipar campo, Incógnito, Reflejo mágico e Invocar criatura.
+  En el sexto, Disipar. En el séptimo, Disipar en grupo y Transformación. Las reglas están en
+  `@fenix/shared` (`spell-catalog.ts`: `SUMMONED_BEASTS`, `POLYMORPH_FORMS`, `dispelChance`,
+  `reactiveArmorPool`, `unlockReach`) y la resolución en `server/domain/magic/spellcasting.ts`.
+- **Armadura reactiva** (`combat.ts`): en los golpes cuerpo a cuerpo se queda con la mitad del
+  daño y se lo devuelve a quien pega, hasta gastar su reserva. **Reflejo mágico**: el próximo
+  hechizo dañino contra uno solo vuelve contra quien lo lanzó (los de área, no).
+- **Incógnito y Transformación** cambian lo que ven los demás, no al jugador. `Player.disguise`
+  guarda el nombre y la cara falsos (el que habla en voz alta aparece con el nombre falso) y
+  `Player.form` el cuerpo de animal o criatura (sin el equipo a la vista). El servidor manda
+  `mobileLook` para volver a dibujarlo y lo deshace solo cuando se termina el efecto o al morir.
+  Transformado en caballo, corre como montado (`moveDuration` con `mounted`), y el botón de
+  atacar no elige a una persona transformada (`MobileSnapshot.polymorphed`). La forma se elige
+  en `ui/polymorph-picker.ts`.
+- **Disipar** solo afecta a criaturas invocadas (`ownerId` y `expiresAt`), con
+  probabilidad según la Magia; **Disipar en grupo**, a las ajenas alrededor de un lugar.
+  **Disipar campo** deshace un tile de un muro o campo (`Fields.dispel`).
+- **Cerraduras y Telequinesis** usan los casos de uso que ya existían: `Containers.magicLock`,
+  `magicUnlock` y `springTrap`, y `Doors.use` con más alcance.
+- **Campos con partículas** (`client/rendering/field-layer.ts`): el fuego y el veneno son
+  lenguas de llama que suben, se achican y cambian de color, con chispas, humo, brasas y luz de
+  noche. El veneno es el mismo fuego en verde. El muro de piedra es un tramo de pared recto a lo
+  largo de la hilera (`drawFieldWall` en `@fenix/art`), que sale de mirar los tiles vecinos.
+  Las partículas no se guardan: cada una sale de una semilla y del tiempo (`rendering/particles.ts`).
+  La bola de fuego, la columna de fuego y la explosión usan las mismas partículas
+  (`effects-layer.ts`).
+- **Textos sobre los techos**: el nombre, la vida, lo que dice cada uno y los números de daño
+  van en `CharacterView.labels`, otra capa por encima de todo el mundo, así ningún techo los tapa.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

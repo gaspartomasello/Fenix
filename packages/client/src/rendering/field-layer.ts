@@ -217,20 +217,23 @@ function drawFlames(tile: FieldTile, now: number, flame: Flame): void {
   }
 
   // Lenguas de fuego.
-  const count = 30;
+  const count = 38;
   for (let i = 0; i < count; i++) {
     const life = 650 + hash(seed, i, 5) * 650;
     const a = ((now + hash(seed, i, 6) * life * 9) % life) / life;
     const u = (i / count - 0.5) * 0.9 + (hash(seed, i, 7) - 0.5) * 0.12;
     const p = along(axis, u, (hash(seed, i, 8) - 0.5) * 6);
     // Más altas en el medio de cada tile, como una hoguera alargada.
-    const height = (24 + hash(seed, i, 9) * 26) * (1 - Math.abs(u) * 0.5);
+    const height = (34 + hash(seed, i, 9) * 34) * (1 - Math.abs(u) * 0.4);
     const sway = Math.sin(now * 0.007 + hash(seed, i, 10) * 30) * (2 + a * 4);
     const x = p.x + sway;
     const y = p.y - a * height;
-    const radius = (4.5 + hash(seed, i, 11) * 3.5) * (1 - a * 0.8);
+    const radius = (5 + hash(seed, i, 11) * 4) * (1 - a * 0.8);
     const fade = Math.min(1, a / 0.08) * (1 - a) ** 0.7;
-    front.circle(x, y, radius).fill({ color: paletteAt(flame.colors, a), alpha: 0.85 * fade });
+    // La lengua de fuego se pinta encima (no se suma): sobre un piso claro no se vuelve blanca.
+    back
+      .circle(x, y, radius)
+      .fill({ color: paletteAt(flame.colors, 0.12 + a * 0.88), alpha: 0.9 * fade });
     // Centro más claro en las recién nacidas.
     if (a < 0.35)
       front
