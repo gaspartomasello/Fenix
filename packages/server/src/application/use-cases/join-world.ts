@@ -4,6 +4,7 @@ import {
   STARTING_BANK_GOLD,
   creationSkills,
   encodeMap,
+  startingClothes,
   startingKit,
   validateCharacterName,
   type Appearance,
@@ -67,8 +68,10 @@ export class JoinWorld {
       ? restoreCharacter(auth.saved, this.world, () => this.ids.next(), random, this.clock.now())
       : this.createCharacter(validation.name, input.appearance, random);
     this.persistence.register(player, auth.passwordHash);
-    if (isTestCharacter(player.name, this.testCharacters))
+    if (isTestCharacter(player.name, this.testCharacters)) {
       equipTestCharacter(player, this.world, () => this.ids.next());
+      this.dress(player, false);
+    }
     return { ok: true, playerId: player.id };
   }
 
@@ -85,8 +88,8 @@ export class JoinWorld {
   }
 
   /**
-   * Crea un personaje como en UO: atributos repartidos, tres habilidades
-   * elegidas (60, 50 y 50) y el equipo que corresponde, todo "de equipo
+   * Crea un personaje como en UO: atributos repartidos, cuatro habilidades
+   * elegidas (60, 60, 50 y 50) y el equipo que corresponde, todo "de equipo
    * inicial" (no se pierde ni se da); además, oro en el banco.
    */
   create(creation: CharacterCreation, account: JoinAccount): JoinWorldResult {
@@ -120,6 +123,7 @@ export class JoinWorld {
       if (!taken)
         this.world.items.move(player, item.id, { type: 'equipment', slot }, this.world.map);
     }
+    this.dress(player, true);
     this.world.items.add(this.ids.next(), 'gold', STARTING_BANK_GOLD, {
       type: 'bank',
       ownerId: player.id,
@@ -137,8 +141,10 @@ export class JoinWorld {
 
   private admit(player: Player, account: JoinAccount): JoinWorldResult {
     this.persistence.register(player, account.passwordHash, account.name);
-    if (isTestCharacter(player.name, this.testCharacters))
+    if (isTestCharacter(player.name, this.testCharacters)) {
       equipTestCharacter(player, this.world, () => this.ids.next());
+      this.dress(player, false);
+    }
     return { ok: true, playerId: player.id };
   }
 
@@ -161,6 +167,28 @@ export class JoinWorld {
     }
     this.arrangeBackpack(player.id);
     return player;
+  }
+
+  /**
+   * Viste al personaje nuevo con su ropa (sin ella se le vería la ropa
+   * interior), donde no tenga ya algo puesto (una pechera del equipo inicial).
+   */
+  private dress(player: Player, newbie: boolean): void {
+    const worn = new Set(
+      this.world.items
+        .equipmentOf(player.id)
+        .flatMap((i) => (i.location.type === 'equipment' ? [i.location.slot] : [])),
+    );
+    for (const { kind, slot, hue } of startingClothes(player.appearance)) {
+      if (worn.has(slot)) continue;
+      const item = this.world.items.add(this.ids.next(), kind, 1, {
+        type: 'equipment',
+        ownerId: player.id,
+        slot,
+      });
+      if (hue !== undefined) item.hue = hue;
+      if (newbie) item.newbie = true;
+    }
   }
 
   /** Envía el estado inicial al nuevo jugador y lo muestra a quienes están cerca. */

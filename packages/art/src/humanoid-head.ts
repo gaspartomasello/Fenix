@@ -266,8 +266,22 @@ function drawHair(head: HeadParts, hair: Ramp, style: HairStyle, underHat: boole
     );
   };
   const tie = solid(ramp([70, 40, 30]));
-  if (!underHat || style === 'bald') {
-    head.ellipsoid([0, 0.9, -0.6], [4.7, 5.25, 5.3], head.masked(covers, strands));
+  // La cresta y el moño alto dejan los costados rapados; el rapado es una capa al ras.
+  const shaved = style === 'mohawk' || style === 'topknot' || style === 'buzz';
+  if ((!underHat || style === 'bald') && !shaved) {
+    const shell =
+      style === 'receding'
+        ? (n: Vec3): boolean => covers(n) && !(n[2] > 0.42 && n[1] > 0.2 && Math.abs(n[0]) < 0.5)
+        : covers;
+    head.ellipsoid([0, 0.9, -0.6], [4.7, 5.25, 5.3], head.masked(shell, strands));
+  }
+  if (shaved && !underHat) {
+    // Pelo al ras: apenas una sombra del color del pelo sobre el cráneo.
+    head.ellipsoid(
+      [0, 0.75, -0.5],
+      [4.35, 5.05, 4.95],
+      head.masked(covers, (s) => tone(hair, s.light - 0.15, (s.x + s.y) % 2 ? -1 : 0)),
+    );
   }
   switch (style) {
     case 'long':
@@ -318,6 +332,72 @@ function drawHair(head: HeadParts, hair: Ramp, style: HairStyle, underHat: boole
         head.limb([side * 5, -0.4, -2], [side * 5.6, -7.5, -2.4], 1.7, 0.9, strands);
       }
       break;
+    case 'spiky':
+      // Mechones en punta que salen de la coronilla hacia arriba y atrás.
+      if (underHat) break;
+      for (let i = 0; i < 11; i++) {
+        const a = (i / 11) * Math.PI * 2;
+        const r = i % 2 ? 2.4 : 3.6;
+        const base: Vec3 = [Math.sin(a) * r, 4.6 - r * 0.3, -0.8 + Math.cos(a) * r];
+        head.limb(base, [base[0] * 1.35, base[1] + 3, base[2] * 1.2 - 1], 1.3, 0.15, strands);
+      }
+      break;
+    case 'mohawk':
+      // Cresta: una franja alta del frente a la nuca.
+      if (underHat) break;
+      for (let i = 0; i < 9; i++) {
+        const t = i / 8;
+        const a = -0.2 + t * 2.1;
+        const base: Vec3 = [0, 1 + Math.cos(a) * 4.9, -0.6 + Math.sin(a) * -5];
+        const tip: Vec3 = [0, 1 + Math.cos(a) * 7.6, -0.6 + Math.sin(a) * -7.4];
+        head.limb(base, tip, 1.1, 0.5, strands);
+      }
+      break;
+    case 'topknot':
+      // Moño alto atado sobre la coronilla, con el pelo tirante hacia atrás.
+      if (underHat) break;
+      head.ellipsoid(
+        [0, 3.4, -1.6],
+        [3.4, 2.4, 3.6],
+        head.masked((n) => n[1] > 0.3, strands),
+      );
+      head.limb([0, 5.4, -2.2], [0, 6.2, 0.6], 1.2, 0.9, strands);
+      head.ellipsoid([0, 5.5, -2.4], [1, 0.6, 1], tie);
+      break;
+    case 'shoulder':
+      // Pelo suelto que cae hasta los hombros por detrás y a los costados.
+      head.ellipsoid(
+        [0, -1.6, -1],
+        [5.3, 6, 5.6],
+        head.masked((n, p) => !(n[2] > 0.2 && p[1] < 2) && p[1] > -8, strands),
+      );
+      break;
+    case 'wavy':
+      // Largo ondulado: bucles que bajan por la espalda y caen sobre los hombros.
+      for (let i = 0; i < 7; i++) {
+        const y = 0.4 - i * 1.6;
+        const w = Math.sin(i * 1.3) * 0.6;
+        head.ellipsoid([w, y, -3.6 - i * 0.12], [4.6 - i * 0.12, 1.4, 2.4], strands);
+        for (const side of [1, -1] as const)
+          head.ellipsoid([side * (4.2 + w), y + 0.4, -1.2], [1.3, 1.4, 1.6], strands);
+      }
+      break;
+    case 'side-braid':
+      // Trenza que cae al costado, por delante del hombro.
+      for (let i = 0; i < 7; i++)
+        head.ellipsoid(
+          [4.2 + i * 0.25 + (i % 2 ? 0.3 : -0.3), -1 - i * 1.4, 0.4 + i * 0.25],
+          [1.2, 0.95, 1.1],
+          strands,
+        );
+      head.ellipsoid([5.9, -11, 2.1], [0.8, 0.6, 0.8], tie);
+      break;
+    case 'twin-buns':
+      for (const side of [1, -1] as const) {
+        head.ellipsoid([side * 3.4, 4, -2.4], [1.9, 1.9, 1.8], strands);
+        head.ellipsoid([side * 3, 3, -2.1], [1.2, 0.5, 1.1], tie);
+      }
+      break;
     default:
       break;
   }
@@ -325,6 +405,24 @@ function drawHair(head: HeadParts, hair: Ramp, style: HairStyle, underHat: boole
 
 function drawFacialHair(head: HeadParts, hair: Ramp, kind: FacialHair): void {
   if (kind === 'none') return;
+  if (kind === 'goatee') {
+    // Chivita: el mentón cubierto, sin las mejillas.
+    head.ellipsoid([0, -4.4, 2.6], [1.5, 1.7, 1.5], (s) => tone(hair, s.light, -1));
+  }
+  if (kind === 'long-beard') {
+    // Barba larga que baja sobre el pecho.
+    head.ellipsoid(
+      [0, -3, 1.6],
+      [3.5, 2.9, 3.4],
+      head.masked(
+        (n) => n[1] < 0.25 && n[2] > -0.35,
+        (s) => tone(hair, s.light, -1),
+      ),
+    );
+    head.limb([0, -4.6, 3], [0, -9.2, 3.6], 2.8, 1, (s) =>
+      tone(hair, s.light, Math.floor(s.p[0] * 1.6) % 3 === 0 ? -1 : 0),
+    );
+  }
   if (kind === 'beard') {
     head.ellipsoid(
       [0, -3, 1.6],

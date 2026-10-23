@@ -18,6 +18,15 @@ export const HAIR_STYLES = [
   'braid',
   'curly',
   'pigtails',
+  'buzz',
+  'receding',
+  'spiky',
+  'mohawk',
+  'topknot',
+  'shoulder',
+  'wavy',
+  'side-braid',
+  'twin-buns',
 ] as const;
 export type HairStyle = (typeof HAIR_STYLES)[number];
 export const HAIR_STYLE_NAMES: Readonly<Record<HairStyle, string>> = {
@@ -30,6 +39,15 @@ export const HAIR_STYLE_NAMES: Readonly<Record<HairStyle, string>> = {
   braid: 'Trenza',
   curly: 'Rulos',
   pigtails: 'Dos coletas',
+  buzz: 'Rapado',
+  receding: 'Con entradas',
+  spiky: 'En punta',
+  mohawk: 'Cresta',
+  topknot: 'Moño alto',
+  shoulder: 'A los hombros',
+  wavy: 'Largo ondulado',
+  'side-braid': 'Trenza al costado',
+  'twin-buns': 'Dos rodetes',
 };
 
 /** Cuerpo de hombre o de mujer. */
@@ -37,12 +55,14 @@ export const GENDERS = ['male', 'female'] as const;
 export type Gender = (typeof GENDERS)[number];
 export const GENDER_NAMES: Readonly<Record<Gender, string>> = { male: 'Hombre', female: 'Mujer' };
 
-export const FACIAL_HAIR = ['none', 'mustache', 'beard'] as const;
+export const FACIAL_HAIR = ['none', 'mustache', 'beard', 'goatee', 'long-beard'] as const;
 export type FacialHair = (typeof FACIAL_HAIR)[number];
 export const FACIAL_HAIR_NAMES: Readonly<Record<FacialHair, string>> = {
   none: 'Sin barba',
   mustache: 'Bigote',
   beard: 'Barba',
+  goatee: 'Chivita',
+  'long-beard': 'Barba larga',
 };
 
 export interface Appearance {

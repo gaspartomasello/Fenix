@@ -10,7 +10,10 @@ import {
   HAIR_STYLE_NAMES,
   HAIR_HUES,
   SKIN_TONES,
+  startingClothes,
   type Appearance,
+  type EquipmentHues,
+  type EquipmentLook,
 } from '@fenix/shared';
 import { drawCharacterFrame } from '@fenix/art';
 import { toCanvas } from '../platform/canvas';
@@ -31,7 +34,15 @@ export function drawPortrait(
   direction: Direction = Direction.SouthEast,
   scale = PREVIEW_SCALE,
 ): void {
-  const art = toCanvas(drawCharacterFrame(appearance, direction, 'idle'));
+  // Con la ropa con la que empieza (camisa del color elegido y pantalón o pollera).
+  const clothes = startingClothes(appearance);
+  const equipment: EquipmentLook = Object.fromEntries(clothes.map((c) => [c.slot, c.kind]));
+  const hues: EquipmentHues = Object.fromEntries(
+    clothes.flatMap((c) => (c.hue === undefined ? [] : [[c.slot, c.hue]])),
+  );
+  const art = toCanvas(
+    drawCharacterFrame(appearance, direction, 'idle', equipment, null, null, undefined, hues),
+  );
   canvas.width = art.width * scale;
   canvas.height = art.height * scale;
   const ctx = canvas.getContext('2d');

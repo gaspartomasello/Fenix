@@ -49,6 +49,8 @@ describe('personaje de prueba', () => {
     expect(gaspar.combat.current.mana).toBe(120);
     expect(world.items.countInBackpack(gaspar.id, 'gold')).toBe(999_999);
     expect(world.items.countInBackpack(gaspar.id, 'nightshade')).toBe(1000);
+    // Entra vestido (camisa y pantalón), no en ropa interior.
+    expect(world.items.lookOf(gaspar.id)).toMatchObject({ torso: 'shirt', legs: 'trousers' });
   });
 
   it('los demás entran normales', () => {

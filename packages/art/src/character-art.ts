@@ -259,7 +259,17 @@ interface Figure {
   readonly robed: boolean;
   /** Armadura de metal en el torso (cota de malla o peto de placas). */
   readonly metalTorso: boolean;
+  /**
+   * Un jugador sin nada en el torso o en las piernas: se ve la ropa interior,
+   * como en UO, sencilla y tapada (un short largo; las mujeres, también una
+   * musculosa). Los vecinos del pueblo siempre andan vestidos.
+   */
+  readonly bareTorso: boolean;
+  readonly underpants: boolean;
 }
+
+/** Lino claro de la ropa interior. */
+const UNDERWEAR = ramp([226, 220, 204]);
 
 // ── Personaje ───────────────────────────────────────────────────────
 
@@ -315,7 +325,9 @@ function drawFigure(
     equipment,
     outfit,
     female,
-    skirt: (female && !equipment.legs && !robed) || (equipment.legs === 'skirt' && !robed),
+    skirt:
+      (female && !equipment.legs && !robed && role !== null) ||
+      (equipment.legs === 'skirt' && !robed),
     robed,
     metalTorso:
       equipment.torso === 'chainmail' ||
@@ -325,6 +337,8 @@ function drawFigure(
       equipment.torso === 'samurai-do' ||
       equipment.torso === 'legion-cuirass' ||
       equipment.torso === 'templar-hauberk',
+    bareTorso: role === null && !equipment.torso && !outfit,
+    underpants: role === null && !equipment.legs && !robed,
   };
 
   drawLegs(canvas, figure);
@@ -380,7 +394,7 @@ function drawFigure(
 
 function drawLegs(
   canvas: VolumeCanvas,
-  { rig, palette: p, female, skirt, robed, equipment }: Figure,
+  { rig, palette: p, female, skirt, robed, equipment, underpants }: Figure,
 ): void {
   const thick = female ? 0.9 : 1;
   const plate = equipment.legs === 'plate-legs';
@@ -434,6 +448,11 @@ function drawLegs(
         return tone(p.skin, s.light);
       }
       if (haidate) return tone(hakama, s.light, Math.sin(s.p[0] * 1.3) > 0.7 ? -1 : 0);
+      // Ropa interior: un short de lino hasta la mitad del muslo; abajo, la pierna.
+      if (underpants)
+        return s.p[1] > lerp(leg.knee, leg.hip, 0.45)[1]
+          ? tone(UNDERWEAR, s.light, s.p[1] < lerp(leg.knee, leg.hip, 0.5)[1] ? -1 : 0)
+          : tone(p.skin, s.light);
       if (bone) {
         // Placas de hueso atadas, con la rodilla de calavera.
         // Muslo de placas atadas con tiras; la canillera, una sola pieza con borde.
@@ -588,7 +607,16 @@ function drawLegs(
   }
 }
 
-function torsoMaterial({ rig, palette: p, equipment, outfit, female, robed }: Figure): Material {
+function torsoMaterial({
+  rig,
+  palette: p,
+  equipment,
+  outfit,
+  female,
+  robed,
+  bareTorso,
+  underpants,
+}: Figure): Material {
   const armor = equipment.torso;
   const leather =
     armor === 'leather-armor' || armor === 'studded-leather'
@@ -602,6 +630,19 @@ function torsoMaterial({ rig, palette: p, equipment, outfit, female, robed }: Fi
     const n = chest.localDir(s.n);
     const y = s.p[1] - beltY;
     const front = n[2] > 0.35;
+    // Sin pantalón, la cintura del short; sin camisa, el pecho (o la musculosa).
+    if (underpants && y < 1.8) return tone(UNDERWEAR, s.light, y > 0.9 ? -1 : 0);
+    if (bareTorso && y < 1.8) {
+      // Con pantalón y sin camisa: el cinturón y, debajo, el pantalón.
+      if (y > -0.6) return tone(p.belt, s.light);
+      return tone(p.pants, s.light);
+    }
+    if (bareTorso) {
+      if (!female) return tone(p.skin, s.light);
+      // Musculosa de lino: cubre del pecho a la cintura, con tiras anchas sobre los hombros.
+      const strap = Math.abs(Math.abs(local[0]) - 2.4) < 1.1;
+      return local[1] < 3.4 || strap ? tone(UNDERWEAR, s.light) : tone(p.skin, s.light);
+    }
     // Cinturón con hebilla.
     if (y > -0.6 && y < 1.8 && !robed) {
       if (front && Math.abs(local[0]) < 1.3) return tone(GOLD, s.light);
@@ -696,7 +737,17 @@ function torsoMaterial({ rig, palette: p, equipment, outfit, female, robed }: Fi
 }
 
 function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
-  const { rig, palette: p, equipment, outfit, female, skirt, robed, metalTorso } = figure;
+  const {
+    rig,
+    palette: p,
+    equipment,
+    outfit,
+    female,
+    skirt,
+    robed,
+    metalTorso,
+    bareTorso,
+  } = figure;
   const material = torsoMaterial(figure);
   const pelvis = rig.pelvis;
   const chest = rig.chest;
@@ -747,7 +798,7 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
     }
   }
   // Faldón de la camisa debajo del cinturón.
-  if (!robed && !skirt && !metalTorso) {
+  if (!robed && !skirt && !metalTorso && !bareTorso) {
     // De cerca (ventana de personaje), un ruedo que rodea la cadera.
     if (canvas.detail > 1)
       canvas.ellipsoid(pelvis.at([0, -0.4, 0]), pelvis.axes, [5.7, 1.1, 4.1], solid(p.cloth));
@@ -856,18 +907,20 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
 }
 
 function drawArms(canvas: VolumeCanvas, figure: Figure): void {
-  const { rig, palette: p, outfit, female, equipment } = figure;
+  const { rig, palette: p, outfit, female, equipment, bareTorso } = figure;
   const torso = equipment.torso;
   const boneArmor = torso === 'bone-armor';
   // Las cotas de malla y de anillas tienen media manga; el peto de placas, no.
   const mailTorso = torso === 'chainmail' || torso === 'ringmail';
-  const cloth: Material = boneArmor
-    ? (s) => tone(LEATHER_DARK, s.light)
-    : outfit === 'vest'
-      ? solid(LINEN)
-      : outfit === 'woodcutter'
-        ? plaid
-        : solid(p.cloth);
+  const cloth: Material = bareTorso
+    ? solid(p.skin)
+    : boneArmor
+      ? (s) => tone(LEATHER_DARK, s.light)
+      : outfit === 'vest'
+        ? solid(LINEN)
+        : outfit === 'woodcutter'
+          ? plaid
+          : solid(p.cloth);
   // Herrero y tabernero trabajan con las mangas arremangadas.
   const bareForearms = outfit === 'apron' || outfit === 'innkeeper' || outfit === 'woodcutter';
   const thin = female ? 0.85 : 1;

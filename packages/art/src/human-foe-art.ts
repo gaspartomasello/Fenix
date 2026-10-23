@@ -41,7 +41,13 @@ const HUMAN_FOES: Readonly<
       facialHair: 'mustache',
       clothHue: 0x8b2e2e,
     },
-    equipment: { head: 'leather-cap', legs: 'trousers', feet: 'boots', rightHand: 'scimitar' },
+    equipment: {
+      head: 'leather-cap',
+      torso: 'fancy-shirt',
+      legs: 'trousers',
+      feet: 'boots',
+      rightHand: 'scimitar',
+    },
   },
   // Corsario: capa negra, cota de anillas y espada larga; el más peligroso del mar.
   corsair: {
