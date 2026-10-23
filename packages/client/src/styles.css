@@ -1190,6 +1190,12 @@ body {
   pointer-events: none;
 }
 
+/* Casillero vacío: la silueta de lo que va ahí, apagada. */
+.paperdoll-slot img.paperdoll-slot-hint {
+  opacity: 0.22;
+  filter: grayscale(1) brightness(1.6);
+}
+
 /* El personaje, de frente, sobre fondo oscuro como en UO. */
 .paperdoll-sheet {
   display: grid;

@@ -31,6 +31,20 @@ const SLOT_ORDER: readonly EquipmentSlot[] = [
   'rightHand',
   'leftHand',
 ];
+/** Dibujo tenue de fondo de cada casillero vacío, para entender qué va ahí. */
+const SLOT_HINTS: Readonly<Record<EquipmentSlot, ItemKind>> = {
+  head: 'plate-helm',
+  neck: 'plate-gorget',
+  torso: 'plate-chest',
+  arms: 'plate-arms',
+  hands: 'plate-gloves',
+  legs: 'plate-legs',
+  feet: 'boots',
+  cloak: 'cloak',
+  rightHand: 'longsword',
+  leftHand: 'heater-shield',
+};
+
 /** Si dos objetos se tapan en el dibujo, se agarra primero el de más arriba. */
 const PICK_ORDER: readonly EquipmentSlot[] = [
   'rightHand',
@@ -200,6 +214,13 @@ export class PaperdollView {
       if (kind) {
         const src = itemIconUrl(kind, 1, look.hues?.[slot]);
         box.append(el('img', { attrs: { src, alt: '', draggable: 'false' } }));
+      } else {
+        box.append(
+          el('img', {
+            className: 'paperdoll-slot-hint',
+            attrs: { src: itemIconUrl(SLOT_HINTS[slot]), alt: '', draggable: 'false' },
+          }),
+        );
       }
     }
   }

@@ -266,6 +266,8 @@ interface Figure {
    */
   readonly bareTorso: boolean;
   readonly underpants: boolean;
+  /** Un jugador sin calzado: pies descalzos (los vecinos andan calzados). */
+  readonly barefoot: boolean;
 }
 
 /** Lino claro de la ropa interior. */
@@ -339,6 +341,7 @@ function drawFigure(
       equipment.torso === 'templar-hauberk',
     bareTorso: role === null && !equipment.torso && !outfit,
     underpants: role === null && !equipment.legs && !robed,
+    barefoot: role === null && !equipment.feet,
   };
 
   drawLegs(canvas, figure);
@@ -394,7 +397,7 @@ function drawFigure(
 
 function drawLegs(
   canvas: VolumeCanvas,
-  { rig, palette: p, female, skirt, robed, equipment, underpants }: Figure,
+  { rig, palette: p, female, skirt, robed, equipment, underpants, barefoot }: Figure,
 ): void {
   const thick = female ? 0.9 : 1;
   const plate = equipment.legs === 'plate-legs';
@@ -437,7 +440,7 @@ function drawLegs(
         return tone(lacquerColor, s.light + 0.1, s.p[1] > bootTop - 0.8 ? 1 : 0);
       }
       if (suneate && s.p[1] < bootTop) return tone(LACE, s.light);
-      if (s.p[1] < bootTop && !(plate && !equipment.feet))
+      if (s.p[1] < bootTop && !(plate && !equipment.feet) && !barefoot)
         return tone(p.boots, s.light, s.p[1] > bootTop - 1 ? 1 : 0);
       // Sandalias: tiras sobre el pie descalzo.
       if (feet === 'sandals' && s.p[1] < leg.ankle[1] + 2) return tone(p.skin, s.light);
@@ -515,12 +518,16 @@ function drawLegs(
         return tone(lacquerColor, q.light + 0.1 - gy * 0.2, gy < 0.4 ? 1 : 0);
       });
     }
-    canvas.ellipsoid(
-      lerp(leg.ankle, leg.toe, 0.55),
-      axesAlong(sub(leg.toe, leg.ankle)),
-      [2.3 * thick, 1.7, 3.5 * thick],
-      suneate ? solid(LACE) : solid(p.boots),
-    );
+    if ((barefoot || feet === 'sandals') && !plate) {
+      drawBareFoot(canvas, leg, p.skin, thick);
+      if (feet === 'sandals') drawSandal(canvas, leg, p.boots, thick);
+    } else
+      canvas.ellipsoid(
+        lerp(leg.ankle, leg.toe, 0.55),
+        axesAlong(sub(leg.toe, leg.ankle)),
+        [2.3 * thick, 1.7, 3.5 * thick],
+        suneate ? solid(LACE) : solid(p.boots),
+      );
   }
   if (legionLegs && !robed) {
     // Faldón de tiras de cuero rojo con remaches de bronce en la punta.
@@ -558,6 +565,7 @@ function drawLegs(
         rig.pelvis.axes,
         [5.8 + t * 1.6, 1.4, 4.5 + t * (1.2 + kneeGap * 0.55)],
         cloth,
+        canvas.detail > 1 ? 0.92 : 0,
       );
     }
   }
@@ -602,9 +610,62 @@ function drawLegs(
         rig.pelvis.axes,
         [5.6 + t * flare, 1.4, 4.4 + t * (flare * 0.75 + kneeGap * 0.55)],
         fabric,
+        canvas.detail > 1 ? 0.92 : 0,
       );
     }
   }
+}
+
+/**
+ * Pie descalzo: más angosto y bajo que el calzado, con el talón y el empeine;
+ * de cerca (ventana de personaje), con los cinco dedos.
+ */
+function drawBareFoot(canvas: VolumeCanvas, leg: Rig['legs'][1], skin: Ramp, thick: number): void {
+  const forward = normalize(sub(leg.toe, leg.ankle));
+  const axes = axesAlong(forward);
+  const material = solid(skin);
+  canvas.ellipsoid(lerp(leg.ankle, leg.toe, 0.5), axes, [1.8 * thick, 1.2, 3.1 * thick], material);
+  canvas.sphere(add(leg.ankle, [0, -0.6, 0]), 1.5 * thick, material);
+  if (canvas.detail === 1) return;
+  const tips = add(lerp(leg.ankle, leg.toe, 0.5), add(scale(forward, 2.8 * thick), [0, -0.5, 0]));
+  for (const [k, r] of [
+    [-1.6, 0.55],
+    [-0.8, 0.45],
+    [0, 0.42],
+    [0.75, 0.38],
+    [1.4, 0.34],
+  ] as const)
+    canvas.sphere(
+      add(add(tips, scale(axes[0], k * thick)), scale(forward, -Math.abs(k) * 0.25)),
+      r * thick,
+      material,
+    );
+}
+
+/** Sandalia: la suela bajo el pie descalzo y dos tiras cruzadas sobre el empeine. */
+function drawSandal(canvas: VolumeCanvas, leg: Rig['legs'][1], leather: Ramp, thick: number): void {
+  const forward = normalize(sub(leg.toe, leg.ankle));
+  const axes = axesAlong(forward);
+  const middle = lerp(leg.ankle, leg.toe, 0.5);
+  canvas.ellipsoid(
+    add(middle, [0, -1.15, 0]),
+    axes,
+    [2.1 * thick, 0.3, 3.5 * thick],
+    solid(leather, -1),
+  );
+  for (const k of [-0.6, 1.2])
+    canvas.ellipsoid(
+      add(middle, scale(forward, k)),
+      axes,
+      [1.95 * thick, 1.3, 0.35],
+      solid(leather),
+    );
+  canvas.ellipsoid(
+    add(leg.ankle, [0, -0.3, 0]),
+    axesAlong(forward),
+    [1.65 * thick, 0.35, 1.65 * thick],
+    solid(leather),
+  );
 }
 
 function torsoMaterial({
@@ -616,6 +677,7 @@ function torsoMaterial({
   robed,
   bareTorso,
   underpants,
+  skirt,
 }: Figure): Material {
   const armor = equipment.torso;
   const leather =
@@ -648,6 +710,8 @@ function torsoMaterial({
       if (front && Math.abs(local[0]) < 1.3) return tone(GOLD, s.light);
       return tone(p.belt, s.light);
     }
+    // Debajo del cinturón, la cadera es del pantalón (no de la camisa).
+    if (y <= -0.6 && equipment.legs && !robed && !skirt) return tone(p.pants, s.light);
     if ((armor === 'plate-chest' || armor === 'female-plate') && y > -4) {
       // Peto de placas: el pecho de una sola pieza con una cresta al centro y,
       // abajo, la faja de láminas sobre el vientre.
@@ -752,17 +816,21 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
   const pelvis = rig.pelvis;
   const chest = rig.chest;
   // Cadera, cintura y pecho; en las mujeres, cadera más ancha, cintura fina y busto.
+  // De cerca, la luz no cambia de golpe entre una parte y otra (el torso se ve de una pieza).
+  const smooth = canvas.detail > 1 ? 0.7 : 0;
   canvas.ellipsoid(
     pelvis.at([0, 0.5, 0]),
     pelvis.axes,
     female ? [5.8, 4, 3.8] : [5.3, 3.8, 3.5],
     material,
+    smooth,
   );
   canvas.ellipsoid(
     lerp(pelvis.at([0, 4.5, 0.1]), chest.at([0, -5, 0]), 0.3),
     chest.axes,
     female ? [4, 3.4, 2.9] : [4.9, 3.6, 3.2],
     material,
+    smooth,
   );
   // Caja torácica amplia y, arriba, el pecho que se ensancha hacia los hombros.
   canvas.ellipsoid(
@@ -770,12 +838,14 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
     chest.axes,
     female ? [5.3, 6.2, 3.6] : [6.2, 6.7, 4.1],
     material,
+    smooth,
   );
   canvas.ellipsoid(
     chest.at([0, 2.9, 0.4]),
     chest.axes,
     female ? [5.6, 3, 3.4] : [6.6, 3.3, 3.9],
     material,
+    smooth,
   );
   // Trapecios: la pendiente del cuello a cada hombro, sobre las clavículas.
   const shoulderSpan = Math.abs(rig.arms[1].shoulder[0] - rig.arms[-1].shoulder[0]) / 2;
@@ -790,25 +860,28 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
   }
   // El peto de mujer tiene el busto forjado en la placa.
   if ((female && !metalTorso) || equipment.torso === 'female-plate') {
-    for (const side of [1, -1] as const) {
-      if (canvas.detail > 1)
-        // De cerca, el busto más suave y pegado al pecho.
-        canvas.ellipsoid(chest.at([side * 2, 0.5, 2.3]), chest.axes, [2.3, 2, 1.7], material);
-      else canvas.sphere(chest.at([side * 2.1, 0.8, 2.4]), 2.2, material);
-    }
+    if (canvas.detail > 1)
+      // De cerca, una sola forma ancha y suave sobre el pecho, sin marcar nada.
+      canvas.ellipsoid(chest.at([0, 0.7, 1.6]), chest.axes, [4.3, 2.3, 2.1], material, 0.5);
+    else
+      for (const side of [1, -1] as const)
+        canvas.sphere(chest.at([side * 2.1, 0.8, 2.4]), 2.2, material);
   }
   // Faldón de la camisa debajo del cinturón.
   if (!robed && !skirt && !metalTorso && !bareTorso) {
     // De cerca (ventana de personaje), un ruedo que rodea la cadera.
-    if (canvas.detail > 1)
-      canvas.ellipsoid(pelvis.at([0, -0.4, 0]), pelvis.axes, [5.7, 1.1, 4.1], solid(p.cloth));
-    else
+    if (canvas.detail > 1) {
+      // Con pantalón, la camisa va metida adentro.
+      if (!equipment.legs)
+        canvas.ellipsoid(pelvis.at([0, -0.4, 0]), pelvis.axes, [5.7, 1.1, 4.1], solid(p.cloth));
+    } else
       canvas.ellipsoid(pelvis.at([0, -2.2, 0]), pelvis.axes, [5.5, 2.6, 3.7], solid(p.cloth, -1));
   }
   const torso = equipment.torso;
   const armStuff = STUFF[equipment.arms ?? 'gold'];
   const plateArms = armStuff === 'plate' || armStuff === 'segmented';
-  if ((torso && torso !== 'robe') || plateArms) {
+  // Hombreras para las armaduras (la ropa de tela no tiene).
+  if ((torso && torso !== 'robe' && !SHIRTS.has(torso)) || plateArms) {
     // Hombreras: más grandes en el peto de placas.
     const bone = torso === 'bone-armor';
     const pad =

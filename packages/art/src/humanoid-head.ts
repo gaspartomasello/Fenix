@@ -79,8 +79,13 @@ function drawSkull(head: HeadParts, skin: Material, female = false): void {
   head.ellipsoid([0, 0.6, -0.4], female ? [4, 4.8, 4.7] : [4.2, 4.9, 4.8], skin);
   head.ellipsoid([0, -2.3, 1.1], female ? [2.9, 3.1, 3.4] : [3.3, 3.3, 3.5], skin);
   head.ellipsoid([0, -4.2, 2.1], female ? [1.5, 1.2, 1.6] : [1.9, 1.4, 1.8], skin);
-  // Arco de las cejas: hace sombra sobre los ojos.
-  head.ellipsoid([0, 1, 3.5], female ? [2.9, 0.7, 1.1] : [3.1, 0.9, 1.3], skin);
+  // Arco de las cejas: hace sombra sobre los ojos (de cerca, apenas marcado).
+  const close = head.canvas.detail > 1;
+  head.ellipsoid(
+    [0, 1, close ? 3.3 : 3.5],
+    female ? [2.9, 0.7, 1.1] : [3.1, close ? 0.75 : 0.9, close ? 1.2 : 1.3],
+    skin,
+  );
   // Pómulos.
   for (const side of [1, -1] as const)
     head.ellipsoid([side * 2.2, -0.7, 2.5], female ? [1.2, 1, 1.3] : [1.3, 1.1, 1.3], skin);
@@ -128,15 +133,18 @@ export function drawHumanHead(
   for (const side of [1, -1] as const)
     head.ellipsoid([side * 4.1, -0.5, 0.1], [0.6, 1.3, 0.9], solid(look.skin, -1));
 
-  // Ojos, cejas y boca.
-  for (const side of [1, -1] as const) {
-    const normal: Vec3 = [side * 0.3, 0, 1];
-    head.decal([side * 1.55, -0.1, 4.05], normal, EYE, 1, look.female ? 2 : 1);
-    head.decal([side * 2.4, -0.1, 3.75], normal, EYE_WHITE);
-    head.decal([side * 1.8, 1.25, 4.25], [side * 0.3, 0.3, 1], tone(look.hair, 0.3), 2, 1);
+  // Ojos, cejas y boca: de cerca (ventana de personaje), con volumen; en el mundo, unos puntos.
+  if (canvas.detail > 1) drawFace(head, look);
+  else {
+    for (const side of [1, -1] as const) {
+      const normal: Vec3 = [side * 0.3, 0, 1];
+      head.decal([side * 1.55, -0.1, 4.05], normal, EYE, 1, look.female ? 2 : 1);
+      head.decal([side * 2.4, -0.1, 3.75], normal, EYE_WHITE);
+      head.decal([side * 1.8, 1.25, 4.25], [side * 0.3, 0.3, 1], tone(look.hair, 0.3), 2, 1);
+    }
+    // Labios: más marcados en las mujeres.
+    head.decal([0, -3, 4.3], [0, -0.2, 1], look.female ? LIPS : tone(look.skin, 0.15), 2, 1);
   }
-  // Labios: más marcados en las mujeres.
-  head.decal([0, -3, 4.3], [0, -0.2, 1], look.female ? LIPS : tone(look.skin, 0.15), 2, 1);
 
   const underHat =
     look.headgear === 'cap' ||
@@ -254,10 +262,19 @@ function drawBoneHelm(head: HeadParts): void {
  * solo la parte que cubre según el peinado (nunca la cara).
  */
 function drawHair(head: HeadParts, hair: Ramp, style: HairStyle, underHat: boolean): void {
-  const strands: Material = (s) =>
-    tone(hair, s.light, Math.floor(s.p[0] * 0.9 + s.p[1] * 0.3) % 3 === 0 ? -1 : 0);
+  // De cerca, mechones finos con la luz continua y un brillo; en el mundo, tres franjas.
+  const close = head.canvas.detail > 1;
+  const strands: Material = close
+    ? (s) => {
+        const p = head.basis.local(s.p);
+        const strand = Math.sin(p[0] * 9 + p[1] * 2.2 + Math.sin(p[2] * 3) * 1.5) * 0.07;
+        return tone(hair, s.light * 0.95 + strand + (s.light > 0.85 ? 0.08 : 0));
+      }
+    : (s) => tone(hair, s.light, Math.floor(s.p[0] * 0.9 + s.p[1] * 0.3) % 3 === 0 ? -1 : 0);
   const covers = (n: Vec3): boolean => {
-    if (n[2] > 0.3 && n[1] < 0.45) return false;
+    // El nacimiento del pelo en la frente: de cerca, ondulado y más alto al costado.
+    const hairline = close ? 0.42 + 0.06 * Math.cos(Math.atan2(n[0], n[2]) * 4) : 0.45;
+    if (n[2] > 0.3 && n[1] < hairline) return false;
     if (style === 'bald') return n[1] > -0.3 && n[1] < 0.2 && n[2] < 0.05;
     return (
       n[1] > 0.15 ||
@@ -644,4 +661,41 @@ export function drawMempo(canvas: VolumeCanvas, basis: Basis, color: Ramp): void
         p[2] < -1 ? null : lacquerRows(color, p[1] + 6.3 + i * 0.2, p[0], s.light),
       ),
     );
+}
+
+/**
+ * La cara de cerca: ojos con blanco, iris, pupila y brillo, el párpado
+ * marcado, cejas del color del pelo y la boca. Se ve en la ventana de
+ * personaje (en el mundo, a ese tamaño, alcanzan unos puntos).
+ */
+function drawFace(head: HeadParts, look: HeadLook): void {
+  const iris = ramp([92, 64, 42]);
+  for (const side of [1, -1] as const) {
+    const x = side * 1.6;
+    head.ellipsoid([x, -0.15, 3.85], [0.78, 0.42, 0.32], (s) =>
+      tone(ramp([236, 232, 222]), s.light + 0.15),
+    );
+    head.ellipsoid([x - side * 0.05, -0.15, 4.08], [0.3, 0.3, 0.12], (s) => tone(iris, s.light));
+    head.ellipsoid([x - side * 0.05, -0.15, 4.16], [0.14, 0.14, 0.06], solid(ramp([18, 14, 14])));
+    head.ellipsoid([x - side * 0.15, -0.02, 4.21], [0.06, 0.06, 0.03], () => [250, 250, 246]);
+    // Párpado de arriba (con pestañas más marcadas en las mujeres) y ceja.
+    head.limb(
+      [side * 0.8, 0.22, 4.05],
+      [side * 2.4, 0.18, 3.75],
+      look.female ? 0.13 : 0.1,
+      look.female ? 0.11 : 0.08,
+      solid(ramp([40, 28, 24])),
+    );
+    head.limb(
+      [side * 0.75, 1.15, 4.4],
+      [side * 2.55, 1.2, 3.95],
+      look.female ? 0.16 : 0.24,
+      look.female ? 0.1 : 0.16,
+      (s) => tone(look.hair, s.light - 0.2),
+    );
+  }
+  // Boca: labios más marcados en las mujeres; en los hombres, una línea del tono de la piel.
+  const lips = look.female ? ramp(LIPS) : ramp(tone(look.skin, 0.25));
+  head.ellipsoid([0, -2.95, 4.18], [1.05, 0.22, 0.3], (s) => tone(lips, s.light));
+  head.ellipsoid([0, -2.95, 4.32], [0.95, 0.06, 0.2], solid(ramp([70, 36, 34])));
 }

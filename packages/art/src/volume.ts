@@ -339,8 +339,35 @@ export function ramp(base: Rgb): Ramp {
 
 /** Tono de la escala según la luz; `bias` corre uno o más escalones. */
 export function tone(colors: Ramp, light: number, bias = 0): Rgb {
+  if (smooth) {
+    // Sin escalones: el color se mezcla entre los dos tonos más cercanos.
+    const f = Math.max(0, Math.min(4, light * 4.6 - 0.7 + bias));
+    const a = colors[Math.floor(f)] ?? colors[2];
+    const b = colors[Math.ceil(f)] ?? colors[2];
+    const t = f - Math.floor(f);
+    return [
+      Math.round(a[0] + (b[0] - a[0]) * t),
+      Math.round(a[1] + (b[1] - a[1]) * t),
+      Math.round(a[2] + (b[2] - a[2]) * t),
+    ];
+  }
   const index = Math.max(0, Math.min(4, Math.floor(light * 4.6 - 0.2) + bias));
   return colors[index] ?? colors[2];
+}
+
+/**
+ * Sombreado continuo, sin los escalones de las rampas: para los dibujos
+ * grandes (la ventana de personaje), donde las franjas se notan.
+ */
+let smooth = false;
+export function withSmoothShading<T>(draw: () => T): T {
+  const before = smooth;
+  smooth = true;
+  try {
+    return draw();
+  } finally {
+    smooth = before;
+  }
 }
 
 /** Material liso de un color. */
@@ -384,6 +411,8 @@ export class VolumeCanvas {
    */
   private readonly pending: Int32Array;
   private readonly normals: Float32Array;
+  /** Qué material pintó cada pixel (para no marcar bordes dentro de una misma pieza). */
+  private readonly painter: Int32Array;
   private readonly materials: Material[] = [];
   private readonly materialIndex = new Map<Material, number>();
   /**
@@ -404,6 +433,7 @@ export class VolumeCanvas {
     this.colors = new Array<Rgb | null>(width * height).fill(null);
     this.pending = new Int32Array(width * height).fill(-1);
     this.normals = new Float32Array(width * height * 3);
+    this.painter = new Int32Array(width * height).fill(-1);
   }
 
   /** Elipsoide con centro y ejes (ortonormales) en el espacio del modelo. */
@@ -412,10 +442,29 @@ export class VolumeCanvas {
     axes: readonly [Vec3, Vec3, Vec3],
     modelRadii: Vec3,
     material: Material,
+    /**
+     * Cuánto se achata la normal a lo largo del segundo eje (0: nada). Para
+     * telas hechas de discos apilados: con 1 se ven lisas, sin los escalones.
+     */
+    flatten = 0,
   ): void {
-    this.rasterize(center, axes, modelRadii, (x, y, t, normal) =>
-      this.paint(x, y, t, normal, material),
-    );
+    if (flatten === 0) {
+      this.rasterize(center, axes, modelRadii, (x, y, t, normal) =>
+        this.paint(x, y, t, normal, material),
+      );
+      return;
+    }
+    const up = axes[1];
+    this.rasterize(center, axes, modelRadii, (x, y, t, n) => {
+      const along = (n[0] * up[0] + n[1] * up[1] + n[2] * up[2]) * flatten;
+      this.paint(
+        x,
+        y,
+        t,
+        normalize([n[0] - along * up[0], n[1] - along * up[1], n[2] - along * up[2]]),
+        material,
+      );
+    });
   }
 
   /**
@@ -513,9 +562,35 @@ export class VolumeCanvas {
   limb(a: Vec3, b: Vec3, ra: number, rb: number, material: Material): void {
     const length = Math.hypot(...sub(b, a));
     const steps = Math.max(1, Math.ceil(length / 0.6));
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      this.sphere(lerp(a, b, t), ra + (rb - ra) * t, material);
+    if (this.detail === 1 || length < 1e-6) {
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        this.sphere(lerp(a, b, t), ra + (rb - ra) * t, material);
+      }
+      return;
+    }
+    // De cerca, las esferas encadenadas se notarían como anillos: la superficie
+    // usa la normal del tubo (perpendicular al eje, inclinada por lo que se afina)
+    // y solo en las puntas la de la esfera.
+    const d = scale(sub(b, a), 1 / length);
+    const slope = (ra - rb) / length;
+    // Las piezas finas (cejas, cordones) necesitan las esferas más juntas para no quedar punteadas.
+    const fine = Math.max(steps, Math.ceil(length / Math.max(0.05, Math.min(ra, rb) * 0.8)));
+    for (let i = 0; i <= fine; i++) {
+      const t = i / fine;
+      const r = ra + (rb - ra) * t;
+      this.rasterize(lerp(a, b, t), IDENTITY, [r, r, r], (x, y, z, n) => {
+        const along = n[0] * d[0] + n[1] * d[1] + n[2] * d[2];
+        const u = t + (along * r) / length;
+        if (u > 0 && u < 1) {
+          const tube = normalize([
+            n[0] - along * d[0] + slope * d[0],
+            n[1] - along * d[1] + slope * d[1],
+            n[2] - along * d[2] + slope * d[2],
+          ]);
+          this.paint(x, y, z, tube, material);
+        } else this.paint(x, y, z, n, material);
+      });
     }
   }
 
@@ -642,6 +717,12 @@ export class VolumeCanvas {
   private paint(x: number, y: number, z: number, modelNormal: Vec3, material: Material): void {
     const i = y * this.width + x;
     if (this.keep && !this.keep(this.camera.unproject(x + 0.5, y + 0.5, z))) return;
+    let index = this.materialIndex.get(material);
+    if (index === undefined) {
+      index = this.materials.length;
+      this.materials.push(material);
+      this.materialIndex.set(material, index);
+    }
     if (CLIPPING.has(material)) {
       // Puede dejar el pixel sin pintar (máscaras): se resuelve ya.
       const color = this.shade(x, y, z, modelNormal, material);
@@ -649,14 +730,10 @@ export class VolumeCanvas {
       this.depth[i] = z;
       this.colors[i] = color;
       this.pending[i] = -1;
+      this.painter[i] = index;
       return;
     }
-    let index = this.materialIndex.get(material);
-    if (index === undefined) {
-      index = this.materials.length;
-      this.materials.push(material);
-      this.materialIndex.set(material, index);
-    }
+    this.painter[i] = index;
     this.depth[i] = z;
     this.pending[i] = index;
     this.normals[i * 3] = modelNormal[0];
@@ -710,15 +787,19 @@ export class VolumeCanvas {
         const color = this.colors[i];
         if (!color) continue;
         const z = this.depth[i] ?? 0;
+        const own = this.painter[i];
+        // De cerca no se marca el borde entre partes de una misma pieza (el pecho y la cintura).
         const closer = (nx: number, ny: number): boolean =>
           nx >= 0 &&
           ny >= 0 &&
           nx < this.width &&
           ny < this.height &&
-          (this.depth[ny * this.width + nx] ?? -Infinity) > z + EDGE_DEPTH;
+          (this.depth[ny * this.width + nx] ?? -Infinity) > z + EDGE_DEPTH * this.detail &&
+          (this.detail === 1 || this.painter[ny * this.width + nx] !== own);
         const covered =
           closer(x - 1, y) || closer(x + 1, y) || closer(x, y - 1) || closer(x, y + 1);
-        image.set(x, y, covered ? shade(color, 0.62) : color);
+        // De cerca, la línea donde una forma tapa a otra es más suave.
+        image.set(x, y, covered ? shade(color, this.detail > 1 ? 0.78 : 0.62) : color);
       }
     }
     if (outline) image.outline(outline, 0.95);
