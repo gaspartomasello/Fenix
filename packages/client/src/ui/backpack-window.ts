@@ -1,3 +1,4 @@
+import { BACKPACK_ART } from '@fenix/art';
 import {
   BACKPACK_AREA,
   ITEMS,
@@ -9,6 +10,7 @@ import {
 import { itemLabel } from './item-label';
 import { el } from './dom';
 import { liftElement, type DragController, type DropTarget } from './drag-controller';
+import { ContainerSkin } from './container-skin';
 import { GameWindow } from './game-window';
 import { itemIconUrl } from './item-icons';
 
@@ -60,6 +62,8 @@ export class BackpackWindow {
       this.area,
       el('p', { className: 'window-hint', text: 'Arrastrá para mover · doble clic para usar' }),
     );
+    // Una mochila de cuero, como en UO.
+    new ContainerSkin(this.window, this.area).wear(BACKPACK_ART);
   }
 
   render(items: readonly BackpackItemSnapshot[]): void {

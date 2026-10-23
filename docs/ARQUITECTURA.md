@@ -430,6 +430,24 @@ bolsas e instrumentos, y compra gemas. La ventana de la tienda muestra el daño,
 cuánto alimenta cada objeto, separa los estantes (armas, armaduras, comida, otros) en las
 tiendas grandes, calcula el total al comprar varios y tiene «Vender todo».
 
+### Armas de guerra y ventanas de recipientes
+
+- **Armas nuevas**: hacha doble, hacha de batalla, hacha a dos manos, gran hacha de batalla,
+  hacha de asta, horquilla de guerra, lanza corta, pico de guerra, alfanje, espada vikinga,
+  ballesta y ballesta pesada (en `combat/weapons.ts`). Las ballestas usan **virotes** (`ammo`)
+  en vez de flechas; sin munición el servidor avisa cuál falta (`missingAmmo`). Escudos de
+  cometa y heráldico, y el **peto de placas de mujer** (`womenOnly` en el catálogo): el
+  servidor (`wearRefusal` en `Items`) no deja que lo vista un hombre. El herrero los vende y
+  compra; la herrería y la carpintería de arcos tienen sus recetas.
+- **Arte**: íconos en `item-art.ts` (con `haft` para los mangos y `crossbow`) y en la mano en
+  `character-art.ts` (`HEAVY_AXES`, asta, horquilla, pico, ballesta, escudos con punta). La
+  ballesta ataca con el gesto de disparo; la horquilla y la lanza corta, con estocada.
+- **Ventanas de recipientes**: `art/container-art.ts` dibuja la mochila de cuero con solapa y
+  hebillas, la bolsa fruncida con cordón y el cofre abierto con fieltro verde. Cada arte dice
+  dónde va el hueco interior (`interior`); en el cliente, `ui/container-skin.ts` pone el
+  dibujo de fondo y ubica ahí el área de objetos. La mochila, el banco y los recipientes
+  (bolsa, cofre, caja) lo usan; el resto sigue con el marco común.
+
 ### Bajo tierra: criptas y alcantarilla
 
 Los cementerios son más grandes y tienen más no-muertos. Frente a la puerta de cada

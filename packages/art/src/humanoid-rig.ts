@@ -80,11 +80,17 @@ export function attackStyleFor(
   weapon: ItemKind | undefined,
 ): 'slash' | 'thrust' | 'punch' | 'shoot' {
   if (!weapon) return 'punch';
-  if (weapon === 'bow') return 'shoot';
+  if (weapon === 'bow' || weapon === 'crossbow' || weapon === 'heavy-crossbow') return 'shoot';
   return THRUSTING.has(weapon) ? 'thrust' : 'slash';
 }
 
-const THRUSTING: ReadonlySet<ItemKind> = new Set<ItemKind>(['dagger', 'kryss', 'spear']);
+const THRUSTING: ReadonlySet<ItemKind> = new Set<ItemKind>([
+  'dagger',
+  'kryss',
+  'spear',
+  'short-spear',
+  'war-fork',
+]);
 
 /** Armas que se llevan en la mano izquierda (el arco, como en UO). */
 export function heldInLeftHand(weapon: ItemKind | undefined): boolean {

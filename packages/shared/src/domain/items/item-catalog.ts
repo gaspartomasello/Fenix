@@ -47,10 +47,26 @@ export const BASE_ITEM_KINDS = [
   'quarterstaff',
   'bow',
   'arrow',
+  // Más armas, como las de UO: hachas, armas de asta, espadas y ballestas
+  'double-axe',
+  'battle-axe',
+  'two-handed-axe',
+  'large-battle-axe',
+  'bardiche',
+  'war-fork',
+  'short-spear',
+  'hammer-pick',
+  'cutlass',
+  'viking-sword',
+  'crossbow',
+  'heavy-crossbow',
+  'bolt',
   // Armaduras y ropa
   'wooden-shield',
   'buckler',
   'metal-shield',
+  'kite-shield',
+  'heater-shield',
   'leather-cap',
   'chain-coif',
   'iron-helmet',
@@ -61,6 +77,7 @@ export const BASE_ITEM_KINDS = [
   'chainmail',
   'ringmail',
   'plate-chest',
+  'female-plate',
   'robe',
   'cloak',
   'trousers',
@@ -202,6 +219,8 @@ export interface ItemDefinition {
   readonly color?: number;
   /** Ocupa las dos manos (no se puede usar escudo). */
   readonly twoHanded?: boolean;
+  /** Solo lo pueden poner las mujeres (el peto de placas de mujer, como en UO). */
+  readonly womenOnly?: boolean;
   /** Herramienta: qué oficio abre. */
   readonly crafts?: SkillKey;
   /** Comida: cuánta vida devuelve. */
@@ -364,10 +383,31 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
   quarterstaff: { ...weapon('bastón de combate', 'bastones de combate', 'un'), twoHanded: true },
   bow: { ...weapon('arco', 'arcos', 'un'), twoHanded: true },
   arrow: { name: 'flecha', plural: 'flechas', article: 'una', stackable: true },
+  'double-axe': { ...weapon('hacha doble', 'hachas dobles', 'un'), twoHanded: true },
+  'battle-axe': { ...weapon('hacha de batalla', 'hachas de batalla', 'un'), twoHanded: true },
+  'two-handed-axe': {
+    ...weapon('hacha a dos manos', 'hachas a dos manos', 'un'),
+    twoHanded: true,
+  },
+  'large-battle-axe': {
+    ...weapon('gran hacha de batalla', 'grandes hachas de batalla', 'una'),
+    twoHanded: true,
+  },
+  bardiche: { ...weapon('hacha de asta', 'hachas de asta', 'un'), twoHanded: true },
+  'war-fork': weapon('horquilla de guerra', 'horquillas de guerra', 'una'),
+  'short-spear': { ...weapon('lanza corta', 'lanzas cortas', 'una'), twoHanded: true },
+  'hammer-pick': weapon('pico de guerra', 'picos de guerra', 'un'),
+  cutlass: weapon('alfanje', 'alfanjes', 'un'),
+  'viking-sword': weapon('espada vikinga', 'espadas vikingas', 'una'),
+  crossbow: { ...weapon('ballesta', 'ballestas', 'una'), twoHanded: true },
+  'heavy-crossbow': { ...weapon('ballesta pesada', 'ballestas pesadas', 'una'), twoHanded: true },
+  bolt: { name: 'virote', plural: 'virotes', article: 'un', stackable: true },
 
   'wooden-shield': wear('escudo de madera', 'escudos de madera', 'un', 'leftHand', 0x8a5a2e),
   buckler: wear('rodela', 'rodelas', 'una', 'leftHand', 0x9aa0a8),
   'metal-shield': wear('escudo de metal', 'escudos de metal', 'un', 'leftHand', 0xa8aeb6),
+  'kite-shield': wear('escudo de cometa', 'escudos de cometa', 'un', 'leftHand', 0x8a2a2a),
+  'heater-shield': wear('escudo heráldico', 'escudos heráldicos', 'un', 'leftHand', 0x2a3a6a),
   'chain-coif': wear('capucha de malla', 'capuchas de malla', 'una', 'head', 0x8e949c),
   'leather-cap': cloth('gorro de cuero', 'gorros de cuero', 'un', 'head', 0x7a4e2a),
   'iron-helmet': wear('yelmo de hierro', 'yelmos de hierro', 'un', 'head', 0x9aa0a8),
@@ -378,6 +418,11 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
   chainmail: wear('cota de malla', 'cotas de malla', 'una', 'torso', 0x8e949c),
   ringmail: wear('cota de anillas', 'cotas de anillas', 'una', 'torso', 0x7e848c),
   'plate-chest': wear('peto de placas', 'petos de placas', 'un', 'torso', 0xa8aeb6),
+  // Como en UO, el peto de placas de mujer tiene su forma (y solo lo usan ellas).
+  'female-plate': {
+    ...wear('peto de placas de mujer', 'petos de placas de mujer', 'un', 'torso', 0xa8aeb6),
+    womenOnly: true,
+  },
   robe: cloth('túnica', 'túnicas', 'una', 'torso', 0x3a2a6a),
   cloak: cloth('capa', 'capas', 'una', 'cloak', 0x7a1f2a),
   trousers: cloth('pantalón', 'pantalones', 'un', 'legs', 0x3a4a6a),

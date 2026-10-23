@@ -1,8 +1,10 @@
+import { CHEST_ART } from '@fenix/art';
 import { BACKPACK_AREA, ITEM_ICON_SIZE, type BackpackItemSnapshot } from '@fenix/shared';
 import { destinationFor, type ItemActions } from './backpack-window';
 import { itemLabel } from './item-label';
 import { el } from './dom';
 import { liftElement, type DragController } from './drag-controller';
+import { ContainerSkin } from './container-skin';
 import { GameWindow } from './game-window';
 import { itemIconUrl } from './item-icons';
 
@@ -23,6 +25,8 @@ export class BankWindow {
       this.area,
       el('p', { className: 'window-hint', text: 'Arrastrá objetos desde o hacia la mochila.' }),
     );
+    // La caja del banco: un cofre abierto con fieltro verde.
+    new ContainerSkin(this.window, this.area).wear(CHEST_ART);
   }
 
   render(items: readonly BackpackItemSnapshot[]): void {

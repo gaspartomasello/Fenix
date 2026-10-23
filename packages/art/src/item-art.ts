@@ -54,6 +54,17 @@ const ICON_FIT: Partial<Record<ItemKind, number>> = {
   'empty-bottle': 1.05,
   cannonball: 1.15,
   shovel: 0.72,
+  'double-axe': 0.72,
+  'battle-axe': 0.7,
+  'two-handed-axe': 0.66,
+  'large-battle-axe': 0.66,
+  bardiche: 0.64,
+  'war-fork': 0.68,
+  'short-spear': 0.78,
+  'hammer-pick': 0.76,
+  'viking-sword': 0.74,
+  crossbow: 0.78,
+  'heavy-crossbow': 0.66,
 };
 
 const OUTLINE: Rgb = [24, 17, 14];
@@ -110,6 +121,53 @@ function hilt(c: VolumeCanvas, at: Vec3, dir: Vec3, length: number, guard: numbe
   const end = add(at, [-dir[0] * length, 0, -dir[2] * length]);
   c.limb(at, end, 0.7, 0.7, (s) => tone(GRIP, s.light, Math.floor(s.x + s.y) % 2 ? -1 : 0));
   c.sphere(end, 0.95, metal(GOLD));
+}
+
+/**
+ * Mango acostado de `from` a `to` y una función para ubicar puntos de la
+ * cabeza: `along` sobre el eje del mango desde `to`, `out` hacia el costado.
+ */
+function haft(
+  c: VolumeCanvas,
+  from: Vec3,
+  to: Vec3,
+  radius: number,
+  material: Material = solid(WOOD),
+): (along: number, out: number, y?: number) => Vec3 {
+  c.limb(from, to, radius, radius, material);
+  const d = normalize([to[0] - from[0], 0, to[2] - from[2]]);
+  const n: Vec3 = [-d[2], 0, d[0]];
+  return (along, out, y = to[1] + 0.3) => [
+    to[0] + d[0] * along + n[0] * out,
+    y,
+    to[2] + d[2] * along + n[2] * out,
+  ];
+}
+
+/** Acero de hoja de hacha con el filo (lo más lejos del mango) claro. */
+function axeSteel(edge: Vec3, reach: number): Material {
+  return (s) =>
+    Math.hypot(s.p[0] - edge[0], s.p[2] - edge[2]) > reach
+      ? [238, 240, 244]
+      : tone(STEEL, s.light + 0.1);
+}
+
+/** Ballesta acostada: la caja de madera, el arco de acero y la cuerda. */
+function crossbow(c: VolumeCanvas, size: number): void {
+  const at = haft(c, [-5 * size, 0.8, 2.6 * size], [5 * size, 0.8, -2.6 * size], 0.9, (s) =>
+    tone(WOOD, s.light, Math.floor(s.p[0] * 2) % 3 === 0 ? -1 : 0),
+  );
+  const arm = (t: number): Vec3 => at(-1 - Math.abs(t) * 1.6 * size, t * 6 * size, 1.2);
+  for (let i = 0; i < 6; i++) {
+    const a = -1 + i / 3;
+    const b = -1 + (i + 1) / 3;
+    c.limb(arm(a), arm(b), 0.55, 0.55, metal(i === 2 || i === 3 ? DARK_STEEL : STEEL));
+  }
+  c.limb(arm(-1), at(-5 * size, 0, 1.3), 0.18, 0.18, solid(ramp([226, 220, 200])));
+  c.limb(arm(1), at(-5 * size, 0, 1.3), 0.18, 0.18, solid(ramp([226, 220, 200])));
+  // Gatillo y estribo.
+  c.limb(at(-7 * size, 0, 0.8), at(-7.6 * size, 0.8, 0.2), 0.3, 0.3, metal(DARK_STEEL));
+  c.ellipsoid(at(0.6, 0, 1), lying(0), [1.2, 0.3, 1.2], metal(DARK_STEEL));
 }
 
 type Model = (c: VolumeCanvas, color: Ramp) => void;
@@ -704,6 +762,151 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
         ? [238, 240, 244]
         : tone(STEEL, s.light + 0.1),
     );
+  },
+  'double-axe'(c) {
+    // Dos hojas iguales, una a cada lado, sobre un mango corto.
+    const at = haft(c, [-6, 0.7, 3], [5, 0.7, -2.4], 0.7);
+    for (const side of [1, -1])
+      c.polygon(
+        [at(-1.4, 0.4 * side), at(1.2, 0.4 * side), at(2.8, 4.4 * side), at(-3, 4.4 * side)],
+        axeSteel(at(0, 0), 3.8),
+      );
+  },
+  'battle-axe'(c) {
+    // Hoja ancha curva de un lado y un pico corto del otro.
+    const at = haft(c, [-6.6, 0.7, 3.3], [5.6, 0.7, -2.8], 0.7);
+    c.polygon(
+      [at(-1.6, 0.4), at(1.4, 0.4), at(3.6, 5.2), at(0.4, 6.6), at(-3.8, 5.4)],
+      axeSteel(at(0, 0), 5.2),
+    );
+    c.polygon([at(-0.8, -0.4), at(0.8, -0.4), at(0, -3.2)], metal(DARK_STEEL));
+  },
+  'two-handed-axe'(c) {
+    // Mango largo con una hoja grande y una punta arriba.
+    const at = haft(c, [-8, 0.6, 4.2], [6, 0.6, -3.2], 0.65);
+    c.polygon(
+      [at(-2.2, 0.4), at(1.4, 0.4), at(3.4, 4.6), at(0, 6.4), at(-4.6, 4.8)],
+      axeSteel(at(0, 0), 5),
+    );
+    c.polygon([at(0.6, 0.3), at(1.6, -0.6), at(3.6, 0), at(1.6, 0.6)], metal(STEEL));
+  },
+  'large-battle-axe'(c) {
+    // La más grande: doble hoja en media luna sobre un asta larga.
+    const at = haft(c, [-8, 0.6, 4.2], [5.8, 0.6, -3], 0.75);
+    for (const side of [1, -1])
+      c.polygon(
+        [
+          at(-1.6, 0.4 * side),
+          at(1.6, 0.4 * side),
+          at(4, 5.2 * side),
+          at(0, 6.4 * side),
+          at(-4, 5.2 * side),
+        ],
+        axeSteel(at(0, 0), 5),
+      );
+    c.sphere(at(1.4, 0), 0.9, metal(GOLD));
+  },
+  bardiche(c) {
+    // Asta muy larga con una hoja alargada de filo curvo atada en dos puntos.
+    const at = haft(c, [-8.4, 0.6, 4.4], [6.4, 0.6, -3.4], 0.55);
+    c.polygon(
+      [at(-5.4, 0.3), at(0.8, 0.3), at(1.8, 2.6), at(-1.6, 3.8), at(-6.2, 2.4)],
+      axeSteel(at(-2.4, 0), 3),
+    );
+    for (const along of [-4.8, 0.2]) c.sphere(at(along, 0), 0.6, metal(DARK_STEEL));
+  },
+  'war-fork'(c) {
+    // Horquilla: asta y dos púas paralelas.
+    const at = haft(c, [-8, 0.6, 4.2], [4.4, 0.6, -2.2], 0.55);
+    c.limb(at(0, -1.4), at(0, 1.4), 0.5, 0.5, metal(DARK_STEEL));
+    for (const out of [-1.2, 1.2]) c.limb(at(0, out), at(4.4, out), 0.4, 0.12, metal(STEEL));
+  },
+  'short-spear'(c) {
+    const at = haft(c, [-6, 0.6, 3.2], [4, 0.6, -1.8], 0.55);
+    c.polygon([at(0, 0), at(1.2, 1), at(3.6, 0), at(1.2, -1)], metal(STEEL));
+    c.limb(at(-0.2, 0), at(-1, 0), 0.75, 0.75, solid(GRIP));
+  },
+  'hammer-pick'(c) {
+    // Martillo de un lado y pico curvo del otro.
+    const at = haft(c, [-6.4, 0.7, 3.4], [4.2, 0.7, -2], 0.6);
+    c.box(at(0.4, 1.4, 1.5), lying(-1.07 + Math.PI / 2), [1.6, 1.2, 1.3], metal(DARK_STEEL));
+    c.limb(at(0.4, 0, 1.5), at(0.4, 1.6, 1.5), 1, 1, metal(DARK_STEEL));
+    c.limb(at(0.4, -0.4, 1.5), at(-0.4, -4, 1.1), 0.9, 0.15, metal(STEEL));
+  },
+  cutlass(c) {
+    // Hoja corta y ancha, curva, con guarda de cazoleta.
+    const from: Vec3 = [-2.4, 0.6, 1.8];
+    c.limb(from, [1.8, 0.6, -0.2], 1.1, 1.3, metal(STEEL));
+    c.limb([1.8, 0.6, -0.2], [4.8, 0.6, -1.6], 1.3, 0.3, metal(STEEL));
+    c.ellipsoid(from, lying(1.1), [1.8, 0.7, 1.4], metal(GOLD));
+    hilt(c, from, normalize([4.2, 0, -2]), 2.8, 1.2);
+  },
+  'viking-sword'(c) {
+    // Hoja ancha de punta redondeada y pomo de tres lóbulos.
+    blade(c, [-3, 0.6, 2.2], [6.4, 0.6, -2.6], 1.4);
+    hilt(c, [-3, 0.6, 2.2], normalize([9.4, 0, -4.8]), 3.2, 2.2);
+    c.sphere([-6.6, 0.9, 4.1], 1.1, metal(DARK_STEEL));
+  },
+  crossbow(c) {
+    crossbow(c, 1);
+  },
+  'heavy-crossbow'(c) {
+    crossbow(c, 1.25);
+  },
+  bolt(c) {
+    // Virotes: más cortos y gruesos que las flechas, con aletas de cuero.
+    for (const [z, x] of [
+      [-1.2, 0],
+      [0, 0.5],
+      [1.2, -0.3],
+    ] as const) {
+      const from: Vec3 = [-3.4 + x, 0.6, z + 0.4];
+      const to: Vec3 = [3.4 + x, 0.6, z - 0.4];
+      c.limb(from, to, 0.4, 0.4, solid(ramp([150, 108, 66])));
+      c.limb(to, add(to, [1.2, 0, -0.1]), 0.7, 0.15, metal(DARK_STEEL));
+      c.ellipsoid(add(from, [0.6, 0.3, 0]), lying(1.5), [0.5, 0.5, 1], solid(ramp([120, 80, 50])));
+    }
+  },
+  'kite-shield'(c, color) {
+    // Escudo alargado en punta, pintado, con borde de hierro.
+    c.polygon(
+      [
+        [-4.4, 1, -6],
+        [4.4, 1, -6],
+        [4.8, 1, -2],
+        [0, 1, 7.4],
+        [-4.8, 1, -2],
+      ],
+      (s) => {
+        const edge = s.p[2] < -5.3 || Math.abs(s.p[0]) > 4.2 - Math.max(0, s.p[2]) * 0.55;
+        if (edge) return tone(DARK_STEEL, s.light);
+        if (Math.abs(s.p[0]) < 0.6 && s.p[2] < 5) return tone(GOLD, s.light - 0.1);
+        return tone(color, s.light - 0.15);
+      },
+    );
+    c.sphere([0, 1.6, -1.6], 0.9, metal(GOLD));
+  },
+  'heater-shield'(c, color) {
+    // Escudo de plancha: borde recto arriba y lados que se curvan a la punta.
+    const half = (z: number) => (z < 0 ? 5.2 : 5.2 * Math.cos((z / 6.2) * (Math.PI / 2)));
+    const outline: Vec3[] = [];
+    for (let i = 0; i <= 10; i++) outline.push([half(-5 + i * 1.12), 1, -5 + i * 1.12]);
+    for (let i = 10; i >= 0; i--) outline.push([-half(-5 + i * 1.12), 1, -5 + i * 1.12]);
+    c.polygon(outline, (s) => {
+      if (s.p[2] < -4.3 || Math.abs(s.p[0]) > half(s.p[2]) - 0.8) return tone(STEEL, s.light);
+      // Cuartelado: dos cuarteles del color y dos de acero.
+      return s.p[0] > 0 === s.p[2] > -0.5
+        ? tone(color, s.light - 0.1)
+        : tone(DARK_STEEL, s.light + 0.1);
+    });
+  },
+  'female-plate'(c) {
+    tunic(c, (s) =>
+      Math.abs(((s.p[2] + 20) % 3.2) - 1.6) < 0.25 ? tone(DARK_STEEL, s.light) : metal(STEEL)(s),
+    );
+    // El busto: dos cuencos de placa más altos.
+    for (const side of [1, -1])
+      c.ellipsoid([side * 1.7, 1.7, -1.6], lying(0), [1.7, 1.2, 1.6], metal(STEEL));
   },
   'wooden-shield'(c, color) {
     c.ellipsoid([0, 1, 0], lying(0), [6.2, 1, 6.2], (s) => {

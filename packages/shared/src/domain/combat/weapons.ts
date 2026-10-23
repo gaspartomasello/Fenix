@@ -100,7 +100,59 @@ const WEAPONS: Partial<Record<ItemKind, Weapon>> = {
     range: 10,
     ammo: 'arrow',
   },
+  // Las hachas grandes son de espadas (como en UO): lentas y de mucho daño.
+  'double-axe': sword('hacha doble', 9, 19, 3250),
+  'battle-axe': sword('hacha de batalla', 10, 20, 3250),
+  'two-handed-axe': sword('hacha a dos manos', 11, 21, 3500),
+  'large-battle-axe': sword('gran hacha de batalla', 12, 23, 3500),
+  bardiche: sword('hacha de asta', 12, 24, 3750),
+  cutlass: sword('alfanje', 5, 12, 2000),
+  'viking-sword': sword('espada vikinga', 7, 16, 2750),
+  'war-fork': {
+    name: 'horquilla de guerra',
+    minDamage: 7,
+    maxDamage: 15,
+    swingMs: 2750,
+    skill: 'fencing',
+  },
+  'short-spear': {
+    name: 'lanza corta',
+    minDamage: 6,
+    maxDamage: 13,
+    swingMs: 2250,
+    skill: 'fencing',
+  },
+  'hammer-pick': {
+    name: 'pico de guerra',
+    minDamage: 8,
+    maxDamage: 16,
+    swingMs: 2750,
+    skill: 'mace-fighting',
+  },
+  // Las ballestas pegan más fuerte que el arco, pero se recargan más despacio.
+  crossbow: {
+    name: 'ballesta',
+    minDamage: 10,
+    maxDamage: 20,
+    swingMs: 4000,
+    skill: 'archery',
+    range: 10,
+    ammo: 'bolt',
+  },
+  'heavy-crossbow': {
+    name: 'ballesta pesada',
+    minDamage: 14,
+    maxDamage: 26,
+    swingMs: 5000,
+    skill: 'archery',
+    range: 10,
+    ammo: 'bolt',
+  },
 };
+
+function sword(name: string, minDamage: number, maxDamage: number, swingMs: number): Weapon {
+  return { name, minDamage, maxDamage, swingMs, skill: 'swordsmanship' };
+}
 
 /** Protección de cada pieza de armadura. */
 const ARMOR_RATING: Partial<Record<ItemKind, number>> = {
@@ -118,6 +170,9 @@ const ARMOR_RATING: Partial<Record<ItemKind, number>> = {
   'wooden-shield': 6,
   buckler: 5,
   'metal-shield': 9,
+  'kite-shield': 10,
+  'heater-shield': 12,
+  'female-plate': 16,
   'chain-coif': 4,
   ringmail: 10,
   'bone-helm': 4,
@@ -138,6 +193,9 @@ const METAL_ARMOR: ReadonlySet<ItemKind> = new Set<ItemKind>([
   'ringmail',
   'chain-coif',
   'metal-shield',
+  'kite-shield',
+  'heater-shield',
+  'female-plate',
   'plate-chest',
   'plate-legs',
 ]);
