@@ -120,6 +120,8 @@ export interface ClientGameEvents extends Record<string, unknown> {
   questOffered: { npcId: EntityId; quest: Quest };
   /** Cambiaron las misiones aceptadas. */
   questsChanged: readonly QuestProgress[];
+  /** Las leyendas que conoce y la pista de cada una. */
+  legendsChanged: Extract<ServerMessage, { type: 'legends' }>['legends'];
   /** Se abrió un libro (respuesta al doble clic). */
   bookOpened: BookContents;
   /** Cambiaron los barcos que se ven (o alguno se movió). */
@@ -814,6 +816,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         break;
       case 'quests':
         this.emit('questsChanged', message.quests);
+        break;
+      case 'legends':
+        this.emit('legendsChanged', message.legends);
         break;
       case 'ships': {
         for (const ship of this._ships.values()) this.setDecks(ship, false);

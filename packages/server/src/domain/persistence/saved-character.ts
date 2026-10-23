@@ -1,4 +1,6 @@
 import {
+  LEGEND_DONE,
+  isLegendId,
   ITEMS,
   BOOK_PAGES,
   MAX_QUESTS,
@@ -15,6 +17,7 @@ import {
   type ShipLevel,
   type TreasureMark,
   type QuestGoal,
+  type LegendId,
   type QuestProgress,
   MAX_STACK,
   cleanBookPage,
@@ -97,6 +100,8 @@ export interface SavedCharacter {
   readonly mount: { readonly kind: MountKind; readonly riding: boolean } | null;
   /** Misiones aceptadas. */
   readonly quests?: readonly QuestProgress[];
+  /** Leyendas que conoce: paso en que va cada una. */
+  readonly legends?: Readonly<Partial<Record<LegendId, number>>>;
 }
 
 /** Toma una foto del personaje conectado (con su mochila, equipo y banco). */
@@ -168,6 +173,7 @@ export function captureCharacter(
       })
       .concat(shipDeeds(world, player.name)),
     ...(player.quests.length > 0 ? { quests: player.quests } : {}),
+    ...(player.legends.size > 0 ? { legends: Object.fromEntries(player.legends) } : {}),
     mount: player.mount
       ? { kind: player.mount, riding: true }
       : petKind
@@ -415,6 +421,16 @@ export function parseSavedCharacter(value: unknown): SavedCharacter | null {
     ...(Array.isArray(value.quests)
       ? { quests: value.quests.slice(0, MAX_QUESTS).flatMap((q) => parseQuest(q) ?? []) }
       : {}),
+    ...(isObject(value.legends)
+      ? {
+          legends: Object.fromEntries(
+            Object.entries(value.legends).filter(
+              ([id, step]) =>
+                isLegendId(id) && typeof step === 'number' && step >= 0 && step <= LEGEND_DONE,
+            ),
+          ),
+        }
+      : {}),
     mount:
       isObject(value.mount) && isMountKind(value.mount.kind)
         ? { kind: value.mount.kind, riding: value.mount.riding === true }
@@ -480,6 +496,11 @@ export function restoreCharacter(
     }
   }
   player.quests = [...(saved.quests ?? [])];
+  player.legends = new Map(
+    Object.entries(saved.legends ?? {}).flatMap(([id, step]) =>
+      isLegendId(id) && step !== undefined ? [[id, step] as const] : [],
+    ),
+  );
   if (saved.mount?.riding) player.mount = saved.mount.kind;
   else if (saved.mount)
     world.addCreature(

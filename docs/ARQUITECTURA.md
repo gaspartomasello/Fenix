@@ -430,6 +430,24 @@ bolsas e instrumentos, y compra gemas. La ventana de la tienda muestra el daño,
 cuánto alimenta cada objeto, separa los estantes (armas, armaduras, comida, otros) en las
 tiendas grandes, calcula el total al comprar varios y tiene «Vender todo».
 
+### Hablar con los vecinos y leyendas
+
+- **Conversación** (`server/application/npc-talk.ts`): lo que un jugador dice en voz alta lo
+  escucha el vecino más cercano (o el que nombre) y contesta según lo que se le pregunta:
+  saludo, nombre, oficio, el pueblo, dónde queda un lugar con nombre (rumbo y distancia),
+  rumores, comprar, despedida. Cada vecino tiene su carácter (cálido, seco, misterioso o
+  charlatán, según su nombre), que cambia cómo dice las cosas, y se acuerda de con quién habló.
+  Las respuestas salen como un mensaje de chat del vecino. Es un motor de palabras clave: no
+  usa ningún servicio externo.
+- **Leyendas** (`shared/domain/quests/legends.ts`, `server/application/legends.ts`): misiones
+  largas que nadie ofrece de frente. Un vecino cuenta un rumor (si le preguntás por rumores) y
+  queda en el diario; la persona indicada (el escriba, el joyero, la curandera, el herrero)
+  cuenta más solo si le preguntás por la palabra justa; en el lugar indicado aparece el jefe con
+  nombre propio y su escolta cuando llega alguien que lo busca; al vencerlo se lleva la
+  reliquia, y al devolverla recibe oro y un **pergamino de maestría** (+5 en Magia, Tácticas,
+  Primeros auxilios o Forzar cerraduras). El avance se guarda con el personaje y se ve en el
+  diario de misiones (J), sin decir más que la pista.
+
 ### El oficio del ladrón
 
 - **Habilidades nuevas** (grupo «Ladrón»): Forzar cerraduras, Fisgonear y Robar. Las reglas

@@ -8,6 +8,8 @@ import { MountActions } from './use-cases/mount-actions';
 import { Gates } from './gates';
 import { Stealth } from './stealth';
 import { Thievery } from './thievery';
+import { Legends } from './legends';
+import { NpcTalk } from './npc-talk';
 import { WarMode } from './war-mode';
 import { GameLoop } from './game-loop';
 import { ItemNotifications } from './item-notifications';
@@ -94,6 +96,8 @@ export class GameApplication {
   private readonly mounts: MountActions;
   private readonly stealth: Stealth;
   private readonly thievery: Thievery;
+  private readonly legends: Legends;
+  private readonly npcTalk: NpcTalk;
   private readonly mobiles: MobileNotifications;
   private readonly world: World;
   private readonly persistence: CharacterPersistence;
@@ -218,6 +222,9 @@ export class GameApplication {
       notifier,
     );
     this.thievery.reveal = (playerId, text) => this.revealPlayer(playerId, text);
+    this.legends = new Legends(world, clock, ids, notifications, this.mobiles, notifier);
+    this.npcTalk = new NpcTalk(world, this.legends, notifier, random, () => clock.now());
+    this.useItem.readMastery = (playerId, id) => this.legends.readMastery(playerId, id);
     this.books = new Books(world, notifications, notifier);
     this.dyeing = new Dyeing(world, notifications, notifier);
     this.useItem.openBook = (playerId, id) => this.books.read(playerId, id);
@@ -256,6 +263,7 @@ export class GameApplication {
       warMode,
     );
     this.loop.onCreatureKilled = (killer, creature) => this.quests.creatureKilled(killer, creature);
+    this.loop.onCreatureSlain = (killer, creature) => this.legends.slain(killer, creature);
     this.loop.onTreasureMap = (corpseId, level) => this.treasure.chartCorpse(corpseId, level);
     this.ships = new Ships(world, clock, ids, random, notifications, this.mobiles, notifier);
     this.ships.teleport = (player, position) => this.movePlayer.teleport(player, position);
@@ -282,6 +290,7 @@ export class GameApplication {
     this.loop.tick(now);
     this.townLife.tick(now);
     this.containers.tick(now);
+    this.legends.tick(now);
     this.treasure.tick(now);
     this.ships.tick(now);
     this.persistence.autosave(now);
@@ -315,6 +324,7 @@ export class GameApplication {
       this.mobiles.sendEffects(player);
       this.social.sendSocial(player);
       this.quests.sendJournal(player);
+      if (player.legends.size > 0) this.legends.send(player);
       this.ships.afterJoin(playerId);
     }
   }
@@ -334,6 +344,8 @@ export class GameApplication {
         this.sendChat.execute(playerId, message.text, message.channel);
         // Las órdenes al timonel se dan en voz alta, como en UO.
         if ((message.channel ?? 'say') === 'say') this.ships.hear(playerId, message.text);
+        // Los vecinos cercanos escuchan y contestan.
+        if ((message.channel ?? 'say') === 'say') this.npcTalk.hear(playerId, message.text);
         // Hablar en voz alta descubre al escondido (al grupo o al gremio, no).
         if ((message.channel ?? 'say') === 'say')
           this.revealPlayer(playerId, 'Hablaste y te oyeron.');

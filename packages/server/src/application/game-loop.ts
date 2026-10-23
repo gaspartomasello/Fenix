@@ -66,6 +66,8 @@ export class GameLoop {
   onTrap: (casterId: EntityId, containerId: string, armed: boolean) => void = () => {};
   /** Lo arma la aplicación: una criatura murió a manos de un jugador (misiones de caza). */
   onCreatureKilled: (killer: Player, creature: Creature) => void = () => {};
+  /** Cualquier criatura que mata un jugador (también las que no reaparecen, como los jefes). */
+  onCreatureSlain: (killer: Player, creature: Creature) => void = () => {};
   /** Lo arma la aplicación: una criatura dejó un mapa del tesoro en su cuerpo. */
   onTreasureMap: (corpseId: EntityId, level: TreasureLevel) => void = () => {};
 
@@ -623,6 +625,7 @@ export class GameLoop {
       killer.reputation.award(fame, fame);
       this.social.sendSocial(killer);
       if (!creature.temporary && !creature.ownerId) this.onCreatureKilled(killer, creature);
+      if (!creature.ownerId) this.onCreatureSlain(killer, creature);
     }
     this.dropLoot(creature);
   }

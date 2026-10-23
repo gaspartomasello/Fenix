@@ -508,6 +508,7 @@ export class Items {
       case 'dig':
       case 'ship':
       case 'lockpick':
+      case 'mastery':
         // Se resuelven en otros casos de uso (o en el cliente): acá no hay nada que hacer.
         return { ok: true, changes };
       case 'none': {
