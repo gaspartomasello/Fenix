@@ -1,4 +1,6 @@
-import { describeItem, withinReach, type EntityId, type ItemKind } from '@fenix/shared';
+import { describeItem, type ItemKind } from '@fenix/shared/items/item-catalog';
+import { withinReach } from '@fenix/shared/items/item-rules';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import { Creature } from '../domain/creatures/creature';
 import type { World } from '../domain/world';
 import type { ItemNotifications } from './item-notifications';

@@ -1,13 +1,12 @@
+import { describeItem } from '@fenix/shared/items/item-catalog';
 import {
   CIRCLE_NAMES,
   SPELL_CIRCLES,
-  describeItem,
-  formatSkill,
   spellsOfCircle,
-  type SkillValues,
   type SpellCircle,
   type SpellKey,
-} from '@fenix/shared';
+} from '@fenix/shared/magic/spell-catalog';
+import { formatSkill, type SkillValues } from '@fenix/shared/skills/skill-catalog';
 import { el } from './dom';
 import { GameWindow } from './game-window';
 

@@ -1,16 +1,18 @@
+import { tileDistance } from '@fenix/shared/geometry/position';
 import {
-  SPELLS,
   attributeModifier,
   paralyzeDurationMs,
   poisonDurationMs,
   poisonLevel,
+  spellDurationMs,
+} from '@fenix/shared/magic/effects';
+import {
+  SPELLS,
   resistChance,
   rollSpellPower,
-  spellDurationMs,
-  hasLineOfSight,
-  tileDistance,
   type SpellKey,
-} from '@fenix/shared';
+} from '@fenix/shared/magic/spell-catalog';
+import { hasLineOfSight } from '@fenix/shared/rules/line-of-sight';
 import { magicResistOf } from '../magic/spellcasting';
 import type { Mobile } from '../mobile';
 import type { World } from '../world';

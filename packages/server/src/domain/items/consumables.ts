@@ -1,13 +1,11 @@
 import {
   CURE_POTION_POWER,
   HEALING_POTION,
-  ITEMS,
   POTION_BOOST,
   REFRESH_POTION,
-  cureChance,
-  describeItem,
-  type ItemKind,
-} from '@fenix/shared';
+} from '@fenix/shared/combat/vitals';
+import { ITEMS, describeItem, type ItemKind } from '@fenix/shared/items/item-catalog';
+import { cureChance } from '@fenix/shared/magic/effects';
 import type { Player } from '../player';
 
 export interface ConsumeResult {

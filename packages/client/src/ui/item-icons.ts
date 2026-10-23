@@ -1,5 +1,5 @@
 import { drawItem, itemVariant } from '@fenix/art';
-import type { ItemKind } from '@fenix/shared';
+import type { ItemKind } from '@fenix/shared/items/item-catalog';
 import { toCanvas } from '../platform/canvas';
 
 const cache = new Map<string, string>();

@@ -3,28 +3,23 @@ import {
   CRAFT_RANGE,
   CRAFT_TOOLS,
   FISHING,
-  isWater,
   FISHING_RANGE,
-  SKILL_NAMES,
   STATION_NAMES,
   STATION_STATICS,
-  ITEMS,
   RESOURCE_SOURCES,
-  VENDORS,
-  VENDOR_RANGE,
   craftChance,
-  describeItem,
   gatherChance,
   recipeByKey,
-  tileDistance,
-  type EntityId,
-  type ItemKind,
   type CraftStation,
-  type Position,
   type ResourceSource,
-  type SkillKey,
-  type StaticKind,
-} from '@fenix/shared';
+} from '@fenix/shared/economy/crafting';
+import { VENDORS, VENDOR_RANGE } from '@fenix/shared/economy/vendors';
+import { tileDistance, type Position } from '@fenix/shared/geometry/position';
+import { ITEMS, describeItem, type ItemKind } from '@fenix/shared/items/item-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
+import { SKILL_NAMES, type SkillKey } from '@fenix/shared/skills/skill-catalog';
+import type { StaticKind } from '@fenix/shared/world/statics';
+import { isWater } from '@fenix/shared/world/terrain';
 import { emptyChanges, type ItemChanges } from '../items/items';
 import type { Npc } from '../npcs/npc';
 import type { Player } from '../player';

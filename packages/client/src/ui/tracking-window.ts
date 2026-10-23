@@ -1,12 +1,11 @@
+import type { Position } from '@fenix/shared/geometry/position';
+import type { EntityId, TrackSighting } from '@fenix/shared/protocol/messages';
 import {
   TRACKING_CATEGORIES,
   TRACKING_CATEGORY_NAMES,
   describeTrack,
-  type EntityId,
-  type Position,
-  type TrackSighting,
   type TrackingCategory,
-} from '@fenix/shared';
+} from '@fenix/shared/skills/tracking';
 import { el } from './dom';
 import { GameWindow } from './game-window';
 

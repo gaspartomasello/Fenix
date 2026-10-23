@@ -6,7 +6,7 @@ import {
   skillGainChance,
   type SkillKey,
   type SkillValues,
-} from '@fenix/shared';
+} from '@fenix/shared/skills/skill-catalog';
 
 /** Habilidades de un jugador, que suben de a 0,1 al usarlas (con tope total). */
 export class SkillSet {

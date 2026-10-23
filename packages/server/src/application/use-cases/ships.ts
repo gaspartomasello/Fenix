@@ -1,3 +1,8 @@
+import { directionOffset, type Direction } from '@fenix/shared/geometry/direction';
+import { tileDistance, type Position } from '@fenix/shared/geometry/position';
+import type { ItemKind } from '@fenix/shared/items/item-catalog';
+import type { EntityId, ShipAction, ShipSecurityChange } from '@fenix/shared/protocol/messages';
+import { VIEW_RANGE } from '@fenix/shared/rules/visibility';
 import {
   BOARDING_RANGE,
   CANNON_HULL_DAMAGE,
@@ -14,12 +19,9 @@ import {
   SHIP_DEEDS,
   SHIP_LEVEL_NAMES,
   SHIP_SIDE_NAMES,
-  VIEW_RANGE,
   absoluteHeading,
-  directionOffset,
   hullCondition,
   isShipName,
-  isWater,
   levelAtLeast,
   parseShipOrder,
   rotateAround,
@@ -27,20 +29,14 @@ import {
   shipKindOfDeed,
   shipTiles,
   sideDirection,
-  tileDistance,
   turnFacing,
-  type Direction,
-  type EntityId,
-  type ItemKind,
-  type Position,
-  type ShipAction,
   type ShipFacing,
   type ShipKind,
   type ShipLevel,
   type ShipOrder,
-  type ShipSecurityChange,
   type ShipSide,
-} from '@fenix/shared';
+} from '@fenix/shared/ships/ships';
+import { isWater } from '@fenix/shared/world/terrain';
 import { emptyChanges, type ItemChanges } from '../../domain/items/items';
 import type { Mobile } from '../../domain/mobile';
 import { Creature } from '../../domain/creatures/creature';

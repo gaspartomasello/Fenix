@@ -1,7 +1,6 @@
 import {
   CLOTH_HUES,
   DEFAULT_APPEARANCE,
-  Direction,
   FACIAL_HAIR,
   FACIAL_HAIR_NAMES,
   GENDERS,
@@ -10,11 +9,11 @@ import {
   HAIR_STYLE_NAMES,
   HAIR_HUES,
   SKIN_TONES,
-  startingClothes,
   type Appearance,
-  type EquipmentHues,
-  type EquipmentLook,
-} from '@fenix/shared';
+} from '@fenix/shared/character/appearance';
+import { startingClothes } from '@fenix/shared/character/creation';
+import { Direction } from '@fenix/shared/geometry/direction';
+import type { EquipmentHues, EquipmentLook } from '@fenix/shared/protocol/messages';
 import { drawCharacterFrame } from '@fenix/art';
 import { toCanvas } from '../platform/canvas';
 import { el, hexColor } from './dom';

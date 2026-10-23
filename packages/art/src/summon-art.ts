@@ -1,4 +1,5 @@
-import type { CreatureKind, Direction } from '@fenix/shared';
+import type { CreatureKind } from '@fenix/shared/creatures/creature-catalog';
+import type { Direction } from '@fenix/shared/geometry/direction';
 import { OUTLINE } from './character-art';
 import { spriteCanvas, type CanvasFactory } from './humanoid-rig';
 import {

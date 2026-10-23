@@ -1,4 +1,8 @@
-import { DOORS, SEATS, STATICS, TileMap, Terrain, isMerchant, type Position } from '@fenix/shared';
+import { isMerchant } from '@fenix/shared/economy/vendors';
+import type { Position } from '@fenix/shared/geometry/position';
+import { DOORS, SEATS, STATICS } from '@fenix/shared/world/statics';
+import { Terrain } from '@fenix/shared/world/terrain';
+import { TileMap } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
 import { buildCity, type City, type CityStyle } from './city-builder';
 

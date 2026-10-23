@@ -1,5 +1,7 @@
+import type { Position } from '@fenix/shared/geometry/position';
+import { ITEMS } from '@fenix/shared/items/item-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import {
-  ITEMS,
   LEGENDS,
   LEGEND_DONE,
   LEGEND_FOUND,
@@ -8,14 +10,11 @@ import {
   LEGEND_SEEKING,
   MASTERY_GAIN,
   MASTERY_SCROLLS,
-  SKILL_MAX,
-  SKILL_NAMES,
   legendHint,
-  type EntityId,
   type Legend,
   type LegendId,
-  type Position,
-} from '@fenix/shared';
+} from '@fenix/shared/quests/legends';
+import { SKILL_MAX, SKILL_NAMES } from '@fenix/shared/skills/skill-catalog';
 import { Creature } from '../domain/creatures/creature';
 import { emptyChanges } from '../domain/items/items';
 import type { Npc } from '../domain/npcs/npc';

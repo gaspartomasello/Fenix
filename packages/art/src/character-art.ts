@@ -1,13 +1,9 @@
-import {
-  ITEMS,
-  type Appearance,
-  type Direction,
-  type EquipmentHues,
-  type EquipmentLook,
-  type ItemKind,
-  type MountKind,
-  type NpcRole,
-} from '@fenix/shared';
+import type { Appearance } from '@fenix/shared/character/appearance';
+import type { NpcRole } from '@fenix/shared/economy/vendors';
+import type { Direction } from '@fenix/shared/geometry/direction';
+import { ITEMS, type ItemKind } from '@fenix/shared/items/item-catalog';
+import type { MountKind } from '@fenix/shared/mounts/mount-catalog';
+import type { EquipmentHues, EquipmentLook } from '@fenix/shared/protocol/messages';
 import { GOLD, STEEL, drawHumanHead, drawMempo, drawSkullHead } from './humanoid-head';
 import {
   BUILDS,

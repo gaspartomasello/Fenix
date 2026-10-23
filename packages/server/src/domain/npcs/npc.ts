@@ -1,14 +1,12 @@
 import {
   CLOTH_HUES,
   DEFAULT_APPEARANCE,
-  Direction,
-  VENDORS,
   type Appearance,
-  type EntityId,
-  type EquipmentLook,
-  type NpcRole,
-  type Position,
-} from '@fenix/shared';
+} from '@fenix/shared/character/appearance';
+import { VENDORS, type NpcRole } from '@fenix/shared/economy/vendors';
+import { Direction } from '@fenix/shared/geometry/direction';
+import type { Position } from '@fenix/shared/geometry/position';
+import type { EntityId, EquipmentLook } from '@fenix/shared/protocol/messages';
 import { Combatant } from '../combat/combatant';
 import type { Mobile } from '../mobile';
 

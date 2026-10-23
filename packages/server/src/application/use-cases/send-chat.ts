@@ -1,4 +1,6 @@
-import { sanitizeChatText, type ChatChannel, type EntityId } from '@fenix/shared';
+import type { EntityId } from '@fenix/shared/protocol/messages';
+import { sanitizeChatText } from '@fenix/shared/rules/chat';
+import type { ChatChannel } from '@fenix/shared/social/groups';
 import type { World } from '../../domain/world';
 import type { Notifier } from '../ports';
 

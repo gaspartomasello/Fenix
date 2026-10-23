@@ -1,5 +1,7 @@
 import { drawFieldWall, FIELD_WALL_FRAME } from '@fenix/art';
-import type { EntityId, GroundItemSnapshot, ItemKind, Position } from '@fenix/shared';
+import type { Position } from '@fenix/shared/geometry/position';
+import type { ItemKind } from '@fenix/shared/items/item-catalog';
+import type { EntityId, GroundItemSnapshot } from '@fenix/shared/protocol/messages';
 import { Container, Graphics, Sprite } from 'pixi.js';
 import type { FractionalPosition } from '../core/entity';
 import { staticDepth } from './depth';

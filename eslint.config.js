@@ -4,6 +4,16 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 /**
+ * Nadie importa `@fenix/shared` entero: cada uno trae solo los módulos que
+ * usa (`@fenix/shared/items/dyes`). Así cada prueba depende solo de lo que
+ * toca y `npm run check:fast` corre pocas.
+ */
+const WHOLE_SHARED = {
+  name: '@fenix/shared',
+  message: 'Importá el módulo que usás, por ejemplo @fenix/shared/items/item-catalog.',
+};
+
+/**
  * Reglas de capas: el dominio no puede depender de capas externas.
  * Mantener esta lista sincronizada con docs/ARQUITECTURA.md.
  */
@@ -30,6 +40,7 @@ const layerRules = [
       'no-restricted-imports': [
         'error',
         {
+          paths: [WHOLE_SHARED],
           patterns: [
             {
               group: ['@fenix/server*', '@fenix/client*', '@fenix/content*', 'pixi.js', 'node:*'],
@@ -46,6 +57,7 @@ const layerRules = [
       'no-restricted-imports': [
         'error',
         {
+          paths: [WHOLE_SHARED],
           patterns: [
             {
               group: ['**/application/**', '**/infrastructure/**', 'ws', 'node:*'],
@@ -62,6 +74,7 @@ const layerRules = [
       'no-restricted-imports': [
         'error',
         {
+          paths: [WHOLE_SHARED],
           patterns: [
             {
               group: ['**/infrastructure/**', 'ws', 'node:*'],
@@ -79,6 +92,7 @@ const layerRules = [
       'no-restricted-imports': [
         'error',
         {
+          paths: [WHOLE_SHARED],
           patterns: [
             {
               group: ['@fenix/server*'],
@@ -95,6 +109,7 @@ const layerRules = [
       'no-restricted-imports': [
         'error',
         {
+          paths: [WHOLE_SHARED],
           patterns: [
             {
               group: [
@@ -129,6 +144,11 @@ export default tseslint.config(
       eqeqeq: ['error', 'always'],
       'no-console': ['warn', { allow: ['info', 'warn', 'error'] }],
     },
+  },
+  {
+    files: ['packages/*/src/**/*.ts', 'packages/*/scripts/**/*.ts'],
+    ignores: ['packages/shared/**'],
+    rules: { 'no-restricted-imports': ['error', { paths: [WHOLE_SHARED] }] },
   },
   ...layerRules,
   prettier,

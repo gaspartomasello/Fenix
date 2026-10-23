@@ -1,4 +1,6 @@
-import { Terrain, type Position, type StaticPlacement } from '@fenix/shared';
+import type { Position } from '@fenix/shared/geometry/position';
+import type { StaticPlacement } from '@fenix/shared/world/statics';
+import { Terrain } from '@fenix/shared/world/terrain';
 import { SeededRandom } from '../system/seeded-random';
 
 /** Una sala de la mazmorra; `depth` crece a medida que se baja (0 = la entrada). */

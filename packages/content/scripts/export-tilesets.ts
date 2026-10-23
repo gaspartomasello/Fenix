@@ -17,7 +17,8 @@ import {
   TERRAIN_ART_SIZE,
   type StaticFrame,
 } from '@fenix/art';
-import { ALL_TERRAINS, STATIC_KINDS, TERRAINS } from '@fenix/shared';
+import { STATIC_KINDS } from '@fenix/shared/world/statics';
+import { ALL_TERRAINS, TERRAINS } from '@fenix/shared/world/terrain';
 import { TILED, type TiledTileset } from '../src/tiled-format';
 import { encodePng } from './png';
 

@@ -1,19 +1,17 @@
+import { ACTION_COOLDOWN_MS } from '@fenix/shared/economy/crafting';
+import { tileDistance, type Position } from '@fenix/shared/geometry/position';
+import { ITEMS, type ItemKind } from '@fenix/shared/items/item-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import {
-  ACTION_COOLDOWN_MS,
   DIG_RANGE,
-  ITEMS,
   TREASURE_CHEST_MS,
   TREASURE_GEMS,
   TREASURE_LEVELS,
   digChance,
-  isWater,
-  tileDistance,
   treasureMapName,
-  type EntityId,
-  type ItemKind,
-  type Position,
   type TreasureLevel,
-} from '@fenix/shared';
+} from '@fenix/shared/treasure/treasure';
+import { isWater } from '@fenix/shared/world/terrain';
 import { Creature } from '../../domain/creatures/creature';
 import { emptyChanges, type ItemChanges } from '../../domain/items/items';
 import type { Item } from '../../domain/items/item';

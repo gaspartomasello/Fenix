@@ -13,7 +13,9 @@ import {
   type CharacterFrame,
 } from '@fenix/art';
 import { Container, Graphics, Sprite, Text } from 'pixi.js';
-import type { Direction, Notoriety, Position } from '@fenix/shared';
+import type { Direction } from '@fenix/shared/geometry/direction';
+import type { Position } from '@fenix/shared/geometry/position';
+import type { Notoriety } from '@fenix/shared/social/reputation';
 import { COMBAT_TEXT_MS, type CombatText, type Entity } from '../core/entity';
 import { Fidgets, attackFrame, castFrame, stepFrame, type AttackStyle } from './animation';
 import { characterDepth, corpseDepth } from './depth';

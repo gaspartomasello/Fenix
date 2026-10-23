@@ -1,13 +1,7 @@
-import {
-  DOORS,
-  STATICS,
-  TERRAINS,
-  Terrain,
-  type Position,
-  type RegionData,
-  type StaticKind,
-  type StaticPlacement,
-} from '@fenix/shared';
+import type { Position } from '@fenix/shared/geometry/position';
+import { DOORS, STATICS, type StaticKind, type StaticPlacement } from '@fenix/shared/world/statics';
+import { TERRAINS, Terrain } from '@fenix/shared/world/terrain';
+import type { RegionData } from '@fenix/shared/world/tile-map';
 import { hash } from './procedural-map';
 
 /** Lo más alto que sube el suelo (en escalones). */

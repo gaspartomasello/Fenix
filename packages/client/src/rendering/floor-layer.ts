@@ -1,4 +1,5 @@
-import { Terrain, type RegionData, type TileMap } from '@fenix/shared';
+import { Terrain } from '@fenix/shared/world/terrain';
+import type { RegionData, TileMap } from '@fenix/shared/world/tile-map';
 import { Container, Rectangle, Sprite } from 'pixi.js';
 import { projectedDepth } from './depth';
 import type { Ground } from './ground';

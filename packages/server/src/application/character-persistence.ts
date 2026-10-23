@@ -1,4 +1,5 @@
-import { validatePassword, type EntityId } from '@fenix/shared';
+import { validatePassword } from '@fenix/shared/character/password';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import { captureCharacter, type SavedCharacter } from '../domain/persistence/saved-character';
 import type { Player } from '../domain/player';
 import type { World } from '../domain/world';

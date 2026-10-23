@@ -1,12 +1,22 @@
+import { isAppearance, type Appearance } from '@fenix/shared/character/appearance';
+import { PLAYER_ATTRIBUTES, type Attributes } from '@fenix/shared/combat/vitals';
+import { isCreatureKind } from '@fenix/shared/creatures/creature-catalog';
+import { isDirection, type Direction } from '@fenix/shared/geometry/direction';
+import type { Position } from '@fenix/shared/geometry/position';
 import {
-  LEGEND_DONE,
-  isLegendId,
-  ITEMS,
   BOOK_PAGES,
-  MAX_QUESTS,
-  isCreatureKind,
-  isDyeHue,
-  isTreasureLevel,
+  cleanBookPage,
+  cleanBookTitle,
+  type BookText,
+} from '@fenix/shared/items/books';
+import { isDyeHue } from '@fenix/shared/items/dyes';
+import { isEquipmentSlot, type EquipmentSlot } from '@fenix/shared/items/equipment';
+import { ITEMS, MAX_STACK, isItemKind, type ItemKind } from '@fenix/shared/items/item-catalog';
+import { isMountKind, type MountKind } from '@fenix/shared/mounts/mount-catalog';
+import type { RuneMark } from '@fenix/shared/protocol/messages';
+import { LEGEND_DONE, isLegendId, type LegendId } from '@fenix/shared/quests/legends';
+import { MAX_QUESTS, type QuestGoal, type QuestProgress } from '@fenix/shared/quests/quests';
+import {
   DEFAULT_SHIP_SECURITY,
   MAX_SHIP_MANIFEST,
   SHIPS,
@@ -15,34 +25,15 @@ import {
   isShipLevel,
   isShipName,
   type ShipLevel,
-  type TreasureMark,
-  type QuestGoal,
-  type LegendId,
-  type QuestProgress,
-  MAX_STACK,
-  cleanBookPage,
-  cleanBookTitle,
-  type BookText,
-  PLAYER_ATTRIBUTES,
+} from '@fenix/shared/ships/ships';
+import {
   SKILL_KEYS,
   SKILL_MAX,
   STARTING_SKILLS,
-  STAT_CAP,
-  isAppearance,
-  isDirection,
-  isEquipmentSlot,
-  isItemKind,
-  isMountKind,
-  type Appearance,
-  type Attributes,
-  type Direction,
-  type EquipmentSlot,
-  type ItemKind,
-  type RuneMark,
-  type MountKind,
-  type Position,
   type SkillValues,
-} from '@fenix/shared';
+} from '@fenix/shared/skills/skill-catalog';
+import { STAT_CAP } from '@fenix/shared/skills/stat-gain';
+import { isTreasureLevel, type TreasureMark } from '@fenix/shared/treasure/treasure';
 import { Creature } from '../creatures/creature';
 import type { ShipRecord } from '../ships/ship';
 import type { Player } from '../player';

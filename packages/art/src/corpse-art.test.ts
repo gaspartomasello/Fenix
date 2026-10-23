@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CREATURE_KINDS, Direction } from '@fenix/shared';
+import { CREATURE_KINDS } from '@fenix/shared/creatures/creature-catalog';
+import { Direction } from '@fenix/shared/geometry/direction';
 import { corpseLayout, drawCreatureCorpse, leavesCorpse } from './corpse-art';
 import { drawCreatureFrame } from './creature-art';
 

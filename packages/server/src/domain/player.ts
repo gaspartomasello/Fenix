@@ -1,33 +1,28 @@
+import type { Appearance } from '@fenix/shared/character/appearance';
+import { RUN_STEPS_PER_STAMINA } from '@fenix/shared/combat/combat-rules';
+import { PLAYER_ATTRIBUTES, type Attributes } from '@fenix/shared/combat/vitals';
+import { step, type Direction } from '@fenix/shared/geometry/direction';
+import type { Position } from '@fenix/shared/geometry/position';
+import type { AttributeKey } from '@fenix/shared/magic/effects';
+import type { SpellKey, PolymorphForm } from '@fenix/shared/magic/spell-catalog';
+import { isMountKind, type MountKind } from '@fenix/shared/mounts/mount-catalog';
+import type { EntityId, MobileSnapshot } from '@fenix/shared/protocol/messages';
+import type { LegendId } from '@fenix/shared/quests/legends';
+import type { QuestProgress } from '@fenix/shared/quests/quests';
+import { canStep, moveDuration, type MoveMode } from '@fenix/shared/rules/movement';
 import {
-  PLAYER_ATTRIBUTES,
-  SKILL_STATS,
   STARTING_SKILLS,
+  type SkillKey,
+  type SkillValues,
+} from '@fenix/shared/skills/skill-catalog';
+import {
+  SKILL_STATS,
   STAT_GAIN_MIN_USES,
   STAT_TOTAL_CAP,
   statGainChance,
-  type AttributeKey,
-  type Attributes,
-  type SkillKey,
-  type SpellKey,
-  type PolymorphForm,
-  RUN_STEPS_PER_STAMINA,
-  canStep,
-  isMountKind,
-  moveDuration,
-  step,
-  type Appearance,
-  type Direction,
-  type EntityId,
-  type MoveMode,
-  type MobileSnapshot,
-  type Notoriety,
-  type MountKind,
-  type Position,
-  type LegendId,
-  type QuestProgress,
-  type SkillValues,
-  type TileMap,
-} from '@fenix/shared';
+} from '@fenix/shared/skills/stat-gain';
+import type { Notoriety } from '@fenix/shared/social/reputation';
+import type { TileMap } from '@fenix/shared/world/tile-map';
 import { Combatant } from './combat/combatant';
 import { SkillSet } from './skills/skill-set';
 import { Reputation } from './social/reputation';

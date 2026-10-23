@@ -1,10 +1,5 @@
-import {
-  decodeClientMessage,
-  encodeMessage,
-  type ClientMessage,
-  type EntityId,
-  type ServerMessage,
-} from '@fenix/shared';
+import { decodeClientMessage, encodeMessage } from '@fenix/shared/protocol/codec';
+import type { ClientMessage, EntityId, ServerMessage } from '@fenix/shared/protocol/messages';
 import type { GameApplication } from '../../application/game-application';
 import type { AccountRecord } from '../../application/ports';
 import type { JoinWorldResult } from '../../application/use-cases/join-world';

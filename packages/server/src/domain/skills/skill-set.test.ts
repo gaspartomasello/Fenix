@@ -1,4 +1,4 @@
-import { STARTING_SKILLS, SKILL_KEYS, skillGainAmount } from '@fenix/shared';
+import { STARTING_SKILLS, SKILL_KEYS, skillGainAmount } from '@fenix/shared/skills/skill-catalog';
 import { describe, expect, it } from 'vitest';
 import { SkillSet } from './skill-set';
 

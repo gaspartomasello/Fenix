@@ -12,19 +12,16 @@ import {
   type PixelImage,
   type TerrainNeighbors,
 } from '@fenix/art';
-import {
-  EQUIPMENT_SLOTS,
-  type Appearance,
-  type CreatureKind,
-  type Direction,
-  type EquipmentHues,
-  type EquipmentLook,
-  type ItemKind,
-  type MountKind,
-  type NpcRole,
-  type StaticKind,
-  type Terrain,
-} from '@fenix/shared';
+import type { Appearance } from '@fenix/shared/character/appearance';
+import type { CreatureKind } from '@fenix/shared/creatures/creature-catalog';
+import type { NpcRole } from '@fenix/shared/economy/vendors';
+import type { Direction } from '@fenix/shared/geometry/direction';
+import { EQUIPMENT_SLOTS } from '@fenix/shared/items/equipment';
+import type { ItemKind } from '@fenix/shared/items/item-catalog';
+import type { MountKind } from '@fenix/shared/mounts/mount-catalog';
+import type { EquipmentHues, EquipmentLook } from '@fenix/shared/protocol/messages';
+import type { StaticKind } from '@fenix/shared/world/statics';
+import type { Terrain } from '@fenix/shared/world/terrain';
 import { Texture } from 'pixi.js';
 import { toCanvas } from '../platform/canvas';
 

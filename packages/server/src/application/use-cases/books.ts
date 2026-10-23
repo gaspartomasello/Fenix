@@ -1,4 +1,6 @@
-import { BLANK_BOOK, ITEMS, writeBookPage, type EntityId } from '@fenix/shared';
+import { BLANK_BOOK, writeBookPage } from '@fenix/shared/items/books';
+import { ITEMS } from '@fenix/shared/items/item-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import { emptyChanges } from '../../domain/items/items';
 import type { World } from '../../domain/world';
 import type { ItemNotifications } from '../item-notifications';

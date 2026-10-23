@@ -1,4 +1,4 @@
-import type { EntityId, GroundItemSnapshot } from '@fenix/shared';
+import type { EntityId, GroundItemSnapshot } from '@fenix/shared/protocol/messages';
 import type { ItemChanges } from '../domain/items/items';
 import type { World } from '../domain/world';
 import type { Notifier } from './ports';

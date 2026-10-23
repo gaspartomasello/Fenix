@@ -1,14 +1,13 @@
+import { tileDistance, type Position } from '@fenix/shared/geometry/position';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import {
   HIDE_BLOCK_RANGE,
   detectChance,
   detectRange,
   hideChance,
   stealthSteps,
-  tileDistance,
   type ActiveSkill,
-  type EntityId,
-  type Position,
-} from '@fenix/shared';
+} from '@fenix/shared/skills/stealth';
 import { Creature } from '../domain/creatures/creature';
 import { Player } from '../domain/player';
 import type { World } from '../domain/world';

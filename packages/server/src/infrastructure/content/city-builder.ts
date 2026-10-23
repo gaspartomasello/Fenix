@@ -1,16 +1,10 @@
-import {
-  DOORS,
-  STATICS,
-  TERRAINS,
-  Terrain,
-  type CreatureKind,
-  type ItemKind,
-  type NpcRole,
-  type Position,
-  type RegionData,
-  type StaticKind,
-  type StaticPlacement,
-} from '@fenix/shared';
+import type { CreatureKind } from '@fenix/shared/creatures/creature-catalog';
+import type { NpcRole } from '@fenix/shared/economy/vendors';
+import type { Position } from '@fenix/shared/geometry/position';
+import type { ItemKind } from '@fenix/shared/items/item-catalog';
+import { DOORS, STATICS, type StaticKind, type StaticPlacement } from '@fenix/shared/world/statics';
+import { TERRAINS, Terrain } from '@fenix/shared/world/terrain';
+import type { RegionData } from '@fenix/shared/world/tile-map';
 import { SeededRandom } from '../system/seeded-random';
 import type { Descent, MapRegion, PlacedItem } from './tiled-map-loader';
 import type { Ascent, FloorUse } from './upper-floors';

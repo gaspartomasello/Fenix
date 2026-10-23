@@ -1,4 +1,6 @@
-import { ITEMS, describeItem, withinReach, type ItemDestination } from '@fenix/shared';
+import { ITEMS, describeItem } from '@fenix/shared/items/item-catalog';
+import { withinReach } from '@fenix/shared/items/item-rules';
+import type { ItemDestination } from '@fenix/shared/protocol/messages';
 import type { ClientGame } from '../core/client-game';
 import type { GameRenderer } from '../rendering/game-renderer';
 import { destinationFor, type ItemActions } from '../ui/backpack-window';

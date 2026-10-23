@@ -1,5 +1,6 @@
 import { PixelImage } from '@fenix/art';
-import { daylight, type StaticPlacement } from '@fenix/shared';
+import { daylight } from '@fenix/shared/rules/daylight';
+import type { StaticPlacement } from '@fenix/shared/world/statics';
 import { Container, Graphics, RenderTexture, Sprite, type Renderer } from 'pixi.js';
 import type { FractionalPosition } from '../core/entity';
 import type { Ground } from './ground';

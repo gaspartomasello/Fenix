@@ -1,26 +1,24 @@
+import type { Position } from '@fenix/shared/geometry/position';
+import type { EquipmentSlot } from '@fenix/shared/items/equipment';
+import { ITEMS, MAX_STACK, describeItem, type ItemKind } from '@fenix/shared/items/item-catalog';
 import {
   BACKPACK_AREA,
-  STATIC_CONTAINERS,
-  staticContainerAt,
   CORPSE_AREA,
   ITEM_ICON_SIZE,
-  ITEMS,
   MAX_BACKPACK_ITEMS,
-  MAX_STACK,
   clampToBackpack,
-  describeItem,
-  inViewRange,
-  itemWeight,
   withinReach,
-  type EntityId,
-  type EquipmentHues,
-  type EquipmentLook,
-  type EquipmentSlot,
-  type ItemDestination,
-  type ItemKind,
-  type Position,
-  type TileMap,
-} from '@fenix/shared';
+} from '@fenix/shared/items/item-rules';
+import { itemWeight } from '@fenix/shared/items/weight';
+import type {
+  EntityId,
+  EquipmentHues,
+  EquipmentLook,
+  ItemDestination,
+} from '@fenix/shared/protocol/messages';
+import { inViewRange } from '@fenix/shared/rules/visibility';
+import { STATIC_CONTAINERS, staticContainerAt } from '@fenix/shared/world/statics';
+import type { TileMap } from '@fenix/shared/world/tile-map';
 import { Item, type ItemLocation } from './item';
 
 /** Quién actúa sobre un objeto. */

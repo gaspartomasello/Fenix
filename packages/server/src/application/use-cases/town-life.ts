@@ -1,4 +1,6 @@
-import { MOVE_DURATION_MS, directionBetween, tileDistance, type Position } from '@fenix/shared';
+import { directionBetween } from '@fenix/shared/geometry/direction';
+import { tileDistance, type Position } from '@fenix/shared/geometry/position';
+import { MOVE_DURATION_MS } from '@fenix/shared/rules/movement';
 import { Creature } from '../../domain/creatures/creature';
 import type { Mobile } from '../../domain/mobile';
 import type { Npc } from '../../domain/npcs/npc';

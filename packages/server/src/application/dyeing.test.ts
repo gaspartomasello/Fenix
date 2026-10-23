@@ -1,12 +1,8 @@
-import {
-  DEFAULT_APPEARANCE,
-  DYE_FAMILIES,
-  Terrain,
-  TileMap,
-  dyeName,
-  isDyeHue,
-  type PlayerEquipmentMessage,
-} from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import { DYE_FAMILIES, dyeName, isDyeHue } from '@fenix/shared/items/dyes';
+import type { PlayerEquipmentMessage } from '@fenix/shared/protocol/messages';
+import { Terrain } from '@fenix/shared/world/terrain';
+import { TileMap } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
 import { captureCharacter, parseSavedCharacter } from '../domain/persistence/saved-character';
 import { World } from '../domain/world';

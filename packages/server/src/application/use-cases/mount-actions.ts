@@ -1,12 +1,12 @@
+import { VENDOR_RANGE } from '@fenix/shared/economy/vendors';
+import { tileDistance } from '@fenix/shared/geometry/position';
 import {
   MOUNTS,
   MOUNT_RANGE,
-  VENDOR_RANGE,
   isMountKind,
-  tileDistance,
-  type EntityId,
   type MountKind,
-} from '@fenix/shared';
+} from '@fenix/shared/mounts/mount-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import { Creature } from '../../domain/creatures/creature';
 import { emptyChanges } from '../../domain/items/items';
 import { freeSpotNear } from '../../domain/persistence/saved-character';

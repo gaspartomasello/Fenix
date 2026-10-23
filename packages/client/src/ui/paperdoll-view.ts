@@ -1,16 +1,10 @@
 import { drawPaperdoll, type PixelImage } from '@fenix/art';
-import {
-  EQUIPMENT_SLOTS,
-  NOTORIETY_NAMES,
-  SLOT_LABELS,
-  describeItem,
-  type Appearance,
-  type EquipmentLook,
-  type EquipmentSlot,
-  type ItemKind,
-  type Notoriety,
-  type NpcRole,
-} from '@fenix/shared';
+import type { Appearance } from '@fenix/shared/character/appearance';
+import type { NpcRole } from '@fenix/shared/economy/vendors';
+import { EQUIPMENT_SLOTS, SLOT_LABELS, type EquipmentSlot } from '@fenix/shared/items/equipment';
+import { describeItem, type ItemKind } from '@fenix/shared/items/item-catalog';
+import type { EquipmentLook } from '@fenix/shared/protocol/messages';
+import { NOTORIETY_NAMES, type Notoriety } from '@fenix/shared/social/reputation';
 import { toCanvas } from '../platform/canvas';
 import { el } from './dom';
 import { itemIconUrl } from './item-icons';

@@ -1,4 +1,8 @@
-import { CREATURES, DEFAULT_APPEARANCE, SPELLS, Terrain, TileMap } from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import { CREATURES } from '@fenix/shared/creatures/creature-catalog';
+import { SPELLS } from '@fenix/shared/magic/spell-catalog';
+import { Terrain } from '@fenix/shared/world/terrain';
+import { TileMap } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
 import { Creature } from '../domain/creatures/creature';
 import { startCreatureCast } from '../domain/creatures/creature-magic';

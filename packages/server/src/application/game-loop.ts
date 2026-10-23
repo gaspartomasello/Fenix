@@ -1,20 +1,15 @@
-import {
-  ATTRIBUTE_NAMES,
-  CREATURE_FAME,
-  poisonDurationMs,
-  REGEN_INTERVAL_MS,
-  TREASURE_MAP_DROPS,
-  SPELLS,
-  describeItem,
-  hasLineOfSight,
-  step,
-  tileDistance,
-  wearsMetalArmor,
-  type EntityId,
-  type Position,
-  type SpellKey,
-  type TreasureLevel,
-} from '@fenix/shared';
+import { REGEN_INTERVAL_MS } from '@fenix/shared/combat/vitals';
+import { wearsMetalArmor } from '@fenix/shared/combat/weapons';
+import { step } from '@fenix/shared/geometry/direction';
+import { tileDistance, type Position } from '@fenix/shared/geometry/position';
+import { describeItem } from '@fenix/shared/items/item-catalog';
+import { poisonDurationMs } from '@fenix/shared/magic/effects';
+import { SPELLS, type SpellKey } from '@fenix/shared/magic/spell-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
+import { hasLineOfSight } from '@fenix/shared/rules/line-of-sight';
+import { ATTRIBUTE_NAMES } from '@fenix/shared/skills/stat-gain';
+import { CREATURE_FAME } from '@fenix/shared/social/reputation';
+import { TREASURE_MAP_DROPS, type TreasureLevel } from '@fenix/shared/treasure/treasure';
 import { missingAmmo, trySwing, type SwingResult } from '../domain/combat/combat';
 import { resolveBandage } from '../domain/healing/bandage';
 import {

@@ -5,21 +5,13 @@ import {
   type TiledTileLayer,
   type TiledTileset,
 } from '@fenix/content';
-import {
-  type CreatureKind,
-  isItemKind,
-  isNpcRole,
-  type NpcRole,
-  isStaticKind,
-  MAX_STACK,
-  type ItemKind,
-  terrainByKey,
-  type Position,
-  type RegionData,
-  type StaticKind,
-  type StaticPlacement,
-  type Terrain,
-} from '@fenix/shared';
+import type { CreatureKind } from '@fenix/shared/creatures/creature-catalog';
+import { isNpcRole, type NpcRole } from '@fenix/shared/economy/vendors';
+import type { Position } from '@fenix/shared/geometry/position';
+import { isItemKind, MAX_STACK, type ItemKind } from '@fenix/shared/items/item-catalog';
+import { isStaticKind, type StaticKind, type StaticPlacement } from '@fenix/shared/world/statics';
+import { terrainByKey, type Terrain } from '@fenix/shared/world/terrain';
+import type { RegionData } from '@fenix/shared/world/tile-map';
 import type { Ascent } from './upper-floors';
 
 /** Error con un mensaje claro para quien está editando el mapa. */

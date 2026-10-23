@@ -1,4 +1,4 @@
-import { tileDistance } from '@fenix/shared';
+import { tileDistance } from '@fenix/shared/geometry/position';
 import { Creature } from '../domain/creatures/creature';
 import type { Mobile } from '../domain/mobile';
 import { Player } from '../domain/player';

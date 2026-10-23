@@ -1,4 +1,8 @@
-import { Direction, DEFAULT_APPEARANCE, Terrain, TileMap, MOVE_DURATION_MS } from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import { Direction } from '@fenix/shared/geometry/direction';
+import { MOVE_DURATION_MS } from '@fenix/shared/rules/movement';
+import { Terrain } from '@fenix/shared/world/terrain';
+import { TileMap } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
 import { MOVE_EARLY_TOLERANCE_MS, MOVE_IDLE_CREDIT_MS, Player } from './player';
 

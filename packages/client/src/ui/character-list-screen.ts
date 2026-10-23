@@ -1,4 +1,5 @@
-import { SKILL_NAMES, type AccountMessage, type CharacterSummary } from '@fenix/shared';
+import type { AccountMessage, CharacterSummary } from '@fenix/shared/protocol/messages';
+import { SKILL_NAMES } from '@fenix/shared/skills/skill-catalog';
 import { drawPortrait } from './appearance-picker';
 import { el } from './dom';
 

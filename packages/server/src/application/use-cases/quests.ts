@@ -1,5 +1,8 @@
+import type { CreatureKind } from '@fenix/shared/creatures/creature-catalog';
+import { tileDistance } from '@fenix/shared/geometry/position';
+import { ITEMS, type ItemKind } from '@fenix/shared/items/item-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import {
-  ITEMS,
   MAX_QUESTS,
   QUEST_GOODS,
   QUEST_PREY,
@@ -7,15 +10,11 @@ import {
   describeGoal,
   describeReward,
   goalCount,
-  tileDistance,
-  type CreatureKind,
-  type EntityId,
-  type ItemKind,
   type Quest,
   type QuestGoal,
   type QuestProgress,
   type QuestReward,
-} from '@fenix/shared';
+} from '@fenix/shared/quests/quests';
 import type { Creature } from '../../domain/creatures/creature';
 import { emptyChanges } from '../../domain/items/items';
 import type { Npc } from '../../domain/npcs/npc';

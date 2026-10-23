@@ -1,4 +1,5 @@
-import { SPELLS, type EntityId, type SpellKey } from '@fenix/shared';
+import { SPELLS, type SpellKey } from '@fenix/shared/magic/spell-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import { Container, Graphics } from 'pixi.js';
 import type { FractionalPosition } from '../core/entity';
 import type { Ground } from './ground';

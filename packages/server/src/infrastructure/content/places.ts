@@ -1,15 +1,9 @@
-import {
-  TERRAINS,
-  Terrain,
-  isWater,
-  TileMap,
-  type CreatureKind,
-  type NpcRole,
-  type Position,
-  type RegionData,
-  type StaticKind,
-  type StaticPlacement,
-} from '@fenix/shared';
+import type { CreatureKind } from '@fenix/shared/creatures/creature-catalog';
+import type { NpcRole } from '@fenix/shared/economy/vendors';
+import type { Position } from '@fenix/shared/geometry/position';
+import type { StaticKind, StaticPlacement } from '@fenix/shared/world/statics';
+import { TERRAINS, Terrain, isWater } from '@fenix/shared/world/terrain';
+import { TileMap, type RegionData } from '@fenix/shared/world/tile-map';
 import { SeededRandom } from '../system/seeded-random';
 import { shapeMountains } from './mountains';
 import { type Biome, type Continent, wanderField } from './procedural-map';

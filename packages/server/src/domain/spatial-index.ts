@@ -1,4 +1,4 @@
-import type { Position } from '@fenix/shared';
+import type { Position } from '@fenix/shared/geometry/position';
 
 /** Lado de cada celda del índice, en tiles. */
 const CELL = 16;

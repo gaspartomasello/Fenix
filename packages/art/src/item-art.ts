@@ -1,4 +1,5 @@
-import { ITEMS, SPELLS, type BaseItemKind, type ItemKind } from '@fenix/shared';
+import { ITEMS, type BaseItemKind, type ItemKind } from '@fenix/shared/items/item-catalog';
+import { SPELLS } from '@fenix/shared/magic/spell-catalog';
 import { hexToRgb, type PixelImage, type Rgb } from './pixel-art';
 import {
   clipping,

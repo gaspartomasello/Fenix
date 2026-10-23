@@ -1,4 +1,5 @@
-import { MOUNTS, type Direction, type MountKind } from '@fenix/shared';
+import type { Direction } from '@fenix/shared/geometry/direction';
+import { MOUNTS, type MountKind } from '@fenix/shared/mounts/mount-catalog';
 import { OUTLINE } from './character-art';
 import {
   PERSON_ZOOM,

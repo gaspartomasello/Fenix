@@ -1,10 +1,7 @@
-import {
-  SPELL_RANGE,
-  formatGameTime,
-  type ClientMessage,
-  type EntityId,
-  type Position,
-} from '@fenix/shared';
+import type { Position } from '@fenix/shared/geometry/position';
+import { SPELL_RANGE } from '@fenix/shared/magic/spell-catalog';
+import type { ClientMessage, EntityId } from '@fenix/shared/protocol/messages';
+import { formatGameTime } from '@fenix/shared/rules/daylight';
 import { isTestCharacter } from '../domain/testing/test-character';
 import type { WorldClock } from '../domain/world-clock';
 import type { World } from '../domain/world';

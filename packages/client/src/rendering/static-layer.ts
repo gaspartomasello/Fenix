@@ -1,12 +1,7 @@
 import { INVISIBLE_STATICS, staticFrame } from '@fenix/art';
-import {
-  DOORS,
-  STATICS,
-  type Position,
-  type StaticKind,
-  type StaticPlacement,
-  type TileMap,
-} from '@fenix/shared';
+import type { Position } from '@fenix/shared/geometry/position';
+import { DOORS, STATICS, type StaticKind, type StaticPlacement } from '@fenix/shared/world/statics';
+import type { TileMap } from '@fenix/shared/world/tile-map';
 import { Rectangle, Sprite, type Container } from 'pixi.js';
 import type { FractionalPosition } from '../core/entity';
 import { projectedDepth, staticDepth } from './depth';

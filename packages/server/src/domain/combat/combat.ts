@@ -1,15 +1,9 @@
-import {
-  MELEE_RANGE,
-  armorOf,
-  resolveAttack,
-  hasLineOfSight,
-  tileDistance,
-  weaponOf,
-  type DefenderStats,
-  type ItemKind,
-  type SkillKey,
-  type Weapon,
-} from '@fenix/shared';
+import { MELEE_RANGE, resolveAttack, type DefenderStats } from '@fenix/shared/combat/combat-rules';
+import { armorOf, weaponOf, type Weapon } from '@fenix/shared/combat/weapons';
+import { tileDistance } from '@fenix/shared/geometry/position';
+import type { ItemKind } from '@fenix/shared/items/item-catalog';
+import { hasLineOfSight } from '@fenix/shared/rules/line-of-sight';
+import type { SkillKey } from '@fenix/shared/skills/skill-catalog';
 import { Creature } from '../creatures/creature';
 import { emptyChanges, type ItemChanges } from '../items/items';
 import type { Mobile } from '../mobile';

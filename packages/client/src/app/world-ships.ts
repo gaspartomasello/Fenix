@@ -1,4 +1,4 @@
-import { SHIPS } from '@fenix/shared';
+import { SHIPS } from '@fenix/shared/ships/ships';
 import type { ClientGame } from '../core/client-game';
 import type { GameRenderer } from '../rendering/game-renderer';
 import type { WorldTooltip } from '../ui/world-tooltip';

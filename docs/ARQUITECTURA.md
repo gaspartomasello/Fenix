@@ -1026,6 +1026,21 @@ gremio llega a sus miembros estén donde estén).
   que cambiaron (Vitest sigue los imports). La batería completa la corre la integración continua.
   Cambiar un catálogo compartido (objetos, mensajes) igual dispara casi todas, porque todo lo usa.
 
+## Orden del código: imports por módulo (etapa 67)
+
+- **Nadie importa `@fenix/shared` entero.** Cada archivo trae solo el módulo que usa:
+  `@fenix/shared/items/item-catalog`, `@fenix/shared/magic/spell-catalog`,
+  `@fenix/shared/protocol/messages`, etc. (`exports` del `package.json` de shared). La regla
+  está en `eslint.config.js` (`WHOLE_SHARED`).
+- **Por qué:** Vitest decide qué pruebas correr siguiendo los imports. Con el barril entero,
+  tocar cualquier archivo compartido disparaba 54 de los 73 archivos de pruebas. Con imports por
+  módulo, tocar los colores del tinte dispara 36, y tocar el arte, 3.
+- **El nudo que queda:** `GameApplication` arma todos los casos de uso del servidor juntos, y
+  32 archivos de pruebas la usan. Por eso tocar cualquier caso de uso del servidor dispara esas 32.
+  **Para módulos nuevos:** probar el caso de uso directamente (con `World`, `RecordingNotifier`
+  y lo que necesite), no a través de `GameApplication`. Así sus pruebas solo corren cuando se
+  toca ese módulo.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

@@ -1,4 +1,4 @@
-import type { FacialHair, HairStyle } from '@fenix/shared';
+import type { FacialHair, HairStyle } from '@fenix/shared/character/appearance';
 import type { Basis } from './humanoid-rig';
 import type { Rgb } from './pixel-art';
 import {

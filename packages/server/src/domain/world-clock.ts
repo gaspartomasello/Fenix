@@ -1,4 +1,4 @@
-import { advanceTime, DAY_LENGTH_MS, type WorldTime } from '@fenix/shared';
+import { advanceTime, DAY_LENGTH_MS, type WorldTime } from '@fenix/shared/rules/daylight';
 
 /** Hora del mundo: avanza con el reloj real, a la velocidad de un día del juego. */
 export class WorldClock {

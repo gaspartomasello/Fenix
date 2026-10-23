@@ -1,5 +1,5 @@
 import { SHIP_ART_HEIGHT, SHIP_ART_ORIGIN, SHIP_ART_WIDTH, drawShip } from '@fenix/art';
-import type { EntityId, ShipSnapshot } from '@fenix/shared';
+import type { EntityId, ShipSnapshot } from '@fenix/shared/protocol/messages';
 import { Container, Sprite } from 'pixi.js';
 import type { Ground } from './ground';
 import { ART_SCALE } from './iso';

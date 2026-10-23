@@ -1,11 +1,6 @@
-import {
-  NPC_CHATTER,
-  isMerchant,
-  tileDistance,
-  type EntityId,
-  type NpcRole,
-  type Position,
-} from '@fenix/shared';
+import { NPC_CHATTER, isMerchant, type NpcRole } from '@fenix/shared/economy/vendors';
+import { tileDistance, type Position } from '@fenix/shared/geometry/position';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import type { Npc } from '../domain/npcs/npc';
 import type { Player } from '../domain/player';
 import type { World } from '../domain/world';

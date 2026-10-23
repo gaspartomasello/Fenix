@@ -1,4 +1,4 @@
-import type { EntityId } from '@fenix/shared';
+import type { EntityId } from '@fenix/shared/protocol/messages';
 import { Creature } from '../../domain/creatures/creature';
 import { Npc } from '../../domain/npcs/npc';
 import { Player } from '../../domain/player';

@@ -1,36 +1,34 @@
+import { CREATURES } from '@fenix/shared/creatures/creature-catalog';
+import { tileDistance, type Position } from '@fenix/shared/geometry/position';
+import { describeItem, type ItemKind } from '@fenix/shared/items/item-catalog';
 import {
-  CREATURES,
-  MAX_SUMMONS,
-  SPELLS,
-  SPELL_RANGE,
   attributeModifier,
   cureChance,
-  describeItem,
   paralyzeDurationMs,
   poisonDurationMs,
   poisonLevel,
   PROTECTION_ARMOR,
+  spellDurationMs,
+} from '@fenix/shared/magic/effects';
+import {
+  MAX_SUMMONS,
+  SPELLS,
+  SPELL_RANGE,
   resistChance,
-  invisibilityMs,
-  revealRadius,
   rollSpellPower,
   spellDamageBonus,
-  spellDurationMs,
   spellSuccessChance,
   summonDurationMs,
-  hasLineOfSight,
-  tileDistance,
-  STATIC_CONTAINERS,
-  staticContainerId,
   dispelChance,
   reactiveArmorPool,
   type PolymorphForm,
-  type EntityId,
   type FieldKind,
-  type ItemKind,
-  type Position,
   type SpellKey,
-} from '@fenix/shared';
+} from '@fenix/shared/magic/spell-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
+import { hasLineOfSight } from '@fenix/shared/rules/line-of-sight';
+import { invisibilityMs, revealRadius } from '@fenix/shared/skills/stealth';
+import { STATIC_CONTAINERS, staticContainerId } from '@fenix/shared/world/statics';
 import { Creature } from '../creatures/creature';
 import { emptyChanges, type ItemChanges } from '../items/items';
 import { freeSpotNear } from '../persistence/saved-character';

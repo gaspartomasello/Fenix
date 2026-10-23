@@ -6,7 +6,7 @@ import {
   clamp,
   notorietyOf,
   type Notoriety,
-} from '@fenix/shared';
+} from '@fenix/shared/social/reputation';
 
 /** Fama, karma y marcas de crimen de un jugador. */
 export class Reputation {

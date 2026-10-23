@@ -1,4 +1,5 @@
-import { DYE_FAMILIES, dyeName, isDyeable, type EntityId, type ItemSnapshot } from '@fenix/shared';
+import { DYE_FAMILIES, dyeName, isDyeable } from '@fenix/shared/items/dyes';
+import type { EntityId, ItemSnapshot } from '@fenix/shared/protocol/messages';
 import { el } from './dom';
 import { GameWindow } from './game-window';
 import { itemIconUrl } from './item-icons';

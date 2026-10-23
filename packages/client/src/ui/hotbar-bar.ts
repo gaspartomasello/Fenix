@@ -1,14 +1,13 @@
 import {
-  ACTIVE_SKILLS,
   CIRCLE_NAMES,
-  SKILL_NAMES,
   SPELLS,
   SPELL_CIRCLES,
   spellsOfCircle,
-  type BackpackItemSnapshot,
-  type SkillValues,
   type SpellTarget,
-} from '@fenix/shared';
+} from '@fenix/shared/magic/spell-catalog';
+import type { BackpackItemSnapshot } from '@fenix/shared/protocol/messages';
+import { SKILL_NAMES, type SkillValues } from '@fenix/shared/skills/skill-catalog';
+import { ACTIVE_SKILLS } from '@fenix/shared/skills/stealth';
 import {
   HOTBAR_SIZE,
   countInBackpack,

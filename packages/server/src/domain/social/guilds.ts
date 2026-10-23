@@ -1,4 +1,4 @@
-import { INVITE_MS, validateGuild } from '@fenix/shared';
+import { INVITE_MS, validateGuild } from '@fenix/shared/social/groups';
 
 /**
  * Un gremio. Los miembros se guardan por nombre de personaje (los nombres

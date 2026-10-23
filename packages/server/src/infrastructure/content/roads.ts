@@ -1,4 +1,4 @@
-import type { Position } from '@fenix/shared';
+import type { Position } from '@fenix/shared/geometry/position';
 
 /**
  * Camino más barato entre dos tiles (A* en 4 direcciones). `cost` da lo que

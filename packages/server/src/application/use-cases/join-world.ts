@@ -1,16 +1,15 @@
+import { DEFAULT_APPEARANCE, type Appearance } from '@fenix/shared/character/appearance';
 import {
-  DEFAULT_APPEARANCE,
-  ITEMS,
   STARTING_BANK_GOLD,
   creationSkills,
-  encodeMap,
   startingClothes,
   startingKit,
-  validateCharacterName,
-  type Appearance,
   type CharacterCreation,
-  type EntityId,
-} from '@fenix/shared';
+} from '@fenix/shared/character/creation';
+import { validateCharacterName } from '@fenix/shared/character/name';
+import { ITEMS } from '@fenix/shared/items/item-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
+import { encodeMap } from '@fenix/shared/world/map-codec';
 import { STARTING_KIT } from '../../domain/items/starting-kit';
 import { emptyChanges } from '../../domain/items/items';
 import { bagReagents } from '../../domain/items/reagent-bag';

@@ -1,9 +1,7 @@
-import {
-  DEFAULT_APPEARANCE,
-  Direction,
-  decodeServerMessage,
-  type ServerMessage,
-} from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import { Direction } from '@fenix/shared/geometry/direction';
+import { decodeServerMessage } from '@fenix/shared/protocol/codec';
+import type { ServerMessage } from '@fenix/shared/protocol/messages';
 import { describe, expect, it } from 'vitest';
 import { createEmbeddedServer } from './embedded';
 

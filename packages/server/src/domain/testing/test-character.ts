@@ -1,13 +1,8 @@
-import {
-  ITEMS,
-  MAX_STACK,
-  REAGENTS,
-  SKILL_KEYS,
-  SKILL_MAX,
-  STAT_CAP,
-  type EntityId,
-  type ItemKind,
-} from '@fenix/shared';
+import { REAGENTS } from '@fenix/shared/character/creation';
+import { ITEMS, MAX_STACK, type ItemKind } from '@fenix/shared/items/item-catalog';
+import type { EntityId } from '@fenix/shared/protocol/messages';
+import { SKILL_KEYS, SKILL_MAX } from '@fenix/shared/skills/skill-catalog';
+import { STAT_CAP } from '@fenix/shared/skills/stat-gain';
 import { emptyChanges, type ItemChanges } from '../items/items';
 import { bagReagents } from '../items/reagent-bag';
 import type { Player } from '../player';

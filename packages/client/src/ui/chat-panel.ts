@@ -1,4 +1,4 @@
-import { CHAT_MAX_LENGTH } from '@fenix/shared';
+import { CHAT_MAX_LENGTH } from '@fenix/shared/rules/chat';
 import type { LogEntry } from '../core/client-game';
 import { el } from './dom';
 

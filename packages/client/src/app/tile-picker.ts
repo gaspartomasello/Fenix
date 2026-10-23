@@ -1,4 +1,4 @@
-import type { Position } from '@fenix/shared';
+import type { Position } from '@fenix/shared/geometry/position';
 import type { GameRenderer } from '../rendering/game-renderer';
 
 /**

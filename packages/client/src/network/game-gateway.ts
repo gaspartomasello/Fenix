@@ -1,4 +1,4 @@
-import type { ServerMessage } from '@fenix/shared';
+import type { ServerMessage } from '@fenix/shared/protocol/messages';
 import type { ServerGateway } from '../core/ports';
 
 export type ConnectionStatus = 'connecting' | 'open' | 'closed';

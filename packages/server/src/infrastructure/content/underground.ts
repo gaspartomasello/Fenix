@@ -1,4 +1,7 @@
-import { Terrain, type CreatureKind, type Position, type StaticPlacement } from '@fenix/shared';
+import type { CreatureKind } from '@fenix/shared/creatures/creature-catalog';
+import type { Position } from '@fenix/shared/geometry/position';
+import type { StaticPlacement } from '@fenix/shared/world/statics';
+import { Terrain } from '@fenix/shared/world/terrain';
 import { SeededRandom } from '../system/seeded-random';
 
 /** Un lugar bajo tierra: se entra por una bajada del pueblo y se sale por la escalera. */

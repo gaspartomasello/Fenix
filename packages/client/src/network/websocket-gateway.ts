@@ -1,4 +1,5 @@
-import { decodeServerMessage, encodeMessage, type ClientMessage } from '@fenix/shared';
+import { decodeServerMessage, encodeMessage } from '@fenix/shared/protocol/codec';
+import type { ClientMessage } from '@fenix/shared/protocol/messages';
 import type { GameGateway, GatewayHandlers } from './game-gateway';
 
 /** Conexión con el servidor de juego por WebSocket. */

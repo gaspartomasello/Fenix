@@ -1,16 +1,15 @@
+import type { Attributes } from '@fenix/shared/combat/vitals';
 import {
-  ATTRIBUTE_NAMES,
   SKILL_DESCRIPTIONS,
   SKILL_GROUPS,
   SKILL_KEYS,
   SKILL_NAMES,
   SKILL_TOTAL_CAP,
   formatSkill,
-  isActiveSkill,
-  type ActiveSkill,
-  type Attributes,
   type SkillValues,
-} from '@fenix/shared';
+} from '@fenix/shared/skills/skill-catalog';
+import { ATTRIBUTE_NAMES } from '@fenix/shared/skills/stat-gain';
+import { isActiveSkill, type ActiveSkill } from '@fenix/shared/skills/stealth';
 import { el } from './dom';
 import { GameWindow } from './game-window';
 

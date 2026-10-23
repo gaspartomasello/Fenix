@@ -1,16 +1,15 @@
+import { isFaunaKind } from '@fenix/shared/creatures/fauna-catalog';
+import type { EntityId, TrackSighting } from '@fenix/shared/protocol/messages';
+import { detectChance } from '@fenix/shared/skills/stealth';
 import {
   TRACKING_CATEGORY_NAMES,
   TRACKING_FOLLOW_MS,
   TRACKING_LIST_MAX,
   compassDirection,
-  detectChance,
-  isFaunaKind,
   trackChance,
   trackingRange,
-  type EntityId,
-  type TrackSighting,
   type TrackingCategory,
-} from '@fenix/shared';
+} from '@fenix/shared/skills/tracking';
 import type { Creature } from '../domain/creatures/creature';
 import type { Mobile } from '../domain/mobile';
 import { Npc } from '../domain/npcs/npc';

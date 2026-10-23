@@ -1,5 +1,6 @@
 import { CHEST_ART } from '@fenix/art';
-import { BACKPACK_AREA, ITEM_ICON_SIZE, type BackpackItemSnapshot } from '@fenix/shared';
+import { BACKPACK_AREA, ITEM_ICON_SIZE } from '@fenix/shared/items/item-rules';
+import type { BackpackItemSnapshot } from '@fenix/shared/protocol/messages';
 import { destinationFor, type ItemActions } from './backpack-window';
 import { itemLabel } from './item-label';
 import { el } from './dom';

@@ -1,19 +1,17 @@
 import {
   CREATURES,
   CREATURE_KINDS,
-  ITEMS,
-  ITEM_KINDS,
+  type CreatureKind,
+} from '@fenix/shared/creatures/creature-catalog';
+import { tileDistance, type Position } from '@fenix/shared/geometry/position';
+import { ITEMS, ITEM_KINDS, type ItemKind } from '@fenix/shared/items/item-catalog';
+import {
   MOUNTS,
   MOUNT_KINDS,
   isMountKind,
-  tileDistance,
-  type CreatureKind,
-  type EntityId,
-  type GmCommand,
-  type ItemKind,
   type MountKind,
-  type Position,
-} from '@fenix/shared';
+} from '@fenix/shared/mounts/mount-catalog';
+import type { EntityId, GmCommand } from '@fenix/shared/protocol/messages';
 import { Creature } from '../../domain/creatures/creature';
 import { emptyChanges } from '../../domain/items/items';
 import type { Mobile } from '../../domain/mobile';

@@ -1,4 +1,4 @@
-import type { TileMap } from '@fenix/shared';
+import type { TileMap } from '@fenix/shared/world/tile-map';
 import type { ClientGame } from '../core/client-game';
 import { el } from './dom';
 import { mapPicture } from './map-picture';

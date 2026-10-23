@@ -1,12 +1,9 @@
-import {
-  DEFAULT_APPEARANCE,
-  Direction,
-  MOVE_DURATION_MS,
-  Terrain,
-  encodeMap,
-  type ClientMessage,
-  type MobileSnapshot,
-} from '@fenix/shared';
+import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import { Direction } from '@fenix/shared/geometry/direction';
+import type { ClientMessage, MobileSnapshot } from '@fenix/shared/protocol/messages';
+import { MOVE_DURATION_MS } from '@fenix/shared/rules/movement';
+import { encodeMap } from '@fenix/shared/world/map-codec';
+import { Terrain } from '@fenix/shared/world/terrain';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ClientGame, type LogEntry } from './client-game';
 import { MAX_PENDING_STEPS } from './movement-predictor';

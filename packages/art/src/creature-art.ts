@@ -1,4 +1,6 @@
-import { isMountKind, type CreatureKind, type Direction } from '@fenix/shared';
+import type { CreatureKind } from '@fenix/shared/creatures/creature-catalog';
+import type { Direction } from '@fenix/shared/geometry/direction';
+import { isMountKind } from '@fenix/shared/mounts/mount-catalog';
 import { drawMountFrame } from './mount-art';
 import {
   CHARACTER_ART_HEIGHT,

@@ -1,5 +1,6 @@
 import { CHEST_ART, POUCH_ART, type ContainerArt } from '@fenix/art';
-import { BACKPACK_AREA, ITEMS, ITEM_ICON_SIZE } from '@fenix/shared';
+import { ITEMS } from '@fenix/shared/items/item-catalog';
+import { BACKPACK_AREA, ITEM_ICON_SIZE } from '@fenix/shared/items/item-rules';
 import type { ContainerContents } from '../core/client-game';
 import { destinationFor, type ItemActions } from './backpack-window';
 import { itemLabel } from './item-label';

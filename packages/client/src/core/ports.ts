@@ -1,4 +1,4 @@
-import type { ClientMessage } from '@fenix/shared';
+import type { ClientMessage } from '@fenix/shared/protocol/messages';
 
 /** Puerto hacia el servidor. La capa `network` lo implementa con WebSocket. */
 export interface ServerGateway {

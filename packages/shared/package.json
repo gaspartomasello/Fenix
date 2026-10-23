@@ -5,7 +5,9 @@
   "description": "Dominio y protocolo compartidos entre cliente y servidor",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./protocol/*": "./src/protocol/*.ts",
+    "./*": "./src/domain/*.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
