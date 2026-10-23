@@ -23,6 +23,8 @@ import {
  * el resto del arte (se muestran sin escalar).
  */
 export const ITEM_ART_SIZE = 44;
+/** Los íconos se dibujan a este múltiplo de `ITEM_ART_SIZE` (se muestran achicados, suaves). */
+export const ICON_DETAIL = 2;
 
 /** En el suelo, a escala del mundo; como ícono (mochila, banco, tienda), más grandes. */
 export type ItemStyle = 'ground' | 'icon';
@@ -97,11 +99,34 @@ function lying(angle: number): readonly [Vec3, Vec3, Vec3] {
   return axesAlong([Math.sin(angle), 0, Math.cos(angle)]);
 }
 
-/** Hoja de arma acostada: plana, con filo claro y lomo central. */
+/**
+ * Color con luz continua (sin los escalones de las rampas): el metal y la
+ * madera de las armas se ven más suaves, con un brillo blanco donde pega la luz.
+ */
+function lit(base: Rgb, light: number, shine = 0.6): Rgb {
+  const l = Math.max(0, Math.min(1.15, light));
+  const k = 0.32 + 0.72 * l;
+  const glint = Math.max(0, l - 0.92) * 3 * shine;
+  const f = (c: number): number =>
+    Math.max(0, Math.min(255, Math.round(c * k + glint * (255 - c * k))));
+  return [f(base[0]), f(base[1]), f(base[2])];
+}
+const STEEL_RGB: Rgb = [164, 172, 186];
+const EDGE_RGB: Rgb = [214, 220, 230];
+const GOLD_RGB: Rgb = [214, 168, 70];
+const WOOD_RGB: Rgb = [128, 84, 48];
+const LEATHER_RGB: Rgb = [92, 58, 36];
+
+/**
+ * Hoja de arma acostada: el filo biselado más claro, un canal oscuro por el
+ * medio (hasta tres cuartos del largo), un brillo que corre a lo largo y el
+ * lomo central en relieve.
+ */
 function blade(c: VolumeCanvas, from: Vec3, to: Vec3, width: number): void {
   const dir = normalize([to[0] - from[0], 0, to[2] - from[2]]);
   const side: Vec3 = [dir[2] * width, 0, -dir[0] * width];
   const tip = add(to, [dir[0] * 1.6, 0, dir[2] * 1.6]);
+  const length = Math.hypot(to[0] - from[0], to[2] - from[2]) + 1.6;
   c.polygon(
     [
       add(from, side),
@@ -110,18 +135,49 @@ function blade(c: VolumeCanvas, from: Vec3, to: Vec3, width: number): void {
       add(to, [-side[0], 0, -side[2]]),
       add(from, [-side[0], 0, -side[2]]),
     ],
-    (s) => (s.light > 0.85 ? [246, 248, 250] : tone(STEEL, s.light + 0.15)),
+    (s) => {
+      const rel: Vec3 = [s.p[0] - from[0], 0, s.p[2] - from[2]];
+      const u = (rel[0] * dir[0] + rel[2] * dir[2]) / length;
+      const t = Math.abs(rel[0] * dir[2] - rel[2] * dir[0]) / width;
+      const sheen = s.light * 0.7 + 0.22 * Math.sin(u * Math.PI);
+      if (t > 0.72 || u > 0.88) return lit(EDGE_RGB, sheen + 0.2);
+      if (t < 0.18 && u < 0.72) return lit([84, 90, 102], sheen, 0.2);
+      return lit(STEEL_RGB, sheen + (t - 0.5) * 0.2);
+    },
   );
-  c.limb(add(from, [0, 0.3, 0]), add(to, [0, 0.3, 0]), 0.35, 0.25, metal(STEEL));
+  c.limb(add(from, [0, 0.3, 0]), add(to, [0, 0.3, 0]), 0.3, 0.2, (s) => lit(EDGE_RGB, s.light));
 }
 
-/** Empuñadura con guarda y pomo, de `at` hacia atrás según `dir`. */
+/**
+ * Empuñadura: guarda con las puntas redondeadas, un dado en el centro, el
+ * mango envuelto en cuero en espiral y el pomo con su anillo.
+ */
 function hilt(c: VolumeCanvas, at: Vec3, dir: Vec3, length: number, guard: number): void {
   const side: Vec3 = [dir[2] * guard, 0, -dir[0] * guard];
-  c.limb(add(at, side), add(at, [-side[0], 0, -side[2]]), 0.6, 0.6, metal(GOLD));
+  const gold: Material = (s) => lit(GOLD_RGB, s.light, 0.8);
+  c.limb(add(at, side), add(at, [-side[0], 0, -side[2]]), 0.5, 0.5, gold);
+  for (const k of [1, -1]) c.sphere(add(at, scale3(side, k)), 0.75, gold);
+  c.ellipsoid(at, lying(Math.atan2(dir[0], dir[2])), [0.9, 0.7, 0.6], gold);
   const end = add(at, [-dir[0] * length, 0, -dir[2] * length]);
-  c.limb(at, end, 0.7, 0.7, (s) => tone(GRIP, s.light, Math.floor(s.x + s.y) % 2 ? -1 : 0));
-  c.sphere(end, 0.95, metal(GOLD));
+  c.limb(at, end, 0.62, 0.62, (s) => {
+    const a = (s.p[0] - at[0]) * dir[0] + (s.p[2] - at[2]) * dir[2];
+    const wrap = (((a * 2.4 + s.p[1] * 3) % 1) + 1) % 1;
+    return lit(LEATHER_RGB, s.light - (wrap < 0.25 ? 0.28 : 0), 0.1);
+  });
+  c.sphere(end, 0.95, gold);
+  c.sphere(add(end, [-dir[0] * 0.9, 0, -dir[2] * 0.9]), 0.45, gold);
+}
+
+/** Madera con veta: rayas finas a lo largo del mango, nudos aislados. */
+function woodGrain(from: Vec3, to: Vec3): Material {
+  const d = normalize([to[0] - from[0], to[1] - from[1], to[2] - from[2]]);
+  return (s) => {
+    const along = (s.p[0] - from[0]) * d[0] + (s.p[2] - from[2]) * d[2];
+    const across = (s.p[0] - from[0]) * d[2] - (s.p[2] - from[2]) * d[0];
+    const grain = Math.sin(across * 9 + Math.sin(along * 0.7) * 1.5) * 0.06;
+    const knot = noise(Math.floor(along * 0.8), Math.floor(across * 2)) > 0.94 ? -0.2 : 0;
+    return lit(WOOD_RGB, s.light + grain + knot, 0.15);
+  };
 }
 
 /**
@@ -133,10 +189,15 @@ function haft(
   from: Vec3,
   to: Vec3,
   radius: number,
-  material: Material = solid(WOOD),
+  material: Material = woodGrain(from, to),
 ): (along: number, out: number, y?: number) => Vec3 {
   c.limb(from, to, radius, radius, material);
   const d = normalize([to[0] - from[0], 0, to[2] - from[2]]);
+  // Virola de metal donde va la cabeza y regatón en la punta de abajo.
+  const steel: Material = (s) => lit(STEEL_RGB, s.light);
+  const step: Vec3 = [d[0] * 0.7, 0, d[2] * 0.7];
+  c.limb(add(to, [-step[0], 0, -step[2]]), add(to, step), radius + 0.18, radius + 0.18, steel);
+  c.limb(from, add(from, step), radius + 0.12, radius * 0.6, steel);
   const n: Vec3 = [-d[2], 0, d[0]];
   return (along, out, y = to[1] + 0.3) => [
     to[0] + d[0] * along + n[0] * out,
@@ -157,10 +218,14 @@ function alongPole(k: number): Vec3 {
 
 /** Acero de hoja de hacha con el filo (lo más lejos del mango) claro. */
 function axeSteel(edge: Vec3, reach: number): Material {
-  return (s) =>
-    Math.hypot(s.p[0] - edge[0], s.p[2] - edge[2]) > reach
-      ? [238, 240, 244]
-      : tone(STEEL, s.light + 0.1);
+  return (s) => {
+    const d = Math.hypot(s.p[0] - edge[0], s.p[2] - edge[2]);
+    // El filo afilado brilla en una franja; hacia el ojo la hoja se oscurece
+    // de a poco (es una cara plana: el degradé le da el bisel).
+    if (d > reach) return lit(EDGE_RGB, s.light * 0.95);
+    if (d > reach - 0.5) return lit([96, 102, 114], s.light * 0.8);
+    return lit(STEEL_RGB, s.light * 0.55 + (d / reach) * 0.3, 0.2);
+  };
 }
 
 /** Ballesta acostada: la caja de madera, el arco de acero y la cuerda. */
@@ -395,7 +460,7 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
           at(0, 5.6 * side),
           at(-3.4, 4.6 * side),
         ],
-        (s) => tone(STEEL, s.light + 0.1),
+        axeSteel(end, 4.6),
       );
   },
   halberd(c) {
@@ -852,7 +917,9 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
   },
   'war-hammer'(c) {
     c.limb([-7, 0.7, 4], [4.6, 0.7, -2.2], 0.6, 0.6, solid(WOOD));
-    c.box([5, 1.6, -2.4], lying(-1.07), [3.6, 1.6, 1.6], metal(DARK_STEEL));
+    c.box([5, 1.6, -2.4], lying(-1.07), [3.6, 1.6, 1.6], (s) =>
+      lit([112, 118, 130], s.n[1] > 0.7 ? s.light * 0.7 : s.light * 0.95, 0.4),
+    );
   },
   bow(c) {
     // Arco acostado: la madera curva y la cuerda recta.
@@ -893,11 +960,7 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
       end[2] + d[2] * along + n[2] * out,
     ];
     c.limb([-6, 0.7, 3], add(end, [d[0], 0, d[2]]), 0.75, 0.75, solid(WOOD));
-    c.polygon([at(-1.8, 0.5), at(1.6, 0.5), at(4.2, 6), at(0, 7.4), at(-4.4, 6)], (s) =>
-      Math.hypot(s.p[0] - end[0], s.p[2] - end[2]) > 6
-        ? [238, 240, 244]
-        : tone(STEEL, s.light + 0.1),
-    );
+    c.polygon([at(-1.8, 0.5), at(1.6, 0.5), at(4.2, 6), at(0, 7.4), at(-4.4, 6)], axeSteel(end, 6));
   },
   'double-axe'(c) {
     // Dos hojas iguales, una a cada lado, sobre un mango corto.
@@ -966,8 +1029,12 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
   'hammer-pick'(c) {
     // Martillo de un lado y pico curvo del otro.
     const at = haft(c, [-6.4, 0.7, 3.4], [4.2, 0.7, -2], 0.6);
-    c.box(at(0.4, 1.4, 1.5), lying(-1.07 + Math.PI / 2), [1.6, 1.2, 1.3], metal(DARK_STEEL));
-    c.limb(at(0.4, 0, 1.5), at(0.4, 1.6, 1.5), 1, 1, metal(DARK_STEEL));
+    c.box(at(0.4, 1.4, 1.5), lying(-1.07 + Math.PI / 2), [1.6, 1.2, 1.3], (s) =>
+      lit([112, 118, 130], s.n[1] > 0.7 ? s.light * 0.7 : s.light * 0.95, 0.4),
+    );
+    c.limb(at(0.4, 0, 1.5), at(0.4, 1.6, 1.5), 1, 1, (s) =>
+      lit([112, 118, 130], s.n[1] > 0.7 ? s.light * 0.7 : s.light * 0.95, 0.4),
+    );
     c.limb(at(0.4, -0.4, 1.5), at(-0.4, -4, 1.1), 0.9, 0.15, metal(STEEL));
   },
   cutlass(c) {
@@ -1837,14 +1904,17 @@ export function drawItem(
   amount = 1,
   hue?: number,
 ): PixelImage {
+  // Los íconos (mochila, ventanas) se dibujan al doble de resolución: más detalle.
+  const detail = style === 'icon' ? ICON_DETAIL : 1;
   const camera = new Camera(
     0.45,
-    ITEM_ART_SIZE / 2,
-    ITEM_ART_SIZE * 0.6,
+    (ITEM_ART_SIZE * detail) / 2,
+    ITEM_ART_SIZE * 0.6 * detail,
     0.8,
-    ZOOM[style] * (style === 'icon' ? (ICON_FIT[kind] ?? 1) : 1),
+    ZOOM[style] * detail * (style === 'icon' ? (ICON_FIT[kind] ?? 1) : 1),
   );
-  const canvas = new VolumeCanvas(ITEM_ART_SIZE, ITEM_ART_SIZE, camera);
+  const canvas = new VolumeCanvas(ITEM_ART_SIZE * detail, ITEM_ART_SIZE * detail, camera);
+  canvas.detail = detail;
   const definition = ITEMS[kind];
   const base = hue ?? definition.color;
   const color = ramp(base === undefined ? [128, 128, 128] : hexToRgb(base));
