@@ -6,7 +6,7 @@ import { Terrain } from '@fenix/shared/world/terrain';
 import { TileMap } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
 import { Creature, RESPAWN_MS } from '../domain/creatures/creature';
-import { EMPTY_CORPSE_MS } from './corpses';
+import { EMPTY_CORPSE_MS } from './features/corpses/corpses';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';

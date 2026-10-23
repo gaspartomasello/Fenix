@@ -10,7 +10,7 @@ import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
 import { GameApplication } from './game-application';
-import type { GameLoop } from './game-loop';
+import type { GameLoop } from './features/combat/game-loop';
 
 function createTowns() {
   const map = new TileMap({

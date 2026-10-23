@@ -5,21 +5,21 @@ import { formatGameTime } from '@fenix/shared/rules/daylight';
 import { isTestCharacter } from '../domain/testing/test-character';
 import type { WorldClock } from '../domain/world-clock';
 import type { World } from '../domain/world';
-import { Doors } from './use-cases/doors';
-import { Corpses } from './corpses';
-import { MountActions } from './use-cases/mount-actions';
-import { Gates } from './gates';
-import { Stealth } from './stealth';
-import { Thievery } from './thievery';
-import { Tracking } from './tracking';
-import { Legends } from './legends';
-import { NpcTalk } from './npc-talk';
-import { WarMode } from './war-mode';
-import { GameLoop } from './game-loop';
-import { ItemNotifications } from './item-notifications';
-import { MobileNotifications } from './mobile-notifications';
-import { CharacterPersistence } from './character-persistence';
-import { Accounts } from './use-cases/accounts';
+import { Doors } from './features/doors/doors';
+import { Corpses } from './features/corpses/corpses';
+import { MountActions } from './features/mounts/mount-actions';
+import { Gates } from './features/portals/gates';
+import { Stealth } from './features/stealth/stealth';
+import { Thievery } from './features/thievery/thievery';
+import { Tracking } from './features/tracking/tracking';
+import { Legends } from './features/lore/legends';
+import { NpcTalk } from './features/lore/npc-talk';
+import { WarMode } from './features/combat/war-mode';
+import { GameLoop } from './features/combat/game-loop';
+import { ItemNotifications } from './kernel/item-notifications';
+import { MobileNotifications } from './kernel/mobile-notifications';
+import { CharacterPersistence } from './features/session/character-persistence';
+import { Accounts } from './features/session/accounts';
 import type {
   AccountStore,
   CharacterStore,
@@ -29,25 +29,25 @@ import type {
   PasswordHasher,
   RandomSource,
 } from './ports';
-import { SocialNotifications } from './social-notifications';
-import { Attack } from './use-cases/attack';
-import { CastSpell } from './use-cases/cast-spell';
-import { EconomyActions } from './use-cases/economy-actions';
-import { MoveItem } from './use-cases/move-item';
-import { UseItem } from './use-cases/use-item';
-import { JoinWorld, type JoinWorldResult } from './use-cases/join-world';
-import { LeaveWorld } from './use-cases/leave-world';
-import { GameMaster } from './use-cases/game-master';
-import { TownLife } from './use-cases/town-life';
-import { Books } from './use-cases/books';
-import { Dyeing } from './use-cases/dyeing';
-import { TreasureHunt } from './use-cases/treasure-hunt';
-import { Ships } from './use-cases/ships';
-import { Quests } from './use-cases/quests';
-import { Containers } from './use-cases/containers';
-import { MovePlayer } from './use-cases/move-player';
-import { SendChat } from './use-cases/send-chat';
-import { SocialActions } from './use-cases/social-actions';
+import { SocialNotifications } from './kernel/social-notifications';
+import { Attack } from './features/combat/attack';
+import { CastSpell } from './features/combat/cast-spell';
+import { EconomyActions } from './features/economy/economy-actions';
+import { MoveItem } from './features/items/move-item';
+import { UseItem } from './features/items/use-item';
+import { JoinWorld, type JoinWorldResult } from './features/session/join-world';
+import { LeaveWorld } from './features/session/leave-world';
+import { GameMaster } from './features/admin/game-master';
+import { TownLife } from './features/town-life/town-life';
+import { Books } from './features/books/books';
+import { Dyeing } from './features/dyeing/dyeing';
+import { TreasureHunt } from './features/treasure/treasure-hunt';
+import { Ships } from './features/ships/ships';
+import { Quests } from './features/quests/quests';
+import { Containers } from './features/containers/containers';
+import { MovePlayer } from './features/movement/move-player';
+import { SendChat } from './features/chat/send-chat';
+import { SocialActions } from './features/social/social-actions';
 
 export interface GameApplicationDeps {
   readonly world: World;

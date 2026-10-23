@@ -12,7 +12,7 @@ import {
   RecordingNotifier,
   SequentialIds,
 } from '../test-support/fakes';
-import { AUTOSAVE_MS } from './character-persistence';
+import { AUTOSAVE_MS } from './features/session/character-persistence';
 import { GameApplication } from './game-application';
 import type { CharacterStore, PasswordHasher } from './ports';
 
