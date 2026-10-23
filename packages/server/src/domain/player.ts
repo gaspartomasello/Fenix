@@ -95,6 +95,10 @@ export class Player implements Mobile {
   hidden: { steps: number; until: number | null } | null = null;
   /** Modo guerra: se dibuja en guardia y se defiende solo (no se guarda: entra en paz). */
   warMode = false;
+  /** Cuánto pesa lo que lleva (lo actualiza cada aviso de inventario). */
+  carried = 0;
+  /** No le pesa nada: los personajes de prueba no tienen límite de carga. */
+  unburdened = false;
 
   /** Cómo lo ven los demás: invulnerable (amarillo) o según su reputación. */
   get notoriety(): Notoriety {

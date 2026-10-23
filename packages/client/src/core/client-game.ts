@@ -10,6 +10,9 @@ import {
   bodyMoveMs,
   directionBetween,
   effectiveMoveMode,
+  encumbrance,
+  maxWeight,
+  PLAYER_ATTRIBUTES,
   isCreatureKind,
   isMountKind,
   moveDuration,
@@ -192,6 +195,16 @@ export interface Inventory {
   readonly backpack: readonly BackpackItemSnapshot[];
   readonly equipment: readonly EquippedItemSnapshot[];
   readonly bank: readonly BackpackItemSnapshot[];
+  /** Peso de lo que lleva encima, en piedras. */
+  readonly weight: number;
+  /** Sin límite de carga (personajes de prueba). */
+  readonly unburdened: boolean;
+}
+
+/** Cuánto lleva y cuánto puede llevar (`max` null: sin límite). */
+export interface Load {
+  readonly weight: number;
+  readonly max: number | null;
 }
 
 /**
@@ -207,7 +220,13 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   private predictor: MovementPredictor | null = null;
   private time: { value: WorldTime; receivedAt: number } | null = null;
   private readonly ground = new Map<EntityId, GroundItemSnapshot>();
-  private _inventory: Inventory = { backpack: [], equipment: [], bank: [] };
+  private _inventory: Inventory = {
+    backpack: [],
+    equipment: [],
+    bank: [],
+    weight: 0,
+    unburdened: false,
+  };
   private _vitals: { vitals: Vitals; dead: boolean } | null = null;
   private _targetId: EntityId | null = null;
   private _skills: SkillValues | null = null;
@@ -215,6 +234,8 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   private _warMode = false;
   private _hidden = false;
   private _effects: EffectsState | null = null;
+  /** Cuándo se avisó por última vez que el peso no deja moverse (para no repetirlo a cada paso). */
+  private lastBurdenNotice = -Infinity;
   private _corpse: CorpseContents | null = null;
   private readonly _containers = new Map<string, ContainerContents>();
   /** Los barcos que se ven. */
@@ -309,6 +330,16 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     return this._inventory;
   }
 
+  /** Lo que lleva y lo máximo que aguanta su Fuerza (con lo que suman los efectos). */
+  get load(): Load {
+    const inventory = this._inventory;
+    const strength = this._effects?.attributes.strength ?? PLAYER_ATTRIBUTES.strength;
+    return {
+      weight: inventory.weight,
+      max: inventory.unburdened ? null : maxWeight(strength),
+    };
+  }
+
   groundItems(): IterableIterator<GroundItemSnapshot> {
     return this.ground.values();
   }
@@ -363,12 +394,27 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     if (!self || !this.predictor) return;
     // Paralizado no se puede mover (el servidor rechazaría el paso).
     if (this.hasEffect('paralyzed')) return;
-    // Sin energía no se puede correr (salvo montado): misma regla que aplica el servidor.
+    // Sin energía, o con más peso del que aguanta la Fuerza, no se puede correr
+    // (salvo montado); muy cargado no se mueve: las mismas reglas que aplica el servidor.
     const stamina = this._vitals?.vitals.stamina ?? 1;
+    const { weight, max } = this.load;
+    const burden = self.mount || max === null ? encumbrance(0, 1) : encumbrance(weight, max);
+    if (!burden.canMove || (burden.stepStamina > 0 && stamina <= 0)) {
+      const now = this.clock();
+      if (now - this.lastBurdenNotice > 3000) {
+        this.lastBurdenNotice = now;
+        this.notify(
+          burden.canMove
+            ? 'Estás demasiado cansado para moverte con tanto peso.'
+            : 'Llevás demasiado peso: no podés moverte.',
+        );
+      }
+      return;
+    }
     const request = this.predictor.tryStep(
       self,
       direction,
-      self.mount ? mode : effectiveMoveMode(mode, stamina),
+      self.mount ? mode : effectiveMoveMode(mode, stamina, burden.canRun),
       this.clock(),
     );
     if (request) this.gateway.send(request);
@@ -948,6 +994,8 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
           backpack: message.backpack,
           equipment: message.equipment,
           bank: message.bank,
+          weight: message.weight ?? 0,
+          unburdened: message.unburdened === true,
         };
         this.emit('inventoryChanged', this._inventory);
         break;

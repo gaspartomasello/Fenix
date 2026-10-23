@@ -517,6 +517,23 @@ tiendas grandes, calcula el total al comprar varios y tiene «Vender todo».
   personaje con el nombre y los pasos (`TrackingArrow`). Se pierde si se aleja demasiado, muere
   o se esconde.
 
+### Interfaz despejada, panel de estado y peso
+
+- **Barra de atajos abajo de todo** y el aviso de elegir objetivo (`TargetingBanner`) siempre
+  por encima de ella; en el celular el aviso va arriba. Mientras se elige, el puntero es una
+  mira (`is-targeting` en la página), el aviso tiene un botón «Cancelar» y en el celular
+  aparece uno grande junto al joystick. Cancelar es lo mismo que Escape.
+- **Panel de estado** (`StatusWindow`, doble clic o doble toque sobre las barras de vida):
+  atributos, vida, maná y energía, defensa de lo puesto (`armorOf`), el arma con su daño y
+  velocidad (`weaponOf`), el peso y el oro de la mochila.
+- **Peso y carga** (`shared/domain/items/weight.ts`): cada objeto pesa unas piedras
+  (`itemWeight`) y se puede llevar `40 + 3,5 × Fuerza` (`maxWeight`), como en UO. Con más peso
+  no se corre y cada paso gasta energía; con más de 40 piedras de más (o sin energía) no se
+  puede caminar (`encumbrance`). El servidor calcula lo que lleva cada uno (`Items.weightOf`,
+  mochila con las bolsas y lo puesto) en cada aviso de inventario, que ahora trae `weight`;
+  `MovePlayer` y el cliente aplican la misma regla. Los personajes de prueba no tienen límite
+  (`unburdened`).
+
 ### Samurái, legionario, templario, mangual y escudos grandes
 
 - **Juegos nuevos** (catálogo, `ARMOR_RATING`, `METAL_ARMOR`, herrería y herrero): cada uno

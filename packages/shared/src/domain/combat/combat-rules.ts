@@ -85,6 +85,7 @@ export function anatomyBonus(anatomy: number): number {
 /** Correr gasta energía: un punto cada 4 tiles. Sin energía, solo se puede caminar. */
 export const RUN_STEPS_PER_STAMINA = 4;
 
-export function effectiveMoveMode(mode: MoveMode, stamina: number): MoveMode {
-  return mode === 'run' && stamina <= 0 ? 'walk' : mode;
+/** Sin energía (o cargado de más, `canRun` falso) solo se puede caminar. */
+export function effectiveMoveMode(mode: MoveMode, stamina: number, canRun = true): MoveMode {
+  return mode === 'run' && (stamina <= 0 || !canRun) ? 'walk' : mode;
 }

@@ -34,6 +34,7 @@ import {
   type ActiveSkill,
   type ItemSnapshot,
   type NpcRole,
+  type EquipmentLook,
 } from '@fenix/shared';
 import type { ItemActions } from '../ui/backpack-window';
 import { BankWindow } from '../ui/bank-window';
@@ -44,6 +45,7 @@ import { WorldShips } from './world-ships';
 import { DyeWindow } from '../ui/dye-window';
 import { ItemCatalogWindow } from '../ui/item-catalog-window';
 import { TrackingArrow, TrackingWindow } from '../ui/tracking-window';
+import { StatusWindow, type StatusInfo } from '../ui/status-window';
 import { QuestJournal, QuestOfferWindow } from '../ui/quest-windows';
 import { ContainerWindow } from '../ui/container-window';
 import { CorpseWindow } from '../ui/corpse-window';
@@ -268,7 +270,7 @@ export class GameSession {
         !worldNpcs.hasNpcAt(point),
     });
     const banner = new TargetingBanner();
-    this.hosts.ui.append(banner.element);
+    this.hosts.ui.append(banner.element, banner.cancelButton);
     const targeting: Targeting = { banner, worldCombat, tilePicker };
     const magic = this.setUpMagic(targeting);
     this.setUpSocial();
@@ -418,6 +420,39 @@ export class GameSession {
     };
     this.game.on('vitalsChanged', render);
     render();
+
+    // Doble clic (o doble toque) sobre las barras: el panel de estado, como en UO.
+    const status = new StatusWindow();
+    this.hosts.ui.append(status.window.element);
+    const info = (): StatusInfo => {
+      const { backpack, equipment } = this.game.inventory;
+      const look: EquipmentLook = Object.fromEntries(equipment.map((i) => [i.slot, i.kind]));
+      const { weight, max } = this.game.load;
+      return {
+        name: this.game.self?.name ?? '',
+        attributes: this.game.effects?.attributes ?? null,
+        vitals: this.game.vitals?.vitals ?? null,
+        equipment: look,
+        weight,
+        maxWeight: max,
+        gold: backpack.filter((i) => i.kind === 'gold').reduce((sum, i) => sum + i.amount, 0),
+      };
+    };
+    let lastTap = 0;
+    panel.element.addEventListener('pointerup', () => {
+      const now = performance.now();
+      if (now - lastTap < 400) {
+        lastTap = 0;
+        status.open(info());
+      } else lastTap = now;
+    });
+    panel.element.title = 'Doble clic: estado del personaje';
+    const refresh = (): void => {
+      if (status.visible) status.render(info());
+    };
+    this.game.on('vitalsChanged', refresh);
+    this.game.on('inventoryChanged', refresh);
+    this.game.on('effectsChanged', refresh);
   }
 
   /** Ventana social y modo guerra. */

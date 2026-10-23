@@ -36,7 +36,13 @@ export class ItemNotifications {
         });
       }
     }
-    for (const ownerId of changes.inventories) this.sendInventory(ownerId);
+    // Lo que entra o sale de una bolsa propia cambia el peso que se lleva.
+    const owners = new Set(changes.inventories);
+    for (const containerId of changes.containers) {
+      const root = this.world.items.rootOf(containerId);
+      if (root && (root.type === 'backpack' || root.type === 'equipment')) owners.add(root.ownerId);
+    }
+    for (const ownerId of owners) this.sendInventory(ownerId);
     for (const ownerId of changes.looks) this.sendLook(ownerId);
     for (const corpseId of changes.corpses) this.onCorpseChanged(corpseId);
     for (const containerId of changes.containers) this.onContainerChanged(containerId);
@@ -45,11 +51,16 @@ export class ItemNotifications {
 
   sendInventory(ownerId: EntityId): void {
     const items = this.world.items;
+    const weight = items.weightOf(ownerId);
+    const player = this.world.get(ownerId);
+    if (player) player.carried = weight;
     this.notifier.send(ownerId, {
       type: 'inventory',
       backpack: items.backpackOf(ownerId).flatMap((i) => i.toBackpackSnapshot() ?? []),
       equipment: items.equipmentOf(ownerId).flatMap((i) => i.toEquippedSnapshot() ?? []),
       bank: items.bankOf(ownerId).flatMap((i) => i.toBackpackSnapshot() ?? []),
+      weight: Math.round(weight * 10) / 10,
+      ...(player?.unburdened ? { unburdened: true as const } : {}),
     });
   }
 
