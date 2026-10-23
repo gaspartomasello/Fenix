@@ -102,6 +102,8 @@ export interface SavedCharacter {
   readonly quests?: readonly QuestProgress[];
   /** Leyendas que conoce: paso en que va cada una. */
   readonly legends?: Readonly<Partial<Record<LegendId, number>>>;
+  /** Personajes de prueba: qué versión del kit de prueba ya se le aplicó. */
+  readonly testKit?: number;
 }
 
 /** Toma una foto del personaje conectado (con su mochila, equipo y banco). */
@@ -174,6 +176,7 @@ export function captureCharacter(
       .concat(shipDeeds(world, player.name)),
     ...(player.quests.length > 0 ? { quests: player.quests } : {}),
     ...(player.legends.size > 0 ? { legends: Object.fromEntries(player.legends) } : {}),
+    ...(player.testKit > 0 ? { testKit: player.testKit } : {}),
     mount: player.mount
       ? { kind: player.mount, riding: true }
       : petKind
@@ -431,6 +434,9 @@ export function parseSavedCharacter(value: unknown): SavedCharacter | null {
           ),
         }
       : {}),
+    ...(typeof value.testKit === 'number' && Number.isInteger(value.testKit)
+      ? { testKit: value.testKit }
+      : {}),
     mount:
       isObject(value.mount) && isMountKind(value.mount.kind)
         ? { kind: value.mount.kind, riding: value.mount.riding === true }
@@ -496,6 +502,7 @@ export function restoreCharacter(
     }
   }
   player.quests = [...(saved.quests ?? [])];
+  player.testKit = saved.testKit ?? 0;
   player.legends = new Map(
     Object.entries(saved.legends ?? {}).flatMap(([id, step]) =>
       isLegendId(id) && step !== undefined ? [[id, step] as const] : [],

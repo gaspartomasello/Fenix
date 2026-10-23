@@ -214,10 +214,23 @@ export class Items {
   }
 
   /** Cuántas unidades de un tipo tiene alguien en la mochila. */
+  /**
+   * Cuántos lleva en la mochila, como en UO: también lo guardado en las
+   * bolsas de adentro (los reactivos en su bolsa sirven para los hechizos).
+   */
   countInBackpack(ownerId: EntityId, kind: ItemKind): number {
-    return this.backpackOf(ownerId)
+    return this.carried(ownerId)
       .filter((i) => i.kind === kind)
       .reduce((sum, i) => sum + i.amount, 0);
+  }
+
+  /** Lo de la mochila y lo de adentro de sus bolsas (primero lo suelto). */
+  carried(ownerId: EntityId): Item[] {
+    const loose = this.backpackOf(ownerId);
+    const inside = loose
+      .filter((i) => ITEMS[i.kind].capacity)
+      .flatMap((bag) => this.descendantsOf(bag.id));
+    return [...loose, ...inside];
   }
 
   /** Gasta unidades de la mochila (reactivos, por ejemplo). Devuelve false si no alcanzan. */
@@ -229,10 +242,12 @@ export class Items {
   ): boolean {
     if (this.countInBackpack(ownerId, kind) < amount) return false;
     let left = amount;
-    for (const item of this.backpackOf(ownerId).filter((i) => i.kind === kind)) {
+    for (const item of this.carried(ownerId).filter((i) => i.kind === kind)) {
       const used = Math.min(left, item.amount);
       item.amount -= used;
       left -= used;
+      // Si estaba en una bolsa, se avisa a quien la tenga abierta.
+      if (item.location.type === 'container') changes.containers.add(item.location.containerId);
       if (item.amount <= 0) this.byId.delete(item.id);
       if (left === 0) break;
     }
@@ -718,8 +733,9 @@ export class Items {
         const occupied = taken.some(
           (p) =>
             p &&
-            Math.abs(p.x - spot.x) < ITEM_ICON_SIZE / 2 &&
-            Math.abs(p.y - spot.y) < ITEM_ICON_SIZE / 2,
+            // Que no se tape con lo que dejó el jugador corrido de la grilla.
+            Math.abs(p.x - spot.x) < ITEM_ICON_SIZE * 0.8 &&
+            Math.abs(p.y - spot.y) < ITEM_ICON_SIZE * 0.8,
         );
         if (!occupied) return spot;
       }

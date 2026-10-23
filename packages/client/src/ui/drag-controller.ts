@@ -5,10 +5,11 @@ import { el } from './dom';
 export type DropTarget =
   | { readonly kind: 'backpack'; readonly position: { x: number; y: number } }
   | { readonly kind: 'bank'; readonly position: { x: number; y: number } }
+  /** Adentro de un recipiente; sin `position` (soltado sobre la bolsa misma), donde haya lugar. */
   | {
       readonly kind: 'container';
       readonly containerId: string;
-      readonly position: { x: number; y: number };
+      readonly position?: { x: number; y: number };
     }
   | { readonly kind: 'slot'; readonly slot: EquipmentSlot }
   /** El personaje en la ventana de equipo: el objeto va a su lugar del cuerpo. */
@@ -94,6 +95,14 @@ export class DragController {
     const start = { x: down.clientX, y: down.clientY };
     let dragging = false;
     let restore: (() => void) | null = null;
+    /** La bolsa que se ilumina al pasar por encima con algo (se suelta adentro). */
+    let hovered: HTMLElement | null = null;
+    const hover = (bag: HTMLElement | null): void => {
+      if (bag === hovered) return;
+      hovered?.classList.remove('item-icon--drop');
+      bag?.classList.add('item-icon--drop');
+      hovered = bag;
+    };
 
     const move = (e: PointerEvent): void => {
       if (e.pointerId !== down.pointerId) return;
@@ -104,7 +113,11 @@ export class DragController {
         // Se levanta en el momento: no queda un duplicado donde estaba.
         restore = source.lift?.() ?? null;
       }
-      if (dragging) this.placeGhost(e);
+      if (dragging) {
+        this.placeGhost(e);
+        const bag = bagAt(e.clientX, e.clientY);
+        hover(bag && bag.dataset.bag !== source.id ? bag : null);
+      }
     };
     const up = (e: PointerEvent): void => {
       if (e.pointerId !== down.pointerId) return;
@@ -112,8 +125,9 @@ export class DragController {
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', cancel);
       this.ghost.hidden = true;
+      hover(null);
       if (dragging) {
-        const target = resolveTarget(e.clientX, e.clientY);
+        const target = resolveTarget(e.clientX, e.clientY, source.id);
         const accepted = target !== null && source.onDrop(target);
         // Si no va ahí, vuelve en el momento; si el servidor no lo acepta, enseguida.
         if (!accepted) restore?.();
@@ -128,6 +142,7 @@ export class DragController {
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', cancel);
       this.ghost.hidden = true;
+      hover(null);
       restore?.();
     };
 
@@ -163,8 +178,18 @@ export class DragController {
   }
 }
 
-/** Busca el destino bajo el puntero mediante atributos `data-drop`. */
-function resolveTarget(clientX: number, clientY: number): DropTarget | null {
+/** La bolsa (un ícono con `data-bag`) bajo el puntero, si hay. */
+function bagAt(clientX: number, clientY: number): HTMLElement | null {
+  return document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>('[data-bag]') ?? null;
+}
+
+/**
+ * Busca el destino bajo el puntero mediante atributos `data-drop`. Soltar
+ * sobre una bolsa (no sobre sí misma) la guarda adentro, como en UO.
+ */
+function resolveTarget(clientX: number, clientY: number, dragged: string): DropTarget | null {
+  const bag = bagAt(clientX, clientY)?.dataset.bag;
+  if (bag && bag !== dragged) return { kind: 'container', containerId: bag };
   const element = document.elementFromPoint(clientX, clientY);
   const zone = element?.closest<HTMLElement>('[data-drop]');
   if (!zone) return null;

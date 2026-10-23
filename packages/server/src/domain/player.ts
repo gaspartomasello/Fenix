@@ -103,6 +103,8 @@ export class Player implements Mobile {
   carried = 0;
   /** No le pesa nada: los personajes de prueba no tienen límite de carga. */
   unburdened = false;
+  /** Personajes de prueba: qué versión del kit de prueba ya se le aplicó (ver `equipTestCharacter`). */
+  testKit = 0;
   /** Incógnito: el nombre y la cara con que lo ven los demás mientras dura. */
   disguise: { name: string; appearance: Appearance } | null = null;
   /** Transformación: la forma de animal o criatura que tomó. */

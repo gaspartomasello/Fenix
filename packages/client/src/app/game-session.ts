@@ -317,7 +317,7 @@ export class GameSession {
 
     const frame = (): void => {
       const intent = input.movementIntent();
-      if (intent) this.game.requestStep(intent.direction, intent.mode);
+      if (intent) this.game.requestStep(intent.direction, intent.mode, intent.lean);
       this.game.update();
       renderer.render(clock());
       const bounds = renderer.canvas.getBoundingClientRect();
@@ -638,7 +638,10 @@ export class GameSession {
     const self = this.game.self;
     if (!self) return [];
     const done = (): void => banner.hide();
-    const dyeWindow = new DyeWindow((itemId, hue) => this.game.dye(itemId, hue));
+    const dyeWindow = new DyeWindow(
+      (itemId, hue) => this.game.dye(itemId, hue),
+      (tubId, hue) => this.game.tintTub(tubId, hue),
+    );
     this.hosts.ui.append(dyeWindow.window.element);
     const carried = (): { items: ItemSnapshot[]; dyes: number } => {
       const { backpack, equipment } = this.game.inventory;
@@ -662,7 +665,7 @@ export class GameSession {
             return;
           case 'dye': {
             const { items, dyes } = carried();
-            dyeWindow.open(items, dyes);
+            dyeWindow.open(itemId, items, dyes);
             return;
           }
           case 'craft':

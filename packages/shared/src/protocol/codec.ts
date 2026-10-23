@@ -320,6 +320,10 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       if (isId(data.itemId) && typeof data.hue === 'number' && isDyeHue(data.hue))
         return { ok: true, message: { type: 'dye', itemId: data.itemId, hue: data.hue } };
       break;
+    case 'tintTub':
+      if (isId(data.tubId) && typeof data.hue === 'number' && isDyeHue(data.hue))
+        return { ok: true, message: { type: 'tintTub', tubId: data.tubId, hue: data.hue } };
+      break;
     case 'readBook':
       if (isId(data.itemId))
         return { ok: true, message: { type: 'readBook', itemId: data.itemId } };

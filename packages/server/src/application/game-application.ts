@@ -453,6 +453,9 @@ export class GameApplication {
       case 'dye':
         this.dyeing.dye(playerId, message.itemId, message.hue);
         break;
+      case 'tintTub':
+        this.dyeing.tint(playerId, message.tubId, message.hue);
+        break;
       case 'shipOrder':
         this.ships.order(playerId, message.shipId, message.order);
         break;

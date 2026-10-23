@@ -1,10 +1,12 @@
 import type { Direction, MoveMode } from '@fenix/shared';
-import { screenVectorToDirection } from '../rendering/iso';
+import { screenVectorLean, screenVectorToDirection } from '../rendering/iso';
 
 /** Lo que el jugador quiere hacer este frame con el movimiento. */
 export interface MovementIntent {
   readonly direction: Direction;
   readonly mode: MoveMode;
+  /** Hacia qué lado tira (mouse o joystick): por ahí resbala si choca. */
+  readonly lean?: Direction;
 }
 
 /** Flechas o WASD → vector de pantalla (arriba en pantalla = NorthWest en UO). */
@@ -30,5 +32,10 @@ export function pointerToIntent(dx: number, dy: number): MovementIntent | null {
   if (distance < DEAD_ZONE_PX) return null;
   const direction = screenVectorToDirection(dx, dy);
   if (direction === null) return null;
-  return { direction, mode: distance > RUN_DISTANCE_PX ? 'run' : 'walk' };
+  const lean = screenVectorLean(dx, dy);
+  return {
+    direction,
+    mode: distance > RUN_DISTANCE_PX ? 'run' : 'walk',
+    ...(lean === null ? {} : { lean }),
+  };
 }

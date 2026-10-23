@@ -392,7 +392,8 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
 
   // ── Acciones del jugador ────────────────────────────────────────────
 
-  requestStep(direction: Direction, mode: MoveMode): void {
+  /** Un paso hacia `direction`; si choca en diagonal, resbala hacia `lean` (como en UO). */
+  requestStep(direction: Direction, mode: MoveMode, lean?: Direction): void {
     const self = this.self;
     if (!self || !this.predictor) return;
     // Paralizado no se puede mover (el servidor rechazaría el paso).
@@ -419,6 +420,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       direction,
       self.mount ? mode : effectiveMoveMode(mode, stamina, burden.canRun),
       this.clock(),
+      lean,
     );
     if (request) this.gateway.send(request);
   }
@@ -687,6 +689,11 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   /** Teñir una prenda propia. */
   dye(itemId: EntityId, hue: number): void {
     this.gateway.send({ type: 'dye', itemId, hue });
+  }
+
+  /** Elegir el color del agua de la tina de tintura. */
+  tintTub(tubId: EntityId, hue: number): void {
+    if (this.self) this.gateway.send({ type: 'tintTub', tubId, hue });
   }
 
   /** Hablar con un vecino (misiones). */

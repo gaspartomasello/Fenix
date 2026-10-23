@@ -37,7 +37,11 @@ export function destinationFor(
     case 'bank':
       return { type: 'bank', position: target.position };
     case 'container':
-      return { type: 'container', containerId: target.containerId, position: target.position };
+      return {
+        type: 'container',
+        containerId: target.containerId,
+        ...(target.position ? { position: target.position } : {}),
+      };
     case 'slot':
       return { type: 'equipment', slot: target.slot };
     case 'world':
@@ -87,6 +91,8 @@ export class BackpackWindow {
     );
     if (item.amount > 1)
       icon.append(el('span', { className: 'item-amount', text: String(item.amount) }));
+    // Una bolsa: lo que se suelta encima va adentro.
+    if (ITEMS[item.kind].capacity) icon.dataset.bag = item.id;
     icon.style.left = `${item.position.x}px`;
     icon.style.top = `${item.position.y}px`;
     icon.style.width = `${ITEM_ICON_SIZE}px`;

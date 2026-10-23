@@ -1001,6 +1001,31 @@ gremio llega a sus miembros estén donde estén).
 - **Textos sobre los techos**: el nombre, la vida, lo que dice cada uno y los números de daño
   van en `CharacterView.labels`, otra capa por encima de todo el mundo, así ningún techo los tapa.
 
+## Bolsas, tina con panel de colores y resbalar contra paredes (etapa 66)
+
+- **Guardar en bolsas**: soltar un objeto sobre una bolsa (un ícono con `data-bag` en la mochila
+  o en otro recipiente) lo guarda adentro, como en UO (`drag-controller.ts`, que ilumina la bolsa
+  al pasar por encima). El servidor ya aceptaba `container` sin lugar: busca el primer casillero
+  libre.
+- **Lo de las bolsas cuenta**: `Items.countInBackpack` y `consumeFromBackpack` miran también
+  adentro de las bolsas de la mochila (`Items.carried`), así los reactivos en su bolsa sirven
+  para los hechizos. Los personajes nuevos y los de prueba traen los reactivos en una bolsa
+  (`domain/items/reagent-bag.ts`).
+- **Tina de tintura**: el panel (`ui/dye-window.ts`) tiene 18 tonos con 7 matices cada uno, más
+  los grises (`DYE_FAMILIES` en `@fenix/shared`). Primero se le elige el color a la tina
+  (`tintTub`: el agua toma ese color y se guarda en el objeto). Después se tiñe del color de la
+  tina (`dye`, que gasta una tintura). Las bolsas también se tiñen.
+- **Personaje de prueba sin oro**: `Player.testKit` guarda qué versión del kit de prueba ya se le
+  aplicó. La versión 2 le saca una sola vez el oro que tenía; lo que gane después lo conserva.
+- **Resbalar contra las paredes** (`slideDirection` en `@fenix/shared`), como en UO: un paso en
+  diagonal de la grilla que choca prueba las dos direcciones vecinas y sigue por la libre (hacia
+  donde tira el mouse o el joystick, `MovementIntent.lean`). De frente contra algo se frena. Lo
+  resuelve el cliente al predecir el paso y manda la dirección final; el servidor la valida igual
+  que siempre.
+- **Chequeo rápido**: `npm run check:fast` corre formato, tipos y solo las pruebas de los módulos
+  que cambiaron (Vitest sigue los imports). La batería completa la corre la integración continua.
+  Cambiar un catálogo compartido (objetos, mensajes) igual dispara casi todas, porque todo lo usa.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

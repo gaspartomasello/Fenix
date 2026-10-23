@@ -34,6 +34,20 @@ export function screenVectorToDirection(dx: number, dy: number): Direction | nul
   return ((((sector + 1) % 8) + 8) % 8) as Direction;
 }
 
+/**
+ * Hacia qué dirección vecina tira el vector de la pantalla: la que queda
+ * más cerca del ángulo, a un lado o al otro de la dirección elegida (para
+ * resbalar contra las paredes hacia ese lado). Null si apunta justo al medio.
+ */
+export function screenVectorLean(dx: number, dy: number): Direction | null {
+  const direction = screenVectorToDirection(dx, dy);
+  if (direction === null) return null;
+  const sectors = Math.atan2(dy, dx) / (Math.PI / 4);
+  const off = sectors - Math.round(sectors);
+  if (Math.abs(off) < 0.05) return null;
+  return (off > 0 ? (direction + 1) % 8 : (direction + 7) % 8) as Direction;
+}
+
 /** Profundidad de dibujo: lo que está más "abajo" en pantalla va adelante. */
 export function depthOf({ x, y }: FractionalPosition): number {
   return x + y;

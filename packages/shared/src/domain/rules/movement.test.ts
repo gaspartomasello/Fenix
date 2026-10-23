@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Direction } from '../geometry/direction';
 import { Terrain } from '../world/terrain';
 import { TileMap } from '../world/tile-map';
-import { canStep } from './movement';
+import { canStep, slideDirection } from './movement';
 
 const G = Terrain.Grass;
 const W = Terrain.Water;
@@ -27,5 +27,34 @@ describe('canStep', () => {
     expect(canStep(map, { x: 1, y: 1 }, Direction.SouthWest)).toBe(false);
     // De (1,1) a (2,2): el lateral (2,1) es transitable.
     expect(canStep(map, { x: 1, y: 1 }, Direction.SouthEast)).toBe(true);
+  });
+});
+
+describe('slideDirection (resbalar contra una pared, como en UO)', () => {
+  // 3x3:  W G G
+  //       G G G
+  //       G G W
+  const room = new TileMap({ width: 3, height: 3, terrain: [W, G, G, G, G, G, G, G, W] });
+
+  it('en diagonal de la grilla, contra un obstáculo resbala por el lado libre', () => {
+    // Al noroeste de (1,1) hay agua: sigue al norte o al oeste.
+    expect(slideDirection(room, { x: 1, y: 1 }, Direction.NorthWest)).toBe(Direction.West);
+    expect(slideDirection(room, { x: 1, y: 1 }, Direction.NorthWest, Direction.North)).toBe(
+      Direction.North,
+    );
+  });
+
+  it('si el camino está libre, va derecho', () => {
+    expect(slideDirection(room, { x: 1, y: 1 }, Direction.NorthEast)).toBe(Direction.NorthEast);
+  });
+
+  it('de frente contra algo se frena', () => {
+    // Desde (0,1), al norte está el agua: no hay hacia dónde resbalar.
+    expect(slideDirection(room, { x: 0, y: 1 }, Direction.North)).toBeNull();
+  });
+
+  it('en un rincón (los dos lados cerrados) también se frena', () => {
+    // Desde (2,1) hacia el sureste: se sale del mapa por un lado y abajo hay agua.
+    expect(slideDirection(room, { x: 2, y: 1 }, Direction.SouthEast)).toBeNull();
   });
 });

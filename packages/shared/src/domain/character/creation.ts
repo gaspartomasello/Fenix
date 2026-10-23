@@ -115,7 +115,8 @@ export const BASE_KIT: readonly KitEntry[] = [
   { kind: 'torch', amount: 1 },
 ];
 
-const REAGENTS: readonly ItemKind[] = [
+/** Los ocho reactivos de los hechizos. */
+export const REAGENTS: readonly ItemKind[] = [
   'black-pearl',
   'blood-moss',
   'garlic',

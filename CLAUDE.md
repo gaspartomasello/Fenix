@@ -35,7 +35,13 @@ MMORPG web inspirado en Ultima Online / Sphere. Leé `docs/ARQUITECTURA.md` ante
 
 ## Antes de commitear
 
+Mientras se trabaja, alcanza con el chequeo rápido: formato, tipos y solo las pruebas de los
+módulos que cambiaron (y de los que dependen de ellos). Vitest las encuentra solo, siguiendo los
+imports: por eso importa que los módulos no estén atados entre sí.
+
 ```bash
-npm run check   # formato + lint + tipos + tests
-npm run build
+npm run check:fast   # formato + tipos + pruebas de lo que cambió
 ```
+
+La batería completa (`npm run check` y `npm run build`) la corre la integración continua en cada
+Pull Request; localmente, solo antes de abrir el PR o si el rápido no alcanza.
