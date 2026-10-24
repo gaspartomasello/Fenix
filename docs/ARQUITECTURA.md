@@ -1104,6 +1104,19 @@ sumar un evento o un servicio al núcleo (una línea en su interfaz), nunca un i
 solo las pruebas de lo que cambió. `game.test.ts` comprueba el armado completo: que cada pedido
 del protocolo tenga un módulo que lo atienda y que los servicios pedidos existan.
 
+**Medido con `vitest related`** (archivos de pruebas que corren al tocar un archivo):
+
+| Archivo tocado                    | Antes (etapa 67) | Ahora |
+| --------------------------------- | ---------------- | ----- |
+| libros, tinturas, barcos, sigilo… | 33               | 4     |
+| recipientes                       | 33               | 7     |
+| movimiento                        | 33               | 13    |
+| bucle de combate                  | 33               | 19    |
+| núcleo o `GameApplication`        | 33               | 34–35 |
+
+Las 4 fijas son las del módulo, el armado completo (`game.test.ts`) y las dos de integración
+(servidor en red y modo solo). Tocar el núcleo corre todo, como corresponde.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.
