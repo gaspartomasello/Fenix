@@ -10,6 +10,11 @@ export const trackingModule: ModuleFactory = (kernel) => {
     kernel.random,
     kernel.clock,
   );
+  // Rastrear se usa con su ventana (`track`); el botón de la habilidad solo frena a los fantasmas.
+  kernel.skills.on('tracking', (playerId) => {
+    if (kernel.world.get(playerId)?.combat.isDead)
+      kernel.say(playerId, 'Los fantasmas no pueden hacer eso.');
+  });
   return {
     name: 'tracking',
     handles: {

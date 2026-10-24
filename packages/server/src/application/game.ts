@@ -35,6 +35,8 @@ export const ALL_MODULES: readonly ModuleFactory[] = [
   itemsModule,
   economyModule,
   combatModule,
+  // Sigilo justo después del combate: quien deja de estar invisible se ve antes de rastrear.
+  stealthModule,
   mountsModule,
   corpsesModule,
   doorsModule,
@@ -44,13 +46,13 @@ export const ALL_MODULES: readonly ModuleFactory[] = [
   booksModule,
   dyeingModule,
   questsModule,
-  loreModule,
   treasureModule,
+  // Barcos antes que leyendas: al hablar, el timonel obedece antes de que conteste un vecino.
   shipsModule,
+  loreModule,
   trackingModule,
   thieveryModule,
   portalsModule,
-  stealthModule,
   adminModule,
 ];
 

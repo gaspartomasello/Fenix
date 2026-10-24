@@ -1082,14 +1082,18 @@ dependían de todo junto. Ahora cada funcionalidad es un **módulo** que se ench
 - **`GameApplication`** atiende la sesión (cuentas, entrar, guardar, salir) y reparte cada pedido
   al módulo que lo declaró; si dos módulos declaran el mismo pedido, el armado falla.
 - **El orden de `ALL_MODULES`** es el de cada vuelta del mundo, el de los ganchos y el de los
-  avisos.
+  avisos. Importa en dos lugares, comentados en `game.ts`: el sigilo va justo después del
+  combate (quien deja de estar invisible se ve antes de que lo rastreen) y los barcos antes que
+  las leyendas (al hablar, el timonel obedece antes de que conteste un vecino).
 
-**Reglas (en `eslint.config.js`, generadas de la lista de carpetas):**
+**Reglas** (regla `fenix/module-boundaries` en `eslint.config.js`; resuelve la ruta real de
+cada import, a cualquier profundidad y con cualquier extensión):
 
 1. Una funcionalidad no importa a otra (`features/a` no ve `features/b`).
 2. Una funcionalidad no conoce el armado (`game.ts`, `game-application.ts`).
 3. El núcleo no conoce a ninguna funcionalidad.
 4. `GameApplication` solo conoce la sesión; los módulos se los pasa `game.ts`.
+5. Ningún otro archivo de la aplicación (puertos, etc.) importa módulos: solo `game.ts`.
 
 **Sumar una funcionalidad:** crear `features/<nombre>/` con sus casos de uso y su
 `<nombre>.module.ts`, agregarlo a `ALL_MODULES`, y si otro módulo tiene que enterarse de algo,

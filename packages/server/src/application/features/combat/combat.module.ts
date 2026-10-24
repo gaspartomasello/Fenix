@@ -82,6 +82,7 @@ export const combatModule: ModuleFactory = (kernel) => {
     },
     // La montura suelta se guardó con él: se va del mundo hasta que vuelva.
     left: (playerId) => {
+      if (!world.get(playerId)) return;
       const pet = world.petOf(playerId);
       if (pet) loop.dismiss(pet);
     },

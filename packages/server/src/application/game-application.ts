@@ -73,11 +73,13 @@ export class GameApplication {
       testCharacters,
     );
     this.leaveWorld = new LeaveWorld(kernel.world, kernel.notifier);
+    // Las habilidades con botón las reparte el núcleo entre los módulos que las registraron.
+    this.register({
+      name: 'habilidades',
+      handles: { useSkill: (playerId, m) => kernel.skills.use(m.skill, playerId, m.targetId) },
+    });
     this.modules = modules.map((build) => build(kernel));
     for (const module of this.modules) this.register(module);
-    this.handlers.set('useSkill', (playerId, message) => {
-      if (message.type === 'useSkill') kernel.skills.use(message.skill, playerId, message.targetId);
-    });
   }
 
   private register(module: GameModule): void {

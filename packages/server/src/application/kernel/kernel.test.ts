@@ -55,7 +55,11 @@ describe('núcleo', () => {
     const play = vi.fn();
     uses.on('kind:iron-ore', smelt, { ownedOnly: true });
     uses.on('music', play, { ownedOnly: true });
-    const ore = new Item('o', 'iron-ore', 1, { type: 'backpack', ownerId: 'ana' });
+    const ore = new Item('o', 'iron-ore', 1, {
+      type: 'backpack',
+      ownerId: 'ana',
+      position: { x: 0, y: 0 },
+    });
     expect(uses.find(ore, 'ana')).toBe(smelt);
     expect(uses.find(ore, 'beto')).toBeNull();
     const lute = new Item('l', 'lute', 1, { type: 'ground', position: { x: 0, y: 0 } });
