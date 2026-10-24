@@ -217,6 +217,125 @@ body {
   gap: 0.3rem;
 }
 
+/* Barra de información (Opciones): una línea con reactivos, oro, peso… */
+.status-bar .info-bar {
+  order: 3;
+  flex-basis: 100%;
+}
+
+.info-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.7rem;
+  padding-top: 0.15rem;
+  border-top: 1px solid rgba(201, 164, 92, 0.35);
+  font-size: 0.82rem;
+}
+
+.info-bar[hidden] {
+  display: none;
+}
+
+.info-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  white-space: nowrap;
+}
+
+.info-chip-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.info-chip-label {
+  color: var(--color-text-muted);
+}
+
+.info-chip-label::after {
+  content: ':';
+}
+
+.info-chip-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.info-chip--low .info-chip-value {
+  color: var(--color-error);
+  font-weight: bold;
+}
+
+.hide-minimap .minimap,
+.hide-hotbar .hotbar {
+  display: none;
+}
+
+/* Ventana de opciones */
+.options-window {
+  width: min(400px, calc(100vw - 32px));
+}
+
+.options-list {
+  margin: 0.4rem 0;
+  padding: 0;
+  list-style: none;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+
+.options-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
+  border-bottom: 1px solid rgba(201, 164, 92, 0.18);
+}
+
+.options-check {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+}
+
+.options-order {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.hotkey-combo {
+  min-width: 4.5rem;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  text-align: center;
+}
+
+.hotkey-action {
+  flex: 1;
+}
+
+.hotkey-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.hotkey-select {
+  flex: 1;
+  min-width: 10rem;
+  max-width: 100%;
+}
+
+.hotkey-record {
+  min-width: 7.5rem;
+}
+
 .status-bar .hud-button {
   gap: 0.3rem;
   padding: 0.12rem 0.45rem;
@@ -439,7 +558,7 @@ body {
 /* Minimapa: arriba a la derecha, debajo de la barra de estado. */
 .minimap {
   position: absolute;
-  top: calc(58px + env(safe-area-inset-top, 0px));
+  top: calc(58px + var(--info-bar-height, 0px) + env(safe-area-inset-top, 0px));
   right: 12px;
   /* Debajo de las ventanas (que arrancan en 100): una ventana arrastrada encima se ve entera. */
   z-index: 50;
@@ -593,7 +712,7 @@ body {
 
 .vitals-panel {
   position: absolute;
-  top: calc(56px + env(safe-area-inset-top, 0px));
+  top: calc(56px + var(--info-bar-height, 0px) + env(safe-area-inset-top, 0px));
   left: 12px;
   display: grid;
   gap: 4px;
@@ -1468,7 +1587,7 @@ body {
 
 .effects-bar {
   position: absolute;
-  top: calc(142px + env(safe-area-inset-top, 0px));
+  top: calc(142px + var(--info-bar-height, 0px) + env(safe-area-inset-top, 0px));
   left: 12px;
   display: grid;
   gap: 3px;
@@ -1769,6 +1888,36 @@ body {
   padding: 0.15rem 0.6rem;
   font-size: 0.72rem;
   white-space: nowrap;
+}
+
+/*
+ * En el celular la barra superior queda angosta y centrada (entre las barras
+ * de vida y los botones): la información va abajo del texto, en una sola
+ * línea que se desliza de costado con el dedo.
+ */
+.touch-ui .status-bar:has(.info-bar:not([hidden])) {
+  flex-direction: column;
+  gap: 0.1rem;
+  max-width: 47vw;
+}
+
+.touch-ui .status-bar .info-bar {
+  flex-basis: auto;
+  flex-wrap: nowrap;
+  max-width: 100%;
+  overflow-x: auto;
+  touch-action: pan-x;
+  scrollbar-width: none;
+  font-size: 0.7rem;
+}
+
+.touch-ui .info-chip-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.touch-ui .options-window {
+  max-height: 80vh;
 }
 
 .touch-ui .vitals-panel {
@@ -2115,7 +2264,7 @@ body {
 
 .hidden-badge {
   position: absolute;
-  top: calc(140px + env(safe-area-inset-top, 0px));
+  top: calc(140px + var(--info-bar-height, 0px) + env(safe-area-inset-top, 0px));
   left: 12px;
   padding: 2px 8px;
   font-size: 0.8rem;

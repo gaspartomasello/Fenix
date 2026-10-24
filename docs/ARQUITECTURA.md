@@ -1139,6 +1139,28 @@ Las 4 fijas son las del módulo, el armado completo (`game.test.ts`) y las dos d
   servidor lo avisa al envenenarse, al curarse y cuando se pasa. La barra de vida sobre la
   cabeza y la del panel se ven verde veneno.
 
+## Opciones, barra de información y atajos de teclado (etapa 71)
+
+Un panel de opciones como el de un asistente de UO (tecla **P** o botón **Opciones**; en el
+celular, en el menú). Todo vive en el navegador (`fenix.opciones`); los atajos mandan los mismos
+pedidos que la barra de atajos y los botones, y el servidor decide como siempre.
+
+- **`client/src/core/options.ts`** (lógica pura, con pruebas): qué puede mostrar la barra de
+  información y cómo se calcula cada dato (`infoChips`), las combinaciones de teclas
+  (`comboOf`: «F1», «Shift+Q», «Ctrl+Alt+3», «Num 7»), los atajos y cómo se guardan y validan.
+  Caminar (WASD, flechas), Enter y Escape no se pueden pisar sin modificador.
+- **Barra de información** (`ui/info-bar.ts`): una línea en la barra superior con los ocho
+  reactivos (ícono y cantidad), oro, peso, vendas, pociones, flechas, vida, maná o energía, en
+  el orden elegido; lo que se acaba se pone rojo. Cuenta lo de adentro de las bolsas: el
+  inventario trae `carried` (totales por clase de objeto, calculados por el servidor).
+- **Ventana de opciones** (`ui/options-window.ts`): pestañas _Barra de información_ (marcar y
+  ordenar), _General_ (nombres, números de daño, mapa chico, barra de atajos) y _Atajos de
+  teclado_ (elegir tecla, elegir qué hace: comando, hechizo por círculo, objeto o habilidad).
+- **`app/options-ui.ts`** junta todo: guarda, aplica y atiende los atajos antes que las teclas
+  del juego (como un asistente).
+- **Celular**: la barra va en dos líneas angostas arriba y se desliza de costado; la pestaña de
+  atajos explica que ahí los atajos son la barra de abajo y los cuatro alrededor de Atacar.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

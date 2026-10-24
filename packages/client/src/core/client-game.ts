@@ -192,6 +192,8 @@ export interface Inventory {
   readonly weight: number;
   /** Sin límite de carga (personajes de prueba). */
   readonly unburdened: boolean;
+  /** Cuánto lleva de cada cosa, sumando lo de adentro de las bolsas. */
+  readonly carried: Readonly<Partial<Record<ItemKind, number>>>;
 }
 
 /** Cuánto lleva y cuánto puede llevar (`max` null: sin límite). */
@@ -219,6 +221,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     bank: [],
     weight: 0,
     unburdened: false,
+    carried: {},
   };
   private _vitals: { vitals: Vitals; dead: boolean } | null = null;
   private _targetId: EntityId | null = null;
@@ -997,6 +1000,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
           bank: message.bank,
           weight: message.weight ?? 0,
           unburdened: message.unburdened === true,
+          carried: message.carried ?? {},
         };
         this.emit('inventoryChanged', this._inventory);
         break;

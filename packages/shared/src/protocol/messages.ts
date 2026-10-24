@@ -629,6 +629,8 @@ export interface InventoryMessage {
   readonly weight?: number;
   /** No le pesa nada (personajes de prueba y administradores): sin límite de carga. */
   readonly unburdened?: true;
+  /** Cuánto lleva de cada cosa, sumando lo de adentro de las bolsas (reactivos, vendas…). */
+  readonly carried?: Readonly<Partial<Record<ItemKind, number>>>;
 }
 
 /** Cambió lo que se ve puesto un jugador. */

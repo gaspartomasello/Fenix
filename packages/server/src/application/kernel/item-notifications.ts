@@ -1,4 +1,6 @@
 import type { EntityId, GroundItemSnapshot } from '@fenix/shared/protocol/messages';
+import type { ItemKind } from '@fenix/shared/items/item-catalog';
+import type { Item } from '../../domain/items/item';
 import type { ItemChanges } from '../../domain/items/items';
 import type { World } from '../../domain/world';
 import type { Notifier } from '../ports';
@@ -71,6 +73,7 @@ export class ItemNotifications {
       bank: items.bankOf(ownerId).flatMap((i) => i.toBackpackSnapshot() ?? []),
       weight: Math.round(weight * 10) / 10,
       ...(player?.unburdened ? { unburdened: true as const } : {}),
+      carried: totals(items.carried(ownerId)),
     });
   }
 
@@ -110,4 +113,11 @@ export class ItemNotifications {
   private watchers(position: { x: number; y: number }): EntityId[] {
     return this.world.playersNear(position).map((p) => p.id);
   }
+}
+
+/** Cuánto hay de cada clase de objeto (sumando pilas y lo de adentro de las bolsas). */
+function totals(items: readonly Item[]): Partial<Record<ItemKind, number>> {
+  const sum: Partial<Record<ItemKind, number>> = {};
+  for (const item of items) sum[item.kind] = (sum[item.kind] ?? 0) + item.amount;
+  return sum;
 }

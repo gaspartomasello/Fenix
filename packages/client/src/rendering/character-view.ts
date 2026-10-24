@@ -64,6 +64,12 @@ export interface CharacterViewState {
 }
 
 /** Representación visual de un personaje o criatura: sombra, sprite, nombre, vida y textos. */
+/** Textos sobre las cabezas que se pueden apagar en Opciones. */
+export interface OverheadLabels {
+  names: boolean;
+  numbers: boolean;
+}
+
 export class CharacterView {
   readonly container = new Container();
   /**
@@ -105,6 +111,8 @@ export class CharacterView {
     readonly isSelf: boolean,
     private readonly ground: Ground,
     private readonly ownPet = false,
+    /** Qué textos se ven sobre las cabezas (lo eligen las opciones del jugador). */
+    private readonly labelsShown: Readonly<OverheadLabels> = { names: true, numbers: true },
   ) {
     this.sprite.scale.set(CHARACTER_SCALE);
     this.targetRing.visible = false;
@@ -251,7 +259,8 @@ export class CharacterView {
       this.diedAt = now;
     }
     const lying = this.lyingCorpse;
-    this.nameLabel.visible = !lying;
+    this.nameLabel.visible = !lying && this.labelsShown.names;
+    this.combatTexts.visible = this.labelsShown.numbers;
     this.container.zIndex = lying ? corpseDepth(position) : characterDepth(position);
 
     const sitting = state.seat !== undefined && this.canSit(now);
