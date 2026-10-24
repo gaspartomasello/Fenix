@@ -54,6 +54,7 @@ import { CraftingWindow } from '../ui/crafting-window';
 import { ShopWindow } from '../ui/shop-window';
 import { TilePicker } from './tile-picker';
 import { HotbarBar, type HotbarOptions } from '../ui/hotbar-bar';
+import { OptionsUi } from './options-ui';
 import { RunePicker } from '../ui/rune-picker';
 import { PolymorphPicker } from '../ui/polymorph-picker';
 import { Joystick } from '../input/joystick';
@@ -134,6 +135,10 @@ export class GameSession {
   /** Botones de pantalla que agregan otros módulos (hechizos, habilidades…). */
   private readonly hudExtras: HudButton[] = [];
   private hud: HudButtons | null = null;
+  /** Todos los botones del juego (para los comandos de los atajos de teclado). */
+  private menu: readonly HudButton[] = [];
+  /** Usar un casillero de atajo (lo arma la barra de atajos; lo usan también los atajos de teclado). */
+  private useSlot: ((slot: HotbarSlot) => void) | null = null;
 
   constructor(private readonly hosts: GameSessionHosts) {
     this.gateway = createGateway({
@@ -276,6 +281,18 @@ export class GameSession {
     const magic = this.setUpMagic(targeting);
     this.setUpSocial();
     this.setUpQuests();
+    // Opciones (como un asistente de UO): barra de información, qué se ve y atajos de teclado.
+    const options = new OptionsUi({
+      game: this.game,
+      renderer,
+      host: this.hosts.ui,
+      touch,
+      read: readStorage,
+      write: writeStorage,
+      useSlot: () => this.useSlot,
+      buttons: () => this.menu,
+    });
+    this.hudExtras.push(options.button);
     const chat = new ChatPanel((text) => this.game.say(text));
     // Rastrear: la ventana para elegir qué buscar y la flecha hacia el rastro que se sigue.
     const trackingArrow = new TrackingArrow();
@@ -306,11 +323,13 @@ export class GameSession {
       targeting,
       renderer,
     );
+    this.menu = menu;
     if (touch) this.setUpTouch(menu, chat);
     else this.setUpTargetKeys();
     this.setUpVitals();
     const status = new StatusBar();
     if (this.hud) status.dock(this.hud.element);
+    status.dock(options.infoBar.element);
     this.hosts.ui.append(status.element, chat.element);
     this.game.on('log', (entry) => chat.append(entry));
     chat.append({ kind: 'system', text: 'Bienvenido a Fenix.' });
@@ -916,6 +935,7 @@ export class GameSession {
       if (ITEMS[slot.kind].use === 'bandage') this.game.useOn(item.id, selfId);
       else actions.useItem(item.id);
     };
+    this.useSlot = use;
     const main = this.hotbar(HOTBAR_STORAGE_KEY, HOTBAR_SIZE, defaultHotbar, use);
     magic.spellbook.onPin((spell) => {
       main.add({ type: 'spell', spell });

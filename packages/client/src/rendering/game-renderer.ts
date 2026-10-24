@@ -8,7 +8,7 @@ import { Application, Container, Rectangle } from 'pixi.js';
 import 'pixi.js/unsafe-eval';
 import type { ClientGame } from '../core/client-game';
 import type { Entity, FractionalPosition } from '../core/entity';
-import { CharacterView } from './character-view';
+import { CharacterView, type OverheadLabels } from './character-view';
 import { EffectsLayer } from './effects-layer';
 import { FieldLayer } from './field-layer';
 import { FloorLayer } from './floor-layer';
@@ -59,6 +59,7 @@ export class GameRenderer {
   private readonly ground = new Ground();
   private readonly lighting = new Lighting(this.textures, this.ground);
   private readonly views = new Map<EntityId, CharacterView>();
+  private readonly labels: OverheadLabels = { names: true, numbers: true };
   private terrain: TerrainLayer | null = null;
   private statics: StaticLayer | null = null;
   private floors: FloorLayer | null = null;
@@ -394,6 +395,12 @@ export class GameRenderer {
     this.scene.addChild(this.terrain.container, this.ships.container, this.entityLayer);
   }
 
+  /** Nombres y números de daño sobre las cabezas: sí o no (opciones del jugador). */
+  setLabels(labels: OverheadLabels): void {
+    // Las vistas leen este mismo objeto: el cambio se ve en el próximo cuadro.
+    Object.assign(this.labels, labels);
+  }
+
   private addView(entity: Entity): void {
     if (this.views.has(entity.id)) return;
     const view = new CharacterView(
@@ -402,6 +409,7 @@ export class GameRenderer {
       entity.id === this.game.self?.id,
       this.ground,
       this.game.isOwnPet(entity.id),
+      this.labels,
     );
     this.views.set(entity.id, view);
     this.entityLayer.addChild(view.container);
