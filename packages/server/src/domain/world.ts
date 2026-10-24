@@ -222,6 +222,7 @@ export class World {
       body: mobile.body,
       health: mobile.combat.health,
       dead: mobile.combat.isDead,
+      ...(mobile.combat.effect('poison') ? { poisoned: true as const } : {}),
       npc: null,
       // Una invocación se ve con el color de su dueño; las salvajes, rojas.
       notoriety:

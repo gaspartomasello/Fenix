@@ -52,6 +52,8 @@ export interface MobileSnapshot {
   readonly health: number;
   /** Muerto: un fantasma, en el caso de los jugadores. */
   readonly dead: boolean;
+  /** Envenenado: la barra de vida se ve verde veneno. */
+  readonly poisoned?: true;
   /** Si es un personaje del pueblo (comerciante, banquera), su oficio. */
   readonly npc: NpcRole | null;
   /** Reputación (color del nombre) y siglas del gremio, si tiene. */
@@ -650,6 +652,8 @@ export interface MobileHealthMessage {
   readonly id: EntityId;
   readonly health: number;
   readonly dead: boolean;
+  /** Envenenado: la barra de vida se ve verde veneno. */
+  readonly poisoned?: true;
 }
 
 /** A quién está atacando el jugador (null = a nadie). */

@@ -81,6 +81,7 @@ export class Entity {
   /** Oficio si es un personaje del pueblo. */
   readonly npc: NpcRole | null;
   private _health: number;
+  private _poisoned = false;
   private _dead: boolean;
   private _combatTexts: CombatText[] = [];
   private lunge: Lunge | null = null;
@@ -106,6 +107,7 @@ export class Entity {
     this.body = snapshot.body;
     this.npc = snapshot.npc;
     this._health = snapshot.health;
+    this._poisoned = snapshot.poisoned === true;
     this._dead = snapshot.dead;
     this._notoriety = snapshot.notoriety;
     this._guildTag = snapshot.guildTag;
@@ -161,9 +163,15 @@ export class Entity {
     return this._dead;
   }
 
-  setHealth(health: number, dead: boolean): void {
+  setHealth(health: number, dead: boolean, poisoned = this._poisoned): void {
     this._health = health;
     this._dead = dead;
+    this._poisoned = poisoned;
+  }
+
+  /** Envenenado: la barra de vida se ve verde veneno. */
+  get poisoned(): boolean {
+    return this._poisoned;
   }
 
   get combatTexts(): readonly CombatText[] {

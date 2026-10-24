@@ -26,6 +26,8 @@ export class MobileNotifications {
       attributes: player.combat.attributes,
     });
     this.sendVitals(player);
+    // Envenenarse o curarse cambia el color de su barra de vida para los demás.
+    this.broadcastHealth(player);
   }
 
   sendVitals(player: Player): void {
@@ -44,6 +46,7 @@ export class MobileNotifications {
       id: mobile.id,
       health: mobile.combat.health,
       dead: mobile.combat.isDead,
+      ...(mobile.combat.effect('poison') ? { poisoned: true as const } : {}),
     });
   }
 
