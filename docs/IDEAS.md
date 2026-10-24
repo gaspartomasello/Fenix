@@ -29,8 +29,9 @@ Decisiones propuestas (**pendiente** de confirmar):
   como crimen.
 - **Cuerpo de los jugadores**: hoy al morir queda solo el fantasma; hace falta un cuerpo de
   jugador (con lo que llevaba, saqueable si era criminal o asesino, y su cabeza).
-- **La cabeza se pudre**: se cobra antes de unos días de juego; después queda como trofeo seco
-  que no paga.
+- **La cabeza se pudre** (decidido): pasados unos días de juego la cabeza se transforma en
+  **«Calavera de <nombre>»**. La calavera ya no se cobra: queda como trofeo para siempre
+  (guardarla, exhibirla en una casa, mostrarla). **Pendiente**: cuántos días tarda.
 
 Módulo: `features/bounties/`. Necesita un evento nuevo en el núcleo, `playerSlain` (un jugador
 mató a otro), emitido por el combate; registra el uso del cuchillo sobre un cuerpo y suma el
