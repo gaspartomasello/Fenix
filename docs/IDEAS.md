@@ -4,6 +4,28 @@ Diseños conversados y aprobados en principio, todavía sin programar. Antes de 
 confirmar con el autor las decisiones marcadas como **pendiente**. Cada idea entra como módulo
 nuevo (ver «Módulos del servidor» en `docs/ARQUITECTURA.md`).
 
+## Combate y lanzado de hechizos como en Sphere
+
+**Decisión del autor**: el sistema de combate y el de lanzado de hechizos tienen que sentirse
+como en los servidores Sphere (no como el UO oficial posterior). Vale para todo lo que se
+programe de combate y magia de acá en adelante.
+
+Cómo está hoy Fenix (para comparar):
+
+- El objetivo se elige **antes** de lanzar; después corre la demora y el hechizo cae.
+- Demora de lanzado: 0,5 s + 0,25 s por círculo (`castMs` en `@fenix/shared`).
+- Un golpe corta el hechizo (salvo con Protección); moverse no lo corta.
+
+**Pendiente**, confirmar con el autor qué rasgos de Sphere quiere, por ejemplo:
+
+- ¿Hechizo en la mano (_precast_): se lanza, queda listo y recién después se elige el objetivo,
+  pudiendo caminar con el hechizo listo?
+- ¿Se puede caminar o correr mientras se lanza?
+- ¿Qué corta el hechizo: recibir daño, moverse, atacar?
+- Tiempos de lanzado y de golpe de cada arma, daño de los hechizos, y cómo se combinan golpe y
+  hechizo (si lanzar reinicia el golpe del arma).
+- Versión de referencia de Sphere (0.55, 0.56 o X) y su configuración típica.
+
 ## Caza de recompensas y cabezas
 
 Los asesinos son temibles, pero tienen precio.
