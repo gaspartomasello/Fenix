@@ -22,7 +22,7 @@ MMORPG web inspirado en Ultima Online / Sphere. Leé `docs/ARQUITECTURA.md` ante
   sonidos, música, nombres), y el resultado no puede ser reconocible como un gráfico concreto de
   ellos. Las referencias no se usan como entrada directa de un generador, salvo con influencia
   baja y comparando el resultado lado a lado. Arte propio: procedural, hecho con IA a partir de
-  descripciones propias, o con licencia libre verificada. Dirección de arte: `docs/ARTE.md`.
+  descripciones propias, o con licencia libre verificada. Dirección de arte: `docs/ARTE.md`. Ideas pendientes: `docs/IDEAS.md`.
 - **Trabajo por etapas**: cada etapa en su rama y Pull Request.
 - Código en inglés; comentarios, UI y docs en español.
 - **Todo lo que ve el jugador va en español claro**, sin jerga de UO ni anglicismos. Glosario:
