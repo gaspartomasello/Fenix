@@ -11,7 +11,16 @@ import { Creature } from '../domain/creatures/creature';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { createGame } from './game';
+// <módulos>
+import { gameWith } from '../test-support/game';
+import { movementModule } from './features/movement/movement.module';
+import { itemsModule } from './features/items/items.module';
+import { economyModule } from './features/economy/economy.module';
+import { combatModule } from './features/combat/combat.module';
+import { portalsModule } from './features/portals/portals.module';
+// </módulos>
+
+const newGame = gameWith([movementModule, itemsModule, economyModule, combatModule, portalsModule]);
 
 /** Campo de 12×5 de pasto con una columna de agua al este. */
 function createField() {
@@ -21,7 +30,7 @@ function createField() {
   const clock = new FakeClock(0);
   const notifier = new RecordingNotifier();
   const world = new World(map, { x: 2, y: 2 });
-  const app = createGame({
+  const app = newGame({
     world,
     worldClock: new WorldClock(0),
     clock,

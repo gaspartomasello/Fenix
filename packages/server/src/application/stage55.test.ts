@@ -9,7 +9,13 @@ import { Npc } from '../domain/npcs/npc';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { createGame } from './game';
+// <módulos>
+import { gameWith } from '../test-support/game';
+import { containersModule } from './features/containers/containers.module';
+import { thieveryModule } from './features/thievery/thievery.module';
+// </módulos>
+
+const newGame = gameWith([containersModule, thieveryModule]);
 
 /** Un cofre con llave (en unas ruinas) y una persona al lado de donde se aparece. */
 function createRuins(roll: number) {
@@ -26,7 +32,7 @@ function createRuins(roll: number) {
   const notifier = new RecordingNotifier();
   const world = new World(map, { x: chestX, y: 2 });
   const ids = new SequentialIds();
-  const app = createGame({
+  const app = newGame({
     world,
     worldClock: new WorldClock(0),
     clock,

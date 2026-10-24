@@ -8,7 +8,15 @@ import { Creature } from '../domain/creatures/creature';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { createGame } from './game';
+// <módulos>
+import { gameWith } from '../test-support/game';
+import { movementModule } from './features/movement/movement.module';
+import { chatModule } from './features/chat/chat.module';
+import { combatModule } from './features/combat/combat.module';
+import { stealthModule } from './features/stealth/stealth.module';
+// </módulos>
+
+const newGame = gameWith([movementModule, chatModule, combatModule, stealthModule]);
 
 /** Campo abierto de 16×8, con la tirada fija en 0,2 (sale casi todo). */
 function createField() {
@@ -20,7 +28,7 @@ function createField() {
   const clock = new FakeClock(0);
   const notifier = new RecordingNotifier();
   const world = new World(map, { x: 4, y: 4 });
-  const app = createGame({
+  const app = newGame({
     world,
     worldClock: new WorldClock(0),
     clock,

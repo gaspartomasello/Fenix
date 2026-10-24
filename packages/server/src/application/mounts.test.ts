@@ -17,7 +17,14 @@ import {
   RecordingNotifier,
   SequentialIds,
 } from '../test-support/fakes';
-import { createGame } from './game';
+// <módulos>
+import { gameWith } from '../test-support/game';
+import { movementModule } from './features/movement/movement.module';
+import { combatModule } from './features/combat/combat.module';
+import { mountsModule } from './features/mounts/mounts.module';
+// </módulos>
+
+const newGame = gameWith([movementModule, combatModule, mountsModule]);
 
 /** Campo de 12×6 con el caballerizo al lado de donde aparece el jugador. */
 function createStable(store = new FakeCharacterStore()) {
@@ -31,7 +38,7 @@ function createStable(store = new FakeCharacterStore()) {
   const ids = new SequentialIds();
   const world = new World(map, { x: 2, y: 2 });
   world.addNpc(new Npc('bautista', 'stablemaster', { x: 3, y: 1 }));
-  const app = createGame({
+  const app = newGame({
     world,
     worldClock: new WorldClock(0),
     clock,

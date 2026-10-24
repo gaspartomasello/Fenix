@@ -8,7 +8,14 @@ import { Creature } from '../domain/creatures/creature';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { createGame } from './game';
+// <módulos>
+import { gameWith } from '../test-support/game';
+import { chatModule } from './features/chat/chat.module';
+import { combatModule } from './features/combat/combat.module';
+import { socialModule } from './features/social/social.module';
+// </módulos>
+
+const newGame = gameWith([chatModule, combatModule, socialModule]);
 
 function createArena(regions: readonly RegionData[] = []) {
   const map = new TileMap({
@@ -20,7 +27,7 @@ function createArena(regions: readonly RegionData[] = []) {
   const clock = new FakeClock(0);
   const notifier = new RecordingNotifier();
   const world = new World(map, { x: 1, y: 1 });
-  const app = createGame({
+  const app = newGame({
     world,
     worldClock: new WorldClock(0),
     clock,

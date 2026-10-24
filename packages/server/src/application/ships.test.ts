@@ -9,7 +9,15 @@ import { captureCharacter } from '../domain/persistence/saved-character';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { createGame } from './game';
+// <módulos>
+import { gameWith } from '../test-support/game';
+import { movementModule } from './features/movement/movement.module';
+import { chatModule } from './features/chat/chat.module';
+import { itemsModule } from './features/items/items.module';
+import { shipsModule } from './features/ships/ships.module';
+// </módulos>
+
+const newGame = gameWith([movementModule, chatModule, itemsModule, shipsModule]);
 
 /** Una costa: tierra a la izquierda (x < 6) y mar abierto a la derecha. */
 function createHarbor() {
@@ -22,7 +30,7 @@ function createHarbor() {
   const world = new World(map, { x: 4, y: 15 });
   const notifier = new RecordingNotifier();
   const clock = new FakeClock(0);
-  const app = createGame({
+  const app = newGame({
     world,
     worldClock: new WorldClock(0),
     clock,

@@ -9,7 +9,13 @@ import { captureCharacter, parseSavedCharacter } from '../domain/persistence/sav
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { createGame } from './game';
+// <módulos>
+import { gameWith } from '../test-support/game';
+import { combatModule } from './features/combat/combat.module';
+import { questsModule } from './features/quests/quests.module';
+// </módulos>
+
+const newGame = gameWith([combatModule, questsModule]);
 
 function createTowns() {
   const map = new TileMap({
@@ -28,7 +34,7 @@ function createTowns() {
     world.addNpc(new Npc(`v${i}`, 'townsfolk', { x: 6, y: 5 }, `Vecino ${i}`));
   world.addNpc(new Npc('lejos', 'townsfolk', { x: 30, y: 5 }, 'Lejana'));
   const notifier = new RecordingNotifier();
-  const app = createGame({
+  const app = newGame({
     world,
     worldClock: new WorldClock(0),
     clock: new FakeClock(0),

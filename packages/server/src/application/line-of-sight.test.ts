@@ -7,7 +7,12 @@ import { Creature } from '../domain/creatures/creature';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { createGame } from './game';
+// <módulos>
+import { gameWith } from '../test-support/game';
+import { combatModule } from './features/combat/combat.module';
+// </módulos>
+
+const newGame = gameWith([combatModule]);
 
 /**
  * Un patio de 14 × 8 partido por una pared en x = 7 (con una puerta en y = 2)
@@ -27,7 +32,7 @@ function createYard() {
   const clock = new FakeClock(0);
   const notifier = new RecordingNotifier();
   const world = new World(map, { x: 2, y: 2 });
-  const app = createGame({
+  const app = newGame({
     world,
     worldClock: new WorldClock(0),
     clock,

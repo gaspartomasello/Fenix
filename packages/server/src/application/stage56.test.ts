@@ -9,7 +9,14 @@ import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
 import { rumorOf } from './features/lore/legends';
-import { createGame } from './game';
+// <módulos>
+import { gameWith } from '../test-support/game';
+import { chatModule } from './features/chat/chat.module';
+import { itemsModule } from './features/items/items.module';
+import { loreModule } from './features/lore/lore.module';
+// </módulos>
+
+const newGame = gameWith([chatModule, itemsModule, loreModule]);
 
 /** Un pueblo chico al oeste y la Capilla Olvidada al este. */
 function createLand() {
@@ -27,7 +34,7 @@ function createLand() {
   const clock = new FakeClock(0);
   const notifier = new RecordingNotifier();
   const world = new World(map, { x: 4, y: 4 });
-  const app = createGame({
+  const app = newGame({
     world,
     worldClock: new WorldClock(0),
     clock,

@@ -7,7 +7,14 @@ import { captureCharacter, parseSavedCharacter } from '../domain/persistence/sav
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { createGame } from './game';
+// <módulos>
+import { gameWith } from '../test-support/game';
+import { itemsModule } from './features/items/items.module';
+import { economyModule } from './features/economy/economy.module';
+import { containersModule } from './features/containers/containers.module';
+// </módulos>
+
+const newGame = gameWith([itemsModule, economyModule, containersModule]);
 
 function createRoom() {
   const map = new TileMap({
@@ -19,7 +26,7 @@ function createRoom() {
   });
   const world = new World(map, { x: 5, y: 5 });
   const notifier = new RecordingNotifier();
-  const app = createGame({
+  const app = newGame({
     world,
     worldClock: new WorldClock(0),
     clock: new FakeClock(0),

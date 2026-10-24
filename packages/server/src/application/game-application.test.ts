@@ -10,7 +10,16 @@ import { STARTING_KIT } from '../domain/items/starting-kit';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { createGame } from './game';
+// <módulos>
+import { gameWith } from '../test-support/game';
+import { movementModule } from './features/movement/movement.module';
+import { chatModule } from './features/chat/chat.module';
+import { itemsModule } from './features/items/items.module';
+import { economyModule } from './features/economy/economy.module';
+import { doorsModule } from './features/doors/doors.module';
+// </módulos>
+
+const newGame = gameWith([movementModule, chatModule, itemsModule, economyModule, doorsModule]);
 
 const G = Terrain.Grass;
 const W = Terrain.Water;
@@ -21,7 +30,7 @@ function createApp(map: TileMap, spawn = { x: 1, y: 1 }) {
   const clock = new FakeClock();
   const notifier = new RecordingNotifier();
   const world = new World(map, spawn);
-  const app = createGame({
+  const app = newGame({
     world,
     worldClock: new WorldClock(clock.now()),
     clock,
