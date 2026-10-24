@@ -28,7 +28,11 @@ Decisiones propuestas (**pendiente** de confirmar):
 - **De quién se saca la cabeza**: solo de criminales y asesinos. Hacerlo con un inocente cuenta
   como crimen.
 - **Cuerpo de los jugadores**: hoy al morir queda solo el fantasma; hace falta un cuerpo de
-  jugador (con lo que llevaba, saqueable si era criminal o asesino, y su cabeza).
+  jugador (con lo que llevaba, saqueable si era criminal o asesino, y su cabeza). Como en UO
+  (referencia: ServUO, `Mobile.DefaultCorpseDecay`): el cuerpo dura **7 minutos**, después se
+  vuelve **huesos** (con lo que quedaba adentro) y los huesos duran **otros 7 minutos** antes de
+  desaparecer. Los cuerpos de criaturas no se vuelven huesos: desaparecen (en Fenix hoy, 2
+  minutos con botín y 20 segundos vacíos). **Pendiente**: si se usan los mismos 7 + 7 minutos.
 - **La cabeza se pudre** (decidido): pasados unos días de juego la cabeza se transforma en
   **«Calavera de <nombre>»**. La calavera ya no se cobra: queda como trofeo para siempre
   (guardarla, exhibirla en una casa, mostrarla). **Pendiente**: cuántos días tarda.
