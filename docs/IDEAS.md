@@ -6,25 +6,37 @@ nuevo (ver «Módulos del servidor» en `docs/ARQUITECTURA.md`).
 
 ## Combate y lanzado de hechizos como en Sphere
 
-**Decisión del autor**: el sistema de combate y el de lanzado de hechizos tienen que sentirse
-como en los servidores Sphere (no como el UO oficial posterior). Vale para todo lo que se
+**Decisión del autor**: el combate y el lanzado de hechizos tienen que sentirse como en
+**SphereServer 0.55i / 0.56b**, no como el UO oficial posterior. Vale para todo lo que se
 programe de combate y magia de acá en adelante.
 
-Cómo está hoy Fenix (para comparar):
+Qué dice la configuración de Sphere (`sphere.ini` de Source-X, cuyos valores por defecto son
+«compatibles con 0.55i»), comparado con Fenix hoy:
 
-- El objetivo se elige **antes** de lanzar; después corre la demora y el hechizo cae.
-- Demora de lanzado: 0,5 s + 0,25 s por círculo (`castMs` en `@fenix/shared`).
-- Un golpe corta el hechizo (salvo con Protección); moverse no lo corta.
+| Rasgo                                             | Sphere 0.55i por defecto                                                                                                       | Fenix hoy                                     |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- |
+| Orden de lanzado                                  | Sin `MAGICF_PRECAST`: primero el objetivo, después la demora                                                                   | Igual                                         |
+| Lanzado previo (`MAGICF_PRECAST`)                 | Opcional: lanzar primero y elegir el objetivo después                                                                          | No existe                                     |
+| Moverse mientras se lanza                         | Permitido (`MAGICF_FREEZEONCAST` apagado)                                                                                      | Permitido                                     |
+| Tiempo para elegir objetivo                       | Sin límite (`SpellTimeout=0`)                                                                                                  | No aplica (se elige antes)                    |
+| Criaturas que pierden el hechizo al recibir golpe | No (`NPCCanFizzleOnHit=0`)                                                                                                     | Sí                                            |
+| Velocidad del golpe                               | Fórmula propia de Sphere 0.55 (`CombatSpeedEra=0`, `SpeedScaleFactor=15000`): depende de la velocidad del arma y de la energía | Tiempo fijo por arma (`swingMs`), sin energía |
+| Daño mágico y armadura                            | El daño mágico respeta la armadura salvo `MAGICF_IGNOREAR`                                                                     | A revisar                                     |
+| Atacar a un asesino                               | No vuelve criminal (`COMBAT_ATTACK_NOAGGREIVED`, comportamiento viejo de Sphere)                                               | A revisar                                     |
+| Paralizado                                        | Opción vieja: se puede seguir pegando (`COMBAT_PARALYZE_CANSWING`)                                                             | No se puede                                   |
+| Veneno al golpear                                 | Estilo 0.55i (salvo `COMBAT_NOPOISONHIT`)                                                                                      | A revisar                                     |
 
-**Pendiente**, confirmar con el autor qué rasgos de Sphere quiere, por ejemplo:
+Fórmula de golpe que se suele citar para Sphere y el UO de esa época: demora en segundos =
+15000 ÷ ((energía + 100) × velocidad del arma). Verificarla contra el código de Sphere antes
+de programarla.
 
-- ¿Hechizo en la mano (_precast_): se lanza, queda listo y recién después se elige el objetivo,
-  pudiendo caminar con el hechizo listo?
-- ¿Se puede caminar o correr mientras se lanza?
-- ¿Qué corta el hechizo: recibir daño, moverse, atacar?
-- Tiempos de lanzado y de golpe de cada arma, daño de los hechizos, y cómo se combinan golpe y
-  hechizo (si lanzar reinicia el golpe del arma).
-- Versión de referencia de Sphere (0.55, 0.56 o X) y su configuración típica.
+**Pendiente**, confirmar con el autor:
+
+- ¿Lanzado previo activado (como en muchos servidores Sphere de combate entre jugadores) o el
+  orden por defecto (primero el objetivo)?
+- ¿Las criaturas pierden el hechizo al recibir golpes, o no (como Sphere por defecto)?
+- ¿Velocidad de golpe con la fórmula de Sphere (más energía, más rápido)?
+- ¿Recibir daño corta el hechizo de un jugador? ¿Con qué probabilidad?
 
 ## Caza de recompensas y cabezas
 
