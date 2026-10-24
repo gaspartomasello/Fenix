@@ -114,7 +114,11 @@ export class GameLoop {
       this.mobiles.broadcastHealth(mobile);
       if (mobile instanceof Player) this.mobiles.sendVitals(mobile);
     }
-    if (tick.changed && mobile instanceof Player) this.mobiles.sendEffects(mobile);
+    if (tick.changed) {
+      if (mobile instanceof Player) this.mobiles.sendEffects(mobile);
+      // A una criatura se le pasó el veneno: su barra de vida deja de verse verde.
+      else this.mobiles.broadcastHealth(mobile);
+    }
     if (tick.killed) {
       const poisoner = tick.poisonerId ? this.world.getMobile(tick.poisonerId) : undefined;
       if (mobile instanceof Player)

@@ -200,6 +200,7 @@ export class Player implements Mobile {
       body: this.form ?? this.body,
       health: this.combat.health,
       dead: this.combat.isDead,
+      ...(this.combat.effect('poison') ? { poisoned: true as const } : {}),
       npc: null,
       notoriety: this.notoriety,
       guildTag: null,

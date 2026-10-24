@@ -413,7 +413,10 @@ export class GameSession {
     hiddenBadge.hidden = true;
     this.game.on('hiddenChanged', (hidden) => (hiddenBadge.hidden = !hidden));
     this.hosts.ui.append(panel.element, effects.element, ghost.element, hiddenBadge);
-    this.game.on('effectsChanged', (state) => effects.update(state));
+    this.game.on('effectsChanged', (state) => {
+      effects.update(state);
+      panel.setPoisoned(state.effects.some((e) => e.kind === 'poison'));
+    });
     const render = (): void => {
       const state = this.game.vitals;
       if (!state) return;

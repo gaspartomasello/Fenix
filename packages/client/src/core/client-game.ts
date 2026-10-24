@@ -1006,7 +1006,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this.emit('vitalsChanged', this._vitals);
         break;
       case 'mobileHealth':
-        this.entities.get(message.id)?.setHealth(message.health, message.dead);
+        this.entities
+          .get(message.id)
+          ?.setHealth(message.health, message.dead, message.poisoned === true);
         this.updatePartyHealth(message.id, message.health);
         break;
       case 'mobileStatus':

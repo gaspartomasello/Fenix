@@ -23,6 +23,8 @@ import type { Ground } from './ground';
 import { CHARACTER_SCALE } from './iso';
 import type { TextureCache } from './texture-cache';
 
+/** La barra de vida de quien está envenenado. */
+const POISON_GREEN = 0x6cf03a;
 /**
  * Personas según su reputación (uno mismo también): azul inocente, gris
  * criminal, rojo asesino y amarillo invulnerable.
@@ -79,6 +81,7 @@ export class CharacterView {
   private readonly combatTexts = new Container();
   private shownOverhead = '';
   private shownHealth = -1;
+  private shownPoisoned = false;
   private shownName = '';
   private readonly combatLabels = new Map<CombatText, Text>();
   private readonly fidgets = new Fidgets(performance.now());
@@ -381,9 +384,18 @@ export class CharacterView {
     const health = this.entity.dead ? 0 : this.entity.health;
     const visible = !this.entity.dead && (health < 1 || targeted);
     this.healthBar.visible = visible;
-    if (!visible || health === this.shownHealth) return;
+    const poisoned = this.entity.poisoned;
+    if (!visible || (health === this.shownHealth && poisoned === this.shownPoisoned)) return;
     this.shownHealth = health;
-    const color = health > 0.5 ? 0x4cc24c : health > 0.25 ? 0xe0b030 : 0xe04030;
+    this.shownPoisoned = poisoned;
+    // Envenenado: verde veneno, como en UO; si no, del verde al rojo según la vida.
+    const color = poisoned
+      ? POISON_GREEN
+      : health > 0.5
+        ? 0x4cc24c
+        : health > 0.25
+          ? 0xe0b030
+          : 0xe04030;
     this.healthBar
       .clear()
       .rect(0, 0, HEALTH_BAR_WIDTH, 4)

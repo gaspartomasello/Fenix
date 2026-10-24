@@ -631,6 +631,10 @@ body {
   background: linear-gradient(#d0463c, #8e2620);
 }
 
+.vital-fill--hits.vital-fill--poisoned {
+  background: linear-gradient(#7ee04a, #3a8a1c);
+}
+
 .vital-fill--mana {
   background: linear-gradient(#4f7ee0, #2a4c9a);
 }

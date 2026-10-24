@@ -1117,6 +1117,28 @@ del protocolo tenga un módulo que lo atienda y que los servicios pedidos exista
 Las 4 fijas son las del módulo, el armado completo (`game.test.ts`) y las dos de integración
 (servidor en red y modo solo). Tocar el núcleo corre todo, como corresponde.
 
+## Efectos de hechizos y veneno a la vista (etapa 70)
+
+- **Un efecto propio por hechizo.** Antes muchos hechizos compartían destellos, anillos o
+  hundimientos genéricos. Ahora cada uno de los 64 tiene su receta en
+  `client/src/rendering/spell-fx/recipes.ts`: una lista de capas que se dibujan juntas, cada
+  una en su parte del tiempo (un proyectil viaja y después estalla).
+  - `painters.ts`: los trazos con que se arman (proyectiles, partículas, auras que suben o
+    caen, dibujos en el piso, cúpulas y cristales, espirales, rayos, fuego, explosión,
+    meteoritos, portales, remolinos, polvo, novas, ondas). Todo procedural, sin guardar
+    estado: cada partícula sale de una semilla y del tiempo.
+  - El **relámpago** cae largo desde el cielo, quebrado, con ramas, parpadeo y chispas.
+  - La **explosión** es de partículas: fogonazo, onda en el piso, bola de fuego, bolas de
+    llama que se abren, brasas que vuelan y humo.
+  - Los refuerzos suben (cruces de curación, diamantes de agilidad, estrellas de bendición) y
+    las maldiciones caen (gotas violetas, anillos); las protecciones envuelven (cúpula de
+    facetas, espejo, púas, cristales de hielo).
+  - `recipes.test.ts` exige que los 64 tengan efecto, que ninguno sea igual a otro y que todos
+    se dibujen de principio a fin.
+- **Veneno a la vista, como en UO.** `MobileSnapshot` y `mobileHealth` llevan `poisoned`; el
+  servidor lo avisa al envenenarse, al curarse y cuando se pasa. La barra de vida sobre la
+  cabeza y la del panel se ven verde veneno.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.
