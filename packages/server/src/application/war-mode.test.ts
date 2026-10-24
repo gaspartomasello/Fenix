@@ -8,7 +8,12 @@ import { Creature } from '../domain/creatures/creature';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { GameApplication } from './game-application';
+// <módulos>
+import { gameWith } from '../test-support/game';
+import { combatModule } from './features/combat/combat.module';
+// </módulos>
+
+const newGame = gameWith([combatModule]);
 
 /** Campo abierto de 16×9 de pasto. */
 function createField() {
@@ -21,7 +26,7 @@ function createField() {
   const clock = new FakeClock(0);
   const notifier = new RecordingNotifier();
   const world = new World(map, { x: 4, y: 4 });
-  const app = new GameApplication({
+  const app = newGame({
     world,
     worldClock: new WorldClock(0),
     clock,

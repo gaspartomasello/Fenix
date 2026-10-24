@@ -8,7 +8,13 @@ import { captureCharacter, parseSavedCharacter } from '../domain/persistence/sav
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { GameApplication } from './game-application';
+// <módulos>
+import { gameWith } from '../test-support/game';
+import { itemsModule } from './features/items/items.module';
+import { treasureModule } from './features/treasure/treasure.module';
+// </módulos>
+
+const newGame = gameWith([itemsModule, treasureModule]);
 
 function createRoom() {
   const map = new TileMap({
@@ -21,7 +27,7 @@ function createRoom() {
   const world = new World(map, { x: 5, y: 5 });
   const notifier = new RecordingNotifier();
   const clock = new FakeClock(0);
-  const app = new GameApplication({
+  const app = newGame({
     world,
     worldClock: new WorldClock(0),
     clock,

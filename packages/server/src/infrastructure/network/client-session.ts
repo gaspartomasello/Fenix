@@ -2,7 +2,7 @@ import { decodeClientMessage, encodeMessage } from '@fenix/shared/protocol/codec
 import type { ClientMessage, EntityId, ServerMessage } from '@fenix/shared/protocol/messages';
 import type { GameApplication } from '../../application/game-application';
 import type { AccountRecord } from '../../application/ports';
-import type { JoinWorldResult } from '../../application/use-cases/join-world';
+import type { JoinWorldResult } from '../../application/features/session/join-world';
 import type { Outbound, SessionRegistry } from './session-registry';
 
 /**

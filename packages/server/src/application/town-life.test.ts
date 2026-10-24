@@ -6,7 +6,13 @@ import { Npc } from '../domain/npcs/npc';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { GameApplication } from './game-application';
+// <módulos>
+import { gameWith } from '../test-support/game';
+import { combatModule } from './features/combat/combat.module';
+import { townLifeModule } from './features/town-life/town-life.module';
+// </módulos>
+
+const newGame = gameWith([combatModule, townLifeModule]);
 
 function createTown() {
   const map = new TileMap({
@@ -19,7 +25,7 @@ function createTown() {
   const world = new World(map, { x: 15, y: 15 });
   const clock = new FakeClock(0);
   const notifier = new RecordingNotifier();
-  const app = new GameApplication({
+  const app = newGame({
     world,
     worldClock: new WorldClock(0),
     clock,

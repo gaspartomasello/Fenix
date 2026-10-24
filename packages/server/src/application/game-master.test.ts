@@ -6,7 +6,15 @@ import { describe, expect, it } from 'vitest';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { GameApplication } from './game-application';
+// <módulos>
+import { gameWith } from '../test-support/game';
+import { movementModule } from './features/movement/movement.module';
+import { combatModule } from './features/combat/combat.module';
+import { mountsModule } from './features/mounts/mounts.module';
+import { adminModule } from './features/admin/admin.module';
+// </módulos>
+
+const newGame = gameWith([movementModule, combatModule, mountsModule, adminModule]);
 
 function createApp() {
   const map = new TileMap({
@@ -19,7 +27,7 @@ function createApp() {
   const world = new World(map, { x: 10, y: 10 });
   const notifier = new RecordingNotifier();
   const clock = new FakeClock(0);
-  const app = new GameApplication({
+  const app = newGame({
     world,
     worldClock: new WorldClock(0),
     clock,

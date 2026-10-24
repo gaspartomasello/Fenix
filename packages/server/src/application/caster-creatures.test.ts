@@ -9,7 +9,12 @@ import { startCreatureCast } from '../domain/creatures/creature-magic';
 import { World } from '../domain/world';
 import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
-import { GameApplication } from './game-application';
+// <módulos>
+import { gameWith } from '../test-support/game';
+import { combatModule } from './features/combat/combat.module';
+// </módulos>
+
+const newGame = gameWith([combatModule]);
 
 function createArena() {
   const map = new TileMap({
@@ -21,7 +26,7 @@ function createArena() {
   const clock = new FakeClock(0);
   const notifier = new RecordingNotifier();
   const world = new World(map, { x: 2, y: 2 });
-  const app = new GameApplication({
+  const app = newGame({
     world,
     worldClock: new WorldClock(0),
     clock,

@@ -1,6 +1,6 @@
 import type { ClientMessage } from '@fenix/shared/protocol/messages';
 import { encodeMessage } from '@fenix/shared/protocol/codec';
-import { GameApplication } from './application/game-application';
+import { createGame } from './application/game';
 import { WorldClock } from './domain/world-clock';
 import { createWorld } from './infrastructure/content/world-builder';
 import {
@@ -57,7 +57,7 @@ export function createEmbeddedServer(options: EmbeddedServerOptions = {}): Embed
   );
   const sessions = new SessionRegistry();
   const clock = new SystemClock();
-  const app = new GameApplication({
+  const app = createGame({
     world,
     worldClock: new WorldClock(clock.now(), options.startHour),
     clock,

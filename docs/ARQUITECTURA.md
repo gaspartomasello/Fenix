@@ -110,9 +110,11 @@ infrastructure ──► application ──► domain
   raíz: mapa + jugadores + objetos, consultas por rango de visión), `WorldClock` (hora del
   mundo) e `Items` (reglas de objetos: alcance de 2 tiles, apilado, límite de mochila, un objeto
   por lugar del cuerpo, comer, beber, equipar). Sin dependencias de Node ni de red.
-- **application/**: un caso de uso por acción (`JoinWorld`, `MovePlayer`, `SendChat`,
-  `LeaveWorld`) y la fachada `GameApplication`. Habla con el exterior solo mediante **puertos**
-  (`Clock`, `IdGenerator`, `RandomSource`, `Notifier`), lo que permite testear sin red.
+- **application/**: el núcleo (`kernel/`), una carpeta por funcionalidad (`features/<nombre>/`)
+  con sus casos de uso y su módulo (`<nombre>.module.ts`), la fachada `GameApplication` y
+  `game.ts`, la lista de módulos. Habla con el exterior solo mediante **puertos** (`Clock`,
+  `IdGenerator`, `RandomSource`, `Notifier`, almacenes), lo que permite testear sin red. Ver
+  «Módulos del servidor» más abajo.
 - **infrastructure/**: adaptadores concretos.
   - `network/`: `GameSocketServer` (WebSocket, rate limit, heartbeat) y `SessionRegistry`
     (implementa `Notifier`).
@@ -1035,11 +1037,85 @@ gremio llega a sus miembros estén donde estén).
 - **Por qué:** Vitest decide qué pruebas correr siguiendo los imports. Con el barril entero,
   tocar cualquier archivo compartido disparaba 54 de los 73 archivos de pruebas. Con imports por
   módulo, tocar los colores del tinte dispara 36, y tocar el arte, 3.
-- **El nudo que queda:** `GameApplication` arma todos los casos de uso del servidor juntos, y
-  32 archivos de pruebas la usan. Por eso tocar cualquier caso de uso del servidor dispara esas 32.
-  **Para módulos nuevos:** probar el caso de uso directamente (con `World`, `RecordingNotifier`
-  y lo que necesite), no a través de `GameApplication`. Así sus pruebas solo corren cuando se
-  toca ese módulo.
+- **El nudo de `GameApplication`** se desató en la etapa 68 (ver «Módulos del servidor»).
+
+## Módulos del servidor (etapa 68)
+
+Hasta la etapa 67, `GameApplication` armaba todos los casos de uso juntos, los cosía con unas
+veinte funciones cruzadas (`useItem.openBook = …`, `loop.onCreatureKilled = …`) y repartía los
+pedidos en un `switch` gigante. Cada funcionalidad nueva tocaba por dentro esa clase y casi
+siempre alguna otra (el bucle del juego, los recipientes, las puertas), y 32 archivos de pruebas
+dependían de todo junto. Ahora cada funcionalidad es un **módulo** que se enchufa solo:
+
+```
+                 game.ts  (la única lista de módulos: createGame)
+                    │
+        ┌───────────┴─────────────┐
+        ▼                         ▼
+ GameApplication            features/<nombre>/<nombre>.module.ts   × 22
+ (sesión + reparto)          │  arma sus casos de uso y los registra
+        │                    ▼
+        └──────────►   kernel/  GameKernel
+                       ├─ world, relojes, ids, azar, avisos (items, mobiles, social)
+                       ├─ events    EventBus<GameEvents>     «pasó algo»
+                       ├─ services  ServiceRegistry          «necesito que alguien haga…»
+                       ├─ guards    move / container         «esto no se puede»
+                       ├─ itemUses  doble clic por objeto
+                       └─ skills    habilidades con botón
+```
+
+- **Un módulo** (`ModuleFactory = (kernel) => GameModule`) declara qué pedidos atiende
+  (`handles`), y si quiere actuar en cada vuelta (`tick`), al entrar un jugador (`joined`) o al
+  irse (`leaving`, antes de guardarlo; `left`, después). Al armarse registra en el núcleo lo que
+  da y lo que escucha.
+- **Eventos** (`kernel/game-events.ts`): quien provoca algo lo avisa, sin saber quién escucha.
+  Ejemplos: el combate avisa `creatureKilled` y las misiones cuentan la presa; el chat avisa
+  `spoke` y lo escuchan el timonel, los vecinos y el sigilo (que descubre al escondido).
+- **Servicios** (`kernel/services.ts`): interfaces chicas que da un módulo y usan otros
+  (`movement.teleport`, `combat.hurt/slay/dismiss`, `containers.openFor`, `banking`…). Se piden
+  con `lazy` (se buscan al usarse; si falta el módulo, error claro) u `optional` (sin el módulo
+  no pasa nada: nadie se esconde, no hay portales, no hay cuerpos, no hay monturas).
+- **Reglas** (`kernel/guards.ts`): un módulo suma motivos para negar algo (los barcos no dejan
+  subir a uno ajeno ni abrir su bodega) sin que el movimiento o los recipientes lo conozcan.
+- **Usos de objetos** (`kernel/item-uses.ts`): el doble clic sobre un libro lo atiende el
+  módulo de libros, sobre un mapa el de tesoros, sobre una bolsa el de recipientes.
+- **`GameApplication`** atiende la sesión (cuentas, entrar, guardar, salir) y reparte cada pedido
+  al módulo que lo declaró; si dos módulos declaran el mismo pedido, el armado falla.
+- **El orden de `ALL_MODULES`** es el de cada vuelta del mundo, el de los ganchos y el de los
+  avisos. Importa en dos lugares, comentados en `game.ts`: el sigilo va justo después del
+  combate (quien deja de estar invisible se ve antes de que lo rastreen) y los barcos antes que
+  las leyendas (al hablar, el timonel obedece antes de que conteste un vecino).
+
+**Reglas** (regla `fenix/module-boundaries` en `eslint.config.js`; resuelve la ruta real de
+cada import, a cualquier profundidad y con cualquier extensión):
+
+1. Una funcionalidad no importa a otra (`features/a` no ve `features/b`).
+2. Una funcionalidad no conoce el armado (`game.ts`, `game-application.ts`).
+3. El núcleo no conoce a ninguna funcionalidad.
+4. `GameApplication` solo conoce la sesión; los módulos se los pasa `game.ts`.
+5. Ningún otro archivo de la aplicación (puertos, etc.) importa módulos: solo `game.ts`.
+
+**Sumar una funcionalidad:** crear `features/<nombre>/` con sus casos de uso y su
+`<nombre>.module.ts`, agregarlo a `ALL_MODULES`, y si otro módulo tiene que enterarse de algo,
+sumar un evento o un servicio al núcleo (una línea en su interfaz), nunca un import cruzado.
+
+**Pruebas:** cada prueba arma el juego solo con los módulos que usa
+(`gameWith([movementModule, combatModule, …])`, en `test-support/game.ts`), así Vitest corre
+solo las pruebas de lo que cambió. `game.test.ts` comprueba el armado completo: que cada pedido
+del protocolo tenga un módulo que lo atienda y que los servicios pedidos existan.
+
+**Medido con `vitest related`** (archivos de pruebas que corren al tocar un archivo):
+
+| Archivo tocado                    | Antes (etapa 67) | Ahora |
+| --------------------------------- | ---------------- | ----- |
+| libros, tinturas, barcos, sigilo… | 33               | 4     |
+| recipientes                       | 33               | 7     |
+| movimiento                        | 33               | 13    |
+| bucle de combate                  | 33               | 19    |
+| núcleo o `GameApplication`        | 33               | 34–35 |
+
+Las 4 fijas son las del módulo, el armado completo (`game.test.ts`) y las dos de integración
+(servidor en red y modo solo). Tocar el núcleo corre todo, como corresponde.
 
 ## Convenciones
 

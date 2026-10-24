@@ -16,6 +16,8 @@ export const LEASH_RANGE = 14;
 export const WANDER_RANGE = 4;
 /** Cuerpo de una invocación (no deja botín) hasta desaparecer, y tiempo hasta reaparecer. */
 export const CORPSE_MS = 1500;
+/** Un cuerpo vacío (sin botín) desaparece a los 20 segundos. */
+export const EMPTY_CORPSE_MS = 20_000;
 export const RESPAWN_MS = 30_000;
 
 export class Creature implements Mobile {

@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { GameApplication } from './application/game-application';
+import { createGame } from './application/game';
 import { WorldClock } from './domain/world-clock';
 import { loadConfig } from './infrastructure/config';
 import { createWorld } from './infrastructure/content/world-builder';
@@ -28,7 +28,7 @@ function main(): void {
   const clock = new SystemClock();
   const characters = new JsonFileCharacterStore(join(config.dataDir, 'personajes.json'));
   const accounts = new JsonFileAccountStore(join(config.dataDir, 'cuentas.json'));
-  const app = new GameApplication({
+  const app = createGame({
     world,
     worldClock: new WorldClock(clock.now(), config.startHour),
     clock,
