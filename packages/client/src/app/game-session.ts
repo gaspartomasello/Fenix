@@ -263,6 +263,7 @@ export class GameSession {
     const joystick = touch ? new Joystick() : null;
     if (touch) {
       document.documentElement.classList.add('touch-ui');
+      renderer.allowFarZoom();
       if (joystick) this.hosts.ui.append(joystick.element);
     }
     const input = new InputController({
