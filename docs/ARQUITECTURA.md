@@ -1205,9 +1205,45 @@ compras de 2000 monedas o más se pueden pagar con el oro del banco.
   escritura, `WorldHouses` muestra la casa en el suelo (verde si se puede, roja si no) siguiendo el
   puntero; con el dedo, el primer toque la muestra y el segundo la levanta. Doble clic en el cartel
   abre la ventana de la casa (`HouseWindow`).
-- **Para más adelante**: la casa a medida (un terreno donde se construye pieza por pieza, como el
-  diseñador de casas de UO), el deterioro de las casas abandonadas y no dejar marcar runas adentro
-  de una casa ajena.
+- **Para más adelante**: el deterioro de las casas abandonadas y no dejar marcar runas adentro de
+  una casa ajena.
+
+## Casa a medida (etapa 73)
+
+Como el diseñador de casas de UO: el arquitecto vende **lotes** vacíos (escrituras como las de las
+casas) y, adentro, una ventana de diseño deja poner las piezas planta por planta.
+
+- **Lotes** (`houses.ts`, `lot: true`): chico 6×6 (2 plantas, 2 cofres, 2000 monedas), mediano 9×9
+  (2 plantas, 3 cofres, 5000), grande 12×12 (3 plantas, 4 cofres, 10000) y muy grande 15×15
+  (3 plantas, 5 cofres, 18000). La medida es el interior: el lote ocupa dos tiles más por lado.
+- **Diseño** (`shared/domain/housing/design.ts`): una grilla por planta del tamaño del lote, con
+  dos letras por tile (piso y pieza), así entra en un mensaje chico. Pisos (madera, laja, baldosas,
+  arenisca, barro, mármol), paredes y ventanas de cada estilo, puertas de madera o de hierro,
+  escaleras y cofres. Las paredes, ventanas y puertas toman su orientación de las vecinas
+  (esquina, columna, a lo largo de x o de y). El techo va solo, arriba de lo último construido
+  (de tablas o azotea de piedra).
+- **Reglas** (`designProblem`): lo de arriba se apoya en un piso o una pared de abajo; a cada
+  planta se sube por una escalera (una por planta), con piso libre arriba y al lado; los cofres
+  tienen piso, no se pasan de los del lote y se llega a ellos (y a las escaleras) caminando desde
+  afuera. La entrada y el cartel quedan afuera, del lado de la calle, así nunca se tapan.
+- **El plano** (`customLayout`): el mismo `HouseLayout` que el de las casas hechas, con los pisos
+  altos en sus lugares apartados (un lote los reserva todos desde el principio). `siteLayout` elige
+  el plano de la clase o el del diseño; `houseStructure` y el resto no cambian.
+- **Costos** (`designCost`): cada pieza cuesta oro o materiales (tablas, troncos, bloques de
+  piedra, lingotes de hierro). Al **confirmar** se paga lo nuevo con oro (de la mochila y, si no
+  alcanza, del banco) o con materiales (de la mochila y de los cofres de la casa); lo que se saca
+  devuelve la mitad de sus materiales (nunca oro: así no se gana nada armando y desarmando). Al
+  demoler, vuelven la escritura del lote y la mitad de los materiales de la obra.
+- **Servidor** (`Housing.design`, `BuildingPayment`): solo el dueño, cerca o adentro; el diseño
+  tiene que ser de ese lote y construible; no puede haber cosas tiradas donde cambia la casa ni
+  cosas en un cofre que se saca. Quien está parado donde cambia algo sale afuera; los cofres que
+  siguen quedan con lo suyo. El diseño se guarda con la casa (`SavedHouse.design`).
+- **Cliente** (`HouseDesignWindow`): el lote visto desde arriba, planta por planta; se elige una
+  pieza y se pinta (arrastrando también), con atajos para rodear de paredes y poner piso en todo.
+  Muestra lo que cuesta en oro y en materiales (con lo que hay en la mochila), lo que vuelve y por
+  qué todavía no se puede construir. Nada cambia en el mundo hasta pagar.
+- **Materiales**: el arquitecto vende bloques de piedra (nuevo), tablas, troncos y lingotes; el
+  carpintero y el leñador, tablas y troncos.
 
 ## Convenciones
 

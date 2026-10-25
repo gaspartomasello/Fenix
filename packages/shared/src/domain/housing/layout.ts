@@ -2,6 +2,7 @@ import type { Position } from '../geometry/position';
 import type { StaticKind, StaticPlacement } from '../world/statics';
 import { Terrain } from '../world/terrain';
 import type { TerrainPatch } from '../world/tile-map';
+import { customLayout, emptyDesign } from './design';
 import { HOUSE_PLANS, HOUSE_STYLES, type HouseKind, type HouseWalls } from './houses';
 
 /** Un rectángulo de tiles, con los dos extremos incluidos. */
@@ -32,6 +33,9 @@ export interface HouseLevelLayout {
   /** La escalera al piso de arriba y dónde se aparece al volver de él. */
   readonly up: Position | null;
   readonly upBack: Position | null;
+  /** Las puertas y los cofres de este piso (solo en las casas a medida). */
+  readonly doors?: readonly Position[];
+  readonly chests?: readonly Position[];
 }
 
 /**
@@ -84,10 +88,14 @@ export function levelName(house: string, level: HouseLevelLayout, floors: number
 
 const cache = new Map<HouseKind, HouseLayout>();
 
-/** El plano de cada clase de casa (siempre el mismo). */
+/** El plano de cada clase de casa (siempre el mismo; un lote, vacío). */
 export function houseLayout(kind: HouseKind): HouseLayout {
   let layout = cache.get(kind);
-  if (!layout) cache.set(kind, (layout = buildLayout(kind)));
+  if (!layout)
+    cache.set(
+      kind,
+      (layout = HOUSE_PLANS[kind].lot ? customLayout(kind, emptyDesign(kind)) : buildLayout(kind)),
+    );
   return layout;
 }
 

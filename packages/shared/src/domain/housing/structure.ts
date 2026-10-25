@@ -7,8 +7,9 @@ import type {
   Teleporter,
   TileMap,
 } from '../world/tile-map';
+import { customLayout, designFloorAt, type HouseDesign } from './design';
 import { HOUSE_PLANS, type HouseKind } from './houses';
-import { FLOOR_MARGIN, houseLayout, levelName } from './layout';
+import { FLOOR_MARGIN, houseLayout, levelName, type HouseLayout } from './layout';
 
 /**
  * Una casa levantada, tal como la conocen el servidor y el cliente: con esto
@@ -23,11 +24,24 @@ export interface HouseSite {
   /** Dónde va cada piso alto (y el techo) en el lugar apartado del mapa. */
   readonly slots: readonly Position[];
   readonly name: string;
+  /** El diseño de una casa a medida (en un lote). */
+  readonly design?: HouseDesign;
 }
 
-/** Cuántos lugares apartados necesita: uno por piso alto y uno para el techo. */
+/** El plano de la casa levantada: el de su clase o, en un lote, el de su diseño. */
+export function siteLayout(site: Pick<HouseSite, 'kind' | 'design'>): HouseLayout {
+  return site.design && HOUSE_PLANS[site.kind].lot
+    ? customLayout(site.kind, site.design)
+    : houseLayout(site.kind);
+}
+
+/**
+ * Cuántos lugares apartados necesita: uno por piso alto y uno para el techo.
+ * Un lote los reserva todos desde el principio (así se puede seguir subiendo).
+ */
 export function slotsNeeded(kind: HouseKind): number {
-  return houseLayout(kind).levels.length;
+  const plan = HOUSE_PLANS[kind];
+  return plan.lot ? plan.floors + 1 : houseLayout(kind).levels.length;
 }
 
 /** Lado de cada lugar apartado para los pisos altos (entra el piso más grande y su roca). */
@@ -58,22 +72,32 @@ const at = (site: Position, p: Position): Position => ({ x: site.x + p.x, y: sit
 
 /** Todas las puertas de la casa, en el mapa. */
 export function houseDoors(site: HouseSite): Position[] {
-  return houseLayout(site.kind).allDoors.map((p) => at(site, p));
+  const layout = siteLayout(site);
+  return [...layout.allDoors.map((p) => at(site, p)), ...upper(site, layout, 'doors')];
+}
+
+/** Las puertas o los cofres de los pisos altos, en el mapa. */
+function upper(site: HouseSite, layout: HouseLayout, what: 'doors' | 'chests'): Position[] {
+  return layout.levels.flatMap((level, i) => {
+    const slot = site.slots[i];
+    return slot ? (level[what] ?? []).map((p) => at(slot, p)) : [];
+  });
 }
 
 /** Dónde van los cofres de la casa, en el mapa. */
 export function houseChests(site: HouseSite): Position[] {
-  return houseLayout(site.kind).chests.map((p) => at(site, p));
+  const layout = siteLayout(site);
+  return [...layout.chests.map((p) => at(site, p)), ...upper(site, layout, 'chests')];
 }
 
 /** Delante de la puerta, afuera (adonde va quien es echado). */
 export function houseFront(site: HouseSite): Position {
-  return at(site, houseLayout(site.kind).front);
+  return at(site, siteLayout(site).front);
 }
 
 /** El cartel con el nombre de la casa. */
 export function houseSign(site: HouseSite): Position {
-  return at(site, houseLayout(site.kind).sign);
+  return at(site, siteLayout(site).sign);
 }
 
 /** El piso de adentro de la planta baja, en el mapa (para ver si alguien está adentro). */
@@ -83,7 +107,7 @@ export function houseFootprint(site: HouseSite): {
   x1: number;
   y1: number;
 } {
-  const layout = houseLayout(site.kind);
+  const layout = siteLayout(site);
   return { x0: site.x, y0: site.y, x1: site.x + layout.width - 1, y1: site.y + layout.height - 1 };
 }
 
@@ -92,7 +116,7 @@ export function insideHouse(site: HouseSite, position: Position): boolean {
   const f = houseFootprint(site);
   if (position.x >= f.x0 && position.y >= f.y0 && position.x <= f.x1 && position.y <= f.y1)
     return true;
-  const levels = houseLayout(site.kind).levels;
+  const levels = siteLayout(site).levels;
   return site.slots.some((slot, i) => {
     const level = levels[i];
     return (
@@ -105,10 +129,29 @@ export function insideHouse(site: HouseSite, position: Position): boolean {
   });
 }
 
+/**
+ * ¿Está bajo techo, del lado de adentro? En una casa a medida, donde hay piso
+ * (la planta baja o un piso alto); el patio sin piso es de afuera.
+ */
+export function indoorsAt(site: HouseSite, position: Position): boolean {
+  if (!site.design || !HOUSE_PLANS[site.kind].lot) return insideHouse(site, position);
+  const layout = siteLayout(site);
+  const local = { x: position.x - site.x, y: position.y - site.y };
+  if (local.x >= 0 && local.y >= 0 && local.x < layout.width && local.y < layout.height)
+    return designFloorAt(site.kind, site.design, 0, local);
+  return layout.levels.some((level, i) => {
+    const slot = site.slots[i];
+    if (!slot || level.roof) return false;
+    const x = position.x - slot.x - (FLOOR_MARGIN - 1);
+    const y = position.y - slot.y - (FLOOR_MARGIN - 1);
+    return designFloorAt(site.kind, site.design as HouseDesign, level.level, { x, y });
+  });
+}
+
 /** Arma la casa para el mapa: paredes, pisos, zonas (con sus pisos altos anclados) y escaleras. */
 export function houseStructure(site: HouseSite): MapStructure {
-  const layout = houseLayout(site.kind);
-  const floors = HOUSE_PLANS[site.kind].floors;
+  const layout = siteLayout(site);
+  const floors = layout.levels.filter((level) => !level.roof).length;
   const statics = layout.statics.map((s) => ({ ...s, ...at(site, s) }));
   const terrain: TerrainPatch[] = layout.terrain.map((t) => ({ ...t, ...at(site, t) }));
   const regions: RegionData[] = [

@@ -41,6 +41,7 @@ import { BankWindow } from '../ui/bank-window';
 import { BookWindow } from '../ui/book-window';
 import { TreasureMapWindow } from '../ui/treasure-map-window';
 import { ShipWindow } from '../ui/ship-window';
+import { HouseDesignWindow } from '../ui/house-design-window';
 import { HouseWindow } from '../ui/house-window';
 import { WorldShips } from './world-ships';
 import { WorldHouses } from './world-houses';
@@ -850,9 +851,22 @@ export class GameSession {
     );
     this.game.on('shipsChanged', (ships) => shipWindow.update(ships));
     this.hosts.ui.append(shipWindow.window.element);
+    const designWindow = new HouseDesignWindow({
+      confirm: (id, design, pay) => this.game.houseDesign(id, design, pay),
+      carried: (kind) => this.game.inventory.carried[kind] ?? 0,
+      gold: () =>
+        (this.game.inventory.carried.gold ?? 0) +
+        this.game.inventory.bank
+          .filter((i) => i.kind === 'gold')
+          .reduce((sum, i) => sum + i.amount, 0),
+    });
     const houseWindow = new HouseWindow({
       action: (id, action) => this.game.houseAction(id, action),
       security: (id, change) => this.game.houseSecurity(id, change),
+      design: (id) => {
+        const house = this.game.house(id);
+        if (house) designWindow.open(house);
+      },
     });
     this.game.on('housePanelOpened', ({ houseId, level, security, storage }) => {
       const house = this.game.house(houseId);
@@ -861,8 +875,10 @@ export class GameSession {
     this.game.on('housesChanged', () => {
       const id = houseWindow.openHouseId;
       if (id) houseWindow.update(this.game.house(id));
+      const designing = designWindow.openHouseId;
+      if (designing) designWindow.update(this.game.house(designing));
     });
-    this.hosts.ui.append(houseWindow.window.element);
+    this.hosts.ui.append(houseWindow.window.element, designWindow.window.element);
     const containers = new Map<string, ContainerWindow>();
     let opened = 0;
     this.game.on('containerChanged', ({ containerId, container, opened: requested }) => {

@@ -14,6 +14,17 @@ import {
   type HouseSecurity,
 } from '@fenix/shared/housing/houses';
 import {
+  HOUSE_PIECES,
+  designCell,
+  designCost,
+  designProblem,
+  emptyDesign,
+  lotSide,
+  parseHouseDesign,
+  type HouseDesign,
+} from '@fenix/shared/housing/design';
+import { FLOOR_MARGIN } from '@fenix/shared/housing/layout';
+import {
   houseChests,
   houseDoors,
   houseFootprint,
@@ -21,6 +32,7 @@ import {
   houseOrigin,
   houseSign,
   houseStructure,
+  indoorsAt,
   placementProblem,
   slotsNeeded,
 } from '@fenix/shared/housing/structure';
@@ -44,6 +56,7 @@ import type { ItemNotifications } from '../../kernel/item-notifications';
 import type { MobileNotifications } from '../../kernel/mobile-notifications';
 import type { GameServices } from '../../kernel/services';
 import type { Clock, HouseStore, IdGenerator, Notifier } from '../../ports';
+import { BuildingPayment, describeMaterials } from './building-payment';
 
 /** Cada cuánto se guardan las casas (con lo que tienen adentro). */
 const SAVE_MS = 60_000;
@@ -65,6 +78,7 @@ export class Housing {
   /** Casas guardadas en otro mundo: vuelven a su dueño como escritura al entrar. */
   private stale: SavedHouse[] = [];
   private nextSaveAt = 0;
+  private readonly payment: BuildingPayment;
 
   constructor(
     private readonly world: World,
@@ -77,6 +91,7 @@ export class Housing {
     /** Mover gente (echar, salir antes de demoler). */
     private readonly services: Pick<GameServices, 'movement'>,
   ) {
+    this.payment = new BuildingPayment(world, () => ids.next());
     this.load();
   }
 
@@ -135,8 +150,153 @@ export class Housing {
     this.save();
     this.say(
       playerId,
-      `¡Levantaste ${describeHouse(kind)}! Es tuya: hacé doble clic en el cartel de la entrada para administrarla.`,
+      house.design
+        ? `¡Ya tenés ${describeHouse(kind)}! Hacé doble clic en el cartel y tocá «Diseñar la casa» para construirla a tu gusto.`
+        : `¡Levantaste ${describeHouse(kind)}! Es tuya: hacé doble clic en el cartel de la entrada para administrarla.`,
     );
+  }
+
+  // ── Casa a medida ──────────────────────────────────────────────────
+
+  /**
+   * Confirmar el diseño de una casa a medida: se cobra lo nuevo (con oro o
+   * con materiales), vuelve la mitad de los materiales de lo que se saca y la
+   * casa se rearma en el mapa.
+   */
+  design(playerId: EntityId, houseId: EntityId, raw: HouseDesign, pay: 'gold' | 'materials'): void {
+    const player = this.world.get(playerId);
+    const house = this.houses.get(houseId);
+    if (!player || !house || player.combat.isDead || !house.design) return;
+    if (house.levelOf(player.name) !== 'owner')
+      return this.say(playerId, 'Solo el dueño puede cambiar el diseño de la casa.');
+    if (!this.near(player, house)) return this.say(playerId, 'Estás demasiado lejos de la casa.');
+    const design = parseHouseDesign(raw, house.kind);
+    if (!design) return this.say(playerId, 'Ese diseño no es para este lote.');
+    const problem = designProblem(house.kind, design);
+    if (problem) return this.say(playerId, problem);
+    const before = house.design;
+    const cost = designCost(house.kind, before, design);
+    if (cost.changes === 0) return this.say(playerId, 'No hay cambios para construir.');
+
+    // Lo que cambia en el mapa: no puede quedar nada tirado ahí ni un cofre con cosas.
+    const changed = this.changedTiles(house, before, design);
+    const chestsBefore = new Map<string, EntityId>(
+      house.chestIds.flatMap((id) => {
+        const chest = this.world.items.get(id);
+        return chest?.location.type === 'ground'
+          ? [[`${chest.location.position.x},${chest.location.position.y}` as string, id] as const]
+          : [];
+      }),
+    );
+    const next = new House(
+      house.id,
+      house.kind,
+      house.origin,
+      house.slots,
+      house.name,
+      house.owner,
+      house.security,
+      design,
+    );
+    const keep = new Set(houseChests(next.site()).map((p) => `${p.x},${p.y}`));
+    for (const [key, id] of chestsBefore)
+      if (!keep.has(key) && this.world.items.contentsOf(id).length > 0)
+        return this.say(playerId, 'Vaciá el cofre que querés sacar antes de confirmar.');
+    const chests = new Set(house.chestIds);
+    if (
+      this.looseItems(house).some(
+        (i) =>
+          !chests.has(i.id) &&
+          i.location.type === 'ground' &&
+          changed.has(`${i.location.position.x},${i.location.position.y}`),
+      )
+    )
+      return this.say(
+        playerId,
+        'Hay cosas en el piso donde cambia la casa: levantalas antes de confirmar.',
+      );
+
+    // Se cobra.
+    const changes = emptyChanges();
+    let paid: string;
+    if (pay === 'gold') {
+      const banked = this.payment.payGold(playerId, cost.gold, changes);
+      if (banked === null)
+        return this.say(playerId, `No te alcanza: la obra cuesta ${cost.gold} monedas.`);
+      paid =
+        cost.gold === 0
+          ? 'Sin costo'
+          : banked > 0
+            ? `Pagaste ${cost.gold} monedas (${banked} salieron del banco)`
+            : `Pagaste ${cost.gold} monedas`;
+    } else {
+      const lacking = this.payment.missing(playerId, house.chestIds, cost.materials);
+      if (lacking.length > 0)
+        return this.say(
+          playerId,
+          `Te faltan materiales (en la mochila o en los cofres de la casa): ${lacking.join(', ')}.`,
+        );
+      this.payment.payMaterials(playerId, house.chestIds, cost.materials, changes);
+      const used = describeMaterials(cost.materials);
+      paid = used ? `Usaste ${used}` : 'Sin costo';
+    }
+    this.payment.refund(playerId, cost.refund, changes);
+
+    // Quien está parado donde cambia algo sale afuera.
+    const front = houseFront(house.site());
+    for (const mobile of this.mobilesInside(house))
+      if (changed.has(`${mobile.position.x},${mobile.position.y}`)) this.moveOut(mobile, front);
+
+    // Se rearma la casa y sus cofres (los que siguen, en su lugar).
+    house.design = design;
+    const placed: EntityId[] = [];
+    for (const at of houseChests(house.site())) {
+      const key = `${at.x},${at.y}`;
+      const existing = chestsBefore.get(key);
+      if (existing) {
+        placed.push(existing);
+        chestsBefore.delete(key);
+        continue;
+      }
+      const chest = this.world.items.add(this.ids.next(), 'house-chest', 1, {
+        type: 'ground',
+        position: at,
+      });
+      changes.groundAdded.push(chest);
+      placed.push(chest.id);
+    }
+    for (const id of chestsBefore.values()) this.world.items.destroy(id, changes);
+    house.chestIds = placed;
+    this.rebuild(house);
+    this.items.publish(changes, playerId);
+    this.save();
+    const back = describeMaterials(cost.refund);
+    this.say(playerId, `${paid}. ¡La obra está lista!${back ? ` Te devolvieron ${back}.` : ''}`);
+  }
+
+  /** Los tiles del mapa donde el diseño cambia (en la planta baja y en los pisos altos). */
+  private changedTiles(house: House, before: HouseDesign, after: HouseDesign): Set<string> {
+    const side = lotSide(house.kind);
+    const changed = new Set<string>();
+    const levels = Math.max(before.levels.length, after.levels.length);
+    for (let l = 0; l < levels; l++) {
+      const slot = l === 0 ? null : house.slots[l - 1];
+      if (l > 0 && !slot) continue;
+      for (let y = 0; y < side; y++)
+        for (let x = 0; x < side; x++) {
+          const a = designCell(before, l, x, y, side);
+          const b = designCell(after, l, x, y, side);
+          if (a.floor === b.floor && a.piece === b.piece) continue;
+          // Solo importa si el tile pierde el piso o le ponen algo encima que no sea un cofre.
+          const blocks = b.piece !== null && HOUSE_PIECES[b.piece].group !== 'chest';
+          if (!blocks && !(a.floor && !b.floor)) continue;
+          const at = slot
+            ? { x: slot.x + FLOOR_MARGIN - 1 + x, y: slot.y + FLOOR_MARGIN - 1 + y }
+            : { x: house.origin.x + x, y: house.origin.y + y };
+          changed.add(`${at.x},${at.y}`);
+        }
+    }
+    return changed;
   }
 
   /** Demoler: solo el dueño, con la casa vacía. Vuelve la escritura a la mochila (o al banco). */
@@ -157,6 +317,12 @@ export class Housing {
     for (const id of house.chestIds) this.world.items.destroy(id, changes);
     this.world.map.removeStructure(house.id);
     this.houses.delete(house.id);
+    // De una casa a medida vuelve la mitad de los materiales de lo construido.
+    const refund = house.design
+      ? designCost(house.kind, house.design, emptyDesign(house.kind)).refund
+      : {};
+    this.payment.refund(player.id, refund, changes);
+    const back = describeMaterials(refund);
     const deedKind = HOUSE_DEEDS[house.kind];
     const backpack = this.world.items.addToBackpack(
       player.id,
@@ -178,9 +344,10 @@ export class Housing {
     this.save();
     this.say(
       player.id,
-      backpack
+      (backpack
         ? `Demoliste «${house.name}». La escritura volvió a tu mochila.`
-        : `Demoliste «${house.name}». Tu mochila está llena: la escritura quedó en el banco.`,
+        : `Demoliste «${house.name}». Tu mochila está llena: la escritura quedó en el banco.`) +
+        (back ? ` De la obra te devolvieron ${back}.` : ''),
     );
   }
 
@@ -414,11 +581,13 @@ export class Housing {
   }
 
   /**
-   * ¿Está del lado de adentro de la puerta? Las puertas van en paredes a lo
-   * largo de x (la de entrada, al sur): adentro es al norte de la puerta. En
-   * el patio de la casa se está afuera de la puerta.
+   * ¿Está del lado de adentro de la puerta? En las casas hechas, las puertas
+   * van en paredes a lo largo de x (la de entrada, al sur): adentro es al
+   * norte de la puerta. En el patio de la casa se está afuera de la puerta.
    */
   private inside(house: House, at: Position, door: Position): boolean {
+    // En una casa a medida las puertas van en cualquier pared: adentro es donde hay piso.
+    if (house.design) return house.contains(at) && indoorsAt(house.site(), at);
     return house.contains(at) && at.y < door.y;
   }
 

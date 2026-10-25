@@ -19,6 +19,8 @@ import { GameWindow } from './game-window';
 export interface HouseCommands {
   action(houseId: EntityId, action: HouseAction): void;
   security(houseId: EntityId, change: HouseSecurityChange): void;
+  /** Abrir la ventana para diseñar la casa a medida. */
+  design(houseId: EntityId): void;
 }
 
 const LISTS: readonly { list: HouseList; title: string; hint: string; ownerOnly: boolean }[] = [
@@ -101,7 +103,11 @@ export class HouseWindow {
     if (!house || !id) return;
     const plan = HOUSE_PLANS[house.kind];
     this.window.setTitle(`«${house.name}»`);
-    const floors = plan.floors === 0 ? 'una planta' : `${plan.floors + 1} plantas`;
+    const floors = plan.lot
+      ? `de ${plan.width}×${plan.height}, hasta ${plan.floors + 1} plantas`
+      : plan.floors === 0
+        ? 'una planta'
+        : `${plan.floors + 1} plantas`;
     const sections: HTMLElement[] = [
       el('p', {
         className: 'house-summary',
@@ -112,6 +118,19 @@ export class HouseWindow {
         text: `Sos ${HOUSE_LEVEL_NAMES[this.level]} de esta casa.${this.storage ? ` Cofres: ${this.storage.used} de ${this.storage.max} lugares ocupados.` : ''}`,
       }),
     ];
+    if (house.design && this.level === 'owner')
+      sections.push(
+        el('section', { className: 'house-section' }, [
+          el('h3', { text: 'Casa a medida' }),
+          el('p', {
+            className: 'window-hint',
+            text: 'Poné pisos, paredes, ventanas, puertas, escaleras y cofres, planta por planta. Se paga con oro o con materiales.',
+          }),
+          this.button('Diseñar la casa', 'Abrir la ventana de diseño', () =>
+            this.commands.design(id),
+          ),
+        ]),
+      );
     if (houseLevelAtLeast(this.level, 'co-owner') && this.security)
       sections.push(this.manage(id, house, this.security));
     this.window.body.replaceChildren(...sections);
@@ -176,7 +195,9 @@ export class HouseWindow {
           el('h3', { text: 'Demoler' }),
           el('p', {
             className: 'window-hint',
-            text: 'Con los cofres vacíos y nada en el piso, la casa vuelve a ser escritura.',
+            text: house.design
+              ? 'Con los cofres vacíos y nada en el piso, el lote vuelve a ser escritura y te devuelven la mitad de los materiales de la obra.'
+              : 'Con los cofres vacíos y nada en el piso, la casa vuelve a ser escritura.',
           }),
           demolish,
         ]),

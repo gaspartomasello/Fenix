@@ -1,4 +1,5 @@
 import type { Position } from '@fenix/shared/geometry/position';
+import { parseHouseDesign, type HouseDesign } from '@fenix/shared/housing/design';
 import {
   MAX_HOUSE_LIST,
   isHouseKind,
@@ -24,6 +25,8 @@ export interface SavedHouse {
   readonly name: string;
   readonly owner: string;
   readonly security: HouseSecurity;
+  /** El diseño de una casa a medida. */
+  readonly design?: HouseDesign;
   /** En qué mundo está (ver `World.mapId`): en otro mundo, la casa vuelve a ser escritura. */
   readonly world: string;
   /** Lo que hay en el piso (con el tile donde está). */
@@ -51,6 +54,7 @@ export function captureHouse(world: World, house: House): SavedHouse {
     name: house.name,
     owner: house.owner,
     security: house.security,
+    ...(house.design ? { design: house.design } : {}),
     world: world.mapId,
     floor,
     chests: house.chestIds.map((id) =>
@@ -127,6 +131,7 @@ export function parseSavedHouse(value: unknown): SavedHouse | null {
         return at && item ? [{ at, item }] : [];
       })
     : [];
+  const design = parseHouseDesign(value.design, kind);
   const chests = Array.isArray(value.chests)
     ? value.chests.map((contents) =>
         Array.isArray(contents) ? contents.flatMap((item) => parseSavedItem(item) ?? []) : [],
@@ -147,6 +152,7 @@ export function parseSavedHouse(value: unknown): SavedHouse | null {
       friends: names(security.friends),
       banned: names(security.banned),
     },
+    ...(design ? { design } : {}),
     world,
     floor,
     chests,
@@ -169,5 +175,6 @@ export function houseOf(saved: SavedHouse): House {
     saved.name,
     saved.owner,
     saved.security,
+    saved.design,
   );
 }

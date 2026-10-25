@@ -41,6 +41,7 @@ const EVERY_MESSAGE: Record<Exclude<GameMessage, 'useSkill'>, true> = {
   placeHouse: true,
   houseAction: true,
   houseSecurity: true,
+  houseDesign: true,
   shipSecurity: true,
   dig: true,
   readBook: true,

@@ -277,6 +277,13 @@ export class GameRenderer {
       if (Math.max(Math.abs(p.x - focus.x), Math.abs(p.y - focus.y)) <= NEARBY_REVEAL)
         nearby.push(p);
     }
+    // También los cofres fijos de cerca (los de las casas, pegados a la pared de adelante).
+    for (const item of this.game.groundItems()) {
+      const p = item.position;
+      if (!ITEMS[item.kind].fixed || !ITEMS[item.kind].capacity) continue;
+      if (Math.max(Math.abs(p.x - focus.x), Math.abs(p.y - focus.y)) <= NEARBY_REVEAL)
+        nearby.push(p);
+    }
     this.statics?.update(view, nearby, near, grown(view, DISCARD_MARGIN));
 
     this.effects.update(now);

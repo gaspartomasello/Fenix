@@ -6,6 +6,7 @@ import {
   type HouseLevel,
   type HouseSecurity,
 } from '@fenix/shared/housing/houses';
+import { emptyDesign, type HouseDesign } from '@fenix/shared/housing/design';
 import { insideHouse, type HouseSite } from '@fenix/shared/housing/structure';
 import type { EntityId, HouseSnapshot } from '@fenix/shared/protocol/messages';
 
@@ -13,6 +14,8 @@ import type { EntityId, HouseSnapshot } from '@fenix/shared/protocol/messages';
 export class House {
   /** Los cofres de la casa: objetos fijos en el piso de adentro. */
   chestIds: EntityId[] = [];
+  /** El diseño de una casa a medida (null: una casa hecha). */
+  design: HouseDesign | null;
 
   constructor(
     readonly id: EntityId,
@@ -24,7 +27,10 @@ export class House {
     public name: string,
     readonly owner: string,
     public security: HouseSecurity,
-  ) {}
+    design?: HouseDesign | null,
+  ) {
+    this.design = HOUSE_PLANS[kind].lot ? (design ?? emptyDesign(kind)) : null;
+  }
 
   get plan() {
     return HOUSE_PLANS[this.kind];
@@ -39,6 +45,7 @@ export class House {
       y: this.origin.y,
       slots: this.slots,
       name: this.name,
+      ...(this.design ? { design: this.design } : {}),
     };
   }
 
@@ -62,6 +69,7 @@ export class House {
       owner: this.owner,
       public: this.security.public,
       ...(openDoors.length > 0 ? { openDoors } : {}),
+      ...(this.design ? { design: this.design } : {}),
     };
   }
 }

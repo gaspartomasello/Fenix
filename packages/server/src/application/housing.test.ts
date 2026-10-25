@@ -1,4 +1,11 @@
 import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import {
+  designCost,
+  emptyDesign,
+  lotSide,
+  withCell,
+  type HouseDesign,
+} from '@fenix/shared/housing/design';
 import { HOUSE_DEEDS, HOUSE_PLANS, type HouseKind } from '@fenix/shared/housing/houses';
 import { houseLayout } from '@fenix/shared/housing/layout';
 import {
@@ -398,5 +405,163 @@ describe('casas de los jugadores', () => {
     );
     const left = world.items.bankOf(ana.id).find((i) => i.kind === 'gold')?.amount;
     expect(left).toBe(20000 - (HOUSE_PLANS['wood-shack'].price - carried));
+  });
+});
+
+/** Una casa de piedra que ocupa todo el lote chico, con la puerta al sur y un cofre. */
+function cottage(): HouseDesign {
+  const side = lotSide('lot-small');
+  let d = emptyDesign('lot-small');
+  for (let y = 0; y < side; y++)
+    for (let x = 0; x < side; x++) {
+      const edge = x === 0 || y === 0 || x === side - 1 || y === side - 1;
+      if (x < side - 1 && y < side - 1) d = withCell(d, 0, x, y, side, { floor: 'flagstone' });
+      if (edge) d = withCell(d, 0, x, y, side, { piece: 'wall-stone' });
+    }
+  d = withCell(d, 0, 3, side - 1, side, { piece: 'door-wood' });
+  return withCell(d, 0, side - 2, 1, side, { piece: 'chest' });
+}
+
+describe('casas a medida', () => {
+  const setup = () => {
+    const field = createField();
+    const ana = field.join('Ana');
+    const { origin } = field.build(ana, 'lot-small');
+    const houseId = field.houseIdOf(ana) ?? '';
+    const sign = houseSign({
+      ...field.site('lot-small', origin),
+      design: emptyDesign('lot-small'),
+    });
+    ana.teleport({ x: sign.x + 1, y: sign.y });
+    const send = (design: HouseDesign, pay: 'gold' | 'materials') =>
+      field.app.handle(ana.id, { type: 'houseDesign', houseId, design, pay });
+    return { ...field, ana, origin, houseId, send };
+  };
+
+  it('el lote se levanta vacío y se construye pagando con oro (de la mochila y del banco)', () => {
+    const { world, notifier, ana, origin, send } = setup();
+    expect(lastSystem(notifier)).toMatch(/Diseñar la casa/);
+    expect(world.map.isWalkable(origin)).toBe(true);
+    world.items.add('ahorros', 'gold', 20000, {
+      type: 'bank',
+      ownerId: ana.id,
+      position: { x: 0, y: 0 },
+    });
+    const before = world.items.countInBackpack(ana.id, 'gold') + 20000;
+    const cost = designCost('lot-small', emptyDesign('lot-small'), cottage());
+    send(cottage(), 'gold');
+    expect(lastSystem(notifier)).toMatch(/La obra está lista/);
+    const after =
+      world.items.countInBackpack(ana.id, 'gold') +
+      (world.items.bankOf(ana.id).find((i) => i.kind === 'gold')?.amount ?? 0);
+    expect(after).toBe(before - cost.gold);
+    expect(world.map.isWalkable(origin)).toBe(false);
+    const chest = world.items.all().find((i) => i.kind === 'house-chest');
+    expect(chest?.location).toEqual({
+      type: 'ground',
+      position: { x: origin.x + lotSide('lot-small') - 2, y: origin.y + 1 },
+    });
+    const changed = notifier.ofType('houseChanged').at(-1)?.message;
+    expect(changed?.type === 'houseChanged' && changed.house.design).toEqual(cottage());
+  });
+
+  it('con materiales: de la mochila y de los cofres; sacar devuelve la mitad', () => {
+    const { world, notifier, ana, origin, send } = setup();
+    send(cottage(), 'materials');
+    expect(lastSystem(notifier)).toMatch(/Te faltan materiales/);
+    const cost = designCost('lot-small', emptyDesign('lot-small'), cottage());
+    for (const [kind, amount] of Object.entries(cost.materials))
+      world.items.add(`material-${kind}`, kind as never, amount ?? 0, {
+        type: 'backpack',
+        ownerId: ana.id,
+        position: { x: 0, y: 0 },
+      });
+    send(cottage(), 'materials');
+    expect(lastSystem(notifier)).toMatch(/Usaste .*bloques de piedra/);
+    expect(world.items.countInBackpack(ana.id, 'stone-block')).toBe(0);
+
+    // Las piedras para una pared más quedan en el cofre de la casa.
+    const chest = world.items.all().find((i) => i.kind === 'house-chest');
+    world.items.add('piedras', 'stone-block', 5, {
+      type: 'container',
+      containerId: chest?.id ?? '',
+      position: { x: 0, y: 0 },
+    });
+    const inner = withCell(cottage(), 0, 3, 3, lotSide('lot-small'), { piece: 'wall-stone' });
+    send(inner, 'materials');
+    expect(lastSystem(notifier)).toMatch(/La obra está lista/);
+    expect(world.items.contentsOf(chest?.id ?? '')).toHaveLength(0);
+    expect(world.map.isWalkable({ x: origin.x + 3, y: origin.y + 3 })).toBe(false);
+
+    // Sacarla devuelve la mitad de las piedras, sin cobrar nada.
+    send(cottage(), 'gold');
+    expect(lastSystem(notifier)).toMatch(/devolvieron 2 bloques de piedra/);
+    expect(world.items.countInBackpack(ana.id, 'stone-block')).toBe(2);
+  });
+
+  it('solo el dueño, con un diseño que se pueda construir y el cofre vacío para sacarlo', () => {
+    const { world, notifier, join, ana, houseId, send, app } = setup();
+    const beto = join('Beto');
+    beto.teleport(ana.position);
+    app.handle(beto.id, { type: 'houseDesign', houseId, design: cottage(), pay: 'gold' });
+    expect(lastSystem(notifier)).toMatch(/Solo el dueño/);
+    const closed = withCell(cottage(), 0, 3, lotSide('lot-small') - 1, lotSide('lot-small'), {
+      piece: 'wall-stone',
+    });
+    send(closed, 'gold');
+    expect(lastSystem(notifier)).toMatch(/cofre/);
+    send(emptyDesign('lot-huge'), 'gold');
+    expect(lastSystem(notifier)).toMatch(/no es para este lote/);
+
+    world.items.add('oro', 'gold', 50000, {
+      type: 'bank',
+      ownerId: ana.id,
+      position: { x: 0, y: 0 },
+    });
+    send(cottage(), 'gold');
+    const chest = world.items.all().find((i) => i.kind === 'house-chest');
+    world.items.add('joya', 'gold', 1, {
+      type: 'container',
+      containerId: chest?.id ?? '',
+      position: { x: 0, y: 0 },
+    });
+    const noChest = withCell(cottage(), 0, lotSide('lot-small') - 2, 1, lotSide('lot-small'), {
+      piece: null,
+    });
+    send(noChest, 'gold');
+    expect(lastSystem(notifier)).toMatch(/Vaciá el cofre/);
+  });
+
+  it('el diseño se guarda con la casa y al demoler vuelven la escritura y la mitad de la obra', () => {
+    const store = new FakeHouseStore();
+    const first = createField(store);
+    const ana = first.join('Ana');
+    const { origin } = first.build(ana, 'lot-small');
+    const houseId = first.houseIdOf(ana) ?? '';
+    const sign = houseSign({
+      ...first.site('lot-small', origin),
+      design: emptyDesign('lot-small'),
+    });
+    ana.teleport({ x: sign.x + 1, y: sign.y });
+    first.world.items.add('oro', 'gold', 50000, {
+      type: 'bank',
+      ownerId: ana.id,
+      position: { x: 0, y: 0 },
+    });
+    first.app.handle(ana.id, { type: 'houseDesign', houseId, design: cottage(), pay: 'gold' });
+    first.app.saveAll();
+
+    const second = createField(store);
+    expect(second.world.map.isWalkable(origin)).toBe(false);
+    const back = second.join('Ana');
+    back.teleport({ x: sign.x + 1, y: sign.y });
+    second.app.handle(back.id, { type: 'houseAction', houseId, action: 'demolish' });
+    second.app.handle(back.id, { type: 'houseAction', houseId, action: 'demolish' });
+    expect(lastSystem(second.notifier)).toMatch(/De la obra te devolvieron/);
+    expect(second.world.map.isWalkable(origin)).toBe(true);
+    expect(
+      second.world.items.backpackOf(back.id).some((i) => i.kind === HOUSE_DEEDS['lot-small']),
+    ).toBe(true);
+    expect(second.world.items.countInBackpack(back.id, 'stone-block')).toBeGreaterThan(0);
   });
 });

@@ -417,16 +417,22 @@ export const VENDORS: Readonly<Record<NpcRole, VendorDefinition>> = {
     role: 'architect',
     name: 'Octavio el arquitecto',
     greeting:
-      'Planos para todos los gustos: desde una casilla de tablas hasta una fortaleza. Las casas se levantan en el campo, fuera de los pueblos.',
-    sells: offers(
-      Object.fromEntries(HOUSE_KINDS.map((k) => [HOUSE_DEEDS[k], HOUSE_PLANS[k].price])),
-    ),
+      'Planos para todos los gustos, desde una casilla de tablas hasta una fortaleza, o un lote para diseñarla a tu gusto. Tengo piedra, tablas y lo que haga falta.',
+    // Los planos, los lotes para una casa a medida y los materiales para construirla.
+    sells: offers({
+      ...Object.fromEntries(HOUSE_KINDS.map((k) => [HOUSE_DEEDS[k], HOUSE_PLANS[k].price])),
+      'stone-block': 8,
+      boards: 6,
+      logs: 5,
+      'iron-ingot': 10,
+    }),
     // Las escrituras sin usar las recompra a la mitad.
-    buys: offers(
-      Object.fromEntries(
+    buys: offers({
+      ...Object.fromEntries(
         HOUSE_KINDS.map((k) => [HOUSE_DEEDS[k], Math.floor(HOUSE_PLANS[k].price / 2)]),
       ),
-    ),
+      'stone-block': 3,
+    }),
   },
   tailor: {
     role: 'tailor',

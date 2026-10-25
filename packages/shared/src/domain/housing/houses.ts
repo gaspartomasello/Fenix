@@ -18,6 +18,10 @@ export const HOUSE_KINDS = [
   'basalt-tower',
   'stone-keep',
   'fortress',
+  'lot-small',
+  'lot-medium',
+  'lot-large',
+  'lot-huge',
 ] as const;
 export type HouseKind = (typeof HOUSE_KINDS)[number];
 
@@ -116,6 +120,12 @@ export interface HousePlan {
   /** Lo que cuesta la escritura en el arquitecto. */
   readonly price: number;
   readonly description: string;
+  /**
+   * Un lote vacío para una casa a medida (ver `design.ts`): `width` y
+   * `height` son el interior, `floors` los pisos que se pueden agregar
+   * arriba y `chests` los cofres que entran.
+   */
+  readonly lot?: boolean;
 }
 
 const plan = (
@@ -229,7 +239,34 @@ export const HOUSE_PLANS: Readonly<Record<HouseKind, HousePlan>> = {
     price: 100000,
     description: 'Muros de piedra negra, puerta de hierro, salones amplios y azotea con almenas.',
   }),
+  'lot-small': lot('lot-small', 'lote chico', 6, 1, 2, 2000),
+  'lot-medium': lot('lot-medium', 'lote mediano', 9, 1, 3, 5000),
+  'lot-large': lot('lot-large', 'lote grande', 12, 2, 4, 10000),
+  'lot-huge': lot('lot-huge', 'lote muy grande', 15, 2, 5, 18000),
 };
+
+/** Un lote vacío de `side`×`side` de interior para diseñar la casa a gusto. */
+function lot(
+  kind: HouseKind,
+  name: string,
+  side: number,
+  floors: number,
+  chests: number,
+  price: number,
+): HousePlan {
+  return plan(kind, {
+    name,
+    article: 'un',
+    style: 'plank',
+    width: side,
+    height: side,
+    floors,
+    chests,
+    price,
+    lot: true,
+    description: `Un terreno de ${side}×${side} para diseñar la casa a gusto, de hasta ${floors + 1} plantas: las piezas se pagan con oro o con materiales.`,
+  });
+}
 
 /** La escritura con la que se compra y se guarda cada casa. */
 export const HOUSE_DEEDS = {
@@ -242,6 +279,10 @@ export const HOUSE_DEEDS = {
   'basalt-tower': 'deed-basalt-tower',
   'stone-keep': 'deed-stone-keep',
   fortress: 'deed-fortress',
+  'lot-small': 'deed-lot-small',
+  'lot-medium': 'deed-lot-medium',
+  'lot-large': 'deed-lot-large',
+  'lot-huge': 'deed-lot-huge',
 } as const satisfies Record<HouseKind, string>;
 
 export type HouseDeedKind = (typeof HOUSE_DEEDS)[HouseKind];

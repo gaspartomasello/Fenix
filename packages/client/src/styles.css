@@ -2995,6 +2995,157 @@ body {
   border-color: #b8463a;
 }
 
+/* Diseñar una casa a medida: el lote visto desde arriba, planta por planta. */
+.design-window {
+  --design-cell: 20px;
+  width: min(640px, calc(100vw - 16px));
+}
+
+/* Es alta: lo que no entra en la pantalla se recorre con la rueda (o el dedo). */
+.design-window .window-body {
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+  touch-action: pan-y;
+}
+
+.design-group {
+  grid-template-columns: 7.5rem 1fr;
+  align-items: center;
+}
+
+.design-levels,
+.design-group-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.design-levels {
+  margin: 6px 0;
+}
+
+.design-tools {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.design-group {
+  display: grid;
+  gap: 2px 6px;
+}
+
+.design-group-title {
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+
+.design-window .button.is-active {
+  outline: 2px solid #e8c25a;
+  outline-offset: -2px;
+}
+
+.design-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  border: 1px solid rgb(0 0 0 / 50%);
+  vertical-align: -1px;
+}
+
+.design-select {
+  font-size: 0.8rem;
+}
+
+.design-board {
+  display: grid;
+  justify-content: center;
+  margin: 6px 0;
+}
+
+.design-grid {
+  display: grid;
+  gap: 1px;
+  padding: 1px;
+  background: #1f2a1b;
+  touch-action: none;
+  user-select: none;
+}
+
+.design-cell {
+  position: relative;
+  width: var(--design-cell);
+  height: var(--design-cell);
+  background: #3e5a32;
+  cursor: crosshair;
+}
+
+/* En un piso alto: donde hay algo abajo (se puede construir encima). */
+.design-cell.is-below {
+  background: #4f5a46;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 12%);
+}
+
+.design-piece {
+  position: absolute;
+  inset: 2px;
+  background: var(--piece, #888);
+  border: 1px solid rgb(0 0 0 / 55%);
+}
+
+.design-piece--window {
+  box-shadow: inset 0 0 0 3px var(--piece, #888);
+  background: #9fd0e8;
+}
+
+.design-piece--door {
+  --piece: #6a3f1f;
+  inset: 2px 4px;
+  border-radius: 4px 4px 0 0;
+}
+
+.design-piece--stairs {
+  --piece: #8a5a2b;
+  background: repeating-linear-gradient(0deg, var(--piece) 0 3px, rgb(0 0 0 / 45%) 3px 4px);
+}
+
+.design-piece--chest {
+  inset: 4px 3px;
+  background: #7a4f22;
+  border-color: #d8b04a;
+  border-width: 2px;
+}
+
+.design-street {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  text-align: center;
+  opacity: 0.8;
+}
+
+.design-problem {
+  margin: 4px 0;
+  color: #ff9b8a;
+  font-size: 0.85rem;
+}
+
+.design-materials {
+  margin: 2px 0 4px;
+  padding-left: 18px;
+  font-size: 0.8rem;
+}
+
+.design-materials .is-short {
+  color: #ffb08a;
+}
+
+@media (max-width: 640px) {
+  .design-window {
+    --design-cell: 16px;
+  }
+}
+
 /* Ventana de todos los objetos (administrador, /objetos). */
 .catalog-tools {
   display: flex;
