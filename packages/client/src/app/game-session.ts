@@ -41,7 +41,9 @@ import { BankWindow } from '../ui/bank-window';
 import { BookWindow } from '../ui/book-window';
 import { TreasureMapWindow } from '../ui/treasure-map-window';
 import { ShipWindow } from '../ui/ship-window';
+import { HouseWindow } from '../ui/house-window';
 import { WorldShips } from './world-ships';
+import { WorldHouses } from './world-houses';
 import { DyeWindow } from '../ui/dye-window';
 import { ItemCatalogWindow } from '../ui/item-catalog-window';
 import { TrackingArrow, TrackingWindow } from '../ui/tracking-window';
@@ -87,6 +89,8 @@ interface Targeting {
   readonly banner: TargetingBanner;
   readonly worldCombat: WorldCombat;
   readonly tilePicker: TilePicker;
+  /** Elegir dónde levantar una casa (con la escritura). */
+  readonly houses: WorldHouses;
 }
 
 /** El libro de hechizos y cómo lanzar uno (desde el libro o desde un pergamino). */
@@ -267,6 +271,7 @@ export class GameSession {
       onZoom: (delta) => renderer.stepZoom(delta),
       canSteerFrom: (point) =>
         !tilePicker.isPicking &&
+        !worldHouses.isPlacing &&
         !worldItems.hasItemAt(point) &&
         !worldCombat.hasTargetAt(point) &&
         !worldCorpses.hasCorpseAt(point) &&
@@ -277,7 +282,8 @@ export class GameSession {
     });
     const banner = new TargetingBanner();
     this.hosts.ui.append(banner.element, banner.cancelButton);
-    const targeting: Targeting = { banner, worldCombat, tilePicker };
+    const worldHouses = new WorldHouses(this.game, renderer, tooltip, banner);
+    const targeting: Targeting = { banner, worldCombat, tilePicker, houses: worldHouses };
     const magic = this.setUpMagic(targeting);
     this.setUpSocial();
     this.setUpQuests();
@@ -654,7 +660,7 @@ export class GameSession {
     tooltip: WorldTooltip,
     magic: Magic,
     economy: EconomyUi,
-    { banner, tilePicker, worldCombat }: Targeting,
+    { banner, tilePicker, worldCombat, houses }: Targeting,
     renderer: GameRenderer,
   ): HudButton[] {
     const self = this.game.self;
@@ -725,6 +731,9 @@ export class GameSession {
               done();
               this.game.pickLock(itemId, tile);
             }, done);
+            return;
+          case 'house':
+            if (item) houses.place(itemId, item.kind);
             return;
           case 'dig':
             banner.show('Tocá dónde querés cavar, al lado tuyo (Escape cancela).');
@@ -841,6 +850,19 @@ export class GameSession {
     );
     this.game.on('shipsChanged', (ships) => shipWindow.update(ships));
     this.hosts.ui.append(shipWindow.window.element);
+    const houseWindow = new HouseWindow({
+      action: (id, action) => this.game.houseAction(id, action),
+      security: (id, change) => this.game.houseSecurity(id, change),
+    });
+    this.game.on('housePanelOpened', ({ houseId, level, security, storage }) => {
+      const house = this.game.house(houseId);
+      if (house) houseWindow.open(house, level, security, storage);
+    });
+    this.game.on('housesChanged', () => {
+      const id = houseWindow.openHouseId;
+      if (id) houseWindow.update(this.game.house(id));
+    });
+    this.hosts.ui.append(houseWindow.window.element);
     const containers = new Map<string, ContainerWindow>();
     let opened = 0;
     this.game.on('containerChanged', ({ containerId, container, opened: requested }) => {

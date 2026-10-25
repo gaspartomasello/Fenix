@@ -36,6 +36,8 @@ const TRADE: Readonly<Record<NpcRole, string>> = {
   fisherman: 'Pesco. El mar da, el mar quita.',
   jeweler: 'Compro y vendo piedras preciosas.',
   scribe: 'Copio libros, vendo pergaminos y guardo lo que otros olvidan.',
+  architect:
+    'Dibujo casas: elegí el plano, buscá un buen lugar en el campo, lejos de los pueblos, y levantala con la escritura.',
   farmer: 'Trabajo la tierra y crío animales. Lo que sobra, lo vendo.',
   townsfolk: 'Vivo acá, nomás. Trabajo en lo que salga.',
   guard: 'Cuido la paz de la ciudad. Los criminales no pasan.',

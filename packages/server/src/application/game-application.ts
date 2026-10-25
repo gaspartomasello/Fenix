@@ -105,6 +105,7 @@ export class GameApplication {
   /** Guarda a todos los conectados (por ejemplo, antes de apagar el servidor). */
   saveAll(): void {
     this.persistence.saveAll();
+    for (const module of this.modules) module.saveAll?.();
   }
 
   join(message: Extract<ClientMessage, { type: 'join' }>): JoinWorldResult {

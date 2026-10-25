@@ -83,6 +83,7 @@ describe('buildCity', () => {
         'provisioner',
         'tailor',
         'shipwright',
+        'architect',
         'stablemaster',
         'woodcutter',
         'healer',

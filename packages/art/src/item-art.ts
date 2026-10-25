@@ -294,6 +294,30 @@ function sack(c: VolumeCanvas, leather: Ramp, radius: number, height: number): v
   );
 }
 
+/**
+ * La escritura de una casa: un pergamino enrollado a medias con el plano
+ * dibujado (las paredes y la puerta), atado con una cinta y con el sello de
+ * lacre del color del estilo de la casa.
+ */
+function houseDeed(c: VolumeCanvas, seal: Ramp): void {
+  const aged = ramp([226, 208, 166]);
+  const ink = ramp([62, 54, 84]);
+  c.box([0.8, 0.5, 0], lying(0.3), [4, 0.3, 3.3], (s) => {
+    const [x, , z] = s.p;
+    const dx = Math.abs(x - 0.8);
+    const wall =
+      (Math.abs(dx - 2.2) < 0.2 && Math.abs(z) < 1.9) ||
+      (Math.abs(Math.abs(z) - 1.9) < 0.2 && dx < 2.4);
+    const door = dx < 0.5 && z > 1.5;
+    if (wall && !door) return tone(ink, s.light);
+    return tone(aged, s.light, noise(s.x, s.y) > 0.86 ? -1 : 0);
+  });
+  // La parte todavía enrollada, la cinta y el sello.
+  c.limb([-4, 1.1, -3.3], [-3.2, 1.1, 3.5], 1.15, 1.15, (s) => tone(aged, s.light, -1));
+  c.box([-3.6, 1.2, 0.3], lying(0.3), [1.35, 1.3, 0.35], (s) => tone(seal, s.light, -1));
+  c.ellipsoid([-1.9, 1.1, 0.6], lying(0), [1.1, 0.45, 1.1], (s) => tone(seal, s.light));
+}
+
 const MODELS: Readonly<Record<BaseItemKind, Model>> = {
   gold(c) {
     coins(c, 7);
@@ -1300,6 +1324,46 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
   },
   'galleon-deed'(c) {
     shipModel(c, ramp([150, 40, 36]), 2);
+  },
+  'deed-wood-shack'(c) {
+    houseDeed(c, ramp([150, 98, 52]));
+  },
+  'deed-log-cabin'(c) {
+    houseDeed(c, ramp([110, 70, 36]));
+  },
+  'deed-stone-cottage'(c) {
+    houseDeed(c, ramp([150, 150, 160]));
+  },
+  'deed-sandstone-patio'(c) {
+    houseDeed(c, ramp([214, 176, 110]));
+  },
+  'deed-plank-house'(c) {
+    houseDeed(c, ramp([176, 52, 40]));
+  },
+  'deed-stone-house'(c) {
+    houseDeed(c, ramp([60, 96, 160]));
+  },
+  'deed-basalt-tower'(c) {
+    houseDeed(c, ramp([64, 60, 72]));
+  },
+  'deed-stone-keep'(c) {
+    houseDeed(c, ramp([60, 120, 70]));
+  },
+  'deed-fortress'(c) {
+    houseDeed(c, ramp([212, 170, 64]));
+  },
+  'house-chest'(c) {
+    // Un arcón grande de roble con tapa abovedada, flejes de hierro oscuro y un candado.
+    const wood = ramp([104, 66, 36]);
+    const iron = ramp([58, 60, 68]);
+    const plank: Material = (s) =>
+      tone(wood, s.light, Math.abs(((s.p[0] + 20) % 2.2) - 1.1) < 0.14 ? -1 : 0);
+    const axes = lying(0);
+    c.box([0, 2.6, 0], axes, [6.2, 2.6, 4], plank);
+    c.ellipsoid([0, 5.2, 0], axes, [6.3, 1.7, 4.1], plank);
+    for (const x of [-4.6, 0, 4.6]) c.box([x, 3.4, 0], axes, [0.4, 3.3, 4.15], solid(iron));
+    c.box([0, 4.4, 4.2], axes, [0.9, 1, 0.35], solid(iron));
+    c.ellipsoid([0, 3.4, 4.5], lying(0), [0.55, 0.55, 0.3], metal(GOLD));
   },
   'ship-hold'(c) {
     // Escotilla de la bodega: un marco de madera con tapa de tablas y una argolla.

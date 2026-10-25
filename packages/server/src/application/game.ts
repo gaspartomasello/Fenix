@@ -7,6 +7,7 @@ import { corpsesModule } from './features/corpses/corpses.module';
 import { doorsModule } from './features/doors/doors.module';
 import { dyeingModule } from './features/dyeing/dyeing.module';
 import { economyModule } from './features/economy/economy.module';
+import { housingModule } from './features/housing/housing.module';
 import { itemsModule } from './features/items/items.module';
 import { loreModule } from './features/lore/lore.module';
 import { mountsModule } from './features/mounts/mounts.module';
@@ -49,6 +50,7 @@ export const ALL_MODULES: readonly ModuleFactory[] = [
   treasureModule,
   // Barcos antes que leyendas: al hablar, el timonel obedece antes de que conteste un vecino.
   shipsModule,
+  housingModule,
   loreModule,
   trackingModule,
   thieveryModule,

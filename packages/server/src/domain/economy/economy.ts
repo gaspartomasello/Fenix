@@ -32,6 +32,9 @@ export type EconomyResult =
 
 const fail = (reason: string): EconomyResult => ({ ok: false, reason });
 
+/** Desde cuánto se puede pagar con el oro del banco (como los cheques de UO). */
+export const BANK_PURCHASE = 2000;
+
 /** ¿Hay un objeto fijo de este tipo cerca? (forja, yunque…) */
 function near(world: World, position: Position, kind: StaticKind, range: number): boolean {
   return world.map.statics.some((s) => s.kind === kind && tileDistance(s, position) <= range);
@@ -200,11 +203,24 @@ export function buy(
   if (!offer) return fail(`${vendor.name} no vende eso.`);
   const units = ITEMS[kind].stackable ? amount : Math.min(amount, 10);
   const total = offer.price * units;
-  if (world.items.countInBackpack(player.id, 'gold') < total)
-    return fail(`No te alcanza: cuesta ${total} monedas.`);
+  // Como en UO, las compras grandes (una casa) se pueden pagar con el oro del banco.
+  const carried = world.items.countInBackpack(player.id, 'gold');
+  const bankGold = world.items.bankOf(player.id).filter((i) => i.kind === 'gold');
+  const banked = total >= BANK_PURCHASE ? bankGold.reduce((sum, i) => sum + i.amount, 0) : 0;
+  if (carried + banked < total) return fail(`No te alcanza: cuesta ${total} monedas.`);
 
   const changes = emptyChanges();
-  world.items.consumeFromBackpack(player.id, 'gold', total, changes);
+  const fromBackpack = Math.min(carried, total);
+  if (fromBackpack > 0) world.items.consumeFromBackpack(player.id, 'gold', fromBackpack, changes);
+  let fromBank = total - fromBackpack;
+  for (const stack of bankGold) {
+    if (fromBank === 0) break;
+    const used = Math.min(fromBank, stack.amount);
+    fromBank -= used;
+    if (used === stack.amount) world.items.destroy(stack.id, changes);
+    else stack.amount -= used;
+    changes.inventories.add(player.id);
+  }
   for (let i = 0; i < (ITEMS[kind].stackable ? 1 : units); i++) {
     if (
       !world.items.addToBackpack(player.id, kind, ITEMS[kind].stackable ? units : 1, ids, changes)
@@ -214,7 +230,10 @@ export function buy(
   }
   return {
     ok: true,
-    message: `Compraste ${describeItem(kind, units)} por ${total} monedas.`,
+    message:
+      fromBackpack < total
+        ? `Compraste ${describeItem(kind, units)} por ${total} monedas (${total - fromBackpack} salieron del banco).`
+        : `Compraste ${describeItem(kind, units)} por ${total} monedas.`,
     changes,
   };
 }

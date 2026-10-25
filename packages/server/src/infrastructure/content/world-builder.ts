@@ -1,4 +1,5 @@
 import type { CreatureKind } from '@fenix/shared/creatures/creature-catalog';
+import { HOUSE_SLOT } from '@fenix/shared/housing/structure';
 import type { Position } from '@fenix/shared/geometry/position';
 import type { StaticPlacement } from '@fenix/shared/world/statics';
 import { Terrain } from '@fenix/shared/world/terrain';
@@ -54,6 +55,8 @@ export interface BuiltWorld extends GeneratedWorld {
   readonly caveEntrance: Position;
   /** Lugares con nombre de las tierras salvajes. */
   readonly places: readonly Place[];
+  /** Lugares apartados (roca vacía) para los pisos altos y los techos de las casas de los jugadores. */
+  readonly houseSlots: readonly Position[];
 }
 
 export const DUNGEON_NAME = 'Cueva del Lamento';
@@ -384,8 +387,18 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
     ...(heights ? { heights } : {}),
   });
 
+  // Los pisos de las casas de los jugadores van en la roca vacía de debajo de
+  // la mazmorra y de lo que hay bajo los pueblos (el mapa no crece).
+  const houseSlots = [
+    ...slotsIn({ x: left, y: dungeon.height + FLOOR_GAP }, dungeon.width, height),
+    ...(pockets.length > 0
+      ? slotsIn({ x: pocketLeft, y: pocketTop + FLOOR_GAP }, pocketWidth, height)
+      : []),
+  ];
+
   return {
     map,
+    houseSlots,
     spawnPoint: continent.spawnPoint,
     items: continent.items,
     npcs: continent.npcs,
@@ -405,14 +418,23 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
   };
 }
 
+/** Los lugares de `HOUSE_SLOT` × `HOUSE_SLOT` que entran en una columna de roca. */
+function slotsIn(from: Position, width: number, bottom: number): Position[] {
+  const slots: Position[] = [];
+  for (let y = from.y; y + HOUSE_SLOT <= bottom - FLOOR_GAP; y += HOUSE_SLOT)
+    for (let x = from.x; x + HOUSE_SLOT <= from.x + width; x += HOUSE_SLOT) slots.push({ x, y });
+  return slots;
+}
+
 /** Crea el mundo listo para jugar, con los objetos sueltos del mapa en el suelo. */
 export function createWorld(options: WorldBuildOptions, ids: IdGenerator): World {
-  const { map, spawnPoint, items, npcs, lairs, wildlife } = buildWorld(options);
+  const { map, spawnPoint, items, npcs, lairs, wildlife, houseSlots } = buildWorld(options);
   const world = new World(
     map,
     spawnPoint,
     `${map.width}x${map.height}@${options.seed}#${WORLD_VERSION}`,
   );
+  world.houseSlots = houseSlots;
   for (const { role, position, name } of npcs)
     world.addNpc(new Npc(ids.next(), role, position, name));
   for (const { kind, amount, position } of items) {

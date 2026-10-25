@@ -21,6 +21,7 @@ import type { MoveMode } from '../domain/rules/movement';
 import type { CompactMapData } from '../domain/world/map-codec';
 import type { Quest, QuestProgress } from '../domain/quests/quests';
 import type { TreasureMark } from '../domain/treasure/treasure';
+import type { HouseKind, HouseLevel, HouseList, HouseSecurity } from '../domain/housing/houses';
 import type {
   ShipFacing,
   ShipKind,
@@ -274,6 +275,38 @@ export interface ShipSecurityRequest {
   readonly change: ShipSecurityChange;
 }
 
+/** Levantar la casa de una escritura propia, centrada en ese tile. */
+export interface PlaceHouseRequest {
+  readonly type: 'placeHouse';
+  readonly deedId: EntityId;
+  readonly position: Position;
+}
+
+/**
+ * Lo que se hace con una casa: ver su ventana (doble clic en el cartel),
+ * echar a las visitas que están adentro o demolerla (vuelve la escritura).
+ */
+export type HouseAction = 'panel' | 'eject' | 'demolish';
+
+export interface HouseActionRequest {
+  readonly type: 'houseAction';
+  readonly houseId: EntityId;
+  readonly action: HouseAction;
+}
+
+/** Cambios que hace el dueño (o un copropietario): listas, nombre y si es pública. */
+export type HouseSecurityChange =
+  | { readonly kind: 'add'; readonly list: HouseList; readonly name: string }
+  | { readonly kind: 'remove'; readonly list: HouseList; readonly name: string }
+  | { readonly kind: 'rename'; readonly name: string }
+  | { readonly kind: 'public'; readonly on: boolean };
+
+export interface HouseSecurityRequest {
+  readonly type: 'houseSecurity';
+  readonly houseId: EntityId;
+  readonly change: HouseSecurityChange;
+}
+
 export interface BuyRequest {
   readonly type: 'buy';
   readonly vendorId: EntityId;
@@ -497,6 +530,9 @@ export type ClientMessage =
   | BoardShipRequest
   | ShipActionRequest
   | ShipSecurityRequest
+  | PlaceHouseRequest
+  | HouseActionRequest
+  | HouseSecurityRequest
   | BuyRequest
   | SellRequest
   | CraftRequest
@@ -854,6 +890,51 @@ export interface ShipPanelMessage {
   readonly security?: ShipSecurity;
 }
 
+/**
+ * Una casa levantada: con esto el cliente arma en su mapa lo mismo que el
+ * servidor (paredes, pisos, techos y escaleras; ver `houseStructure`).
+ */
+export interface HouseSnapshot {
+  readonly id: EntityId;
+  readonly kind: HouseKind;
+  readonly x: number;
+  readonly y: number;
+  readonly slots: readonly Position[];
+  readonly name: string;
+  readonly owner: string;
+  readonly public: boolean;
+  /** Sus puertas abiertas (las demás, cerradas). */
+  readonly openDoors?: readonly Position[];
+}
+
+/** Todas las casas del mundo (al entrar). */
+export interface HousesMessage {
+  readonly type: 'houses';
+  readonly houses: readonly HouseSnapshot[];
+}
+
+/** Se levantó una casa o cambió (su nombre, si es pública). */
+export interface HouseChangedMessage {
+  readonly type: 'houseChanged';
+  readonly house: HouseSnapshot;
+}
+
+/** Una casa se demolió. */
+export interface HouseRemovedMessage {
+  readonly type: 'houseRemoved';
+  readonly id: EntityId;
+}
+
+/** La ventana de la casa: quién es uno ahí y, para el dueño y los copropietarios, las listas. */
+export interface HousePanelMessage {
+  readonly type: 'housePanel';
+  readonly houseId: EntityId;
+  readonly level: HouseLevel;
+  readonly security?: HouseSecurity;
+  /** Cuántos objetos hay guardados en sus cofres, y cuántos entran. */
+  readonly storage?: { readonly used: number; readonly max: number };
+}
+
 /** Un cañonazo: de dónde a dónde voló la bala y si dio en algo. */
 export interface CannonShotMessage {
   readonly type: 'cannonShot';
@@ -955,6 +1036,10 @@ export type ServerMessage =
   | ShipsMessage
   | ShipMovedMessage
   | ShipPanelMessage
+  | HousesMessage
+  | HouseChangedMessage
+  | HouseRemovedMessage
+  | HousePanelMessage
   | CannonShotMessage
   | QuestOfferMessage
   | QuestsMessage

@@ -34,6 +34,8 @@ export interface GameModule {
   leaving?(player: Player): void;
   /** El jugador se fue: ya está guardado. */
   left?(playerId: EntityId): void;
+  /** Guardar ya lo que el módulo guarda por su cuenta (al apagar el servidor). */
+  saveAll?(): void;
 }
 
 /** Cómo se arma un módulo: recibe el núcleo y devuelve el módulo listo. */

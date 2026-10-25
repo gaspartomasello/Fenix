@@ -9,6 +9,7 @@ import { GameSocketServer } from './infrastructure/network/game-socket-server';
 import { SessionRegistry } from './infrastructure/network/session-registry';
 import { JsonFileAccountStore } from './infrastructure/persistence/account-stores';
 import { JsonFileCharacterStore } from './infrastructure/persistence/json-file-character-store';
+import { JsonFileHouseStore } from './infrastructure/persistence/house-stores';
 import { ScryptPasswordHasher } from './infrastructure/system/scrypt-password-hasher';
 import { SeededRandom } from './infrastructure/system/seeded-random';
 import { SystemClock } from './infrastructure/system/system-clock';
@@ -28,6 +29,7 @@ function main(): void {
   const clock = new SystemClock();
   const characters = new JsonFileCharacterStore(join(config.dataDir, 'personajes.json'));
   const accounts = new JsonFileAccountStore(join(config.dataDir, 'cuentas.json'));
+  const houses = new JsonFileHouseStore(join(config.dataDir, 'casas.json'));
   const app = createGame({
     world,
     worldClock: new WorldClock(clock.now(), config.startHour),
@@ -37,6 +39,7 @@ function main(): void {
     notifier: sessions,
     characters,
     accounts,
+    houses,
     passwords: new ScryptPasswordHasher(),
     testCharacters: config.testCharacters,
     admins: config.admins,
@@ -59,6 +62,7 @@ function main(): void {
     app.saveAll();
     characters.flush();
     accounts.flush();
+    houses.flush();
     void sockets.close().then(() => httpServer.close(() => process.exit(0)));
   };
   process.on('SIGINT', shutdown);

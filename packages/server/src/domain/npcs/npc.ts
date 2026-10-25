@@ -197,6 +197,16 @@ const LOOKS: Readonly<Record<NpcRole, { appearance: Appearance; equipment: Equip
     },
     equipment: { torso: 'robe', feet: 'sandals', rightHand: 'scribe-pen' },
   },
+  architect: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      clothHue: CLOTH_HUES[2] ?? DEFAULT_APPEARANCE.clothHue,
+      hairHue: 0x5a3a22,
+      hairStyle: 'short',
+      facialHair: 'goatee',
+    },
+    equipment: { torso: 'doublet', legs: 'trousers', feet: 'boots', rightHand: 'scribe-pen' },
+  },
   farmer: {
     appearance: {
       ...DEFAULT_APPEARANCE,

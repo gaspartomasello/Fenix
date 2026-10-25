@@ -1,5 +1,6 @@
 import type { EntityId, ServerMessage } from '@fenix/shared/protocol/messages';
 import type { SavedCharacter } from '../domain/persistence/saved-character';
+import type { SavedHouse } from '../domain/persistence/saved-house';
 
 /**
  * Puertos de salida de la aplicación. La infraestructura los implementa
@@ -35,6 +36,12 @@ export interface CharacterStore {
   save(character: SavedCharacter): void;
   /** Lo borra para siempre (al borrar un personaje de la cuenta). */
   remove(name: string): void;
+}
+
+/** Dónde se guardan las casas de los jugadores (todas juntas, con lo que tienen adentro). */
+export interface HouseStore {
+  load(): SavedHouse[];
+  save(houses: readonly SavedHouse[]): void;
 }
 
 /** Una cuenta: su contraseña y los nombres de sus personajes. */

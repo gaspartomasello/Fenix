@@ -710,6 +710,7 @@ export function buildCity(spec: CitySpec): City {
           'healer',
           'provisioner',
           'carpenter',
+          'architect',
           'tailor',
           'bowyer',
           'alchemist',
@@ -737,6 +738,7 @@ export function buildCity(spec: CitySpec): City {
             'butcher',
             'fisherman',
             'shipwright',
+            'architect',
           ];
   const houses: Room[] = [];
   for (const lot of lots) {
@@ -1697,6 +1699,16 @@ function furnishShop(plan: Plan, role: NpcRole, room: Room, random: SeededRandom
       put(room.x0, room.y1, 'candelabra');
       put(room.x1, room.y1, 'candelabra');
       put(spot.x, spot.y - 1, 'carpet');
+      break;
+    }
+    case 'architect': {
+      // El estudio del arquitecto: la mesa con los planos, bibliotecas y un banco de trabajo.
+      put(spot.x + 1, spot.y, 'table');
+      put(spot.x + 1, spot.y + 1, 'stool');
+      put(room.x0, room.y0, 'bookshelf-x');
+      put(room.x1, room.y0, 'workbench');
+      put(room.x0, room.y1, 'plank-stack');
+      put(room.x1, room.y1, 'candelabra');
       break;
     }
     case 'scribe': {

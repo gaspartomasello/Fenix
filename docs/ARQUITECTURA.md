@@ -1161,6 +1161,54 @@ pedidos que la barra de atajos y los botones, y el servidor decide como siempre.
 - **Celular**: la barra va en dos líneas angostas arriba y se desliza de costado; la pestaña de
   atajos explica que ahí los atajos son la barra de abajo y los cuatro alrededor de Atacar.
 
+## Casas de los jugadores (etapa 72)
+
+Casas prefabricadas como en UO: se compra la escritura a **Octavio el arquitecto** (en la capital y
+en los pueblos medianos), se usa en el campo y la casa aparece entera, con sus cofres. Las
+compras de 2000 monedas o más se pueden pagar con el oro del banco.
+
+- **Planos** (`shared/domain/housing/houses.ts`): nueve casas de distintos tamaños y estilos
+  (tablas, troncos, piedra, piedra negra, arenisca): casilla de tablas, cabaña de troncos, casa
+  chica de piedra, casa de arenisca con patio, casas de dos plantas, torre de piedra negra,
+  torreón y fortaleza. Cada plano dice el piso de adentro, cuántos pisos altos, si tiene patio o
+  dos cuartos, la puerta (sola, doble o de hierro), los cofres y el precio.
+- **El plano armado** (`layout.ts`): paredes, ventanas, puertas, patio cercado, escalera, cofres,
+  cartel y cada piso alto con su propia grilla (como los pisos de los pueblos), con la azotea o el
+  techo arriba de todo. Siempre el mismo para cada clase de casa.
+- **En el mapa** (`structure.ts`): `houseStructure` arma la casa como una construcción del mapa
+  (`MapStructure`: objetos fijos, pisos, zonas y teletransportes de las escaleras). Los pisos altos
+  van en **lugares apartados** (`World.houseSlots`): la roca vacía de debajo de la mazmorra y de lo
+  que hay bajo los pueblos, así el mapa no crece. `placementProblem` dice si se puede levantar:
+  tierra firme de campo (no caminos, agua ni pisos de pueblo), fuera de pueblos y lugares con
+  nombre, sin árboles ni rocas debajo, sin pegarse a otra casa y sin mucha pendiente.
+- **`TileMap.addStructure` / `removeStructure`**: el mapa acepta construcciones mientras se juega.
+  Se cuentan aparte de lo del mapa original (terreno, tiles que tapan el paso o la vista, puertas,
+  asientos, zonas, pisos altos anclados y teletransportes), y al sacarla todo vuelve a ser como
+  antes. Las zonas construidas van antes que las del mapa en `regionAt`. El servidor y el cliente
+  arman lo mismo con `houseStructure`, así la predicción de movimiento coincide.
+- **Servidor** (`features/housing`): levantar (escritura en la mochila, una casa por personaje,
+  cerca, el lugar libre de gente y de cosas), la ventana de la casa, echar a las visitas, demoler
+  (con los cofres vacíos: vuelve la escritura) y los permisos. Se enchufa con las reglas del núcleo:
+  `guards.door` (las puertas de una casa privada solo las abren los amigos; desde adentro, siempre),
+  `guards.move` (los echados no entran), `guards.take` (lo que hay adentro es de los amigos) y
+  `guards.container` (los cofres y bolsas de adentro, también).
+- **Permisos**: dueño, copropietarios (todo menos demoler y nombrar copropietarios), amigos (abren
+  puertas y cofres, levantan lo de adentro), visitas y echados. Pública: cualquiera abre las
+  puertas, menos los echados.
+- **Guardado**: las casas y lo que tienen adentro (el piso y los cofres) se guardan aparte de los
+  personajes (`HouseStore`: `casas.json` en el servidor, el navegador en el modo solo), cada minuto
+  y al apagar (`GameModule.saveAll`). Si el mundo cambió, la casa vuelve a su dueño como escritura
+  en el banco.
+- **Cliente**: `ClientGame` arma las casas en su mapa (`houses`, `houseChanged`, `houseRemoved`);
+  el dibujo suma un bloque de objetos por casa (`StaticLayer.addStructure`), vuelve a armar el
+  terreno que cambió (`TerrainLayer.invalidate`) y los pisos altos (`FloorLayer.sync`). Al usar la
+  escritura, `WorldHouses` muestra la casa en el suelo (verde si se puede, roja si no) siguiendo el
+  puntero; con el dedo, el primer toque la muestra y el segundo la levanta. Doble clic en el cartel
+  abre la ventana de la casa (`HouseWindow`).
+- **Para más adelante**: la casa a medida (un terreno donde se construye pieza por pieza, como el
+  diseñador de casas de UO), el deterioro de las casas abandonadas y no dejar marcar runas adentro
+  de una casa ajena.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.
