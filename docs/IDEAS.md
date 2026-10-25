@@ -104,19 +104,8 @@ sí, copia no») que reemplazan al arte procedural objeto por objeto:
 - Prendas teñibles en gris neutro.
 - Sonidos: el autor tiene foley propio en WAV → convertir a OGG en `assets/sonidos/`.
 
-## Casa a medida (sigue a las casas prefabricadas de la etapa 72)
+## Casa a medida: lo que falta (sigue a la etapa 73)
 
-Como el diseñador de casas de UO (y la opción de RunUO/ServUO): se compra un **terreno** al
-arquitecto (de varios tamaños), se lo ubica en el campo como una casa y, adentro, una ventana de
-diseño deja poner pieza por pieza con los materiales que se quieran:
-
-- **Piezas**: paredes (de cada estilo: tablas, troncos, piedra, piedra negra, arenisca), puertas,
-  ventanas, pisos, escaleras y techo, piso por piso. Cada pieza cuesta oro (o materiales).
-- **Reglas**: lo de arriba necesita paredes debajo; la entrada no se puede tapar; hasta dos o tres
-  pisos según el tamaño del terreno.
-- **Mientras se diseña**, los demás ven el terreno (o el último diseño confirmado); al
-  **confirmar**, se cobra y la casa queda armada. Guardar y volver a un diseño, deshacer, vaciar.
-- **Base técnica ya lista**: el diseño se arma como una `MapStructure` (igual que las
-  prefabricadas), con los pisos altos en los lugares apartados del mapa.
-- **Pendiente**: precios por pieza, si se paga con oro o con materiales (tablas, piedra) y qué
-  tamaños de terreno hay.
+- Guardar diseños para volver a ellos, y que los demás vean el borrador mientras se diseña.
+- Puertas dobles, escaleras de caracol, balcones y más piezas de decoración (columnas, arcos).
+- Oficio de cantero: sacar piedra con el pico y tallar bloques (hoy solo se compran).

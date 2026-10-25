@@ -175,6 +175,10 @@ export const BASE_ITEM_KINDS = [
   'deed-basalt-tower',
   'deed-stone-keep',
   'deed-fortress',
+  'deed-lot-small',
+  'deed-lot-medium',
+  'deed-lot-large',
+  'deed-lot-huge',
   'house-chest',
   'black-pearl',
   'blood-moss',
@@ -220,6 +224,7 @@ export const BASE_ITEM_KINDS = [
   // Materiales
   'logs',
   'boards',
+  'stone-block',
   'iron-ore',
   'iron-ingot',
   'cloth',
@@ -453,6 +458,10 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
   'deed-basalt-tower': houseDeed('basalt-tower'),
   'deed-stone-keep': houseDeed('stone-keep'),
   'deed-fortress': houseDeed('fortress'),
+  'deed-lot-small': houseDeed('lot-small'),
+  'deed-lot-medium': houseDeed('lot-medium'),
+  'deed-lot-large': houseDeed('lot-large'),
+  'deed-lot-huge': houseDeed('lot-huge'),
   'house-chest': {
     name: 'cofre de la casa',
     plural: 'cofres de la casa',
@@ -798,6 +807,12 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
 
   logs: { name: 'tronco', plural: 'troncos', article: 'un', stackable: true },
   boards: { name: 'tabla', plural: 'tablas', article: 'una', stackable: true },
+  'stone-block': {
+    name: 'bloque de piedra',
+    plural: 'bloques de piedra',
+    article: 'un',
+    stackable: true,
+  },
   'iron-ore': {
     name: 'mineral de hierro',
     plural: 'minerales de hierro',

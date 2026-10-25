@@ -26,6 +26,8 @@ import {
 } from './structure';
 
 const G = Terrain.Grass;
+/** Las casas hechas (los lotes se prueban en design.test.ts). */
+const PREFABS = HOUSE_KINDS.filter((kind) => !HOUSE_PLANS[kind].lot);
 
 /** Un campo de pasto con lugar a la derecha para los pisos altos. */
 function field(width = 120, height = 100): TileMap {
@@ -73,7 +75,7 @@ describe('casas de los jugadores', () => {
   });
 
   it('los planos entran en su lugar apartado y traen sus cofres', () => {
-    for (const kind of HOUSE_KINDS) {
+    for (const kind of PREFABS) {
       const layout = houseLayout(kind);
       expect(layout.chests).toHaveLength(HOUSE_PLANS[kind].chests);
       for (const level of layout.levels) {
@@ -91,7 +93,7 @@ describe('casas de los jugadores', () => {
   });
 
   it('desde la puerta se llega a toda la casa, a cada cofre y hasta arriba de todo', () => {
-    for (const kind of HOUSE_KINDS) {
+    for (const kind of PREFABS) {
       const map = field();
       const site = siteOf(kind);
       map.addStructure(houseStructure(site));

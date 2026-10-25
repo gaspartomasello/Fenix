@@ -14,6 +14,7 @@ import {
 } from '@fenix/shared/magic/spell-catalog';
 import { isMountKind, type MountKind } from '@fenix/shared/mounts/mount-catalog';
 import type { HouseLevel, HouseSecurity } from '@fenix/shared/housing/houses';
+import type { HouseDesign } from '@fenix/shared/housing/design';
 import { houseSign, houseStructure, insideHouse } from '@fenix/shared/housing/structure';
 import type {
   BackpackItemSnapshot,
@@ -678,6 +679,11 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
 
   houseSecurity(houseId: EntityId, change: HouseSecurityChange): void {
     if (this.self) this.gateway.send({ type: 'houseSecurity', houseId, change });
+  }
+
+  /** Confirmar el diseño de una casa a medida, pagando con oro o con materiales. */
+  houseDesign(houseId: EntityId, design: HouseDesign, pay: 'gold' | 'materials'): void {
+    if (this.self) this.gateway.send({ type: 'houseDesign', houseId, design, pay });
   }
 
   /** Arma (o vuelve a armar) una casa en el mapa local, con sus puertas abiertas. */

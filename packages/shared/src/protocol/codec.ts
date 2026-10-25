@@ -13,6 +13,7 @@ import { isChatChannel, isSocialCommand } from '../domain/social/groups';
 import { isDirection } from '../domain/geometry/direction';
 import { isMoveMode } from '../domain/rules/movement';
 import { isShipLevel, isShipOrder } from '../domain/ships/ships';
+import { parseHouseDesign } from '../domain/housing/design';
 import { isHouseList } from '../domain/housing/houses';
 import type { Position } from '../domain/geometry/position';
 import type {
@@ -280,6 +281,15 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       const change = asHouseSecurityChange(data.change);
       if (isId(data.houseId) && change)
         return { ok: true, message: { type: 'houseSecurity', houseId: data.houseId, change } };
+      break;
+    }
+    case 'houseDesign': {
+      const design = parseHouseDesign(data.design);
+      if (isId(data.houseId) && design && (data.pay === 'gold' || data.pay === 'materials'))
+        return {
+          ok: true,
+          message: { type: 'houseDesign', houseId: data.houseId, design, pay: data.pay },
+        };
       break;
     }
     case 'buy':

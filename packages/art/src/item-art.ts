@@ -299,7 +299,7 @@ function sack(c: VolumeCanvas, leather: Ramp, radius: number, height: number): v
  * dibujado (las paredes y la puerta), atado con una cinta y con el sello de
  * lacre del color del estilo de la casa.
  */
-function houseDeed(c: VolumeCanvas, seal: Ramp): void {
+function houseDeed(c: VolumeCanvas, seal: Ramp, lot = false): void {
   const aged = ramp([226, 208, 166]);
   const ink = ramp([62, 54, 84]);
   c.box([0.8, 0.5, 0], lying(0.3), [4, 0.3, 3.3], (s) => {
@@ -308,6 +308,12 @@ function houseDeed(c: VolumeCanvas, seal: Ramp): void {
     const wall =
       (Math.abs(dx - 2.2) < 0.2 && Math.abs(z) < 1.9) ||
       (Math.abs(Math.abs(z) - 1.9) < 0.2 && dx < 2.4);
+    // Un lote: el terreno marcado con línea de puntos, sin puerta.
+    if (lot) {
+      const dash = Math.floor((x + z + 8) * 1.6) % 2 === 0;
+      if (wall && dash) return tone(ink, s.light);
+      return tone(aged, s.light, noise(s.x, s.y) > 0.86 ? -1 : 0);
+    }
     const door = dx < 0.5 && z > 1.5;
     if (wall && !door) return tone(ink, s.light);
     return tone(aged, s.light, noise(s.x, s.y) > 0.86 ? -1 : 0);
@@ -1351,6 +1357,26 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
   },
   'deed-fortress'(c) {
     houseDeed(c, ramp([212, 170, 64]));
+  },
+  'deed-lot-small'(c) {
+    houseDeed(c, ramp([120, 150, 80]), true);
+  },
+  'deed-lot-medium'(c) {
+    houseDeed(c, ramp([90, 130, 150]), true);
+  },
+  'deed-lot-large'(c) {
+    houseDeed(c, ramp([150, 100, 150]), true);
+  },
+  'deed-lot-huge'(c) {
+    houseDeed(c, ramp([190, 120, 60]), true);
+  },
+  'stone-block'(c) {
+    // Bloques de piedra tallada, uno encima de otro, con las aristas gastadas.
+    const stone = ramp([150, 146, 136]);
+    const cut: Material = (s) => tone(stone, s.light, noise(s.x, s.y) > 0.8 ? -1 : 0);
+    c.box([-1.6, 1.4, 0.6], lying(0.2), [2.6, 1.4, 1.9], cut);
+    c.box([1.9, 1.4, -0.4], lying(-0.15), [2.4, 1.4, 1.8], cut);
+    c.box([0.2, 4.2, 0.1], lying(0.05), [2.5, 1.4, 1.9], cut);
   },
   'house-chest'(c) {
     // Un arcón grande de roble con tapa abovedada, flejes de hierro oscuro y un candado.

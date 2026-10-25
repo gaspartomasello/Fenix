@@ -21,6 +21,7 @@ import type { MoveMode } from '../domain/rules/movement';
 import type { CompactMapData } from '../domain/world/map-codec';
 import type { Quest, QuestProgress } from '../domain/quests/quests';
 import type { TreasureMark } from '../domain/treasure/treasure';
+import type { HouseDesign } from '../domain/housing/design';
 import type { HouseKind, HouseLevel, HouseList, HouseSecurity } from '../domain/housing/houses';
 import type {
   ShipFacing,
@@ -307,6 +308,18 @@ export interface HouseSecurityRequest {
   readonly change: HouseSecurityChange;
 }
 
+/**
+ * Confirmar el diseño de una casa a medida (en un lote): el servidor cobra lo
+ * nuevo con oro (de la mochila y del banco) o con materiales (de la mochila y
+ * de los cofres de la casa) y devuelve la mitad de los materiales de lo que se saca.
+ */
+export interface HouseDesignRequest {
+  readonly type: 'houseDesign';
+  readonly houseId: EntityId;
+  readonly design: HouseDesign;
+  readonly pay: 'gold' | 'materials';
+}
+
 export interface BuyRequest {
   readonly type: 'buy';
   readonly vendorId: EntityId;
@@ -533,6 +546,7 @@ export type ClientMessage =
   | PlaceHouseRequest
   | HouseActionRequest
   | HouseSecurityRequest
+  | HouseDesignRequest
   | BuyRequest
   | SellRequest
   | CraftRequest
@@ -905,6 +919,8 @@ export interface HouseSnapshot {
   readonly public: boolean;
   /** Sus puertas abiertas (las demás, cerradas). */
   readonly openDoors?: readonly Position[];
+  /** El diseño, si es una casa a medida. */
+  readonly design?: HouseDesign;
 }
 
 /** Todas las casas del mundo (al entrar). */

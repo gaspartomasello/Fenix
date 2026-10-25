@@ -19,6 +19,7 @@ const WEIGHTS: Partial<Record<ItemKind, number>> = {
   'iron-ingot': 0.5,
   logs: 2,
   boards: 0.5,
+  'stone-block': 2,
   hides: 1,
   cloth: 0.5,
   spellbook: 3,

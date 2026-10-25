@@ -2,7 +2,8 @@ import type { ModuleFactory } from '../../kernel/game-module';
 import { Housing } from './housing';
 
 /**
- * Casas de los jugadores: levantarlas con la escritura, su ventana (nombre,
+ * Casas de los jugadores: levantarlas con la escritura (o un lote para
+ * diseñarla a gusto, pagando con oro o con materiales), su ventana (nombre,
  * amigos, copropietarios, echados, pública o privada), echar visitas,
  * demolerlas y guardarlas con lo que tienen adentro.
  */
@@ -30,6 +31,7 @@ export const housingModule: ModuleFactory = (kernel) => {
       placeHouse: (playerId, m) => housing.place(playerId, m.deedId, m.position),
       houseAction: (playerId, m) => housing.action(playerId, m.houseId, m.action),
       houseSecurity: (playerId, m) => housing.security(playerId, m.houseId, m.change),
+      houseDesign: (playerId, m) => housing.design(playerId, m.houseId, m.design, m.pay),
     },
     tick: (now) => housing.tick(now),
     joined: (player) => housing.joined(player),
