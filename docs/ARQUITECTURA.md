@@ -1245,6 +1245,15 @@ casas) y, adentro, una ventana de diseño deja poner las piezas planta por plant
 - **Materiales**: el arquitecto vende bloques de piedra (nuevo), tablas, troncos y lingotes; el
   carpintero y el leñador, tablas y troncos.
 
+## Ventanas que se corren (etapa 74)
+
+Como en UO, cada ventana (`GameWindow`) se arrastra desde cualquier lugar que no tenga su propio
+toque (no solo desde la barra): los objetos, los botones y la grilla de diseño siguen siendo
+suyos, y desde el cuerpo recién arrastra cuando el dedo se mueve unos píxeles. Se puede correr
+fuera de la pantalla dejando 48 px asomados para volver a agarrarla. Tocarla la trae adelante; su
+atajo (B, C, el botón Mochila…) la trae adelante y entera si estaba tapada o corrida, y si ya
+estaba así, la cierra.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.
