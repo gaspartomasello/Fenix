@@ -2942,6 +2942,59 @@ body {
   text-transform: capitalize;
 }
 
+/* Ventana de una casa: de quién es, nombre, pública o privada, listas y demoler. */
+.house-window {
+  width: min(360px, calc(100vw - 16px));
+}
+
+.house-summary {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+}
+
+.house-section {
+  margin-top: 8px;
+}
+
+.house-section h3 {
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+}
+
+.house-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.house-input {
+  flex: 1;
+  min-width: 120px;
+}
+
+.house-list {
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.house-list li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.house-list-name {
+  flex: 1;
+}
+
+.house-danger {
+  background: #7a2a22;
+  border-color: #b8463a;
+}
+
 /* Ventana de todos los objetos (administrador, /objetos). */
 .catalog-tools {
   display: flex;

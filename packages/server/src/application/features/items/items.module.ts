@@ -9,6 +9,7 @@ export const itemsModule: ModuleFactory = (kernel) => {
     kernel.items,
     kernel.notifier,
     kernel.services.lazy('banking'),
+    kernel.guards.take,
   );
   const useItem = new UseItem(
     kernel.world,

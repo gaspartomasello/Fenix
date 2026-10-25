@@ -2,11 +2,13 @@ import type { EntityId, ServerMessage } from '@fenix/shared/protocol/messages';
 import type {
   CharacterStore,
   Clock,
+  HouseStore,
   IdGenerator,
   Notifier,
   RandomSource,
 } from '../application/ports';
 import type { SavedCharacter } from '../domain/persistence/saved-character';
+import { parseHouseList, type SavedHouse } from '../domain/persistence/saved-house';
 
 export class FakeClock implements Clock {
   constructor(public time = 1000) {}
@@ -80,5 +82,20 @@ export class FakeCharacterStore implements CharacterStore {
 
   remove(name: string): void {
     this.characters.delete(name.toLocaleLowerCase());
+  }
+}
+
+/** Casas guardadas en memoria (pasadas por JSON, como en un archivo de verdad). */
+export class FakeHouseStore implements HouseStore {
+  raw = '[]';
+  saves = 0;
+
+  load(): SavedHouse[] {
+    return parseHouseList(this.raw);
+  }
+
+  save(houses: readonly SavedHouse[]): void {
+    this.saves++;
+    this.raw = JSON.stringify(houses);
   }
 }

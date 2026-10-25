@@ -26,6 +26,11 @@ export class World {
   readonly guilds = new Guilds();
   /** Los barcos en el agua. */
   readonly ships = new Map<EntityId, Ship>();
+  /**
+   * Lugares apartados del mapa (roca vacía) donde van los pisos altos y los
+   * techos de las casas de los jugadores; los arma el constructor del mundo.
+   */
+  houseSlots: readonly Position[] = [];
   /** Quién está dónde, por celdas: las consultas de cercanía no recorren todo el mundo. */
   // Cuentan donde se ven: alguien en un piso alto está encima de su edificio, así
   // ve la calle y desde la calle se lo ve.

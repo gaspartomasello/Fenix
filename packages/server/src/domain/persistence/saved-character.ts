@@ -36,6 +36,7 @@ import { STAT_CAP } from '@fenix/shared/skills/stat-gain';
 import { isTreasureLevel, type TreasureMark } from '@fenix/shared/treasure/treasure';
 import { Creature } from '../creatures/creature';
 import type { ShipRecord } from '../ships/ship';
+import type { Item, ItemLocation } from '../items/item';
 import type { Player } from '../player';
 import type { World } from '../world';
 
@@ -526,6 +527,48 @@ export function freeSpotNear(world: World, at: Position): Position {
     if (world.map.isWalkable(spot) && !world.isOccupied(spot)) return spot;
   }
   return at;
+}
+
+/**
+ * Un objeto suelto (de una casa) como datos planos, con lo de adentro si es
+ * una bolsa. `position` es su lugar en la ventana de un recipiente.
+ */
+export function captureItem(world: World, item: Item, position: Position): SavedItem {
+  return {
+    kind: item.kind,
+    amount: item.amount,
+    location: { type: 'backpack', position },
+    ...(item.mark ? { mark: item.mark } : {}),
+    ...(item.book ? { book: item.book } : {}),
+    ...(item.hue !== null ? { hue: item.hue } : {}),
+    ...(item.treasure ? { treasure: item.treasure } : {}),
+    ...(item.ship ? { ship: item.ship } : {}),
+    ...(item.newbie ? { newbie: true as const } : {}),
+    ...(ITEMS[item.kind].capacity ? { contents: savedContents(world, item.id) } : {}),
+  };
+}
+
+/** Vuelve a poner un objeto guardado (con lo de adentro) donde se indica. */
+export function restoreItem(
+  world: World,
+  saved: SavedItem,
+  location: ItemLocation,
+  nextId: () => string,
+): Item {
+  const restored = world.items.add(nextId(), saved.kind, saved.amount, location);
+  restored.mark = saved.mark ?? null;
+  restored.book = saved.book ?? null;
+  restored.hue = saved.hue ?? null;
+  restored.treasure = saved.treasure ?? null;
+  restored.ship = saved.ship ?? null;
+  restored.newbie = saved.newbie === true;
+  restoreContents(world, restored.id, saved.contents ?? [], nextId);
+  return restored;
+}
+
+/** Valida un objeto leído de almacenamiento (null si está dañado). */
+export function parseSavedItem(value: unknown): SavedItem | null {
+  return parseItem(value);
 }
 
 /** Vuelve a poner adentro de una bolsa lo que tenía guardado. */

@@ -1,3 +1,4 @@
+import { HOUSE_DEEDS, HOUSE_KINDS, HOUSE_PLANS } from '../housing/houses';
 import type { ItemKind } from '../items/item-catalog';
 import { SPELLS, SPELL_KEYS } from '../magic/spell-catalog';
 
@@ -22,6 +23,7 @@ export const NPC_ROLES = [
   'jeweler',
   'scribe',
   'farmer',
+  'architect',
   // Gente del pueblo que no comercia: vecinos que caminan y guardias.
   'townsfolk',
   'guard',
@@ -410,6 +412,21 @@ export const VENDORS: Readonly<Record<NpcRole, VendorDefinition>> = {
       'galleon-deed': 2200,
       cannonball: 4,
     }),
+  },
+  architect: {
+    role: 'architect',
+    name: 'Octavio el arquitecto',
+    greeting:
+      'Planos para todos los gustos: desde una casilla de tablas hasta una fortaleza. Las casas se levantan en el campo, fuera de los pueblos.',
+    sells: offers(
+      Object.fromEntries(HOUSE_KINDS.map((k) => [HOUSE_DEEDS[k], HOUSE_PLANS[k].price])),
+    ),
+    // Las escrituras sin usar las recompra a la mitad.
+    buys: offers(
+      Object.fromEntries(
+        HOUSE_KINDS.map((k) => [HOUSE_DEEDS[k], Math.floor(HOUSE_PLANS[k].price / 2)]),
+      ),
+    ),
   },
   tailor: {
     role: 'tailor',

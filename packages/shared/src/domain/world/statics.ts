@@ -568,6 +568,29 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   'basalt-window-y': define('basalt-window-y', 'ventana', true, 2),
 };
 
+/**
+ * Adornos bajos del suelo (pasto alto, flores, yuyos, piedritas): no tapan el
+ * paso y se puede construir encima (quedan debajo del piso de la casa).
+ */
+export const GROUND_DECOR: ReadonlySet<StaticKind> = new Set<StaticKind>([
+  'flowers',
+  'bush',
+  'tall-grass',
+  'weeds',
+  'fern',
+  'mushrooms',
+  'wildflowers',
+  'peyote',
+  'dry-shrub',
+  'pebbles',
+  'jungle-plant',
+  'tundra-shrub',
+  'reeds',
+  'rubble',
+  'hay-pile',
+  'bones',
+]);
+
 export function isStaticKind(value: unknown): value is StaticKind {
   return typeof value === 'string' && (STATIC_KINDS as readonly string[]).includes(value);
 }

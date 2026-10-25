@@ -35,6 +35,21 @@ export class FloorLayer {
     }));
   }
 
+  /** Se levantó o se demolió una casa: suma sus pisos altos y saca los que ya no están. */
+  sync(): void {
+    const current = new Set(this.map.anchoredFloors());
+    for (let i = this.floors.length - 1; i >= 0; i--) {
+      const floor = this.floors[i];
+      if (!floor || current.has(floor.region)) continue;
+      floor.container?.destroy({ children: true });
+      this.floors.splice(i, 1);
+    }
+    const known = new Set(this.floors.map((f) => f.region));
+    for (const region of current)
+      if (!known.has(region))
+        this.floors.push({ region, bounds: boundsOf(region, this.ground), container: null });
+  }
+
   /** Arma los pisos que entran en pantalla y esconde los de arriba del edificio de uno. */
   update(view: Rectangle): void {
     for (const floor of this.floors) {

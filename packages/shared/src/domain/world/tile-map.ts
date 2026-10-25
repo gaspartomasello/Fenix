@@ -2,6 +2,7 @@ import type { Position } from '../geometry/position';
 import type { Direction } from '../geometry/direction';
 import {
   DOORS,
+  GROUND_DECOR,
   SEATS,
   STATICS,
   blocksSight,
@@ -79,6 +80,37 @@ export interface TileMapData {
   readonly heights?: readonly number[];
 }
 
+/** Un tile con otro terreno (el piso de una casa). */
+export interface TerrainPatch {
+  readonly x: number;
+  readonly y: number;
+  readonly terrain: Terrain;
+}
+
+/**
+ * Algo construido mientras se juega (una casa): objetos fijos, pisos, zonas y
+ * escaleras que se suman al mapa y se pueden volver a sacar. El servidor y el
+ * cliente arman lo mismo, así la predicción de movimiento coincide.
+ */
+export interface MapStructure {
+  readonly id: string;
+  readonly statics: readonly StaticPlacement[];
+  readonly terrain: readonly TerrainPatch[];
+  readonly regions: readonly RegionData[];
+  readonly teleporters: readonly Teleporter[];
+  /** Lo que reserva en el suelo: ahí no se puede construir otra cosa. */
+  readonly area?: TileArea;
+  /** Lo que tapa (el piso de la casa): los adornos del suelo que había ahí no se ven. */
+  readonly covers?: TileArea;
+}
+
+export interface TileArea {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
 /** Datos para construir un mapa; objetos y zonas son opcionales. */
 export type TileMapInit = Omit<TileMapData, 'statics' | 'regions' | 'teleporters'> &
   Partial<Pick<TileMapData, 'statics' | 'regions' | 'teleporters'>>;
@@ -109,6 +141,19 @@ export class TileMap {
   private readonly barriers = new Set<number>();
   /** Cubiertas de barcos: tiles de agua que se pisan mientras el barco esté ahí. */
   private readonly decks = new Set<number>();
+  /** Tiles con algún objeto fijo del mapa: 1 si son solo adornos del suelo, 2 si hay otra cosa. */
+  private readonly occupied: Uint8Array;
+  /** Lo construido mientras se juega (casas), y lo que cambia en cada tile. */
+  private readonly built = new Map<string, MapStructure>();
+  private readonly builtTerrain = new Map<number, Terrain>();
+  private readonly builtBlocked = new Map<number, number>();
+  private readonly builtOpaque = new Map<number, number>();
+  private readonly builtStatics = new Map<number, number>();
+  private readonly builtTeleports = new Map<number, Position>();
+  /** La zona construida de cada tile (una casa y sus pisos), para encontrarla rápido. */
+  private readonly builtRegions = new Map<number, RegionData>();
+  private readonly reserved = new Map<number, string>();
+  private readonly covered = new Map<number, string>();
 
   constructor(data: TileMapInit) {
     if (data.terrain.length !== data.width * data.height) {
@@ -124,29 +169,13 @@ export class TileMap {
     this.regions = data.regions ?? [];
     this.teleporters = data.teleporters ?? [];
     this.signs = data.signs ?? [];
-    for (const region of this.regions) {
-      if (!region.anchor || !region.floor) continue;
-      this.anchored.push(region);
-      this.anchoredLeft = Math.min(this.anchoredLeft, region.x - 1);
-      for (
-        let cy = Math.floor((region.y - 1) / ANCHOR_CELL);
-        cy <= Math.floor((region.y + region.height) / ANCHOR_CELL);
-        cy++
-      )
-        for (
-          let cx = Math.floor((region.x - 1) / ANCHOR_CELL);
-          cx <= Math.floor((region.x + region.width) / ANCHOR_CELL);
-          cx++
-        ) {
-          const key = gridKey(cx, cy);
-          const list = this.anchorGrid.get(key);
-          if (list) list.push(region);
-          else this.anchorGrid.set(key, [region]);
-        }
-    }
+    for (const region of this.regions) this.anchor(region);
     this.blocked = new Uint8Array(data.width * data.height);
     this.opaque = new Uint8Array(data.width * data.height);
+    this.occupied = new Uint8Array(data.width * data.height);
     for (const placed of this.statics) {
+      const level = GROUND_DECOR.has(placed.kind) ? 1 : 2;
+      this.eachTile(placed, (i) => (this.occupied[i] = Math.max(this.occupied[i] ?? 0, level)));
       if (blocksSight(placed.kind)) {
         const side = STATICS[placed.kind].footprint;
         for (let dy = 0; dy < side; dy++)
@@ -181,7 +210,8 @@ export class TileMap {
 
   terrainAt(position: Position): Terrain | undefined {
     if (!this.contains(position)) return undefined;
-    return this.terrain[position.y * this.width + position.x];
+    const i = position.y * this.width + position.x;
+    return this.builtTerrain.get(i) ?? this.terrain[i];
   }
 
   /** Altura del tile en escalones; fuera del mapa, la del borde más cercano. */
@@ -241,7 +271,25 @@ export class TileMap {
 
   /** ¿Hay un objeto fijo que tapa el tile (un muelle, una roca en el agua)? */
   hasBlockingStatic(position: Position): boolean {
-    return this.contains(position) && this.blocked[position.y * this.width + position.x] !== 0;
+    if (!this.contains(position)) return false;
+    const i = position.y * this.width + position.x;
+    return this.blocked[i] !== 0 || this.builtBlocked.has(i);
+  }
+
+  /**
+   * ¿Hay algún objeto fijo en el tile, aunque no tape (un cartel, unas flores)?
+   * Con `decorOk`, los adornos bajos del suelo no cuentan.
+   */
+  hasStaticAt(position: Position, decorOk = false): boolean {
+    if (!this.contains(position)) return false;
+    const i = position.y * this.width + position.x;
+    const placed = this.occupied[i] ?? 0;
+    return (decorOk ? placed > 1 : placed > 0) || this.builtStatics.has(i);
+  }
+
+  /** ¿Lo tapa una construcción (el piso de una casa)? Ahí no se ven los adornos del suelo. */
+  isCovered(position: Position): boolean {
+    return this.contains(position) && this.covered.has(position.y * this.width + position.x);
   }
 
   isDeck(position: Position): boolean {
@@ -256,7 +304,7 @@ export class TileMap {
     if (this.barriers.has(i)) return false;
     if (this.decks.has(i)) return true;
     if (!TERRAINS[terrain].walkable) return false;
-    return this.blocked[i] === 0 || this.openDoors.has(i);
+    return (this.blocked[i] === 0 && !this.builtBlocked.has(i)) || this.openDoors.has(i);
   }
 
   /**
@@ -314,7 +362,7 @@ export class TileMap {
     if (terrain === undefined) return true;
     if (terrain === Terrain.Rock || terrain === Terrain.Mountain) return true;
     const i = position.y * this.width + position.x;
-    return this.opaque[i] !== 0 && !this.openDoors.has(i);
+    return (this.opaque[i] !== 0 || this.builtOpaque.has(i)) && !this.openDoors.has(i);
   }
 
   /**
@@ -327,13 +375,16 @@ export class TileMap {
   }
 
   regionAt(position: Position): RegionData | undefined {
-    return this.regions.find(
-      (r) =>
-        position.x >= r.x &&
-        position.y >= r.y &&
-        position.x < r.x + r.width &&
-        position.y < r.y + r.height,
-    );
+    const inside = (r: RegionData): boolean =>
+      position.x >= r.x &&
+      position.y >= r.y &&
+      position.x < r.x + r.width &&
+      position.y < r.y + r.height;
+    // Lo construido (una casa) va antes que la zona grande donde está.
+    const built = this.contains(position)
+      ? this.builtRegions.get(position.y * this.width + position.x)
+      : undefined;
+    return built ?? this.regions.find(inside);
   }
 
   /** Zona protegida (un pueblo): las criaturas no entran y no se pelea entre jugadores. */
@@ -349,7 +400,154 @@ export class TileMap {
 
   /** Adónde lleva el tile, si es un teletransporte. */
   teleportAt(position: Position): Position | undefined {
+    if (this.contains(position)) {
+      const built = this.builtTeleports.get(position.y * this.width + position.x);
+      if (built) return built;
+    }
     return this.teleporters.find((t) => t.x === position.x && t.y === position.y)?.to;
+  }
+
+  // ── Lo construido mientras se juega ─────────────────────────────────
+
+  /** Suma una construcción (o la reemplaza, si ya estaba con ese id). */
+  addStructure(structure: MapStructure): void {
+    this.removeStructure(structure.id);
+    this.built.set(structure.id, structure);
+    for (const placed of structure.statics) {
+      const { blocking } = STATICS[placed.kind];
+      const sight = blocksSight(placed.kind);
+      this.eachTile(placed, (i) => {
+        bump(this.builtStatics, i, 1);
+        if (blocking) bump(this.builtBlocked, i, 1);
+        if (sight) bump(this.builtOpaque, i, 1);
+      });
+      if (!this.contains(placed)) continue;
+      const i = placed.y * this.width + placed.x;
+      const seat = SEATS[placed.kind];
+      if (seat !== undefined) this.seats.set(i, seat);
+      if (DOORS[placed.kind]) this.doors.set(i, placed.kind);
+    }
+    for (const patch of structure.terrain)
+      if (this.contains(patch))
+        this.builtTerrain.set(patch.y * this.width + patch.x, patch.terrain);
+    for (const t of structure.teleporters)
+      if (this.contains(t)) this.builtTeleports.set(t.y * this.width + t.x, t.to);
+    for (const region of structure.regions) {
+      this.eachIn(region, (i) => this.builtRegions.set(i, region));
+      this.anchor(region);
+    }
+    this.eachIn(structure.area, (i) => this.reserved.set(i, structure.id));
+    this.eachIn(structure.covers, (i) => this.covered.set(i, structure.id));
+  }
+
+  /** Saca una construcción (sus puertas abiertas se olvidan). Devuelve la que había. */
+  removeStructure(id: string): MapStructure | undefined {
+    const structure = this.built.get(id);
+    if (!structure) return undefined;
+    this.built.delete(id);
+    for (const placed of structure.statics) {
+      const { blocking } = STATICS[placed.kind];
+      const sight = blocksSight(placed.kind);
+      this.eachTile(placed, (i) => {
+        bump(this.builtStatics, i, -1);
+        if (blocking) bump(this.builtBlocked, i, -1);
+        if (sight) bump(this.builtOpaque, i, -1);
+      });
+      if (!this.contains(placed)) continue;
+      const i = placed.y * this.width + placed.x;
+      if (SEATS[placed.kind] !== undefined) this.seats.delete(i);
+      if (DOORS[placed.kind]) {
+        this.doors.delete(i);
+        this.openDoors.delete(i);
+      }
+    }
+    for (const patch of structure.terrain)
+      if (this.contains(patch)) this.builtTerrain.delete(patch.y * this.width + patch.x);
+    for (const t of structure.teleporters)
+      if (this.contains(t)) this.builtTeleports.delete(t.y * this.width + t.x);
+    for (const region of structure.regions) {
+      this.eachIn(region, (i) => {
+        if (this.builtRegions.get(i) === region) this.builtRegions.delete(i);
+      });
+      this.unanchor(region);
+    }
+    this.eachIn(structure.area, (i) => {
+      if (this.reserved.get(i) === id) this.reserved.delete(i);
+    });
+    this.eachIn(structure.covers, (i) => {
+      if (this.covered.get(i) === id) this.covered.delete(i);
+    });
+    return structure;
+  }
+
+  structure(id: string): MapStructure | undefined {
+    return this.built.get(id);
+  }
+
+  structures(): readonly MapStructure[] {
+    return [...this.built.values()];
+  }
+
+  /** La construcción que reservó este tile (para no construir encima), si hay una. */
+  structureAt(position: Position): string | undefined {
+    if (!this.contains(position)) return undefined;
+    return this.reserved.get(position.y * this.width + position.x);
+  }
+
+  /** Los tiles (índices) que ocupa un objeto fijo según su base. */
+  private eachTile(placed: StaticPlacement, visit: (i: number) => void): void {
+    const side = STATICS[placed.kind].footprint;
+    for (let dy = 0; dy < side; dy++)
+      for (let dx = 0; dx < side; dx++) {
+        const x = placed.x + dx;
+        const y = placed.y + dy;
+        if (x >= 0 && y >= 0 && x < this.width && y < this.height) visit(y * this.width + x);
+      }
+  }
+
+  private eachIn(area: TileArea | undefined, visit: (i: number) => void): void {
+    if (!area) return;
+    for (let y = Math.max(0, area.y); y < Math.min(this.height, area.y + area.height); y++)
+      for (let x = Math.max(0, area.x); x < Math.min(this.width, area.x + area.width); x++)
+        visit(y * this.width + x);
+  }
+
+  /** Anota un piso alto en la cuadrícula para encontrarlo rápido. */
+  private anchor(region: RegionData): void {
+    if (!region.anchor || !region.floor) return;
+    this.anchored.push(region);
+    this.anchoredLeft = Math.min(this.anchoredLeft, region.x - 1);
+    this.eachAnchorCell(region, (key) => {
+      const list = this.anchorGrid.get(key);
+      if (list) list.push(region);
+      else this.anchorGrid.set(key, [region]);
+    });
+  }
+
+  private unanchor(region: RegionData): void {
+    const at = this.anchored.indexOf(region);
+    if (at < 0) return;
+    this.anchored.splice(at, 1);
+    this.anchoredLeft = this.anchored.reduce((left, r) => Math.min(left, r.x - 1), Infinity);
+    this.eachAnchorCell(region, (key) => {
+      const list = this.anchorGrid.get(key)?.filter((r) => r !== region);
+      if (list && list.length > 0) this.anchorGrid.set(key, list);
+      else this.anchorGrid.delete(key);
+    });
+  }
+
+  private eachAnchorCell(region: RegionData, visit: (key: number) => void): void {
+    for (
+      let cy = Math.floor((region.y - 1) / ANCHOR_CELL);
+      cy <= Math.floor((region.y + region.height) / ANCHOR_CELL);
+      cy++
+    )
+      for (
+        let cx = Math.floor((region.x - 1) / ANCHOR_CELL);
+        cx <= Math.floor((region.x + region.width) / ANCHOR_CELL);
+        cx++
+      )
+        visit(gridKey(cx, cy));
   }
 
   toData(): TileMapData {
@@ -364,6 +562,13 @@ export class TileMap {
       ...(this.heights ? { heights: this.heights } : {}),
     };
   }
+}
+
+/** Suma (o resta) uno a la cuenta de un tile; en cero, lo saca. */
+function bump(counts: Map<number, number>, i: number, delta: number): void {
+  const next = (counts.get(i) ?? 0) + delta;
+  if (next > 0) counts.set(i, next);
+  else counts.delete(i);
 }
 
 /** Lado de cada celda de la cuadrícula de pisos altos. */

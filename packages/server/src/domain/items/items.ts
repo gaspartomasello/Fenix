@@ -533,6 +533,7 @@ export class Items {
       case 'map':
       case 'dig':
       case 'ship':
+      case 'house':
       case 'lockpick':
       case 'mastery':
         // Se resuelven en otros casos de uso (o en el cliente): acá no hay nada que hacer.

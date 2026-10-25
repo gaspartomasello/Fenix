@@ -56,6 +56,8 @@ const CHARACTER_BOX = { left: 16, right: 16, top: 64 };
 
 interface Chunk {
   readonly placements: readonly StaticPlacement[];
+  /** Lo construido (una casa): lo de abajo (los adornos del suelo) no se ve. */
+  readonly built?: true;
   readonly bounds: Rectangle;
   sprites: { sprite: Sprite; placement: StaticPlacement }[] | null;
   visible: boolean;
@@ -68,6 +70,8 @@ interface Chunk {
  */
 export class StaticLayer {
   private readonly chunks: Chunk[] = [];
+  /** Lo construido mientras se juega (las casas): un bloque por construcción. */
+  private readonly built = new Map<string, Chunk>();
 
   constructor(
     private readonly map: TileMap,
@@ -127,6 +131,32 @@ export class StaticLayer {
       this.setVisible(next, false);
     }
     this.fadeOccluders(focuses);
+  }
+
+  /** Suma lo construido (una casa): sus objetos van en un bloque propio. */
+  addStructure(id: string, placements: readonly StaticPlacement[]): void {
+    this.removeStructure(id);
+    const visible = placements.filter((p) => !INVISIBLE_STATICS.has(p.kind));
+    if (visible.length === 0) return;
+    const chunk: Chunk = {
+      placements: visible,
+      bounds: boundsOf(visible, this.ground),
+      sprites: null,
+      visible: false,
+      built: true,
+    };
+    this.built.set(id, chunk);
+    this.chunks.push(chunk);
+  }
+
+  /** Saca lo construido (una casa demolida o que se vuelve a armar). */
+  removeStructure(id: string): void {
+    const chunk = this.built.get(id);
+    if (!chunk) return;
+    this.built.delete(id);
+    this.hide(chunk);
+    const at = this.chunks.indexOf(chunk);
+    if (at >= 0) this.chunks.splice(at, 1);
   }
 
   /** Pide las texturas de un bloque; devuelve si ya están todas dibujadas. */
@@ -206,8 +236,11 @@ export class StaticLayer {
     for (const chunk of this.chunks) {
       if (!chunk.sprites || !chunk.visible) continue;
       for (const { sprite, placement } of chunk.sprites) {
-        // Lo de los pisos de arriba del edificio donde está uno no se ve.
-        sprite.visible = !this.ground.hidden(placement);
+        // Lo de los pisos de arriba del edificio donde está uno no se ve, ni los
+        // adornos del suelo que quedaron debajo de una casa.
+        sprite.visible =
+          !this.ground.hidden(placement) &&
+          (chunk.built === true || !this.map.isCovered(placement));
         if (!sprite.visible || LOW_STATICS.has(placement.kind)) continue;
         const depth = projectedDepth(front(placement));
         const s = this.ground.toScreen(footing(placement));

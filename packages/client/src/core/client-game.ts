@@ -13,9 +13,14 @@ import {
   type PolymorphForm,
 } from '@fenix/shared/magic/spell-catalog';
 import { isMountKind, type MountKind } from '@fenix/shared/mounts/mount-catalog';
+import type { HouseLevel, HouseSecurity } from '@fenix/shared/housing/houses';
+import { houseSign, houseStructure, insideHouse } from '@fenix/shared/housing/structure';
 import type {
   BackpackItemSnapshot,
   BookMessage,
+  HouseAction,
+  HouseSecurityChange,
+  HouseSnapshot,
   ShipAction,
   ShipSecurityChange,
   ShipSnapshot,
@@ -127,6 +132,15 @@ export interface ClientGameEvents extends Record<string, unknown> {
   shipPanelOpened: { shipId: EntityId; level: ShipLevel; security?: ShipSecurity };
   /** Un cañonazo. */
   cannonShot: { from: Position; to: Position; hit: boolean };
+  /** Casas que se levantaron o cambiaron (`added`) y las que se sacaron del mapa (`removed`). */
+  housesChanged: { added: readonly HouseSnapshot[]; removed: readonly EntityId[] };
+  /** Se abrió la ventana de una casa. */
+  housePanelOpened: {
+    houseId: EntityId;
+    level: HouseLevel;
+    security?: HouseSecurity;
+    storage?: { used: number; max: number };
+  };
   /** Se abrió un mapa del tesoro. */
   treasureMapOpened: { name: string; mark: TreasureMark; hint: string };
   /** Una puerta se abrió o se cerró. */
@@ -236,6 +250,8 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   private readonly _containers = new Map<string, ContainerContents>();
   /** Los barcos que se ven. */
   private readonly _ships = new Map<EntityId, ShipSnapshot>();
+  /** Todas las casas de los jugadores (también están armadas en el mapa). */
+  private readonly _houses = new Map<EntityId, HouseSnapshot>();
   private readonly containersRequested = new Set<string>();
   private corpseRequested: EntityId | null = null;
 
@@ -628,6 +644,50 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     if (this.self) this.gateway.send({ type: 'shipSecurity', shipId, change });
   }
 
+  // ── Casas ──────────────────────────────────────────────────────────
+
+  get houses(): readonly HouseSnapshot[] {
+    return [...this._houses.values()];
+  }
+
+  house(id: EntityId): HouseSnapshot | undefined {
+    return this._houses.get(id);
+  }
+
+  /** La casa que hay en esa posición (planta baja o piso alto). */
+  houseAt(position: Position): HouseSnapshot | undefined {
+    return this.houses.find((h) => insideHouse(h, position));
+  }
+
+  /** La casa cuyo cartel está en ese tile. */
+  houseWithSign(position: Position): HouseSnapshot | undefined {
+    return this.houses.find((h) => {
+      const sign = houseSign(h);
+      return sign.x === position.x && sign.y === position.y;
+    });
+  }
+
+  /** Levantar la casa de una escritura propia, centrada en `position`. */
+  placeHouse(deedId: EntityId, position: Position): void {
+    if (this.self) this.gateway.send({ type: 'placeHouse', deedId, position });
+  }
+
+  houseAction(houseId: EntityId, action: HouseAction): void {
+    if (this.self) this.gateway.send({ type: 'houseAction', houseId, action });
+  }
+
+  houseSecurity(houseId: EntityId, change: HouseSecurityChange): void {
+    if (this.self) this.gateway.send({ type: 'houseSecurity', houseId, change });
+  }
+
+  /** Arma (o vuelve a armar) una casa en el mapa local, con sus puertas abiertas. */
+  private putHouse(house: HouseSnapshot): void {
+    this._houses.set(house.id, house);
+    if (!this._map) return;
+    this._map.addStructure(houseStructure(house));
+    for (const door of house.openDoors ?? []) this._map.setDoorOpen(door, true);
+  }
+
   /** Pone o saca la cubierta de un barco en el mapa local (para caminar sobre él). */
   private setDecks(ship: ShipSnapshot, on: boolean): void {
     for (const t of shipTiles(ship.kind, ship, ship.facing)) this._map?.setDeck(t, on);
@@ -810,6 +870,8 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this.ground.clear();
         this._map = new TileMap(decodeMap(message.map));
         for (const door of message.openDoors ?? []) this._map.setDoorOpen(door, true);
+        // Las casas llegan enseguida (con el aviso `houses`), para el mapa nuevo.
+        this._houses.clear();
         this.selfIdValue = message.selfId;
         this.predictor = new MovementPredictor(this._map);
         this.time = { value: message.time, receivedAt: now };
@@ -940,6 +1002,36 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this.emit('shipsChanged', this.ships);
         break;
       }
+      case 'houses': {
+        const removed = [...this._houses.keys()];
+        for (const id of removed) this._map?.removeStructure(id);
+        this._houses.clear();
+        for (const house of message.houses) this.putHouse(house);
+        this.emit('housesChanged', { added: message.houses, removed });
+        break;
+      }
+      case 'houseChanged': {
+        const had = this._houses.has(message.house.id);
+        this.putHouse(message.house);
+        this.emit('housesChanged', {
+          added: [message.house],
+          removed: had ? [message.house.id] : [],
+        });
+        break;
+      }
+      case 'houseRemoved':
+        if (!this._houses.delete(message.id)) break;
+        this._map?.removeStructure(message.id);
+        this.emit('housesChanged', { added: [], removed: [message.id] });
+        break;
+      case 'housePanel':
+        this.emit('housePanelOpened', {
+          houseId: message.houseId,
+          level: message.level,
+          ...(message.security ? { security: message.security } : {}),
+          ...(message.storage ? { storage: message.storage } : {}),
+        });
+        break;
       case 'shipPanel':
         this.emit('shipPanelOpened', {
           shipId: message.shipId,

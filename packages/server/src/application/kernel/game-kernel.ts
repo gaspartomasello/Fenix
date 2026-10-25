@@ -1,10 +1,11 @@
 import type { Position } from '@fenix/shared/geometry/position';
 import type { EntityId } from '@fenix/shared/protocol/messages';
+import type { Item } from '../../domain/items/item';
 import type { Player } from '../../domain/player';
 import { isTestCharacter } from '../../domain/testing/test-character';
 import type { World } from '../../domain/world';
 import type { WorldClock } from '../../domain/world-clock';
-import type { Clock, IdGenerator, Notifier, RandomSource } from '../ports';
+import type { Clock, HouseStore, IdGenerator, Notifier, RandomSource } from '../ports';
 import { EventBus } from './event-bus';
 import type { GameEvents } from './game-events';
 import { Guards } from './guards';
@@ -26,6 +27,8 @@ export interface KernelDeps {
   readonly testCharacters?: readonly string[];
   /** Administradores del juego (los de prueba también lo son). */
   readonly admins?: readonly string[];
+  /** Dónde se guardan las casas de los jugadores; sin almacén, duran lo que dura el servidor. */
+  readonly houses?: HouseStore;
 }
 
 /**
@@ -49,11 +52,18 @@ export class GameKernel {
   readonly social: SocialNotifications;
   readonly events = new EventBus<GameEvents>();
   readonly services = new ServiceRegistry();
-  /** Reglas que niegan cosas: caminar de un tile a otro, abrir un recipiente. */
+  /**
+   * Reglas que niegan cosas: caminar de un tile a otro, abrir un recipiente,
+   * abrir o cerrar una puerta, levantar o mover un objeto del suelo.
+   */
   readonly guards = {
     move: new Guards<[player: Player, from: Position, to: Position]>(),
     container: new Guards<[playerId: EntityId, containerId: string]>(),
+    door: new Guards<[player: Player, position: Position]>(),
+    take: new Guards<[player: Player, item: Item]>(),
   };
+  /** Dónde se guardan las casas (si hay dónde). */
+  readonly houseStore: HouseStore | undefined;
   readonly itemUses = new ItemUses();
   readonly skills = new SkillUses();
   private readonly testCharacters: readonly string[];
@@ -68,6 +78,7 @@ export class GameKernel {
     this.notifier = deps.notifier;
     this.testCharacters = deps.testCharacters ?? [];
     this.admins = deps.admins ?? [];
+    this.houseStore = deps.houses;
     this.items = new ItemNotifications(this.world, this.notifier);
     this.mobiles = new MobileNotifications(this.world, this.notifier, this.clock);
     this.social = new SocialNotifications(this.world, this.clock, this.mobiles, this.notifier);

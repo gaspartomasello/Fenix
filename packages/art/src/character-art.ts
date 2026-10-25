@@ -230,6 +230,7 @@ const OUTFITS: Readonly<Partial<Record<NpcRole, Outfit>>> = {
   baker: 'apron',
   butcher: 'apron',
   jeweler: 'vest',
+  architect: 'vest',
   farmer: 'woodcutter',
 };
 

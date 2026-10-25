@@ -1,7 +1,9 @@
 import { tileDistance, type Position } from '@fenix/shared/geometry/position';
 import type { EntityId } from '@fenix/shared/protocol/messages';
 import { DOOR_RANGE, doorPartner } from '@fenix/shared/world/statics';
+import type { Player } from '../../../domain/player';
 import type { World } from '../../../domain/world';
+import type { Guards } from '../../kernel/guards';
 import type { Notifier } from '../../ports';
 
 /**
@@ -15,6 +17,8 @@ export class Doors {
   constructor(
     private readonly world: World,
     private readonly notifier: Notifier,
+    /** Reglas de otros módulos que no dejan usar una puerta (la de una casa privada). */
+    private readonly guards: Guards<[player: Player, position: Position]>,
   ) {}
 
   /** Abrir o cerrar; `range` es más largo con Telequinesis. */
@@ -26,6 +30,8 @@ export class Doors {
     if (!kind) return;
     if (tileDistance(player.position, position) > range)
       return this.say(playerId, 'Acercate a la puerta para abrirla.');
+    const refused = this.guards.refusal(player, position);
+    if (refused) return this.say(playerId, refused);
     const partner = doorPartner(kind, position);
     const leaves = partner && map.doorAt(partner) ? [position, partner] : [position];
     const open = !map.isDoorOpen(position);

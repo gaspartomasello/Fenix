@@ -29,6 +29,7 @@ const WEIGHTS: Partial<Record<ItemKind, number>> = {
   dagger: 1,
   kryss: 2,
   lockpick: 0.1,
+  'house-chest': 50,
 };
 
 export function itemWeight(kind: ItemKind): number {
@@ -36,6 +37,8 @@ export function itemWeight(kind: ItemKind): number {
   if (known !== undefined) return known;
   const definition = ITEMS[kind];
   if (definition.spell) return 0.1;
+  // La escritura de una casa es un papel.
+  if (definition.use === 'house') return 1;
   const weapon = weaponByKind(kind);
   if (weapon) return definition.twoHanded ? 10 : 6;
   const armor = armorRating(kind);

@@ -1,5 +1,6 @@
 import { SPELLS, SPELL_KEYS, type SpellKey } from '../magic/spell-catalog';
 import type { SkillKey } from '../skills/skill-catalog';
+import { HOUSE_PLANS, type HouseKind } from '../housing/houses';
 import type { EquipmentSlot } from './equipment';
 
 /** Tipos de objeto del juego. La clave es la que se usa en mapas y en la red. */
@@ -164,6 +165,17 @@ export const BASE_ITEM_KINDS = [
   'galleon-deed',
   'ship-hold',
   'cannonball',
+  // Casas: la escritura de cada una (se compra al arquitecto) y los cofres de adentro
+  'deed-wood-shack',
+  'deed-log-cabin',
+  'deed-stone-cottage',
+  'deed-sandstone-patio',
+  'deed-plank-house',
+  'deed-stone-house',
+  'deed-basalt-tower',
+  'deed-stone-keep',
+  'deed-fortress',
+  'house-chest',
   'black-pearl',
   'blood-moss',
   'garlic',
@@ -245,6 +257,7 @@ export type ItemUse =
   | 'map'
   | 'dig'
   | 'ship'
+  | 'house'
   | 'lockpick'
   | 'mastery'
   | 'none';
@@ -289,6 +302,14 @@ export interface ItemDefinition {
 
 type Spec = Omit<ItemDefinition, 'kind' | 'stackable' | 'use'> &
   Partial<Pick<ItemDefinition, 'stackable' | 'use'>>;
+
+/** La escritura de una casa: con doble clic se elige dónde levantarla. */
+const houseDeed = (kind: HouseKind): Spec => ({
+  name: `escritura de ${HOUSE_PLANS[kind].name}`,
+  plural: `escrituras de ${HOUSE_PLANS[kind].name}`,
+  article: 'una',
+  use: 'house',
+});
 
 const BASE: Readonly<Record<BaseItemKind, Spec>> = {
   gold: { name: 'moneda de oro', plural: 'monedas de oro', article: 'una', stackable: true },
@@ -422,6 +443,22 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
     plural: 'maquetas de galeón',
     article: 'una',
     use: 'ship',
+  },
+  'deed-wood-shack': houseDeed('wood-shack'),
+  'deed-log-cabin': houseDeed('log-cabin'),
+  'deed-stone-cottage': houseDeed('stone-cottage'),
+  'deed-sandstone-patio': houseDeed('sandstone-patio'),
+  'deed-plank-house': houseDeed('plank-house'),
+  'deed-stone-house': houseDeed('stone-house'),
+  'deed-basalt-tower': houseDeed('basalt-tower'),
+  'deed-stone-keep': houseDeed('stone-keep'),
+  'deed-fortress': houseDeed('fortress'),
+  'house-chest': {
+    name: 'cofre de la casa',
+    plural: 'cofres de la casa',
+    article: 'un',
+    fixed: true,
+    capacity: 125,
   },
   'ship-hold': {
     name: 'bodega del barco',

@@ -13,6 +13,7 @@ import { isChatChannel, isSocialCommand } from '../domain/social/groups';
 import { isDirection } from '../domain/geometry/direction';
 import { isMoveMode } from '../domain/rules/movement';
 import { isShipLevel, isShipOrder } from '../domain/ships/ships';
+import { isHouseList } from '../domain/housing/houses';
 import type { Position } from '../domain/geometry/position';
 import type {
   ClientMessage,
@@ -22,6 +23,8 @@ import type {
   ServerMessageType,
   ShipAction,
   ShipSecurityChange,
+  HouseAction,
+  HouseSecurityChange,
 } from './messages';
 
 /** Tamaño máximo aceptado para un mensaje entrante del cliente (bytes). */
@@ -260,6 +263,25 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
         return { ok: true, message: { type: 'shipSecurity', shipId: data.shipId, change } };
       break;
     }
+    case 'placeHouse': {
+      const position = asPosition(data.position);
+      if (isId(data.deedId) && position)
+        return { ok: true, message: { type: 'placeHouse', deedId: data.deedId, position } };
+      break;
+    }
+    case 'houseAction':
+      if (isId(data.houseId) && isHouseAction(data.action))
+        return {
+          ok: true,
+          message: { type: 'houseAction', houseId: data.houseId, action: data.action },
+        };
+      break;
+    case 'houseSecurity': {
+      const change = asHouseSecurityChange(data.change);
+      if (isId(data.houseId) && change)
+        return { ok: true, message: { type: 'houseSecurity', houseId: data.houseId, change } };
+      break;
+    }
     case 'buy':
       if (
         isId(data.vendorId) &&
@@ -420,6 +442,10 @@ const SERVER_TYPE_FLAGS: Readonly<Record<ServerMessageType, true>> = {
   ships: true,
   shipMoved: true,
   shipPanel: true,
+  houses: true,
+  houseChanged: true,
+  houseRemoved: true,
+  housePanel: true,
   cannonShot: true,
   questOffer: true,
   quests: true,
@@ -552,6 +578,29 @@ function asShipSecurityChange(value: unknown): ShipSecurityChange | null {
         isShipLevel(change.level)
         ? { kind: 'default', who: change.who, level: change.level }
         : null;
+    default:
+      return null;
+  }
+}
+
+function isHouseAction(value: unknown): value is HouseAction {
+  return value === 'panel' || value === 'eject' || value === 'demolish';
+}
+
+function asHouseSecurityChange(value: unknown): HouseSecurityChange | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const change = value as Record<string, unknown>;
+  const name = asShortName(change.name);
+  switch (change.kind) {
+    case 'add':
+    case 'remove':
+      return name && isHouseList(change.list)
+        ? { kind: change.kind, list: change.list, name }
+        : null;
+    case 'rename':
+      return name ? { kind: 'rename', name } : null;
+    case 'public':
+      return typeof change.on === 'boolean' ? { kind: 'public', on: change.on } : null;
     default:
       return null;
   }

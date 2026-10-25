@@ -4,7 +4,7 @@ import { Doors } from './doors';
 
 /** Abrir y cerrar puertas, a mano o con Telequinesis. */
 export const doorsModule: ModuleFactory = (kernel) => {
-  const doors = new Doors(kernel.world, kernel.notifier);
+  const doors = new Doors(kernel.world, kernel.notifier, kernel.guards.door);
   kernel.events.on('telekinesis', ({ casterId, position }) => {
     if (kernel.world.map.doorAt(position)) doors.use(casterId, position, SPELL_RANGE);
   });

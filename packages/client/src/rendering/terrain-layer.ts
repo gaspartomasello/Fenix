@@ -79,6 +79,21 @@ export class TerrainLayer {
   }
 
   /**
+   * El terreno cambió en esos tiles (el piso de una casa): los bloques que
+   * los tocan (y sus vecinos, por los bordes mezclados) se vuelven a armar.
+   */
+  invalidate(x0: number, y0: number, x1: number, y1: number): void {
+    for (const chunk of this.chunks) {
+      if (!chunk.container) continue;
+      const right = chunk.cx + CHUNK_SIZE;
+      const bottom = chunk.cy + CHUNK_SIZE;
+      if (chunk.cx > x1 + 1 || right < x0 - 1 || chunk.cy > y1 + 1 || bottom < y0 - 1) continue;
+      chunk.container.destroy({ children: true });
+      chunk.container = null;
+    }
+  }
+
+  /**
    * Sombra de la ladera en un tile, con la pendiente medida en un área de
    * unos tiles (así pasa de un tile al otro sin escalones).
    */

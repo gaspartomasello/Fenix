@@ -1,4 +1,6 @@
 import type { Position } from '@fenix/shared/geometry/position';
+import type { HouseKind } from '@fenix/shared/housing/houses';
+import type { MapStructure } from '@fenix/shared/world/tile-map';
 import { ITEMS } from '@fenix/shared/items/item-catalog';
 import type { EntityId, GroundItemSnapshot, ShipSnapshot } from '@fenix/shared/protocol/messages';
 import { STATIC_CONTAINERS } from '@fenix/shared/world/statics';
@@ -12,6 +14,7 @@ import { CharacterView, type OverheadLabels } from './character-view';
 import { EffectsLayer } from './effects-layer';
 import { FieldLayer } from './field-layer';
 import { FloorLayer } from './floor-layer';
+import { HousePreview } from './house-preview';
 import { ItemLayer } from './item-layer';
 import { Ground } from './ground';
 import { renderResolution, type ScreenPoint } from './iso';
@@ -66,6 +69,10 @@ export class GameRenderer {
   private readonly groundItems = new ItemLayer(this.textures, this.entityLayer, this.ground);
   private readonly fields = new FieldLayer(this.textures, this.entityLayer, this.ground);
   private readonly ships = new ShipLayer(this.textures, this.ground);
+  /** La casa que se está por levantar (mientras se elige el lugar). */
+  private readonly housePreview = new HousePreview(this.textures, this.ground);
+  /** Lo que ocupa cada casa armada (para volver a dibujar el suelo al sacarla). */
+  private readonly builtAreas = new Map<string, readonly [number, number, number, number]>();
   private readonly effects = new EffectsLayer((id, now) => {
     for (const entity of this.game.allEntities())
       if (entity.id === id) return entity.renderPosition(now);
@@ -113,6 +120,14 @@ export class GameRenderer {
   /** El barco bajo un punto de la pantalla (un tile de su cubierta). */
   shipAt(point: ScreenPoint): ShipSnapshot | undefined {
     return this.game.shipAt(this.screenToTile(point));
+  }
+
+  /**
+   * Los tiles bajo un punto de la pantalla y un poco más adelante (lo alto de
+   * un objeto sube sobre su tile y tapa los de atrás): `lifts` en pixeles.
+   */
+  tilesUnder(point: ScreenPoint, lifts: readonly number[]): Position[] {
+    return lifts.map((lift) => this.screenToTile({ x: point.x, y: point.y + lift * this.zoom }));
   }
 
   /** Texto del cartel bajo un punto de la pantalla (el poste sube un poco sobre su tile). */
@@ -370,6 +385,14 @@ export class GameRenderer {
         this.effects.addSpell(spell, casterId, targetId, performance.now()),
       ),
       this.game.on('shipsChanged', (ships) => this.ships.apply(ships)),
+      this.game.on('housesChanged', ({ added, removed }) => {
+        for (const id of removed) this.unbuild(id);
+        for (const house of added) {
+          const structure = this.game.map?.structure(house.id);
+          if (structure) this.build(structure);
+        }
+        this.floors?.sync();
+      }),
       this.game.on('cannonShot', ({ from, to, hit }) =>
         this.effects.addShot(from, to, hit, performance.now()),
       ),
@@ -383,6 +406,41 @@ export class GameRenderer {
     );
   }
 
+  /** Muestra la casa que se levantaría centrada en `center` (verde si se puede). */
+  showHousePreview(kind: HouseKind, center: Position, valid: boolean): void {
+    this.housePreview.show(kind, center, valid);
+  }
+
+  hideHousePreview(): void {
+    this.housePreview.hide();
+  }
+
+  /** Dibuja lo construido (una casa): sus objetos y el piso nuevo. */
+  private build(structure: MapStructure): void {
+    this.statics?.addStructure(structure.id, structure.statics);
+    let x0 = Infinity;
+    let y0 = Infinity;
+    let x1 = -Infinity;
+    let y1 = -Infinity;
+    for (const t of structure.terrain) {
+      x0 = Math.min(x0, t.x);
+      y0 = Math.min(y0, t.y);
+      x1 = Math.max(x1, t.x);
+      y1 = Math.max(y1, t.y);
+    }
+    if (x0 <= x1) {
+      this.builtAreas.set(structure.id, [x0, y0, x1, y1]);
+      this.terrain?.invalidate(x0, y0, x1, y1);
+    }
+  }
+
+  private unbuild(id: string): void {
+    this.statics?.removeStructure(id);
+    const area = this.builtAreas.get(id);
+    this.builtAreas.delete(id);
+    if (area) this.terrain?.invalidate(...area);
+  }
+
   private setMap(map: TileMap): void {
     this.statics?.destroy();
     this.terrain?.destroy();
@@ -392,7 +450,15 @@ export class GameRenderer {
     this.terrain = new TerrainLayer(map, this.textures, this.ground);
     this.floors = new FloorLayer(map, this.textures, this.entityLayer, this.ground);
     this.statics = new StaticLayer(map, this.textures, this.entityLayer, this.ground);
-    this.scene.addChild(this.terrain.container, this.ships.container, this.entityLayer);
+    this.builtAreas.clear();
+    // Lo que ya estaba construido en el mapa (las casas que llegaron antes de dibujar).
+    for (const structure of map.structures()) this.build(structure);
+    this.scene.addChild(
+      this.terrain.container,
+      this.ships.container,
+      this.entityLayer,
+      this.housePreview.container,
+    );
   }
 
   /** Nombres y números de daño sobre las cabezas: sí o no (opciones del jugador). */
