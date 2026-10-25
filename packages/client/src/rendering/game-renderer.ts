@@ -24,7 +24,10 @@ import { StaticLayer } from './static-layer';
 import { TerrainLayer } from './terrain-layer';
 import { TextureCache } from './texture-cache';
 
-const ZOOM_LEVELS = [1, 1.5, 2] as const;
+/** Niveles de zoom; el primero (más lejos) solo en el celular, donde la pantalla es chica. */
+const ZOOM_LEVELS = [0.75, 1, 1.5, 2] as const;
+/** El nivel con que se empieza (tamaño normal). */
+const NORMAL_ZOOM = 1;
 /** Tiempo por cuadro para dibujar de antemano personajes y criaturas. */
 const PREPARE_BUDGET_MS = 4;
 /** Distancia (en tiles) a la que se destapa a los demás detrás de árboles y paredes. */
@@ -78,7 +81,8 @@ export class GameRenderer {
       if (entity.id === id) return entity.renderPosition(now);
     return null;
   }, this.ground);
-  private zoomIndex = 0;
+  private zoomIndex = NORMAL_ZOOM;
+  private minZoomIndex = NORMAL_ZOOM;
   private containerMap: TileMap | null = null;
   private containerTiles = new Set<string>();
   private readonly unsubscribe: (() => void)[] = [];
@@ -241,9 +245,17 @@ export class GameRenderer {
     return best?.id ?? null;
   }
 
+  /** En el celular se puede alejar un nivel más que en la computadora. */
+  allowFarZoom(): void {
+    this.minZoomIndex = 0;
+  }
+
   /** Cambia el nivel de zoom: +1 acerca, -1 aleja. */
   stepZoom(delta: 1 | -1): void {
-    this.zoomIndex = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, this.zoomIndex + delta));
+    this.zoomIndex = Math.max(
+      this.minZoomIndex,
+      Math.min(ZOOM_LEVELS.length - 1, this.zoomIndex + delta),
+    );
     this.world.scale.set(this.zoom);
     this.glowing.scale.set(this.zoom);
   }
@@ -344,7 +356,7 @@ export class GameRenderer {
   }
 
   private get zoom(): number {
-    return ZOOM_LEVELS[this.zoomIndex] ?? 1;
+    return ZOOM_LEVELS[this.zoomIndex] ?? ZOOM_LEVELS[NORMAL_ZOOM];
   }
 
   private async init(host: HTMLElement): Promise<void> {
