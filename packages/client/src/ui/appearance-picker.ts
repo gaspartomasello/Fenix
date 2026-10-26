@@ -1,15 +1,15 @@
 import {
   CLOTH_HUES,
   DEFAULT_APPEARANCE,
-  FACIAL_HAIR,
   FACIAL_HAIR_NAMES,
   GENDERS,
   GENDER_NAMES,
-  HAIR_STYLES,
   HAIR_STYLE_NAMES,
   HAIR_HUES,
   SKIN_TONES,
   type Appearance,
+  type FacialHair,
+  type HairStyle,
 } from '@fenix/shared/character/appearance';
 import { startingClothes } from '@fenix/shared/character/creation';
 import { Direction } from '@fenix/shared/geometry/direction';
@@ -17,7 +17,12 @@ import type { EquipmentHues, EquipmentLook } from '@fenix/shared/protocol/messag
 import { drawCharacterFrame } from '@fenix/art';
 import { toCanvas } from '../platform/canvas';
 import { el, hexColor } from './dom';
-import { drawPaintedPortrait, portraitHairStyles } from './portrait-art';
+import {
+  drawPaintedPortrait,
+  portraitBeards,
+  portraitFaces,
+  portraitHairStyles,
+} from './portrait-art';
 
 const PREVIEW_SCALE = 2;
 const PREVIEW_DIRECTIONS = [
@@ -52,10 +57,17 @@ export function drawPortrait(
   ctx.drawImage(art, 0, 0, canvas.width, canvas.height);
 }
 
+/** Un selector con flechas (◀ nombre ▶) sobre una lista que puede cambiar. */
+interface Stepper<T> {
+  readonly row: HTMLElement;
+  /** Cambia las opciones (y, si el elegido ya no está, toma el primero). */
+  setOptions(options: readonly T[]): void;
+}
+
 /**
  * El retrato pintado grande y la vista previa del mundo que gira, con filas
- * para elegir cuerpo, ropa, piel, pelo, peinado y barba. En el retrato solo
- * se ofrecen los peinados que ya tienen dibujo.
+ * para elegir cuerpo, ropa, piel y pelo, y selectores con flechas para el
+ * rostro, el peinado y la barba (solo los que ya tienen dibujo).
  */
 export class AppearancePicker {
   readonly preview: HTMLElement;
@@ -63,9 +75,10 @@ export class AppearancePicker {
   private readonly portrait: HTMLCanvasElement;
   readonly rows: HTMLElement[];
   private appearance: Appearance = DEFAULT_APPEARANCE;
+  private readonly face: Stepper<number>;
+  private readonly hair: Stepper<HairStyle>;
   /** Las mujeres no eligen barba. */
-  private readonly beardRow: HTMLElement;
-  private readonly peinado: HTMLElement;
+  private readonly beard: Stepper<FacialHair>;
   private previewTurn = 0;
   private readonly previewTimer: number;
 
@@ -76,17 +89,31 @@ export class AppearancePicker {
       attrs: { role: 'img', 'aria-label': 'Retrato del personaje' },
     });
     this.preview = el('div', { className: 'login-looks' }, [this.portrait, this.world]);
-    this.beardRow = this.optionRow('Barba', FACIAL_HAIR, FACIAL_HAIR_NAMES, 'facialHair');
-    this.peinado = this.optionRow('Peinado', HAIR_STYLES, HAIR_STYLE_NAMES, 'hairStyle');
+    this.face = this.stepper<number>(
+      'Rostro',
+      (n) => `Rostro ${n + 1}`,
+      (face) => ({ face }),
+    );
+    this.hair = this.stepper<HairStyle>(
+      'Peinado',
+      (s) => HAIR_STYLE_NAMES[s],
+      (hairStyle) => ({ hairStyle }),
+    );
+    this.beard = this.stepper<FacialHair>(
+      'Barba',
+      (b) => FACIAL_HAIR_NAMES[b],
+      (facialHair) => ({ facialHair }),
+    );
     this.rows = [
-      this.optionRow('Cuerpo', GENDERS, GENDER_NAMES, 'gender'),
+      this.genderRow(),
       this.swatchRow('Ropa', CLOTH_HUES, 'clothHue'),
       this.swatchRow('Piel', SKIN_TONES, 'skinTone'),
       this.swatchRow('Pelo', HAIR_HUES, 'hairHue'),
-      this.peinado,
-      this.beardRow,
+      this.face.row,
+      this.hair.row,
+      this.beard.row,
     ];
-    this.showHairStyles();
+    this.applyGender();
     this.drawPreview();
     this.previewTimer = window.setInterval(() => {
       this.previewTurn = (this.previewTurn + 1) % PREVIEW_DIRECTIONS.length;
@@ -123,72 +150,102 @@ export class AppearancePicker {
     ]);
   }
 
-  /** Fila de opciones con nombre (peinado, barba). */
-  private optionRow<K extends 'gender' | 'hairStyle' | 'facialHair'>(
-    label: string,
-    options: readonly NonNullable<Appearance[K]>[],
-    names: Readonly<Record<NonNullable<Appearance[K]>, string>>,
-    key: K,
-  ): HTMLElement {
-    const current = (): Appearance[K] | undefined => this.appearance[key] ?? options[0];
-    const buttons = options.map((option) => {
+  private genderRow(): HTMLElement {
+    const buttons = GENDERS.map((gender) => {
       const button = el('button', {
         className: 'option-chip',
-        text: names[option],
-        attrs: { type: 'button', 'aria-pressed': String(current() === option) },
+        text: GENDER_NAMES[gender],
+        attrs: {
+          type: 'button',
+          'aria-pressed': String((this.appearance.gender ?? 'male') === gender),
+        },
       });
       button.addEventListener('click', () => {
-        this.appearance = { ...this.appearance, [key]: option };
-        buttons.forEach((b, i) => b.setAttribute('aria-pressed', String(options[i] === option)));
-        if (key === 'gender') {
-          this.applyGender(option === 'female');
-          this.showHairStyles();
-        }
+        this.appearance = { ...this.appearance, gender };
+        buttons.forEach((b, i) => b.setAttribute('aria-pressed', String(GENDERS[i] === gender)));
+        this.applyGender();
         this.drawPreview();
       });
       return button;
     });
     return el('div', { className: 'swatch-row' }, [
-      el('span', { className: 'swatch-label', text: label }),
-      el('div', { className: 'swatches', attrs: { role: 'group', 'aria-label': label } }, buttons),
+      el('span', { className: 'swatch-label', text: 'Cuerpo' }),
+      el(
+        'div',
+        { className: 'swatches', attrs: { role: 'group', 'aria-label': 'Cuerpo' } },
+        buttons,
+      ),
     ]);
   }
 
-  /** Al elegir mujer: sin barba y con pelo largo, si todavía tenía el peinado de hombre. */
-  private applyGender(female: boolean): void {
-    this.beardRow.hidden = female;
-    if (!female) return;
-    const hairStyle =
-      !this.appearance.hairStyle || this.appearance.hairStyle === 'short'
-        ? 'long'
-        : this.appearance.hairStyle;
-    this.appearance = { ...this.appearance, facialHair: 'none', hairStyle };
-    this.peinado
-      .querySelectorAll<HTMLButtonElement>('.option-chip')
-      .forEach((b) =>
-        b.setAttribute('aria-pressed', String(b.textContent === HAIR_STYLE_NAMES[hairStyle])),
-      );
+  /** Fila con flechas para pasar de una opción a otra. */
+  private stepper<T>(
+    label: string,
+    name: (option: T) => string,
+    change: (option: T) => Partial<Appearance>,
+  ): Stepper<T> {
+    let options: readonly T[] = [];
+    let index = 0;
+    const text = el('span', { className: 'stepper-value', attrs: { 'aria-live': 'polite' } });
+    const arrow = (symbol: string, step: number, hint: string): HTMLButtonElement => {
+      const button = el('button', {
+        className: 'option-chip stepper-arrow',
+        text: symbol,
+        attrs: { type: 'button', 'aria-label': `${hint} (${label.toLowerCase()})` },
+      });
+      button.addEventListener('click', () => {
+        if (options.length === 0) return;
+        index = (index + step + options.length) % options.length;
+        pick();
+        this.drawPreview();
+      });
+      return button;
+    };
+    const pick = (): void => {
+      const option = options[index];
+      if (option === undefined) return;
+      text.textContent = name(option);
+      this.appearance = { ...this.appearance, ...change(option) };
+    };
+    const row = el('div', { className: 'swatch-row' }, [
+      el('span', { className: 'swatch-label', text: label }),
+      el('div', { className: 'stepper', attrs: { role: 'group', 'aria-label': label } }, [
+        arrow('◀', -1, 'Anterior'),
+        text,
+        arrow('▶', 1, 'Siguiente'),
+      ]),
+    ]);
+    return {
+      row,
+      setOptions: (next) => {
+        const current = options[index];
+        options = next;
+        index = Math.max(0, current === undefined ? 0 : options.indexOf(current));
+        row.hidden = options.length < 2;
+        pick();
+      },
+    };
   }
 
-  /** Solo los peinados con dibujo para este cuerpo; si el elegido no tiene, se cambia. */
-  private showHairStyles(): void {
+  /** Al cambiar de cuerpo, los rostros, peinados y barbas con dibujo para ese cuerpo. */
+  private applyGender(): void {
     const gender = this.appearance.gender ?? 'male';
-    const available = portraitHairStyles(gender);
-    const current = this.appearance.hairStyle ?? 'short';
-    if (!available.includes(current)) {
-      const fallback = available.find((s) => s !== 'bald') ?? 'bald';
-      this.appearance = { ...this.appearance, hairStyle: fallback };
+    const faces = portraitFaces(gender);
+    this.face.setOptions(Array.from({ length: faces }, (_, i) => i));
+    if (faces === 0) this.appearance = { ...this.appearance, face: 0 };
+    // Primero los que tienen pelo; pelado al final.
+    const styles = portraitHairStyles(gender);
+    this.hair.setOptions([...styles.filter((s) => s !== 'bald'), 'bald']);
+    if (gender === 'female') {
+      this.beard.setOptions([]);
+      this.appearance = { ...this.appearance, facialHair: 'none' };
+    } else {
+      this.beard.setOptions(portraitBeards(gender));
     }
-    const chosen = this.appearance.hairStyle;
-    this.peinado.querySelectorAll<HTMLButtonElement>('.option-chip').forEach((b, i) => {
-      const style = HAIR_STYLES[i];
-      b.hidden = style === undefined || !available.includes(style);
-      b.setAttribute('aria-pressed', String(style === chosen));
-    });
   }
 
   private drawPreview(): void {
-    void drawPaintedPortrait(this.portrait, this.appearance);
+    void drawPaintedPortrait(this.portrait, this.appearance, 'bust');
     drawPortrait(
       this.world,
       this.appearance,

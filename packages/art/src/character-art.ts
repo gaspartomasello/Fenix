@@ -1,4 +1,4 @@
-import type { Appearance } from '@fenix/shared/character/appearance';
+import { WORLD_FACIAL_HAIR, type Appearance } from '@fenix/shared/character/appearance';
 import type { NpcRole } from '@fenix/shared/economy/vendors';
 import type { Direction } from '@fenix/shared/geometry/direction';
 import { ITEMS, type ItemKind } from '@fenix/shared/items/item-catalog';
@@ -351,7 +351,7 @@ function drawFigure(
     skin: figure.palette.skin,
     hair: figure.palette.hair,
     hairStyle: appearance.hairStyle ?? (female ? 'long' : 'short'),
-    facialHair: female ? 'none' : (appearance.facialHair ?? 'none'),
+    facialHair: female ? 'none' : WORLD_FACIAL_HAIR[appearance.facialHair ?? 'none'],
     female,
     headgear:
       headgear === 'straw-hat' || headgear === 'feathered-hat' || headgear === 'tricorne'

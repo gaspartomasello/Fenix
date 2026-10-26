@@ -1,4 +1,4 @@
-import type { FacialHair, HairStyle } from '@fenix/shared/character/appearance';
+import type { HairStyle, WorldFacialHair } from '@fenix/shared/character/appearance';
 import type { Basis } from './humanoid-rig';
 import type { Rgb } from './pixel-art';
 import {
@@ -95,7 +95,7 @@ export interface HeadLook {
   readonly skin: Ramp;
   readonly hair: Ramp;
   readonly hairStyle: HairStyle;
-  readonly facialHair: FacialHair;
+  readonly facialHair: WorldFacialHair;
   readonly female: boolean;
   readonly headgear:
     | 'cap'
@@ -420,7 +420,7 @@ function drawHair(head: HeadParts, hair: Ramp, style: HairStyle, underHat: boole
   }
 }
 
-function drawFacialHair(head: HeadParts, hair: Ramp, kind: FacialHair): void {
+function drawFacialHair(head: HeadParts, hair: Ramp, kind: WorldFacialHair): void {
   if (kind === 'none') return;
   if (kind === 'goatee') {
     // Chivita: el mentón cubierto, sin las mejillas.

@@ -160,9 +160,25 @@ body {
 }
 
 .login-portrait {
-  width: 205px;
-  height: 341px;
+  width: 276px;
+  height: 315px;
   background: radial-gradient(ellipse at 50% 60%, rgb(255 255 255 / 8%), transparent 70%);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.stepper-value {
+  min-width: 9.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.stepper-arrow {
+  min-width: 2rem;
 }
 
 .login-looks .login-preview {
@@ -171,8 +187,8 @@ body {
 
 @media (max-width: 640px), (max-height: 520px) {
   .login-portrait {
-    width: 123px;
-    height: 205px;
+    width: 166px;
+    height: 189px;
   }
 }
 
