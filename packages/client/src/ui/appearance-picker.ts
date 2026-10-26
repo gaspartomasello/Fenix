@@ -17,6 +17,7 @@ import type { EquipmentHues, EquipmentLook } from '@fenix/shared/protocol/messag
 import { drawCharacterFrame } from '@fenix/art';
 import { toCanvas } from '../platform/canvas';
 import { el, hexColor } from './dom';
+import { drawPaintedPortrait, portraitHairStyles } from './portrait-art';
 
 const PREVIEW_SCALE = 2;
 const PREVIEW_DIRECTIONS = [
@@ -51,9 +52,15 @@ export function drawPortrait(
   ctx.drawImage(art, 0, 0, canvas.width, canvas.height);
 }
 
-/** Vista previa que gira y filas para elegir cuerpo, ropa, piel, pelo, peinado y barba. */
+/**
+ * El retrato pintado grande y la vista previa del mundo que gira, con filas
+ * para elegir cuerpo, ropa, piel, pelo, peinado y barba. En el retrato solo
+ * se ofrecen los peinados que ya tienen dibujo.
+ */
 export class AppearancePicker {
-  readonly preview: HTMLCanvasElement;
+  readonly preview: HTMLElement;
+  private readonly world: HTMLCanvasElement;
+  private readonly portrait: HTMLCanvasElement;
   readonly rows: HTMLElement[];
   private appearance: Appearance = DEFAULT_APPEARANCE;
   /** Las mujeres no eligen barba. */
@@ -63,7 +70,12 @@ export class AppearancePicker {
   private readonly previewTimer: number;
 
   constructor() {
-    this.preview = el('canvas', { className: 'login-preview', attrs: { 'aria-hidden': 'true' } });
+    this.world = el('canvas', { className: 'login-preview', attrs: { 'aria-hidden': 'true' } });
+    this.portrait = el('canvas', {
+      className: 'login-portrait',
+      attrs: { role: 'img', 'aria-label': 'Retrato del personaje' },
+    });
+    this.preview = el('div', { className: 'login-looks' }, [this.portrait, this.world]);
     this.beardRow = this.optionRow('Barba', FACIAL_HAIR, FACIAL_HAIR_NAMES, 'facialHair');
     this.peinado = this.optionRow('Peinado', HAIR_STYLES, HAIR_STYLE_NAMES, 'hairStyle');
     this.rows = [
@@ -74,6 +86,7 @@ export class AppearancePicker {
       this.peinado,
       this.beardRow,
     ];
+    this.showHairStyles();
     this.drawPreview();
     this.previewTimer = window.setInterval(() => {
       this.previewTurn = (this.previewTurn + 1) % PREVIEW_DIRECTIONS.length;
@@ -127,7 +140,10 @@ export class AppearancePicker {
       button.addEventListener('click', () => {
         this.appearance = { ...this.appearance, [key]: option };
         buttons.forEach((b, i) => b.setAttribute('aria-pressed', String(options[i] === option)));
-        if (key === 'gender') this.applyGender(option === 'female');
+        if (key === 'gender') {
+          this.applyGender(option === 'female');
+          this.showHairStyles();
+        }
         this.drawPreview();
       });
       return button;
@@ -154,9 +170,27 @@ export class AppearancePicker {
       );
   }
 
+  /** Solo los peinados con dibujo para este cuerpo; si el elegido no tiene, se cambia. */
+  private showHairStyles(): void {
+    const gender = this.appearance.gender ?? 'male';
+    const available = portraitHairStyles(gender);
+    const current = this.appearance.hairStyle ?? 'short';
+    if (!available.includes(current)) {
+      const fallback = available.find((s) => s !== 'bald') ?? 'bald';
+      this.appearance = { ...this.appearance, hairStyle: fallback };
+    }
+    const chosen = this.appearance.hairStyle;
+    this.peinado.querySelectorAll<HTMLButtonElement>('.option-chip').forEach((b, i) => {
+      const style = HAIR_STYLES[i];
+      b.hidden = style === undefined || !available.includes(style);
+      b.setAttribute('aria-pressed', String(style === chosen));
+    });
+  }
+
   private drawPreview(): void {
+    void drawPaintedPortrait(this.portrait, this.appearance);
     drawPortrait(
-      this.preview,
+      this.world,
       this.appearance,
       PREVIEW_DIRECTIONS[this.previewTurn] ?? Direction.SouthEast,
     );

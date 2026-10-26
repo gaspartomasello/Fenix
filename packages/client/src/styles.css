@@ -151,6 +151,31 @@ body {
   image-rendering: pixelated;
 }
 
+/* Creación de personaje: el retrato pintado grande y, al lado, cómo se ve en el mundo. */
+.login-looks {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.login-portrait {
+  width: 205px;
+  height: 341px;
+  background: radial-gradient(ellipse at 50% 60%, rgb(255 255 255 / 8%), transparent 70%);
+}
+
+.login-looks .login-preview {
+  align-self: flex-end;
+}
+
+@media (max-width: 640px), (max-height: 520px) {
+  .login-portrait {
+    width: 123px;
+    height: 205px;
+  }
+}
+
 .login-error {
   min-height: 1.2em;
   margin: 0;
