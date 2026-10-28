@@ -136,6 +136,7 @@ describe('buildCity', () => {
       swamp: 'plank-wall-x',
       volcanic: 'basalt-wall-x',
       bandit: 'tent',
+      jungle: 'log-wall-x',
     };
     for (const [style, kind] of Object.entries(walls) as [CityStyle, string][]) {
       const city = buildCity({ name: 'X', style, seed: 9, size: 'medium' });

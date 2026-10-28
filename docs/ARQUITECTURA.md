@@ -1254,6 +1254,28 @@ fuera de la pantalla dejando 48 px asomados para volver a agarrarla. Tocarla la 
 atajo (B, C, el botón Mochila…) la trae adelante y entera si estaba tapada o corrida, y si ya
 estaba así, la cierra.
 
+## Continente de la selva (etapa 76)
+
+Al oeste del continente de Puerto Ceniza, cruzando el mar, hay un segundo continente de selva y
+ruinas antiguas (unos 800 × 1200 tiles de tierra en el mapa de 1400 × 2000).
+
+- **Forma**: `generateIslandMap({ shape: 'jungle' })` usa `JungleShape`: varios lóbulos con la
+  costa recortada, un espinazo de sierras de norte a sur con pasos y macizos sueltos. Hace calor en
+  todas partes: selva cerrada, manglares (pantano) en lo bajo y húmedo, y claros de sabana.
+- **Armado**: `buildWorld` genera la franja de la selva aparte (`withJungleWest`), corre todo el
+  continente principal hacia el este y une los dos en un mismo mapa antes de sumar la mazmorra, lo
+  de abajo de los pueblos y los pisos altos (así el pueblo de la selva también tiene cripta y pisos).
+  Solo en mapas grandes y alargados (desde 1000 de ancho) o con `jungle: true`; las pruebas chicas
+  no lo arman. Cambió la forma del mundo: `WORLD_VERSION` 9.
+- **Puerto Esmeralda**: pueblo de estilo `jungle` (troncos, empalizada, empedrado de una ciudad
+  antigua, palmeras y braseros), con su muelle. No se llega caminando: hay que ir en barco o con
+  runas.
+- **Lugares** (`populateContinent(…, 'jungle')`): Pirámide del Jaguar (gradas con altura), Ciudad
+  Perdida, Templo Hundido, Altar de las Serpientes, Terrazas de los Monos, Tumbas del Rey Olvidado y
+  el Campamento de los Exploradores. Los senderos forman una red: cada uno va al pueblo o al lugar
+  ya unido más cercano. La fauna es la de la selva (jaguares, panteras, gorilas, pitones,
+  cocodrilos, hombres lagarto).
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.
