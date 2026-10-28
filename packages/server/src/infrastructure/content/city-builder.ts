@@ -56,7 +56,7 @@ const HOUSE_WALL = /^(wall|log-wall|plank-wall|basalt-wall|sandstone-wall)-(x|y)
  * - `bandit`: carpas y chozas dentro de una empalizada, sin ley (el refugio de los bandidos).
  * Todas tienen afuera de la muralla un cementerio con no-muertos.
  */
-export type CityStyle = 'capital' | 'mountain' | 'swamp' | 'volcanic' | 'bandit';
+export type CityStyle = 'capital' | 'mountain' | 'swamp' | 'volcanic' | 'bandit' | 'jungle';
 
 export interface CitySpec {
   readonly name: string;
@@ -210,6 +210,21 @@ const STYLES: Readonly<Record<CityStyle, Style>> = {
     ring: 'rampart',
     towers: true,
     trees: ['dead-tree'],
+    light: 'brazier',
+    castle: false,
+    lawless: false,
+    river: false,
+  },
+  // El pueblo de la selva: casas de troncos levantadas sobre el empedrado de una ciudad antigua.
+  jungle: {
+    walls: LOGS,
+    floor: Terrain.Wood,
+    street: Terrain.Dirt,
+    avenue: Terrain.OldRoad,
+    plaza: Terrain.Ruins,
+    ring: 'palisade',
+    towers: false,
+    trees: ['palm', 'jungle-tree', 'bamboo'],
     light: 'brazier',
     castle: false,
     lawless: false,

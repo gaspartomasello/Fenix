@@ -27,7 +27,8 @@ export interface PlaceNpc {
 /** El continente con sus lugares, la boca de la cueva y las criaturas ubicadas. */
 export interface PopulatedContinent extends Continent {
   readonly places: readonly Place[];
-  readonly caveEntrance: Position;
+  /** La boca de la Cueva del Lamento (solo en el continente principal). */
+  readonly caveEntrance: Position | null;
   /** Criaturas de las tierras salvajes: las de cada bioma y las de cada lugar. */
   readonly homes: readonly { kind: CreatureKind; home: Position }[];
 }
@@ -65,6 +66,10 @@ interface Site {
   moor(x: number, y: number, kind: StaticKind): void;
   /** Alguien que vive ahí. */
   npc(x: number, y: number, role: NpcRole, name?: string): void;
+  /** Levanta el suelo `levels` escalones sobre lo que había (gradas, terrazas). */
+  raise(x: number, y: number, levels: number): void;
+  /** ¿Ya hay algo puesto en el tile? */
+  has(x: number, y: number): boolean;
 }
 
 /**
@@ -668,6 +673,249 @@ function farmstead(site: Site, kit: CabinKit, farmer: string, family: string): v
   site.npc(x, y - 1, 'farmer', farmer);
 }
 
+/**
+ * Los lugares del continente de la selva: ruinas de un imperio antiguo que la
+ * selva se tragó, y el campamento y el muelle de los que llegaron por mar.
+ */
+const JUNGLE_PLACES: readonly PlaceSpec[] = [
+  {
+    name: 'Muelle de Puerto Esmeralda',
+    biomes: ['beach', 'jungle', 'savanna', 'swamp'],
+    radius: 5,
+    from: 6,
+    to: 34,
+    near: 'Puerto Esmeralda',
+    coast: true,
+    creatures: [],
+    build(site) {
+      harbor(site, 'ship');
+    },
+  },
+  {
+    name: 'Campamento de los Exploradores',
+    biomes: ['jungle', 'savanna'],
+    radius: 5,
+    from: 30,
+    to: 60,
+    near: 'Puerto Esmeralda',
+    creatures: [],
+    build(site) {
+      const { x, y } = site.center;
+      disk(site, 4, Terrain.Dirt);
+      site.put(x, y, 'campfire');
+      site.put(x - 3, y - 2, 'tent');
+      site.put(x + 3, y - 2, 'tent');
+      site.put(x + 2, y + 3, 'crate');
+      site.put(x + 3, y + 3, 'crate');
+      site.put(x - 3, y + 3, 'barrel');
+      site.npc(x - 1, y + 1, 'healer', 'Leandro el explorador');
+      site.npc(x + 1, y - 1, 'provisioner', 'Inés la cartógrafa');
+    },
+  },
+  {
+    name: 'Pirámide del Jaguar',
+    biomes: ['jungle'],
+    oldRoad: true,
+    radius: 10,
+    from: 120,
+    to: 150,
+    creatures: [
+      ['jaguar', 2],
+      ['lizardman', 3],
+      ['skeleton-mage', 1],
+      ['skeleton', 2],
+    ],
+    build(site) {
+      pyramid(site, 8);
+    },
+  },
+  {
+    name: 'Ciudad Perdida',
+    biomes: ['jungle'],
+    oldRoad: true,
+    radius: 13,
+    from: 160,
+    to: 170,
+    creatures: [
+      ['skeleton', 4],
+      ['giant-spider', 3],
+      ['wraith', 2],
+      ['python', 1],
+    ],
+    build(site) {
+      lostCity(site);
+    },
+  },
+  {
+    name: 'Templo Hundido',
+    biomes: ['swamp', 'jungle'],
+    radius: 7,
+    from: 80,
+    to: 160,
+    creatures: [
+      ['crocodile', 2],
+      ['lizardman', 4],
+    ],
+    build(site) {
+      ruin(site, 5, 0.4);
+      overgrow(site, 6);
+      // El agua entró al patio: charcos entre las losas.
+      const { x, y } = site.center;
+      for (let dy = -4; dy <= 4; dy++)
+        for (let dx = -4; dx <= 4; dx++)
+          if (site.random.next() < 0.35 && (dx || dy))
+            site.ground(x + dx, y + dy, Terrain.ShallowWater);
+      site.put(x, y, 'sarcophagus');
+    },
+  },
+  {
+    name: 'Altar de las Serpientes',
+    biomes: ['jungle', 'savanna'],
+    radius: 6,
+    from: 100,
+    to: 160,
+    creatures: [
+      ['king-cobra', 2],
+      ['python', 2],
+      ['snake', 3],
+    ],
+    build(site) {
+      const { x, y } = site.center;
+      disk(site, 4, Terrain.Ruins);
+      site.put(x, y, 'brazier');
+      site.put(x, y - 1, 'skull-pile');
+      // Un círculo de columnas, algunas caídas.
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        site.put(
+          x + Math.round(Math.cos(a) * 4),
+          y + Math.round(Math.sin(a) * 4),
+          site.random.next() < 0.35 ? 'fallen-column' : 'column',
+        );
+      }
+      overgrow(site, 6);
+    },
+  },
+  {
+    name: 'Terrazas de los Monos',
+    biomes: ['jungle', 'foothill'],
+    radius: 7,
+    from: 100,
+    to: 170,
+    creatures: [['gorilla', 5]],
+    build(site) {
+      const { x, y } = site.center;
+      // Gradas anchas de piedra que suben hacia el norte, con la selva encima.
+      for (let step = 0; step < 4; step++)
+        for (let dx = -6; dx <= 6; dx++)
+          for (let k = 0; k < 2; k++) {
+            const ty = y + 3 - step * 2 - k;
+            site.ground(x + dx, ty, Terrain.Ruins);
+            site.raise(x + dx, ty, (step + 1) * 4);
+          }
+      site.put(x - 5, y - 4, 'column');
+      site.put(x + 5, y - 4, 'fallen-column');
+      site.put(x, y - 5, 'brazier');
+      overgrow(site, 7);
+    },
+  },
+  {
+    name: 'Tumbas del Rey Olvidado',
+    biomes: ['jungle', 'savanna', 'foothill'],
+    radius: 6,
+    from: 140,
+    to: 170,
+    creatures: [
+      ['zombie', 3],
+      ['ghoul', 2],
+      ['lich', 1],
+    ],
+    build(site) {
+      ruin(site, 5, 0.3);
+      const { x, y } = site.center;
+      site.put(x - 2, y, 'sarcophagus');
+      site.put(x + 2, y, 'sarcophagus');
+      site.put(x, y - 3, 'sarcophagus');
+      site.put(x - 3, y + 3, 'skull-pile');
+      site.put(x + 3, y - 3, 'cobweb');
+      overgrow(site, 6);
+    },
+  },
+];
+
+/**
+ * Una pirámide escalonada de piedra: gradas cuadradas que suben hacia el
+ * centro, una escalinata por el sur y un altar con braseros arriba.
+ */
+function pyramid(site: Site, half: number): void {
+  const { x, y } = site.center;
+  for (let dy = -half; dy <= half; dy++)
+    for (let dx = -half; dx <= half; dx++) {
+      const ring = half - Math.max(Math.abs(dx), Math.abs(dy));
+      const level = Math.min(ring, half - 2);
+      site.ground(x + dx, y + dy, dx === 0 && dy > 0 ? Terrain.OldRoad : Terrain.Ruins);
+      site.raise(x + dx, y + dy, level * 5);
+    }
+  site.put(x - 1, y - 1, 'brazier');
+  site.put(x + 1, y - 1, 'brazier');
+  site.put(x, y - 1, 'skull-pile');
+  // Columnas caídas y escombros al pie, y la selva que trepa por las esquinas.
+  for (const [dx, dy] of [
+    [-half - 1, -half - 1],
+    [half + 1, -half - 1],
+    [-half - 1, half + 1],
+    [half + 1, half + 1],
+  ] as const)
+    site.put(x + dx, y + dy, site.random.next() < 0.5 ? 'column' : 'fallen-column');
+  for (let i = 0; i < 6; i++) {
+    const a = site.random.next() * Math.PI * 2;
+    site.put(
+      x + Math.round(Math.cos(a) * (half + 2)),
+      y + Math.round(Math.sin(a) * (half + 2)),
+      i % 2 ? 'rubble' : 'jungle-plant',
+    );
+  }
+}
+
+/** Patios en ruinas unidos por calzadas antiguas, con la selva adentro. */
+function lostCity(site: Site): void {
+  const { x, y } = site.center;
+  for (let d = -12; d <= 12; d++) {
+    site.ground(x + d, y, Terrain.OldRoad);
+    site.ground(x, y + d, Terrain.OldRoad);
+  }
+  for (const [dx, dy] of [
+    [-7, -7],
+    [7, -7],
+    [-7, 7],
+    [7, 7],
+  ] as const) {
+    const court: Site = { ...site, center: { x: x + dx, y: y + dy } };
+    ruin(court, 3, 0.55);
+  }
+  for (let i = -10; i <= 10; i += 4) {
+    site.put(x + i, y - 2, site.random.next() < 0.3 ? 'fallen-column' : 'column');
+    site.put(x + i, y + 2, site.random.next() < 0.3 ? 'fallen-column' : 'column');
+  }
+  site.put(x, y, 'fountain');
+  site.put(x + 7, y + 7, 'sarcophagus');
+  overgrow(site, 13);
+}
+
+/** La selva se mete en las ruinas: plantas, helechos y piedras con musgo sueltos. */
+function overgrow(site: Site, radius: number): void {
+  const { x, y } = site.center;
+  for (let i = 0; i < radius * 3; i++) {
+    const a = site.random.next() * Math.PI * 2;
+    const r = site.random.next() * radius;
+    const kinds = ['jungle-plant', 'fern', 'mossy-rock', 'fern'] as const;
+    const kind = kinds[Math.floor(site.random.next() * kinds.length)] ?? 'fern';
+    const px = x + Math.round(Math.cos(a) * r);
+    const py = y + Math.round(Math.sin(a) * r);
+    if (!site.has(px, py)) site.put(px, py, kind);
+  }
+}
+
 /** Un patio en ruinas: muros de piedra caídos a medias, escombros y huesos. */
 function ruin(site: Site, half: number, broken: number): void {
   const { x, y } = site.center;
@@ -847,8 +1095,15 @@ const CAVE_GROUND: ReadonlySet<Terrain> = new Set<Terrain>([
 /** Sin criaturas a menos de esta distancia de un pueblo. */
 const QUIET_RADIUS = 14;
 
-/** Ubica los lugares, la boca de la cueva y las criaturas sobre el continente. */
-export function populateContinent(continent: Continent, seed: number): PopulatedContinent {
+/**
+ * Ubica los lugares, la boca de la cueva y las criaturas sobre el continente.
+ * El de la selva (`jungle`) tiene sus propios lugares y no tiene la cueva ni el paso.
+ */
+export function populateContinent(
+  continent: Continent,
+  seed: number,
+  land: 'main' | 'jungle' = 'main',
+): PopulatedContinent {
   const map = continent.map;
   const { width, height } = map;
   const terrain = Array.from({ length: width * height }, (_, i) =>
@@ -873,11 +1128,13 @@ export function populateContinent(continent: Continent, seed: number): Populated
   const oldRoads = new Set<string>();
   const homes: { kind: CreatureKind; home: Position }[] = [];
   const placeNpcs: PlaceNpc[] = [];
+  /** Escalones que suben los lugares (gradas, pirámides) sobre el suelo. */
+  const lifts = new Map<number, number>();
 
   const scale = Math.max(1, Math.max(width, height) / 320);
   const free = (x: number, y: number): boolean => x > 1 && y > 1 && x < width - 2 && y < height - 2;
 
-  for (const spec of PLACES) {
+  for (const spec of land === 'jungle' ? JUNGLE_PLACES : PLACES) {
     const origin = (spec.near && townAt(spec.near)) || capital;
     // Si cerca del pueblo pedido no hay lugar, se busca desde la capital.
     const center = findSite(spec, origin) ?? (origin !== capital ? findSite(spec, capital) : null);
@@ -908,6 +1165,12 @@ export function populateContinent(continent: Continent, seed: number): Populated
         statics.delete(index(x, y));
         placeNpcs.push({ role, position: { x, y }, ...(name ? { name } : {}) });
       },
+      raise(x, y, levels) {
+        if (free(x, y)) lifts.set(index(x, y), levels);
+      },
+      has(x, y) {
+        return statics.has(index(x, y));
+      },
     };
     // Se despeja el lugar antes de construir.
     for (let dy = -spec.radius - 1; dy <= spec.radius + 1; dy++)
@@ -933,7 +1196,7 @@ export function populateContinent(continent: Continent, seed: number): Populated
 
   // Paso de montaña: donde un camino cruza la cordillera.
   // El tramo de camino entre montañas más alejado de los pueblos.
-  const pass = [...continent.passes]
+  const pass = [...(land === 'main' ? continent.passes : [])]
     .filter((p) => !taken.some((t) => Math.hypot(t.x - p.x, t.y - p.y) < t.r))
     .sort((a, b) => distanceToTowns(b) - distanceToTowns(a))[0];
   if (pass) {
@@ -955,41 +1218,71 @@ export function populateContinent(continent: Continent, seed: number): Populated
     places.push({ name: 'Paso del Cuervo', region, center: pass, creatures });
   }
 
-  const caveEntrance = findCaveEntrance();
+  const caveEntrance = land === 'main' ? findCaveEntrance() : null;
 
   function distanceToTowns(p: Position): number {
     return Math.min(
       ...continent.towns.map((t) => Math.hypot(t.x + t.width / 2 - p.x, t.y + t.height / 2 - p.y)),
     );
   }
-  for (let dy = -1; dy <= 1; dy++)
-    for (let dx = -1; dx <= 1; dx++)
-      statics.delete(index(caveEntrance.x + dx, caveEntrance.y + dy));
-  statics.set(index(caveEntrance.x, caveEntrance.y), { kind: 'cave-entrance', ...caveEntrance });
-  // La tierra se corrompe alrededor de la boca de la mazmorra.
-  for (let dy = -4; dy <= 4; dy++)
-    for (let dx = -4; dx <= 4; dx++) {
-      const x = caveEntrance.x + dx;
-      const y = caveEntrance.y + dy;
-      if (!free(x, y) || Math.hypot(dx, dy) + random.next() * 1.4 > 4.2) continue;
-      if (isWater(terrain[index(x, y)])) continue;
-      terrain[index(x, y)] = Terrain.Corrupted;
-    }
+  if (caveEntrance) {
+    for (let dy = -1; dy <= 1; dy++)
+      for (let dx = -1; dx <= 1; dx++)
+        statics.delete(index(caveEntrance.x + dx, caveEntrance.y + dy));
+    statics.set(index(caveEntrance.x, caveEntrance.y), { kind: 'cave-entrance', ...caveEntrance });
+    // La tierra se corrompe alrededor de la boca de la mazmorra.
+    for (let dy = -4; dy <= 4; dy++)
+      for (let dx = -4; dx <= 4; dx++) {
+        const x = caveEntrance.x + dx;
+        const y = caveEntrance.y + dy;
+        if (!free(x, y) || Math.hypot(dx, dy) + random.next() * 1.4 > 4.2) continue;
+        if (isWater(terrain[index(x, y)])) continue;
+        terrain[index(x, y)] = Terrain.Corrupted;
+      }
+  }
 
   // Senderos: de cada lugar (y de la cueva) hasta el camino más cercano.
   const roads = new Set(continent.roads);
-  for (const place of places)
-    trail(place.center, place.region, oldRoads.has(place.name) ? Terrain.OldRoad : undefined);
-  trail({ x: caveEntrance.x, y: caveEntrance.y + 2 });
+  const townCenters = continent.towns.map((t) => ({
+    x: t.x + Math.floor(t.width / 2),
+    y: t.y + Math.floor(t.height / 2),
+  }));
+  // En la selva no hay caminos entre pueblos: cada sendero va al pueblo o al
+  // lugar ya unido más cercano (una red, en vez de senderos larguísimos).
+  const joined: Position[] = [...townCenters];
+  const byDistance =
+    land === 'jungle'
+      ? [...places].sort((a, b) => nearest(a.center, townCenters) - nearest(b.center, townCenters))
+      : places;
+  for (const place of byDistance) {
+    trail(
+      place.center,
+      place.region,
+      oldRoads.has(place.name) ? Terrain.OldRoad : undefined,
+      land === 'jungle' ? joined : townCenters,
+    );
+    joined.push(place.center);
+  }
+  if (caveEntrance)
+    trail({ x: caveEntrance.x, y: caveEntrance.y + 2 }, undefined, undefined, townCenters);
+
+  function nearest(p: Position, targets: readonly Position[]): number {
+    return Math.min(...targets.map((t) => Math.hypot(t.x - p.x, t.y - p.y)));
+  }
 
   /**
    * Un sendero de tierra de dos tiles de ancho desde `from` hasta que toca un
    * camino o un pueblo; dentro del lugar no se toca nada.
    */
-  function trail(from: Position, inside?: RegionData, surface?: Terrain): void {
+  function trail(
+    from: Position,
+    inside: RegionData | undefined,
+    surface: Terrain | undefined,
+    targets: readonly Position[],
+  ): void {
     const meander = wanderField(seed + 50, Math.min(width, height));
-    const target = continent.towns
-      .map((t) => ({ x: t.x + Math.floor(t.width / 2), y: t.y + Math.floor(t.height / 2) }))
+    const target = [...targets]
+      .filter((t) => t !== from)
       .sort(
         (a, b) => Math.hypot(a.x - from.x, a.y - from.y) - Math.hypot(b.x - from.x, b.y - from.y),
       )[0];
@@ -1009,10 +1302,17 @@ export function populateContinent(continent: Continent, seed: number): Populated
     const straight = cheapestPath(width, height, from, target, cost, 2);
     if (!straight) return;
     const path = curvePath(straight, cost, seed + from.x * 7 + from.y, 12, 3);
+    const carved: number[] = [];
     for (const p of path) {
       const i = index(p.x, p.y);
       if (roads.has(i) || continent.towns.some((t) => within(p.x, p.y, { ...t, name: t.name })))
-        return;
+        break;
+      // En la selva, el sendero termina al llegar a otro lugar.
+      if (
+        land === 'jungle' &&
+        places.some((o) => o.region !== inside && within(p.x, p.y, o.region))
+      )
+        break;
       for (const [dx, dy] of [
         [0, 0],
         [1, 0],
@@ -1030,8 +1330,11 @@ export function populateContinent(continent: Continent, seed: number): Populated
             : (surface ?? trailGround(terrain[j]));
         const kind = statics.get(j)?.kind;
         if (kind !== 'cave-entrance' && kind !== 'sign') statics.delete(j);
+        carved.push(j);
       }
     }
+    // En la selva, los senderos siguientes se unen a este.
+    if (land === 'jungle') for (const j of carved) roads.add(j);
   }
 
   // Los senderos y lugares recortan montañas: no quedan picos sueltos.
@@ -1047,6 +1350,21 @@ export function populateContinent(continent: Continent, seed: number): Populated
   // Las montañas toman forma al final (los lugares y senderos ya las recortaron).
   const baseHeights = map.toData().heights;
   const heights = baseHeights ? [...baseHeights] : undefined;
+  // Las gradas de los lugares: el lugar se aplana a su suelo más bajo y encima suben las gradas.
+  if (heights)
+    for (const place of places) {
+      const { x, y, width: w, height: h } = place.region;
+      let lifted = false;
+      for (let py = y; py < y + h && !lifted; py++)
+        for (let px = x; px < x + w; px++) if (lifts.has(index(px, py))) lifted = true;
+      if (!lifted) continue;
+      let low = Infinity;
+      for (let py = y; py < y + h; py++)
+        for (let px = x; px < x + w; px++) low = Math.min(low, heights[index(px, py)] ?? 0);
+      for (let py = y; py < y + h; py++)
+        for (let px = x; px < x + w; px++)
+          heights[index(px, py)] = low + (lifts.get(index(px, py)) ?? 0);
+    }
   shapeMountains({ width, height, terrain, statics, heights, regions, spawn: capital, seed });
   const populated = new TileMap({
     width,

@@ -10,7 +10,7 @@ import { Npc } from '../../domain/npcs/npc';
 import { World } from '../../domain/world';
 import { SeededRandom } from '../system/seeded-random';
 import { generateDungeon, type DungeonRoom } from './dungeon-map';
-import { populateContinent, type Place } from './places';
+import { populateContinent, type Place, type PopulatedContinent } from './places';
 import {
   BANDIT_ISLAND,
   ISLAND_CITY,
@@ -33,7 +33,7 @@ import { generateFloors, type Ascent, type UpperFloor } from './upper-floors';
  * Versión de la forma del mundo: si cambia, los personajes guardados en el
  * mundo anterior aparecen en la capital (su posición vieja ya no sirve).
  */
-const WORLD_VERSION = 8;
+const WORLD_VERSION = 9;
 
 export interface WorldBuildOptions {
   /** Ancho del continente (y alto, si no se da `height`). */
@@ -43,6 +43,11 @@ export interface WorldBuildOptions {
   readonly seed: number;
   /** Poblar el mundo con criaturas (por defecto, sí). */
   readonly creatures?: boolean;
+  /**
+   * El continente de la selva, al oeste cruzando el mar. Por defecto, solo en
+   * los mapas grandes (desde `MIN_SIZE_FOR_JUNGLE` de ancho y alargados).
+   */
+  readonly jungle?: boolean;
 }
 
 /** El mundo armado: continente, pueblos, lugares, mazmorra y quién vive en cada parte. */
@@ -71,6 +76,14 @@ const DUNGEON_GAP = 24;
 
 /** Por debajo de este tamaño el mapa no da para los tres pueblos: queda solo la capital. */
 const MIN_SIZE_FOR_ALL_TOWNS = 200;
+/** Desde este ancho (y si el mapa es alargado) hay continente de la selva al oeste. */
+const MIN_SIZE_FOR_JUNGLE = 1000;
+/**
+ * La franja del continente de la selva, como fracción del continente
+ * principal: en uno de 1400 × 2000, unos 920 × 1360 (la tierra, unos 800 × 1200).
+ */
+const JUNGLE_WIDTH = 0.66;
+const JUNGLE_HEIGHT = 0.68;
 
 /**
  * Quién vive en cada sala de la mazmorra según su profundidad (0 = la de la
@@ -187,18 +200,52 @@ function townPlans(width: number, height: number, seed: number): TownPlan[] {
   return plans;
 }
 
-/** Arma el mapa completo: continente con pueblos y lugares, y la mazmorra al este. */
-export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): BuiltWorld {
-  const landHeight = tall ?? size;
-  const continent = populateContinent(
+/** El pueblo del continente de la selva: un puerto en la costa este, frente a Puerto Ceniza. */
+function jungleTownPlans(seed: number): TownPlan[] {
+  return [
+    {
+      map: buildCity({
+        name: 'Puerto Esmeralda',
+        style: 'jungle',
+        seed: seed + 105,
+        size: 'medium',
+        people: {
+          innkeeper: 'Celestino el tabernero',
+          blacksmith: 'Baltasar el herrero',
+          banker: 'Amparo la banquera',
+          mage: 'Yolanda la curandera de hierbas',
+          stablemaster: 'Fausto el caballerizo',
+        },
+      }),
+      at: { x: 0.74, y: 0.36 },
+      climate: 'jungle',
+    },
+  ];
+}
+
+/** Arma el mapa completo: continentes con pueblos y lugares, y la mazmorra al este. */
+export function buildWorld({
+  size: landWidth,
+  height: tall,
+  seed,
+  jungle: withJungle,
+}: WorldBuildOptions): BuiltWorld {
+  const landHeight = tall ?? landWidth;
+  const main = populateContinent(
     generateIslandMap({
-      width: size,
+      width: landWidth,
       height: landHeight,
       seed,
-      towns: townPlans(size, landHeight, seed),
+      towns: townPlans(landWidth, landHeight, seed),
     }),
     seed,
   );
+  // El continente de la selva va a la izquierda, cruzando el mar; el principal se corre al este.
+  const jungleOn = withJungle ?? (landWidth >= MIN_SIZE_FOR_JUNGLE && landHeight > landWidth * 1.2);
+  const continent = jungleOn ? withJungleWest(main, landHeight, seed) : main;
+  const size = continent.map.width;
+  const caveMouth = continent.caveEntrance;
+  if (!caveMouth) throw new Error('El continente principal no tiene la boca de la cueva');
   const dungeon = generateDungeon({ width: DUNGEON_SIZE, height: DUNGEON_SIZE, seed: seed + 7 });
   const islandData = continent.map.toData();
 
@@ -302,7 +349,7 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
       })
     : undefined;
 
-  const entrance = continent.caveEntrance;
+  const entrance = caveMouth;
   // Afuera se aparece dos pasos delante de la boca, para no volver a entrar sin querer.
   const outside = { x: entrance.x, y: entrance.y + 2 };
   const statics: StaticPlacement[] = [
@@ -415,6 +462,121 @@ export function buildWorld({ size, height: tall, seed }: WorldBuildOptions): Bui
         place.lairs.map((l) => ({ kind: l.kind, home: inPocket(at)(l.position) })),
       ),
     ],
+  };
+}
+
+/**
+ * Suma el continente de la selva al oeste: genera su franja, corre todo el
+ * continente principal hacia el este y une los dos en un solo mapa (la franja
+ * centrada de norte a sur; arriba y abajo, mar).
+ */
+function withJungleWest(
+  main: PopulatedContinent,
+  landHeight: number,
+  seed: number,
+): PopulatedContinent {
+  const stripWidth = Math.round(main.map.width * JUNGLE_WIDTH);
+  const stripHeight = Math.min(landHeight, Math.round(landHeight * JUNGLE_HEIGHT));
+  const jungleSeed = seed + 500;
+  const west = populateContinent(
+    generateIslandMap({
+      width: stripWidth,
+      height: stripHeight,
+      seed: jungleSeed,
+      shape: 'jungle',
+      towns: jungleTownPlans(jungleSeed),
+    }),
+    jungleSeed,
+    'jungle',
+  );
+  const top = Math.floor((landHeight - stripHeight) / 2);
+  const width = stripWidth + main.map.width;
+  const westData = west.map.toData();
+  const mainData = main.map.toData();
+  const terrain = new Array<Terrain>(width * landHeight).fill(Terrain.Water);
+  const heights = new Array<number>(width * landHeight).fill(0);
+  for (let y = 0; y < landHeight; y++) {
+    for (let x = 0; x < main.map.width; x++) {
+      const i = y * main.map.width + x;
+      terrain[y * width + stripWidth + x] = mainData.terrain[i] ?? Terrain.Water;
+      heights[y * width + stripWidth + x] = mainData.heights?.[i] ?? 0;
+    }
+    const wy = y - top;
+    if (wy < 0 || wy >= stripHeight) continue;
+    for (let x = 0; x < stripWidth; x++) {
+      const i = wy * stripWidth + x;
+      terrain[y * width + x] = westData.terrain[i] ?? Terrain.Water;
+      heights[y * width + x] = westData.heights?.[i] ?? 0;
+    }
+  }
+  const east = (p: Position): Position => ({ x: p.x + stripWidth, y: p.y });
+  const down = (p: Position): Position => ({ x: p.x, y: p.y + top });
+  const moved = (
+    world: PopulatedContinent,
+    at: (p: Position) => Position,
+  ): Pick<PopulatedContinent, 'items' | 'npcs' | 'homes' | 'places' | 'descents' | 'ascents'> => ({
+    items: world.items.map((it) => ({ ...it, position: at(it.position) })),
+    npcs: world.npcs.map((n) => ({ ...n, position: at(n.position) })),
+    homes: world.homes.map((h) => ({ ...h, home: at(h.home) })),
+    places: world.places.map((p) => ({
+      ...p,
+      region: { ...p.region, ...at(p.region) },
+      center: at(p.center),
+      creatures: p.creatures.map((c) => ({ ...c, home: at(c.home) })),
+    })),
+    descents: world.descents.map((d) => ({
+      ...d,
+      position: at(d.position),
+      ...(d.back ? { back: at(d.back) } : {}),
+    })),
+    ascents: world.ascents.map((a) => ({
+      ...a,
+      position: at(a.position),
+      back: at(a.back),
+      origin: at(a.origin),
+    })),
+  });
+  const fromMain = moved(main, east);
+  const fromWest = moved(west, down);
+  const map = new TileMap({
+    width,
+    height: landHeight,
+    terrain,
+    heights,
+    statics: [
+      ...westData.statics.map((s) => ({ ...s, ...down(s) })),
+      ...mainData.statics.map((s) => ({ ...s, ...east(s) })),
+    ],
+    regions: [
+      ...westData.regions.map((r) => ({ ...r, ...down(r) })),
+      ...mainData.regions.map((r) => ({ ...r, ...east(r) })),
+    ],
+    teleporters: [
+      ...(westData.teleporters ?? []).map((t) => ({ ...t, ...down(t), to: down(t.to) })),
+      ...(mainData.teleporters ?? []).map((t) => ({ ...t, ...east(t), to: east(t.to) })),
+    ],
+    signs: [
+      ...(westData.signs ?? []).map((s) => ({ ...s, ...down(s) })),
+      ...(mainData.signs ?? []).map((s) => ({ ...s, ...east(s) })),
+    ],
+  });
+  return {
+    ...main,
+    map,
+    spawnPoint: east(main.spawnPoint),
+    caveEntrance: main.caveEntrance ? east(main.caveEntrance) : null,
+    items: [...fromWest.items, ...fromMain.items],
+    npcs: [...fromWest.npcs, ...fromMain.npcs],
+    homes: [...fromWest.homes, ...fromMain.homes],
+    places: [...fromWest.places, ...fromMain.places],
+    descents: [...fromWest.descents, ...fromMain.descents],
+    ascents: [...fromWest.ascents, ...fromMain.ascents],
+    // Lo que sigue solo sirve para poblar (ya está poblado): queda vacío para no confundir.
+    biomes: [],
+    towns: [],
+    roads: new Set(),
+    passes: [],
+    townCreatures: [],
   };
 }
 

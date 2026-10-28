@@ -41,7 +41,7 @@ export type Biome =
   | 'wasteland';
 
 /** Clima que se le pide al terreno alrededor de un pueblo. */
-export type TownClimate = 'temperate' | 'mountain' | 'swamp';
+export type TownClimate = 'temperate' | 'mountain' | 'swamp' | 'jungle';
 
 /** Un pueblo diseñado en Tiled y dónde va en el continente. */
 export interface TownPlan {
@@ -58,6 +58,8 @@ export interface WorldGenerationOptions {
   readonly height: number;
   readonly seed: number;
   readonly towns?: readonly TownPlan[];
+  /** `jungle`: el continente de la selva (ver `JungleShape`); si no, según las medidas. */
+  readonly shape?: 'jungle';
 }
 
 /** Un pueblo ya ubicado. */
@@ -212,7 +214,9 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
   const shoreWidth = new ValueNoise(seed + 27, 11);
 
   // Un mapa más alto que ancho es un continente alargado de norte a sur (ver `ElongatedShape`).
-  const elongated = height > width * 1.2 ? new ElongatedShape(width, height, seed) : null;
+  const jungle = options.shape === 'jungle' ? new JungleShape(width, height, seed) : null;
+  const elongated =
+    !jungle && height > width * 1.2 ? new ElongatedShape(width, height, seed) : null;
   const elevation = new Float32Array(total);
   const biomes: Biome[] = new Array<Biome>(total).fill('ocean');
   for (let y = 0; y < height; y++) {
@@ -222,7 +226,9 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
         (shape[1]?.at(x, y) ?? 0) * 0.3 +
         (shape[2]?.at(x, y) ?? 0) * 0.15;
       let land: number;
-      if (elongated) {
+      if (jungle) {
+        land = jungle.land(x, y);
+      } else if (elongated) {
         land = elongated.land(x, y);
       } else {
         const dx = (x - width / 2) / (width / 2);
@@ -249,7 +255,8 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
         Math.abs(2 * ridges.at(x, y) - 1) * 0.8 -
         Math.abs(2 * ridgeDetail.at(x, y) - 1) * 0.2 +
         mountainRing(x, y) * 0.5 +
-        (elongated?.cordillera(x, y) ?? 0) * 0.6;
+        (elongated?.cordillera(x, y) ?? 0) * 0.6 +
+        (jungle?.highlands(x, y) ?? 0) * 0.6;
       const nearTown = inTown(x, y, 5);
       const marsh = townInfluence(x, y, 'swamp');
       let biome: Biome;
@@ -260,10 +267,12 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
         e > SEA + 0.1 &&
         (ranges.at(x, y) > 0.7 ||
           mountainRing(x, y) > 0 ||
-          (elongated?.cordillera(x, y) ?? 0) > 0.3)
+          (elongated?.cordillera(x, y) ?? 0) > 0.3 ||
+          (jungle?.highlands(x, y) ?? 0) > 0.3)
       )
         biome = 'mountain';
       else if (marsh > 0 && marsh + (wet - 0.5) * 0.4 > 0.06) biome = 'swamp';
+      else if (jungle) biome = jungle.biome(e - SEA, wet, x, y);
       else if (cold > 0.8) biome = 'snow';
       else if (cold > 0.7) biome = 'tundra';
       else if (cold < 0.27 && wet > (elongated ? 0.7 : 0.64)) biome = 'jungle';
@@ -355,6 +364,8 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
         terrain[i] = Terrain.DryGrass;
       else if (biome === 'meadow' && g < 0.3) terrain[i] = Terrain.Grass;
       else if (biome === 'forest' && g > 0.76) terrain[i] = Terrain.Jungle;
+      else if (biome === 'jungle' && g < 0.24) terrain[i] = Terrain.Leaves;
+      else if (biome === 'jungle' && p > 0.88) terrain[i] = Terrain.Mud;
       else if (biome === 'desert' && p > 0.88) terrain[i] = Terrain.Dirt;
       else if (biome === 'desert' && reds.at(x, y) > 0.6) terrain[i] = Terrain.Clay;
       else if (biome === 'desert' && salts.at(x, y) > 0.78) terrain[i] = Terrain.Salt;
@@ -828,7 +839,8 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     if (isWater(terrain[i])) return 30;
     if (biome === 'mountain') return 70;
     if (biome === 'swamp') return 3;
-    if (biome === 'forest' || biome === 'foothill' || biome === 'snow') return 1.25 + meander;
+    if (biome === 'forest' || biome === 'foothill' || biome === 'snow' || biome === 'jungle')
+      return 1.25 + meander;
     if (biome === 'desert' || biome === 'beach') return 1.15 + meander;
     return 1 + meander;
   }
@@ -1046,6 +1058,7 @@ function roadGround(biome: Biome | undefined): Terrain {
 /** Lo que no pinta el mapa de Tiled de un pueblo toma el suelo de su clima. */
 function climateGround(climate: TownClimate): Terrain {
   if (climate === 'swamp') return Terrain.Swamp;
+  if (climate === 'jungle') return Terrain.Jungle;
   if (climate === 'mountain') return Terrain.Dirt;
   return Terrain.Grass;
 }
@@ -1543,5 +1556,90 @@ class ElongatedShape {
     if (d >= 22) return 0;
     if (d < 5) return 30;
     return Math.round(46 * (1 - (d - 5) / 17));
+  }
+}
+
+/**
+ * El continente de la selva, al oeste cruzando el mar: una tierra ancha de
+ * costa muy recortada (penínsulas, caletas) con un espinazo de sierras al
+ * medio, cortado por pasos. Hace calor en todas partes: selva cerrada, manglares
+ * en lo bajo y húmedo, y claros secos de sabana donde llueve poco.
+ */
+class JungleShape {
+  private readonly warpX: ValueNoise;
+  private readonly warpY: ValueNoise;
+  private readonly coast: ValueNoise;
+  private readonly coastFine: ValueNoise;
+  private readonly gaps: ValueNoise;
+  private readonly peaks: ValueNoise;
+  private readonly lobes: readonly Lobe[];
+
+  constructor(
+    private readonly width: number,
+    private readonly height: number,
+    seed: number,
+  ) {
+    const size = Math.min(width, height);
+    this.warpX = new ValueNoise(seed + 17, Math.max(8, size / 6));
+    this.warpY = new ValueNoise(seed + 18, Math.max(8, size / 6));
+    this.coast = new ValueNoise(seed + 32, Math.max(6, size / 40));
+    this.coastFine = new ValueNoise(seed + 33, 5);
+    this.gaps = new ValueNoise(seed + 20, Math.max(6, size / 14));
+    this.peaks = new ValueNoise(seed + 34, Math.max(6, size / 12));
+    const lobe = (x: number, y: number, rx: number, ry: number, angle = 0): Lobe => ({
+      x: x * width,
+      y: y * height,
+      rx: rx * width,
+      ry: ry * height,
+      angle,
+    });
+    // El cuerpo y las penínsulas: una al noroeste, otra larga al sudeste y una
+    // gorda al este, frente al continente de Puerto Ceniza.
+    this.lobes = [
+      lobe(0.5, 0.5, 0.36, 0.38),
+      lobe(0.47, 0.24, 0.3, 0.17, 0.3),
+      lobe(0.52, 0.76, 0.28, 0.17, -0.25),
+      lobe(0.24, 0.2, 0.13, 0.1, 0.7),
+      lobe(0.72, 0.84, 0.09, 0.12, -0.6),
+      lobe(0.78, 0.48, 0.12, 0.14, 0.2),
+    ];
+  }
+
+  /** Cuánto suma (o resta) a la elevación: tierra adentro, mar afuera. */
+  land(x: number, y: number): number {
+    let inside = -Infinity;
+    for (const l of this.lobes) {
+      const dx = x - l.x;
+      const dy = y - l.y;
+      const c = Math.cos(l.angle);
+      const s = Math.sin(l.angle);
+      const u = (dx * c - dy * s) / l.rx;
+      const v = (dx * s + dy * c) / l.ry;
+      inside = Math.max(inside, 1 - Math.hypot(u, v));
+    }
+    const ragged =
+      (this.warpX.at(x, y) - 0.5) * 0.3 +
+      (this.coast.at(x, y) - 0.5) * 0.22 +
+      (this.coastFine.at(x, y) - 0.5) * 0.06;
+    return -smoothstep(-0.02, 0.12, -(inside + ragged)) * 0.62;
+  }
+
+  /** El espinazo de sierras de norte a sur y algunos macizos sueltos (0 a 1). */
+  highlands(x: number, y: number): number {
+    const u = x / this.width + (this.warpX.at(x, y) - 0.5) * 0.12;
+    const v = y / this.height;
+    if (v < 0.2 || v > 0.8) return 0;
+    const spine = 1 - Math.abs(u - 0.47) / 0.05;
+    const massif = smoothstep(0.78, 0.9, this.peaks.at(x, y));
+    const band = Math.max(spine, massif);
+    if (band <= 0 || this.gaps.at(x, y) < 0.36) return 0;
+    return band;
+  }
+
+  /** El bioma según cuánto sobresale del mar y la humedad. */
+  biome(rise: number, wet: number, x: number, y: number): Biome {
+    if (rise < 0.08 && wet > 0.55) return 'swamp';
+    if (wet < 0.24 + (this.warpY.at(x, y) - 0.5) * 0.1) return 'savanna';
+    return 'jungle';
   }
 }

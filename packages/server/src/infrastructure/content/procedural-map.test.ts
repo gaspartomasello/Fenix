@@ -403,6 +403,68 @@ describe('buildWorld: el continente alargado (más alto que ancho)', () => {
   });
 });
 
+describe('buildWorld: el continente de la selva, al oeste cruzando el mar', () => {
+  const world = buildWorld({ size: 420, height: 600, seed: 1997, jungle: true });
+  const { map, spawnPoint, places, wildlife } = world;
+  const town = map.regions.find((r) => r.name === 'Puerto Esmeralda');
+  /** Hasta dónde llega la franja de la selva: el pueblo de la selva queda adentro. */
+  const westEdge = Math.round(420 * 0.66);
+
+  it('tiene su pueblo y la capital sigue siendo el lugar de aparición, al este', () => {
+    expect(town).toBeDefined();
+    expect((town?.x ?? Infinity) + (town?.width ?? 0)).toBeLessThan(westEdge);
+    expect(spawnPoint.x).toBeGreaterThan(westEdge);
+    expect(map.regionAt(spawnPoint)?.name).toBe('Puerto Ceniza');
+  });
+
+  it('es selva: la mayor parte de su tierra, con fauna de la selva', () => {
+    let jungle = 0;
+    let land = 0;
+    for (let y = 0; y < 600; y++)
+      for (let x = 0; x < westEdge; x++) {
+        const t = map.terrainAt({ x, y });
+        if (t === Terrain.Water || t === Terrain.ShallowWater) continue;
+        land++;
+        if (t === Terrain.Jungle || t === Terrain.Leaves || t === Terrain.Mud) jungle++;
+      }
+    expect(jungle / land).toBeGreaterThan(0.4);
+    const kinds = new Set(wildlife.filter((w) => w.home.x < westEdge).map((w) => w.kind));
+    for (const kind of ['jaguar', 'gorilla'] as const) expect(kinds.has(kind), kind).toBe(true);
+  });
+
+  it('tiene ruinas antiguas con nombre, y la pirámide sube en gradas', () => {
+    const west = places.filter((p) => p.center.x < westEdge).map((p) => p.name);
+    expect(west).toEqual(
+      expect.arrayContaining(['Pirámide del Jaguar', 'Muelle de Puerto Esmeralda']),
+    );
+    const pyramid = places.find((p) => p.name === 'Pirámide del Jaguar');
+    if (!pyramid) return;
+    const heights = map.toData().heights ?? [];
+    const at = (p: Position): number => heights[p.y * map.width + p.x] ?? 0;
+    expect(at(pyramid.center)).toBeGreaterThan(
+      at({ x: pyramid.center.x + 8, y: pyramid.center.y }),
+    );
+  });
+
+  it('no se llega caminando desde la capital: hay que cruzar el mar', () => {
+    const walkable = reachable(map, spawnPoint);
+    const inTown = [...walkable].some((key) => {
+      const [x = 0, y = 0] = key.split(',').map(Number);
+      return map.regionAt({ x, y })?.name === 'Puerto Esmeralda';
+    });
+    expect(inTown).toBe(false);
+    // Del muelle de la selva sí se llega caminando a su pueblo.
+    const pier = places.find((p) => p.name === 'Muelle de Puerto Esmeralda');
+    expect(pier).toBeDefined();
+    if (!pier) return;
+    const fromPier = [...reachable(map, pier.center)].some((key) => {
+      const [x = 0, y = 0] = key.split(',').map(Number);
+      return map.regionAt({ x, y })?.name === 'Puerto Esmeralda';
+    });
+    expect(fromPier).toBe(true);
+  });
+});
+
 function median(values: readonly number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
   return sorted[Math.floor(sorted.length / 2)] ?? 0;
