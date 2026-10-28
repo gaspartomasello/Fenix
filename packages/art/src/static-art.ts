@@ -2653,6 +2653,215 @@ const looseFlagstone: Model = (c) => {
   );
 };
 
+// ── Ruinas de la selva y tribus (etapa 77) ─────────────────────────
+
+/** Hacia la cámara (la diagonal +x +z) y su derecha: para tallar caras que miran al jugador. */
+const FACING = axesAlong([1, 0, 1]);
+/** Un punto en el marco que mira a la cámara: `u` a la derecha, `v` arriba, `w` hacia adelante. */
+function toCamera(u: number, v: number, w: number): Vec3 {
+  const [r, , f] = FACING;
+  return [r[0] * u + f[0] * w, v, r[2] * u + f[2] * w];
+}
+
+/** Piedra vieja de la selva: verdosa, con musgo arriba y del lado de la sombra. */
+function jungleStone(colors: Ramp, seed: number, mossy = 0.72): Material {
+  const stone = rocky(colors, seed);
+  return (s) => {
+    const top =
+      s.n[1] +
+      noise(Math.floor(s.p[0] / 3) + seed, Math.floor(s.p[1] / 3), Math.floor(s.p[2] / 3)) * 0.6;
+    return top > mossy + 0.3 ? tone(MOSS, s.light) : stone(s);
+  };
+}
+
+const HEAD_STONE = ramp([128, 126, 112]);
+const DARK_HOLLOW: Rgb = [30, 28, 24];
+
+/**
+ * Cabeza colosal: una cabeza de piedra enorme, con casco ajustado y orejeras,
+ * labios gruesos y nariz ancha, medio hundida entre las plantas.
+ */
+const colossalHead: Model = (c, variant) => {
+  const sunk = variant === 2 ? -7 : 0;
+  const stone = jungleStone(HEAD_STONE, variant * 11 + 3, variant === 1 ? 0.55 : 0.72);
+  const smooth = rocky(HEAD_STONE, variant * 7 + 1);
+  const at = (u: number, v: number, w: number): Vec3 => toCamera(u * 1.15, (v + sunk) * 1.15, w);
+  // Cabeza alta y mejillas llenas.
+  c.ellipsoid(at(0, 32, 0), FACING, [21, 36, 16], smooth);
+  for (const side of [1, -1] as const)
+    c.ellipsoid(at(side * 10, 22, 8), FACING, [8, 10, 7], smooth);
+  // Casco: un gorro ajustado que baja hasta las cejas, con una banda y orejeras.
+  c.ellipsoid(at(0, 54, -1), FACING, [21.5, 11, 17.5], stone);
+  c.ellipsoid(at(0, 47, 2), FACING, [22, 3.4, 17], stone);
+  for (const side of [1, -1] as const) {
+    c.box(at(side * 19, 30, 1), FACING, [3.4, 14, 6.5], stone);
+    c.ellipsoid(at(side * 20, 17, 2), FACING, [3.6, 3.6, 4.4], stone);
+  }
+  // Cejas, ojos almendrados y entrecerrados.
+  c.ellipsoid(at(0, 41, 13), FACING, [14, 2.6, 3.2], smooth);
+  const front: Vec3 = [FACING[2][0], 0, FACING[2][2]];
+  for (const side of [1, -1] as const) {
+    c.ellipsoid(at(side * 7, 36.5, 14), FACING, [4.6, 2, 1.8], solid(HEAD_STONE, 1));
+    c.decal(at(side * 7, 36.5, 16), front, DARK_HOLLOW, 4, 1);
+  }
+  // Nariz ancha y chata, con las fosas marcadas.
+  c.ellipsoid(at(0, 28, 15.5), FACING, [6.5, 6.5, 4.2], smooth);
+  for (const side of [1, -1] as const)
+    c.decal(at(side * 3, 24.5, 18.5), [front[0], -0.3, front[2]], DARK_HOLLOW, 2, 1);
+  // Labios gruesos y caídos en las comisuras.
+  c.ellipsoid(at(0, 18, 14.5), FACING, [9.5, 2.8, 3.2], smooth);
+  c.ellipsoid(at(0, 14, 14), FACING, [8, 2.8, 3], smooth);
+  c.decal(at(0, 16, 17.4), front, DARK_HOLLOW, 7, 1);
+  c.ellipsoid(at(0, 8, 10), FACING, [10, 5, 8], smooth);
+  // Tierra y plantas que la tapan abajo.
+  c.ellipsoid([0, 1, 0], UP, [21, 3, 19], solid(ramp([96, 80, 56])));
+  for (let i = 0; i < 5; i++) {
+    const a = noise(i, variant, 77) * Math.PI * 2;
+    c.ellipsoid(
+      [Math.cos(a) * 17, 3, Math.sin(a) * 15],
+      axesAlong([Math.cos(a), 0.6, Math.sin(a)]),
+      [8, 0.8, 3],
+      solid(ramp([58, 112, 50])),
+    );
+  }
+};
+
+/** Estela: una losa alta tallada con un señor de perfil y una columna de glifos. */
+const stela: Model = (c, variant) => {
+  const lean = axesAlong([1, 0, 1], [0.06 * (variant - 1), 1, 0]);
+  const stone = jungleStone(ramp([176, 162, 128]), variant * 5 + 2);
+  const carved: Rgb = [92, 80, 60];
+  const tall = variant === 2 ? 34 : 48;
+  c.box([0, 2, 0], FACING, [10, 2, 5], rocky(ramp([140, 130, 104]), 4));
+  c.box([0, 4 + tall / 2, 0], lean, [8, tall / 2, 2.6], stone);
+  if (variant !== 2) c.ellipsoid([0, 4 + tall, 0], lean, [8, 3, 2.6], stone);
+  else c.ellipsoid([9, 2.5, 6], axesAlong([1, 0.3, 0.4]), [6, 2.5, 3], stone);
+  const front: Vec3 = [lean[2][0], lean[2][1], lean[2][2]];
+  const on = (u: number, v: number): Vec3 => [
+    lean[0][0] * u + front[0] * 2.8,
+    4 + v,
+    lean[0][2] * u + front[2] * 2.8,
+  ];
+  // El señor: tocado de plumas, cara de perfil, cuerpo y bastón.
+  c.decal(on(-1.5, tall - 6), front, carved, 4, 3);
+  c.decal(on(-1, tall - 11), front, carved, 3, 3);
+  c.decal(on(-1.5, tall - 19), front, carved, 4, 6);
+  c.decal(on(-2, tall - 27), front, carved, 3, 6);
+  c.decal(on(2, tall - 20), front, carved, 1, 14);
+  // Los glifos, en cuadritos.
+  for (let row = 0; row < Math.floor(tall / 7); row++)
+    c.decal(on(5, 5 + row * 6), front, carved, 2, 2);
+};
+
+/** Cabeza de serpiente emplumada: fauces abiertas con colmillos y un collar de plumas de piedra. */
+const serpentHead: Model = (c, variant) => {
+  const stone = jungleStone(ramp([184, 164, 120]), variant * 9 + 6);
+  const paint = variant === 1 ? ramp([62, 140, 132]) : ramp([160, 64, 48]);
+  const at = (u: number, v: number, w: number): Vec3 => toCamera(u * 1.4, v * 1.4, w * 1.4);
+  c.box(at(0, 5, -4), FACING, [10, 5, 9], rocky(ramp([150, 136, 100]), 3));
+  // Collar de plumas alrededor del cuello, con restos de pintura.
+  for (let i = 0; i < 9; i++) {
+    const a = Math.PI * (0.1 + (i / 8) * 0.8);
+    const tip = at(Math.cos(a) * 14, 12 + Math.sin(a) * 13, -6);
+    c.limb(at(Math.cos(a) * 5, 12 + Math.sin(a) * 4, -4), tip, 2.4, 1.2, (s) =>
+      tone(i % 2 ? paint : ramp([184, 164, 120]), s.light),
+    );
+  }
+  // La cabeza: hocico largo, mandíbula abierta y colmillos.
+  c.ellipsoid(at(0, 16, 4), FACING, [8, 6.5, 11], stone);
+  c.ellipsoid(at(0, 18, 12), FACING, [6.5, 4, 6], stone);
+  c.ellipsoid(at(0, 9.5, 10), FACING, [6, 2.2, 8], stone);
+  for (const side of [1, -1] as const) {
+    c.limb(
+      at(side * 4, 14.5, 16),
+      at(side * 3.6, 10.5, 16.6),
+      1,
+      0.2,
+      solid(ramp([232, 224, 200])),
+    );
+    c.ellipsoid(at(side * 5, 21, 8), FACING, [2, 2, 1.6], solid(paint));
+    c.decal(at(side * 5.2, 21, 9.8), [FACING[2][0], 0, FACING[2][2]], DARK_HOLLOW, 1, 1);
+    // Ceja enroscada.
+    c.limb(at(side * 6, 23.5, 6), at(side * 7.5, 25.5, 11), 1.6, 0.8, stone);
+  }
+  c.ellipsoid(at(0, 12.6, 15), FACING, [4, 1.6, 2], solid(ramp([120, 40, 36])));
+};
+
+/** Aro del juego de pelota: un anillo de piedra parado en lo alto de un pilar. */
+const stoneRing: Model = (c, variant) => {
+  const stone = jungleStone(SANDSTONE, variant * 4 + 8);
+  c.box([0, 13, 0], FACING, [8, 13, 4], stone);
+  const center = toCamera(0, 36, 1.5);
+  const [r] = FACING;
+  for (let i = 0; i < 24; i++) {
+    const a = (i / 24) * Math.PI * 2;
+    const p: Vec3 = [
+      center[0] + r[0] * Math.cos(a) * 7.5,
+      center[1] + Math.sin(a) * 7.5,
+      center[2] + r[2] * Math.cos(a) * 7.5,
+    ];
+    c.sphere(p, 2.6, stone);
+  }
+  // Una serpiente tallada en el borde.
+  c.decal(toCamera(0, 20, 4.2), [FACING[2][0], 0, FACING[2][2]], [140, 110, 76], 6, 1);
+};
+
+/** Tótem tallado: rostros apilados con pintura gastada, alas abiertas y plumas arriba. */
+const totem: Model = (c, variant) => {
+  const bands = [
+    ramp([170, 52, 40]),
+    ramp([52, 128, 120]),
+    ramp([40, 34, 30]),
+    ramp([206, 168, 70]),
+  ];
+  const wood: Material = (s) => {
+    const band = Math.floor(s.p[1] / 12) + variant;
+    const grain = noise(Math.floor(s.p[0]), Math.floor(s.p[1] / 3), Math.floor(s.p[2]));
+    return tone(bands[band % bands.length] ?? WOOD, s.light, grain > 0.8 ? -1 : 0);
+  };
+  cylinder(c, [0, 0, 0], 58, () => 4.6, wood);
+  const front: Vec3 = [FACING[2][0], 0, FACING[2][2]];
+  for (const y of [10, 22, 34, 46]) {
+    for (const side of [1, -1] as const)
+      c.decal(toCamera(side * 1.8, y + 2, 4.4), front, [240, 232, 210], 2, 1);
+    c.ellipsoid(toCamera(0, y, 4.4), FACING, [1.4, 2, 1.6], wood);
+    c.decal(toCamera(0, y - 3, 4.6), front, [24, 18, 16], 3, 1);
+  }
+  // Alas abiertas y plumas en la punta.
+  c.box(toCamera(0, 52, 0), FACING, [13, 1.6, 2], wood);
+  const feathers = [ramp([200, 60, 44]), ramp([60, 150, 120]), ramp([220, 190, 80])];
+  for (let i = 0; i < 5; i++) {
+    const a = -0.6 + i * 0.3;
+    c.limb(
+      [0, 58, 0],
+      toCamera(Math.sin(a) * 9, 58 + Math.cos(a) * 12, -1),
+      1.2,
+      0.4,
+      solid(feathers[i % 3] ?? WOOD),
+    );
+  }
+};
+
+/** Choza de paja: paredes de barro y cañas, techo cónico de paja y la puerta hacia la cámara. */
+const thatchedHut: Model = (c, variant) => {
+  const mud = ramp([150, 112, 76]);
+  const wattle: Material = (s) => {
+    const stake = Math.abs(((Math.atan2(s.p[2], s.p[0]) * 12 + 100) % 2) - 1) > 0.85;
+    return tone(mud, s.light, stake ? -1 : 0);
+  };
+  cylinder(c, [0, 0, 0], 15, () => 15, wattle);
+  const thatch: Material = (s) => {
+    const strand = noise(Math.floor(Math.atan2(s.p[2], s.p[0]) * 20), Math.floor(s.p[1] / 2));
+    return tone(STRAW, s.light, strand > 0.7 ? -1 : strand < 0.15 ? 1 : 0);
+  };
+  cylinder(c, [0, 14, 0], 24, (t) => 19 * (1 - t) + 0.5, thatch);
+  // Puerta oscura con un cuero colgado, y la punta del techo atada.
+  c.box(toCamera(0, 6, 14.6), FACING, [3.6, 6, 0.6], solid(ramp([46, 32, 24])));
+  c.box(toCamera(0, 9, 15.2), FACING, [3.8, 3, 0.4], solid(ramp([142, 104, 70])));
+  c.limb([0, 37, 0], [0, 42, 0], 1.2, 0.3, solid(ramp([120, 90, 50])));
+  if (variant === 1) c.sphere(toCamera(9, 3, 16), 2.6, solid(ramp([170, 110, 70])));
+};
+
 const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   oak: tree('oak'),
   pine: tree('pine'),
@@ -2702,6 +2911,12 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   'skull-pile': { model: skullPile, shadow: [14, 6] },
   'loose-flagstone': { model: looseFlagstone, flat: true },
   cobweb: { model: cobweb },
+  'colossal-head': { model: colossalHead, shadow: [30, 12] },
+  stela: { model: stela, shadow: [14, 6] },
+  'serpent-head': { model: serpentHead, shadow: [18, 8] },
+  'stone-ring': { model: stoneRing, shadow: [14, 6] },
+  totem: { model: totem, shadow: [10, 4] },
+  'thatched-hut': { model: thatchedHut, shadow: [28, 11] },
   ship: {
     model: ship(false),
     frame: { width: 260, height: 250, ground: { x: 130, y: 196 } },

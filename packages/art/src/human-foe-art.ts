@@ -1,6 +1,7 @@
 import { DEFAULT_APPEARANCE, type Appearance } from '@fenix/shared/character/appearance';
 import type { CreatureKind } from '@fenix/shared/creatures/creature-catalog';
 import type { Direction } from '@fenix/shared/geometry/direction';
+import type { MountKind } from '@fenix/shared/mounts/mount-catalog';
 import type { EquipmentLook } from '@fenix/shared/protocol/messages';
 import { drawCharacterFrame, type CharacterFrame } from './character-art';
 import { spriteCanvas, type CanvasFactory } from './humanoid-rig';
@@ -8,7 +9,9 @@ import type { PixelImage } from './pixel-art';
 
 /** Humanos hostiles: personas como los jugadores, con su ropa y sus armas. */
 const HUMAN_FOES: Readonly<
-  Partial<Record<CreatureKind, { appearance: Appearance; equipment: EquipmentLook }>>
+  Partial<
+    Record<CreatureKind, { appearance: Appearance; equipment: EquipmentLook; mount?: MountKind }>
+  >
 > = {
   // Bárbaro del norte: pelo largo rubio, barba, pecho de cuero y hacha de guerra.
   barbarian: {
@@ -82,7 +85,64 @@ const HUMAN_FOES: Readonly<
       rightHand: 'dagger',
     },
   },
+  // Las tribus de la selva: piel curtida, el torso pintado al aire, taparrabos,
+  // máscara de madera con penacho y lanza.
+  'tribal-warrior': {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      skinTone: 0xa86b3c,
+      hairHue: 0x14100c,
+      hairStyle: 'long',
+      facialHair: 'none',
+      clothHue: 0x9a5a2a,
+    },
+    equipment: {
+      head: 'tribal-mask',
+      legs: 'short-pants',
+      feet: 'sandals',
+      rightHand: 'spear',
+      leftHand: 'wooden-shield',
+    },
+  },
+  'tribal-rider': {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      skinTone: 0x8d5524,
+      hairHue: 0x14100c,
+      hairStyle: 'ponytail',
+      facialHair: 'none',
+      clothHue: 0x2f7a6a,
+    },
+    equipment: {
+      head: 'tribal-mask',
+      legs: 'short-pants',
+      feet: 'sandals',
+      rightHand: 'spear',
+    },
+    mount: 'runner',
+  },
+  'tribal-shaman': {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      skinTone: 0xa86b3c,
+      hairHue: 0xd8d0c0,
+      hairStyle: 'long',
+      facialHair: 'none',
+      clothHue: 0x7a4a22,
+    },
+    equipment: {
+      head: 'tribal-mask',
+      torso: 'robe',
+      feet: 'sandals',
+      rightHand: 'quarterstaff',
+    },
+  },
 };
+
+/** La montura de un humano hostil que anda montado (el jinete tribal), o null. */
+export function humanFoeMount(kind: CreatureKind): MountKind | null {
+  return HUMAN_FOES[kind]?.mount ?? null;
+}
 
 export function isHumanFoe(kind: CreatureKind): boolean {
   return HUMAN_FOES[kind] !== undefined;
@@ -101,7 +161,8 @@ export function drawHumanFoeFrame(
     frame,
     look?.equipment ?? {},
     null,
-    null,
+    // Muerto, queda tirado sin la montura.
+    frame === 'dead' ? null : (look?.mount ?? null),
     canvasFor,
   );
 }

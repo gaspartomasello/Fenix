@@ -224,6 +224,13 @@ export const STATIC_KINDS = [
   'skull-pile',
   'cracked-wall',
   'loose-flagstone',
+  // Las ruinas de la selva y las tribus (etapa 77).
+  'colossal-head',
+  'stela',
+  'serpent-head',
+  'stone-ring',
+  'totem',
+  'thatched-hut',
 ] as const;
 
 export type StaticKind = (typeof STATIC_KINDS)[number];
@@ -566,6 +573,12 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   'plank-window-y': define('plank-window-y', 'ventana', true, 2),
   'basalt-window-x': define('basalt-window-x', 'ventana', true, 2),
   'basalt-window-y': define('basalt-window-y', 'ventana', true, 2),
+  'colossal-head': define('colossal-head', 'cabeza colosal de piedra', true),
+  stela: define('stela', 'estela tallada', true),
+  'serpent-head': define('serpent-head', 'cabeza de serpiente de piedra', true),
+  'stone-ring': define('stone-ring', 'aro de piedra', true),
+  totem: define('totem', 'tótem tallado', true),
+  'thatched-hut': define('thatched-hut', 'choza de paja', true),
 };
 
 /**

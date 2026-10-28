@@ -104,6 +104,8 @@ export const BASE_ITEM_KINDS = [
   'bone-helm',
   'bone-armor',
   'bone-leggings',
+  // La máscara de madera pintada de las tribus de la selva, con penacho de plumas.
+  'tribal-mask',
   // Piezas sueltas de armadura, como en UO: gola, brazales, guantes y perneras de cada material
   'leather-gorget',
   'studded-gorget',
@@ -581,6 +583,7 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
   'fur-cape': cloth('capa de piel', 'capas de piel', 'una', 'cloak', 0x8a6a4a),
   'bone-helm': wear('yelmo de calavera', 'yelmos de calavera', 'un', 'head', 0xe2dac4),
   'bone-armor': wear('pechera de hueso', 'pecheras de hueso', 'una', 'torso', 0xe2dac4),
+  'tribal-mask': wear('máscara tribal', 'máscaras tribales', 'una', 'head', 0xb0442c),
   'bone-leggings': wear(
     'par de perneras de hueso',
     'pares de perneras de hueso',

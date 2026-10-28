@@ -180,6 +180,7 @@ const ARMOR_RATING: Partial<Record<ItemKind, number>> = {
   'bone-helm': 4,
   'bone-armor': 10,
   'bone-leggings': 5,
+  'tribal-mask': 2,
   doublet: 2,
   'fur-cape': 2,
   'thigh-boots': 2,
