@@ -869,6 +869,27 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     c.ellipsoid([0, 2.4, 5], lying(0), [0.5, 0.7, 0.4], hollow);
     c.ellipsoid([0, 1, 4.6], lying(0), [1.8, 0.4, 0.5], solid(ramp([236, 228, 196])));
   },
+  'tribal-mask'(c) {
+    // Máscara de madera pintada con penacho de plumas, apoyada en el suelo.
+    const wood = ramp([176, 68, 44]);
+    c.ellipsoid([0, 3.4, 1], lying(0), [3.8, 4.4, 1.2], (s) =>
+      s.p[1] > 3.6 && s.p[1] < 4.8 ? tone(ramp([58, 150, 140]), s.light) : tone(wood, s.light),
+    );
+    for (const side of [1, -1])
+      c.ellipsoid([side * 1.4, 4.2, 2.1], lying(0), [0.8, 0.5, 0.3], solid(ramp([18, 14, 12])));
+    c.ellipsoid([0, 1.4, 2.1], lying(0), [1.6, 0.35, 0.3], solid(ramp([236, 228, 204])));
+    const feathers = [ramp([200, 60, 44]), ramp([60, 150, 120]), ramp([226, 192, 80])];
+    for (let i = 0; i < 7; i++) {
+      const a = -1 + (i / 6) * 2;
+      c.limb(
+        [a * 2, 7, 0.4],
+        [a * 5.5, 11.5 - Math.abs(a) * 2, -0.5],
+        0.6,
+        0.2,
+        solid(feathers[i % 3] ?? wood),
+      );
+    }
+  },
   'bone-armor'(c) {
     const bone = ramp([226, 218, 196]);
     tunic(c, (s) =>

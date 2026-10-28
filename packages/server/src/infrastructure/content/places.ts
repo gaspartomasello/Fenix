@@ -721,12 +721,118 @@ const JUNGLE_PLACES: readonly PlaceSpec[] = [
     to: 150,
     creatures: [
       ['jaguar', 2],
-      ['lizardman', 3],
+      ['tribal-shaman', 1],
+      ['tribal-warrior', 3],
       ['skeleton-mage', 1],
       ['skeleton', 2],
     ],
     build(site) {
       pyramid(site, 8);
+    },
+  },
+  {
+    name: 'Aldea de los Hombres Jaguar',
+    biomes: ['jungle', 'savanna'],
+    radius: 10,
+    from: 90,
+    to: 170,
+    creatures: [
+      ['tribal-warrior', 5],
+      ['tribal-rider', 3],
+      ['tribal-shaman', 2],
+    ],
+    build(site) {
+      tribalVillage(site, 9);
+    },
+  },
+  {
+    name: 'Corral de los Jinetes',
+    biomes: ['savanna', 'jungle'],
+    radius: 7,
+    from: 80,
+    to: 170,
+    creatures: [
+      ['tribal-rider', 4],
+      ['tribal-warrior', 2],
+    ],
+    build(site) {
+      const { x, y } = site.center;
+      disk(site, 6, Terrain.Dirt);
+      // Un corral de estacas para los lagartos, una choza y la fogata.
+      for (let d = -5; d <= 5; d++) {
+        if (Math.abs(d) > 1) site.put(x + d, y - 6, 'palisade-x');
+        site.put(x + d, y + 6, 'palisade-x');
+        site.put(x - 6, y + d, 'palisade-y');
+        site.put(x + 6, y + d, 'palisade-y');
+      }
+      site.put(x - 3, y - 3, 'thatched-hut');
+      site.put(x + 3, y + 2, 'campfire');
+      site.put(x + 4, y - 3, 'totem');
+      site.put(x - 4, y + 3, 'water-trough');
+      site.put(x - 2, y + 4, 'hay-pile');
+    },
+  },
+  {
+    name: 'Cabezas Colosales',
+    biomes: ['jungle'],
+    radius: 7,
+    from: 60,
+    to: 170,
+    creatures: [
+      ['tribal-warrior', 2],
+      ['jaguar', 1],
+    ],
+    build(site) {
+      const { x, y } = site.center;
+      // Cuatro cabezas gigantes mirando al claro, medio tapadas por la selva.
+      for (const [dx, dy] of [
+        [-4, -3],
+        [3, -4],
+        [-3, 4],
+        [4, 3],
+      ] as const)
+        site.put(x + dx, y + dy, 'colossal-head');
+      site.put(x, y, 'stela');
+      overgrow(site, 7);
+    },
+  },
+  {
+    name: 'Juego de Pelota',
+    biomes: ['jungle', 'savanna'],
+    oldRoad: true,
+    radius: 9,
+    from: 70,
+    to: 170,
+    creatures: [
+      ['skeleton', 3],
+      ['wraith', 1],
+      ['tribal-warrior', 2],
+    ],
+    build(site) {
+      ballCourt(site);
+    },
+  },
+  {
+    name: 'Plaza de las Estelas',
+    biomes: ['jungle', 'savanna'],
+    radius: 6,
+    from: 50,
+    to: 170,
+    creatures: [
+      ['tribal-shaman', 1],
+      ['snake', 2],
+    ],
+    build(site) {
+      const { x, y } = site.center;
+      disk(site, 5, Terrain.Ruins);
+      // Dos filas de estelas frente a un altar de piedra con su brasero.
+      for (const dx of [-4, -2, 2, 4]) {
+        site.put(x + dx, y - 3, 'stela');
+        site.put(x + dx, y + 3, 'stela');
+      }
+      site.put(x, y - 1, 'serpent-head');
+      site.put(x, y + 1, 'brazier');
+      overgrow(site, 6);
     },
   },
   {
@@ -859,6 +965,12 @@ function pyramid(site: Site, half: number): void {
   site.put(x - 1, y - 1, 'brazier');
   site.put(x + 1, y - 1, 'brazier');
   site.put(x, y - 1, 'skull-pile');
+  site.put(x, y - 2, 'stela');
+  // Cabezas de serpiente al pie de la escalinata, y estelas a los costados.
+  site.put(x - 1, y + half + 1, 'serpent-head');
+  site.put(x + 1, y + half + 1, 'serpent-head');
+  site.put(x - 3, y + half + 2, 'stela');
+  site.put(x + 3, y + half + 2, 'stela');
   // Columnas caídas y escombros al pie, y la selva que trepa por las esquinas.
   for (const [dx, dy] of [
     [-half - 1, -half - 1],
@@ -875,6 +987,54 @@ function pyramid(site: Site, half: number): void {
       i % 2 ? 'rubble' : 'jungle-plant',
     );
   }
+}
+
+/**
+ * La aldea de una tribu: empalizada redonda con dos entradas, chozas de paja
+ * alrededor de una plaza con la fogata y los tótems.
+ */
+function tribalVillage(site: Site, radius: number): void {
+  const { x, y } = site.center;
+  disk(site, radius - 1, Terrain.Dirt);
+  for (let i = 0; i < 64; i++) {
+    const a = (i / 64) * Math.PI * 2;
+    // Entradas al este y al oeste.
+    if (Math.abs(Math.cos(a)) > 0.97) continue;
+    const px = x + Math.round(Math.cos(a) * radius);
+    const py = y + Math.round(Math.sin(a) * radius);
+    if (!site.has(px, py)) site.put(px, py, 'palisade-post');
+  }
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 + 0.5;
+    site.put(x + Math.round(Math.cos(a) * 5.5), y + Math.round(Math.sin(a) * 5.5), 'thatched-hut');
+  }
+  site.put(x, y, 'campfire');
+  site.put(x - 2, y - 1, 'totem');
+  site.put(x + 2, y + 1, 'totem');
+  site.put(x + 1, y - 2, 'skull-pile');
+  site.put(x - 1, y + 2, 'crate');
+}
+
+/**
+ * Cancha del juego de pelota: un patio largo entre dos taludes de piedra, con
+ * un aro en el medio de cada uno y estelas en las cabeceras.
+ */
+function ballCourt(site: Site): void {
+  const { x, y } = site.center;
+  for (let dy = -8; dy <= 8; dy++)
+    for (let dx = -4; dx <= 4; dx++) {
+      const bank = Math.abs(dx) >= 3;
+      site.ground(x + dx, y + dy, bank ? Terrain.Ruins : Terrain.OldRoad);
+      if (bank) site.raise(x + dx, y + dy, Math.abs(dx) === 4 ? 10 : 5);
+    }
+  site.put(x - 3, y, 'stone-ring');
+  site.put(x + 3, y, 'stone-ring');
+  for (const dx of [-2, 2]) {
+    site.put(x + dx, y - 9, 'stela');
+    site.put(x + dx, y + 9, 'stela');
+  }
+  site.put(x, y - 9, 'serpent-head');
+  overgrow(site, 9);
 }
 
 /** Patios en ruinas unidos por calzadas antiguas, con la selva adentro. */
@@ -1054,6 +1214,8 @@ const BIOME_CREATURES: Readonly<
     ['orc', 0.4],
   ],
   jungle: [
+    ['tribal-warrior', 0.06],
+    ['tribal-rider', 0.04],
     ['jaguar', 0.4],
     ['panther', 0.3],
     ['gorilla', 0.5],
@@ -1192,6 +1354,28 @@ export function populateContinent(
     homes.push(...creatures);
     places.push({ name: spec.name, region, center, creatures });
     if (spec.oldRoad) oldRoads.add(spec.name);
+  }
+
+  // En la selva, restos sueltos del imperio antiguo: cabezas colosales y
+  // estelas perdidas entre los árboles, lejos de los pueblos y los lugares.
+  if (land === 'jungle') {
+    const relics: [StaticKind, number][] = [
+      ['colossal-head', Math.round(4 * scale)],
+      ['stela', Math.round(6 * scale)],
+    ];
+    for (const [relic, count] of relics)
+      for (let placed = 0, tries = 0; placed < count && tries < count * 200; tries++) {
+        const x = 3 + Math.floor(random.next() * (width - 6));
+        const y = 3 + Math.floor(random.next() * (height - 6));
+        const i = index(x, y);
+        if (continent.biomes[i] !== 'jungle' || continent.roads.has(i)) continue;
+        if (taken.some((t) => Math.hypot(t.x - x, t.y - y) < t.r + 4)) continue;
+        if (isWater(terrain[i]) || map.regionAt({ x, y })) continue;
+        for (let dy = -1; dy <= 1; dy++)
+          for (let dx = -1; dx <= 1; dx++) statics.delete(index(x + dx, y + dy));
+        statics.set(i, { kind: relic, x, y });
+        placed++;
+      }
   }
 
   // Paso de montaña: donde un camino cruza la cordillera.

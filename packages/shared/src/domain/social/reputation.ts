@@ -38,6 +38,9 @@ export const CREATURE_FAME: Readonly<Record<string, number>> = {
   pirate: 40,
   corsair: 65,
   brigand: 30,
+  'tribal-warrior': 40,
+  'tribal-rider': 55,
+  'tribal-shaman': 55,
   lich: 200,
   dragon: 1000,
   // Fauna (del bestiario, en la misma escala)

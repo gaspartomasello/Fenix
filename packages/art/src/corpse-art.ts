@@ -65,6 +65,10 @@ const POSES: Readonly<Partial<Record<CreatureKind, CorpsePose>>> = {
   pirate: { fall: 'back', angle: BACK, center: 30, rest: 3 },
   corsair: { fall: 'back', angle: BACK, center: 30, rest: 3 },
   brigand: { fall: 'back', angle: BACK, center: 30, rest: 3 },
+  'tribal-warrior': { fall: 'back', angle: BACK, center: 30, rest: 3 },
+  'tribal-shaman': { fall: 'back', angle: BACK, center: 30, rest: 3 },
+  // El jinete cae de la montura (el lagarto se escapa a la selva).
+  'tribal-rider': { fall: 'back', angle: BACK, center: 30, rest: 3 },
   ghoul: { fall: 'back', angle: BACK, center: 28, rest: 3 },
   'earth-elemental': { fall: 'back', angle: BACK, center: 30, rest: 5 },
 };

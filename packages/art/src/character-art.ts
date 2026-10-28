@@ -366,15 +366,17 @@ function drawFigure(
                 ? 'galea'
                 : headgear === 'templar-helm'
                   ? 'great-helm'
-                  : headgear === 'iron-helmet' || headgear === 'chain-coif'
-                    ? 'helmet'
-                    : headgear === 'plate-helm'
-                      ? 'plate-helm'
-                      : headgear === 'wizard-hat' || (!headgear && outfit === 'robe')
-                        ? 'wizard'
-                        : headgear
-                          ? 'cap'
-                          : null,
+                  : headgear === 'tribal-mask'
+                    ? 'tribal-mask'
+                    : headgear === 'iron-helmet' || headgear === 'chain-coif'
+                      ? 'helmet'
+                      : headgear === 'plate-helm'
+                        ? 'plate-helm'
+                        : headgear === 'wizard-hat' || (!headgear && outfit === 'robe')
+                          ? 'wizard'
+                          : headgear
+                            ? 'cap'
+                            : null,
     capColor: ramp(wornColor(headgear) ?? [122, 78, 42]),
     hatColor:
       headgear === 'wizard-hat' ? ramp(wornColor(headgear) ?? [58, 42, 106]) : figure.palette.cloth,

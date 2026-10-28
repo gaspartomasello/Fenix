@@ -3,10 +3,10 @@
   "name": "objetos",
   "tilewidth": 136,
   "tileheight": 168,
-  "tilecount": 207,
-  "columns": 207,
+  "tilecount": 213,
+  "columns": 213,
   "image": "objetos.png",
-  "imagewidth": 28152,
+  "imagewidth": 28968,
   "imageheight": 168,
   "tileoffset": {
     "x": -46,
@@ -2080,6 +2080,66 @@
           "name": "static",
           "type": "string",
           "value": "loose-flagstone"
+        }
+      ]
+    },
+    {
+      "id": 207,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "colossal-head"
+        }
+      ]
+    },
+    {
+      "id": 208,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "stela"
+        }
+      ]
+    },
+    {
+      "id": 209,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "serpent-head"
+        }
+      ]
+    },
+    {
+      "id": 210,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "stone-ring"
+        }
+      ]
+    },
+    {
+      "id": 211,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "totem"
+        }
+      ]
+    },
+    {
+      "id": 212,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "thatched-hut"
         }
       ]
     }

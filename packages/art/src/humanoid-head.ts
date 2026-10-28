@@ -110,6 +110,7 @@ export interface HeadLook {
     | 'kabuto'
     | 'galea'
     | 'great-helm'
+    | 'tribal-mask'
     | null;
   readonly capColor: Ramp;
   readonly hatColor: Ramp;
@@ -157,7 +158,12 @@ export function drawHumanHead(
     look.headgear === 'great-helm';
   drawHair(head, look.hair, look.hairStyle, underHat);
   // Bajo una máscara o un yelmo cerrado no asoma la barba.
-  if (look.headgear !== 'skull' && look.headgear !== 'plate-helm' && look.headgear !== 'great-helm')
+  if (
+    look.headgear !== 'skull' &&
+    look.headgear !== 'plate-helm' &&
+    look.headgear !== 'great-helm' &&
+    look.headgear !== 'tribal-mask'
+  )
     drawFacialHair(head, look.hair, look.facialHair);
 
   if (look.headgear === 'helmet') drawHelmet(head);
@@ -172,6 +178,42 @@ export function drawHumanHead(
   else if (look.headgear === 'kabuto') drawKabuto(head, look.capColor);
   else if (look.headgear === 'galea') drawGalea(head);
   else if (look.headgear === 'great-helm') drawGreatHelm(head);
+  else if (look.headgear === 'tribal-mask') drawTribalMask(head, look.capColor);
+}
+
+/**
+ * Máscara tribal de madera: tapa la cara entera, pintada con una franja
+ * turquesa en los ojos, dientes blancos y rayas negras; arriba, una vincha
+ * con un abanico de plumas largas de colores.
+ */
+function drawTribalMask(head: HeadParts, wood: Ramp): void {
+  const turquoise = ramp([58, 150, 140]);
+  const painted: Material = head.local((p, _n, s) => {
+    if (p[1] > -0.2 && p[1] < 1.6) return tone(turquoise, s.light);
+    if (Math.abs(p[0]) > 2.6 && Math.floor(p[1] * 1.4) % 2 === 0)
+      return tone(ramp([30, 24, 20]), s.light);
+    return tone(wood, s.light);
+  });
+  head.ellipsoid([0, -0.6, 4.4], [4.7, 5.6, 1.8], painted);
+  // Ojos huecos, nariz tallada y la boca con colmillos.
+  for (const side of [1, -1] as const)
+    head.decal([side * 1.7, 0.7, 6.1], [side * 0.2, 0, 1], [16, 12, 10], 2, 1);
+  head.ellipsoid([0, -1.2, 6], [0.9, 1.6, 0.8], solid(wood, 1));
+  head.decal([0, -3.6, 6], [0, -0.1, 1], [236, 228, 204], 3, 1);
+  head.decal([0, -4.2, 5.8], [0, -0.2, 1], [30, 20, 16], 3, 1);
+  // Vincha y penacho de plumas.
+  head.limb([-4.6, 3.6, 1], [4.6, 3.6, 1], 0.9, 0.9, solid(ramp([170, 52, 40])));
+  const feathers = [ramp([200, 60, 44]), ramp([60, 150, 120]), ramp([226, 192, 80])];
+  for (let i = 0; i < 9; i++) {
+    const a = -1 + (i / 8) * 2;
+    head.limb(
+      [a * 3, 4.2, -0.6],
+      [a * 7.5, 11 - Math.abs(a) * 3, -2.5 - Math.abs(a)],
+      0.75,
+      0.25,
+      solid(feathers[i % 3] ?? wood),
+    );
+  }
 }
 
 /** Sombrero de ala ancha: de paja (con trenzado), con pluma o tricornio (el ala doblada). */

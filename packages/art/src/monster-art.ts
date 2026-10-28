@@ -4,6 +4,7 @@ import { isMountKind } from '@fenix/shared/mounts/mount-catalog';
 import { OUTLINE } from './character-art';
 import { ART_DETAIL, spriteCanvas, type CanvasFactory } from './humanoid-rig';
 import { mountLayout } from './mount-art';
+import { humanFoeMount } from './human-foe-art';
 import { biteOffset, gait } from './creature-motion';
 import { faunaLayout, isFaunaArtKind } from './fauna-art';
 import { GREAT_DRAGON_LAYOUT, GREAT_DRAGON_ZOOM, drawGreatDragon } from './dragon-art';
@@ -93,6 +94,12 @@ export function creatureLayout(kind: CreatureKind): CreatureLayout {
   if (isMountKind(kind)) {
     // Las monturas sueltas usan el lienzo de los jinetes.
     const layout = mountLayout(kind);
+    return { ...layout, headY: layout.topY };
+  }
+  // El jinete hostil, en el lienzo de su montura (como un jugador montado).
+  const ridden = humanFoeMount(kind);
+  if (ridden) {
+    const layout = mountLayout(ridden);
     return { ...layout, headY: layout.topY };
   }
   if (isFaunaArtKind(kind)) return faunaLayout(kind);

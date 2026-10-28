@@ -1276,6 +1276,24 @@ ruinas antiguas (unos 800 × 1200 tiles de tierra en el mapa de 1400 × 2000).
   ya unido más cercano. La fauna es la de la selva (jaguares, panteras, gorilas, pitones,
   cocodrilos, hombres lagarto).
 
+## Ruinas y tribus de la selva (etapa 77)
+
+El continente de la selva toma un aire mesoamericano, con arte propio (procedural, sin copiar
+ningún monumento real):
+
+- **Objetos nuevos** (`statics.ts` + `static-art.ts`): cabeza colosal de piedra (con casco y
+  orejeras, medio tapada por plantas), estela tallada, cabeza de serpiente emplumada, aro del juego
+  de pelota, tótem pintado y choza de paja. Las caras miran a la cámara (`toCamera`).
+- **Lugares**: la Pirámide del Jaguar suma estelas y cabezas de serpiente al pie de la escalinata;
+  nuevos: Aldea de los Hombres Jaguar (empalizada, chozas, tótems), Corral de los Jinetes, Cabezas
+  Colosales, Juego de Pelota (cancha entre dos taludes con sus aros) y Plaza de las Estelas.
+  Además hay cabezas y estelas sueltas entre los árboles.
+- **Tribus** (humanos hostiles, `human-foe-art.ts`): guerrero tribal (lanza y escudo), jinete
+  tribal montado en un lagarto corredor (usa el lienzo de la montura; muerto, queda tirado sin
+  ella) y chamán tribal (lanza hechizos y se cura). Todos llevan la **máscara tribal**, un objeto
+  nuevo de cabeza (madera pintada con penacho de plumas) que pueden soltar al morir. También
+  andan sueltos por la selva.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.
