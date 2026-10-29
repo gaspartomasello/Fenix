@@ -1,6 +1,6 @@
 import type { MountKind } from '@fenix/shared/mounts/mount-catalog';
 import type { Position } from '@fenix/shared/geometry/position';
-import type { ItemKind } from '@fenix/shared/items/item-catalog';
+import type { CorpseDrop } from '../../domain/items/items';
 import type { EntityId } from '@fenix/shared/protocol/messages';
 import type { Creature } from '../../domain/creatures/creature';
 import type { Mobile } from '../../domain/mobile';
@@ -33,7 +33,7 @@ export interface GameServices {
   };
   /** Los cuerpos de las criaturas y su botín. */
   corpses: {
-    fill(creature: Creature, drops: readonly { kind: ItemKind; amount: number }[]): boolean;
+    fill(creature: Creature, drops: readonly CorpseDrop[]): boolean;
     remove(corpseId: EntityId): void;
   };
   /** Las monturas de los jugadores. */

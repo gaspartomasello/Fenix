@@ -1,5 +1,5 @@
 import { DEFAULT_APPEARANCE, type Appearance } from '@fenix/shared/character/appearance';
-import type { CreatureKind } from '@fenix/shared/creatures/creature-catalog';
+import { CREATURES, type CreatureKind } from '@fenix/shared/creatures/creature-catalog';
 import type { Direction } from '@fenix/shared/geometry/direction';
 import type { MountKind } from '@fenix/shared/mounts/mount-catalog';
 import type { EquipmentLook } from '@fenix/shared/protocol/messages';
@@ -7,11 +7,9 @@ import { drawCharacterFrame, type CharacterFrame } from './character-art';
 import { spriteCanvas, type CanvasFactory } from './humanoid-rig';
 import type { PixelImage } from './pixel-art';
 
-/** Humanos hostiles: personas como los jugadores, con su ropa y sus armas. */
+/** Humanos hostiles: personas como los jugadores (su ropa y sus armas, en el catálogo). */
 const HUMAN_FOES: Readonly<
-  Partial<
-    Record<CreatureKind, { appearance: Appearance; equipment: EquipmentLook; mount?: MountKind }>
-  >
+  Partial<Record<CreatureKind, { appearance: Appearance; mount?: MountKind }>>
 > = {
   // Bárbaro del norte: pelo largo rubio, barba, pecho de cuero y hacha de guerra.
   barbarian: {
@@ -22,13 +20,6 @@ const HUMAN_FOES: Readonly<
       hairStyle: 'long',
       facialHair: 'beard',
       clothHue: 0x7a5a2e,
-    },
-    equipment: {
-      torso: 'leather-armor',
-      legs: 'leather-leggings',
-      feet: 'boots',
-      rightHand: 'war-axe',
-      leftHand: 'wooden-shield',
     },
   },
   // Pirata: pañuelo en la cabeza, camisa roja, bigote y cimitarra.
@@ -41,13 +32,6 @@ const HUMAN_FOES: Readonly<
       facialHair: 'mustache',
       clothHue: 0x8b2e2e,
     },
-    equipment: {
-      head: 'leather-cap',
-      torso: 'fancy-shirt',
-      legs: 'trousers',
-      feet: 'boots',
-      rightHand: 'scimitar',
-    },
   },
   // Corsario: capa negra, cota de anillas y espada larga; el más peligroso del mar.
   corsair: {
@@ -59,14 +43,6 @@ const HUMAN_FOES: Readonly<
       facialHair: 'beard',
       clothHue: 0x4a4a4a,
     },
-    equipment: {
-      torso: 'ringmail',
-      cloak: 'cloak',
-      legs: 'trousers',
-      feet: 'boots',
-      rightHand: 'longsword',
-      leftHand: 'buckler',
-    },
   },
   // Bandolero de los caminos: capucha de malla, pechera tachonada y daga.
   brigand: {
@@ -76,13 +52,6 @@ const HUMAN_FOES: Readonly<
       hairHue: 0x6b4423,
       facialHair: 'mustache',
       clothHue: 0x2e7a3e,
-    },
-    equipment: {
-      torso: 'studded-leather',
-      head: 'chain-coif',
-      legs: 'trousers',
-      feet: 'boots',
-      rightHand: 'dagger',
     },
   },
   // Las tribus de la selva: piel curtida, el torso pintado al aire, taparrabos,
@@ -96,13 +65,6 @@ const HUMAN_FOES: Readonly<
       facialHair: 'none',
       clothHue: 0x9a5a2a,
     },
-    equipment: {
-      head: 'tribal-mask',
-      legs: 'short-pants',
-      feet: 'sandals',
-      rightHand: 'spear',
-      leftHand: 'wooden-shield',
-    },
   },
   'tribal-rider': {
     appearance: {
@@ -112,12 +74,6 @@ const HUMAN_FOES: Readonly<
       hairStyle: 'ponytail',
       facialHair: 'none',
       clothHue: 0x2f7a6a,
-    },
-    equipment: {
-      head: 'tribal-mask',
-      legs: 'short-pants',
-      feet: 'sandals',
-      rightHand: 'spear',
     },
     mount: 'runner',
   },
@@ -129,12 +85,6 @@ const HUMAN_FOES: Readonly<
       hairStyle: 'long',
       facialHair: 'none',
       clothHue: 0x7a4a22,
-    },
-    equipment: {
-      head: 'tribal-mask',
-      torso: 'robe',
-      feet: 'sandals',
-      rightHand: 'quarterstaff',
     },
   },
 };
@@ -159,7 +109,8 @@ export function drawHumanFoeFrame(
     look?.appearance ?? DEFAULT_APPEARANCE,
     direction,
     frame,
-    look?.equipment ?? {},
+    // Lo que lleva puesto sale del catálogo: es lo mismo que deja en el cuerpo.
+    (CREATURES[kind].outfit ?? {}) as EquipmentLook,
     null,
     // Muerto, queda tirado sin la montura.
     frame === 'dead' ? null : (look?.mount ?? null),

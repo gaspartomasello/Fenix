@@ -1,7 +1,8 @@
-import { describeItem, type ItemKind } from '@fenix/shared/items/item-catalog';
+import { describeItem } from '@fenix/shared/items/item-catalog';
 import { withinReach } from '@fenix/shared/items/item-rules';
 import type { EntityId } from '@fenix/shared/protocol/messages';
 import { Creature, EMPTY_CORPSE_MS } from '../../../domain/creatures/creature';
+import type { CorpseDrop } from '../../../domain/items/items';
 import type { World } from '../../../domain/world';
 import type { ItemNotifications } from '../../kernel/item-notifications';
 import type { Clock, IdGenerator, Notifier } from '../../ports';
@@ -30,7 +31,7 @@ export class Corpses {
   }
 
   /** Guarda el botín en el cuerpo y decide cuánto dura. Devuelve si quedó algo adentro. */
-  fill(creature: Creature, drops: readonly { kind: ItemKind; amount: number }[]): boolean {
+  fill(creature: Creature, drops: readonly CorpseDrop[]): boolean {
     const now = this.clock.now();
     if (drops.length === 0) {
       creature.despawnAt = now + EMPTY_CORPSE_MS;
