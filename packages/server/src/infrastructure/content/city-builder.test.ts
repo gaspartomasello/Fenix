@@ -137,6 +137,7 @@ describe('buildCity', () => {
       volcanic: 'basalt-wall-x',
       bandit: 'tent',
       jungle: 'log-wall-x',
+      imperial: 'wall-x',
     };
     for (const [style, kind] of Object.entries(walls) as [CityStyle, string][]) {
       const city = buildCity({ name: 'X', style, seed: 9, size: 'medium' });
@@ -275,4 +276,30 @@ describe('buildCity: nada tapa el paso', () => {
         expect(stuck).toEqual([]);
       });
     }
+
+  describe('la sede imperial con puerto', () => {
+    const port = buildCity({ name: 'Altamar', style: 'imperial', seed: 7, size: 'large' });
+    const kinds = port.statics.map((s) => s.kind);
+
+    it('tiene puerto: mar al sur, barcos amarrados, faro y el barrio flotante de tablones', () => {
+      const bottom = port.terrain.slice((port.height - 1) * port.width);
+      expect(bottom.every((t) => t === Terrain.Water)).toBe(true);
+      expect(kinds).toContain('ship');
+      expect(kinds).toContain('lighthouse');
+      expect(kinds).toContain('statue');
+      const roles = port.npcs.map((n) => n.role);
+      for (const role of ['fisherman', 'shipwright', 'banker', 'blacksmith', 'mage'] as const)
+        expect(roles, role).toContain(role);
+    });
+
+    it('cada comercio tiene su cartel junto a la puerta y los de adentro tienen luz', () => {
+      const signs = kinds.filter((k) => k.startsWith('shop-sign-'));
+      expect(signs.length).toBeGreaterThanOrEqual(17);
+      expect(signs.some((k) => k.startsWith('shop-sign-anvil'))).toBe(true);
+      expect(signs.some((k) => k.startsWith('shop-sign-coins'))).toBe(true);
+      expect(
+        kinds.filter((k) => k.startsWith('wall-lantern') || k.startsWith('wall-torch')).length,
+      ).toBeGreaterThan(20);
+    });
+  });
 });

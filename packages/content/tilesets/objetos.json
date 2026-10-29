@@ -3,10 +3,10 @@
   "name": "objetos",
   "tilewidth": 136,
   "tileheight": 168,
-  "tilecount": 213,
-  "columns": 213,
+  "tilecount": 261,
+  "columns": 261,
   "image": "objetos.png",
-  "imagewidth": 28968,
+  "imagewidth": 35496,
   "imageheight": 168,
   "tileoffset": {
     "x": -46,
@@ -2140,6 +2140,486 @@
           "name": "static",
           "type": "string",
           "value": "thatched-hut"
+        }
+      ]
+    },
+    {
+      "id": 213,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "wall-lantern-x"
+        }
+      ]
+    },
+    {
+      "id": 214,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "wall-lantern-y"
+        }
+      ]
+    },
+    {
+      "id": 215,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "wall-torch-x"
+        }
+      ]
+    },
+    {
+      "id": 216,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "wall-torch-y"
+        }
+      ]
+    },
+    {
+      "id": 217,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "candle-table"
+        }
+      ]
+    },
+    {
+      "id": 218,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "wardrobe"
+        }
+      ]
+    },
+    {
+      "id": 219,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "potted-plant"
+        }
+      ]
+    },
+    {
+      "id": 220,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "tapestry-x"
+        }
+      ]
+    },
+    {
+      "id": 221,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "tapestry-y"
+        }
+      ]
+    },
+    {
+      "id": 222,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "statue"
+        }
+      ]
+    },
+    {
+      "id": 223,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-anvil-x"
+        }
+      ]
+    },
+    {
+      "id": 224,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-anvil-y"
+        }
+      ]
+    },
+    {
+      "id": 225,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-saw-x"
+        }
+      ]
+    },
+    {
+      "id": 226,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-saw-y"
+        }
+      ]
+    },
+    {
+      "id": 227,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-star-x"
+        }
+      ]
+    },
+    {
+      "id": 228,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-star-y"
+        }
+      ]
+    },
+    {
+      "id": 229,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-coins-x"
+        }
+      ]
+    },
+    {
+      "id": 230,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-coins-y"
+        }
+      ]
+    },
+    {
+      "id": 231,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-mug-x"
+        }
+      ]
+    },
+    {
+      "id": 232,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-mug-y"
+        }
+      ]
+    },
+    {
+      "id": 233,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-heart-x"
+        }
+      ]
+    },
+    {
+      "id": 234,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-heart-y"
+        }
+      ]
+    },
+    {
+      "id": 235,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-sack-x"
+        }
+      ]
+    },
+    {
+      "id": 236,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-sack-y"
+        }
+      ]
+    },
+    {
+      "id": 237,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-scissors-x"
+        }
+      ]
+    },
+    {
+      "id": 238,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-scissors-y"
+        }
+      ]
+    },
+    {
+      "id": 239,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-bow-x"
+        }
+      ]
+    },
+    {
+      "id": 240,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-bow-y"
+        }
+      ]
+    },
+    {
+      "id": 241,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-flask-x"
+        }
+      ]
+    },
+    {
+      "id": 242,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-flask-y"
+        }
+      ]
+    },
+    {
+      "id": 243,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-bread-x"
+        }
+      ]
+    },
+    {
+      "id": 244,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-bread-y"
+        }
+      ]
+    },
+    {
+      "id": 245,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-ham-x"
+        }
+      ]
+    },
+    {
+      "id": 246,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-ham-y"
+        }
+      ]
+    },
+    {
+      "id": 247,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-gem-x"
+        }
+      ]
+    },
+    {
+      "id": 248,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-gem-y"
+        }
+      ]
+    },
+    {
+      "id": 249,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-quill-x"
+        }
+      ]
+    },
+    {
+      "id": 250,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-quill-y"
+        }
+      ]
+    },
+    {
+      "id": 251,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-fish-x"
+        }
+      ]
+    },
+    {
+      "id": 252,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-fish-y"
+        }
+      ]
+    },
+    {
+      "id": 253,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-anchor-x"
+        }
+      ]
+    },
+    {
+      "id": 254,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-anchor-y"
+        }
+      ]
+    },
+    {
+      "id": 255,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-house-x"
+        }
+      ]
+    },
+    {
+      "id": 256,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-house-y"
+        }
+      ]
+    },
+    {
+      "id": 257,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-horseshoe-x"
+        }
+      ]
+    },
+    {
+      "id": 258,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-horseshoe-y"
+        }
+      ]
+    },
+    {
+      "id": 259,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-axe-x"
+        }
+      ]
+    },
+    {
+      "id": 260,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-axe-y"
         }
       ]
     }

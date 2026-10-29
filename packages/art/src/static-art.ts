@@ -1,4 +1,9 @@
-import type { StaticKind } from '@fenix/shared/world/statics';
+import {
+  SHOP_SIGN_ICONS,
+  type ShopSignIcon,
+  type ShopSignKind,
+  type StaticKind,
+} from '@fenix/shared/world/statics';
 import { PixelImage, type Rgb } from './pixel-art';
 import { TREE_SHADOWS, drawTree, type TreeSpecies } from './tree-art';
 import {
@@ -348,21 +353,45 @@ const well: Model = (c) => {
   }
 };
 
-const lamp: Model = (c) => {
+/**
+ * Farol de la calle: zócalo de piedra, poste de hierro con anillos y volutas,
+ * y arriba un farol de seis caras con vidrios encendidos, techito y remate.
+ */
+const lamp: Model = (c, variant) => {
   const iron = metal(IRON);
-  c.box([0, 1.5, 0], UP, [3.5, 1.5, 3.5], iron);
-  cylinder(c, [0, 3, 0], 50, (t) => 1.2 - t * 0.3, iron);
-  // Farol: marco de hierro, vidrio encendido y sombrerete.
-  c.box([0, 59, 0], UP, [4.5, 6, 4.5], glowing(ramp([255, 214, 120])));
-  for (const [x, z] of [
-    [-4.5, -4.5],
-    [4.5, -4.5],
-    [-4.5, 4.5],
-    [4.5, 4.5],
-  ] as const)
-    c.box([x, 59, z], UP, [0.7, 6.2, 0.7], iron);
-  c.limb([0, 66, 0], [0, 70, 0], 5.5, 1, iron);
-  c.sphere([0, 59, 0], 2.2, glowing(ramp([255, 246, 200])));
+  const dark = metal(ramp([46, 46, 52]));
+  // Zócalo de piedra y base de hierro.
+  c.box([0, 2, 0], UP, [5, 2, 5], rocky(STONE, 3 + variant));
+  c.box([0, 5, 0], UP, [3.4, 1.2, 3.4], iron);
+  cylinder(c, [0, 6, 0], 4, (t) => 2.4 - t, iron);
+  // Poste afinado, con anillos.
+  cylinder(c, [0, 10, 0], 44, (t) => 1.25 - t * 0.35, iron);
+  for (const y of [18, 34, 52]) c.ellipsoid([0, y, 0], UP, [1.9, 0.7, 1.9], dark);
+  // Volutas que sostienen el farol.
+  for (const side of [1, -1] as const) {
+    const a: Vec3 = [side * 0.8, 50, side * -0.8];
+    const b: Vec3 = [side * 3.6, 53, side * -3.6];
+    const d: Vec3 = [side * 3.2, 56.5, side * -3.2];
+    c.limb(a, b, 0.5, 0.5, iron);
+    c.limb(b, d, 0.5, 0.4, iron);
+  }
+  // El farol: base, seis vidrios con parantes, techito y remate.
+  c.ellipsoid([0, 56, 0], UP, [4.4, 0.9, 4.4], dark);
+  cylinder(c, [0, 57, 0], 9, (t) => 4 + t * 0.8, glowing(ramp([255, 214, 124])));
+  for (let k = 0; k < 6; k++) {
+    const a = (k / 6) * Math.PI * 2 + Math.PI / 6;
+    c.limb(
+      [Math.cos(a) * 4.1, 57, Math.sin(a) * 4.1],
+      [Math.cos(a) * 4.9, 66, Math.sin(a) * 4.9],
+      0.45,
+      0.45,
+      dark,
+    );
+  }
+  c.sphere([0, 61, 0], 2.2, glowing(ramp([255, 248, 210])));
+  c.ellipsoid([0, 66.5, 0], UP, [6, 1, 6], dark);
+  c.limb([0, 67, 0], [0, 71.5, 0], 4.6, 0.8, iron);
+  c.sphere([0, 72.4, 0], 1.1, metal(BRASS));
 };
 
 const sign: Model = (c) => {
@@ -2862,6 +2891,363 @@ const thatchedHut: Model = (c, variant) => {
   if (variant === 1) c.sphere(toCamera(9, 3, 16), 2.6, solid(ramp([170, 110, 70])));
 };
 
+// ── Carteles de los comercios, luces de adentro y muebles (etapa 79) ──
+
+const SIGN_BOARD = ramp([206, 172, 122]);
+const SIGN_RIM = ramp([86, 56, 32]);
+
+/** Pinta el ícono de un cartel con trazos, puntos y placas en coordenadas de la tabla (u, v). */
+interface SignPainter {
+  line(u1: number, v1: number, u2: number, v2: number, r: number, color: Ramp): void;
+  dot(u: number, v: number, r: number, color: Ramp): void;
+  plate(u: number, v: number, hu: number, hv: number, color: Ramp): void;
+}
+
+const GOLD = ramp([222, 180, 64]);
+const STEEL = ramp([150, 156, 168]);
+const DARK_IRON = ramp([58, 58, 64]);
+const RED = ramp([176, 44, 40]);
+const WHITE = ramp([236, 230, 214]);
+const BROWN = ramp([120, 76, 40]);
+
+/** El dibujo de cada oficio, en una tabla de 12 × 10 (u a la derecha, v arriba). */
+const SIGN_ICONS: Readonly<Record<ShopSignIcon, (p: SignPainter) => void>> = {
+  anvil(p) {
+    p.plate(0.5, 1.6, 3.6, 0.9, DARK_IRON);
+    p.line(-3, 1.6, -5, 2, 0.8, DARK_IRON);
+    p.plate(0.5, -0.3, 1.4, 1.2, DARK_IRON);
+    p.plate(0.5, -2.2, 3, 0.7, DARK_IRON);
+  },
+  saw(p) {
+    p.plate(-1, 0.4, 3.6, 1.4, STEEL);
+    for (let u = -4.2; u <= 2.2; u += 1.1) p.dot(u, -1.2, 0.45, STEEL);
+    p.plate(3.8, 0.6, 1.2, 1.8, BROWN);
+  },
+  star(p) {
+    for (let k = 0; k < 5; k++) {
+      const a = Math.PI / 2 + (k / 5) * Math.PI * 2;
+      p.line(0, 0, Math.cos(a) * 4, Math.sin(a) * 4, 0.9, GOLD);
+    }
+    p.dot(0, 0, 1.4, GOLD);
+  },
+  coins(p) {
+    for (const [u, v] of [
+      [-2, -2.4],
+      [-2, -1.4],
+      [-2, -0.4],
+      [1.6, -2.4],
+      [1.6, -1.4],
+    ] as const)
+      p.plate(u, v, 1.7, 0.45, GOLD);
+    p.dot(0, 2, 1.8, GOLD);
+    p.dot(0, 2, 0.8, ramp([170, 130, 40]));
+  },
+  mug(p) {
+    p.plate(-0.6, -0.6, 2.4, 2.8, BROWN);
+    p.line(1.8, 1.4, 3.6, 0.4, 0.6, BROWN);
+    p.line(3.6, 0.4, 1.8, -1.8, 0.6, BROWN);
+    for (const u of [-2.2, -0.6, 1]) p.dot(u, 2.6, 1, WHITE);
+  },
+  heart(p) {
+    p.dot(-1.5, 1, 1.9, RED);
+    p.dot(1.5, 1, 1.9, RED);
+    p.line(-2.8, 0.2, 0, -3, 1.3, RED);
+    p.line(2.8, 0.2, 0, -3, 1.3, RED);
+  },
+  sack(p) {
+    p.dot(0, -1, 3, ramp([196, 166, 110]));
+    p.line(0, 1.6, 0, 3, 0.9, ramp([196, 166, 110]));
+    p.line(-1, 2.2, 1, 2.2, 0.4, BROWN);
+  },
+  scissors(p) {
+    p.dot(-2.4, -2, 1.1, DARK_IRON);
+    p.dot(2.4, -2, 1.1, DARK_IRON);
+    p.line(-2, -1, 2.4, 3.4, 0.5, STEEL);
+    p.line(2, -1, -2.4, 3.4, 0.5, STEEL);
+  },
+  bow(p) {
+    for (let k = 0; k < 6; k++) {
+      const a1 = -1.2 + (k / 6) * 2.4;
+      const a2 = -1.2 + ((k + 1) / 6) * 2.4;
+      p.line(
+        -1 + Math.cos(a1) * 3.4,
+        Math.sin(a1) * 3.8,
+        -1 + Math.cos(a2) * 3.4,
+        Math.sin(a2) * 3.8,
+        0.55,
+        BROWN,
+      );
+    }
+    p.line(-1 + Math.cos(1.2) * 3.4, 3.5, -1 + Math.cos(1.2) * 3.4, -3.5, 0.2, WHITE);
+    p.line(-4, 0, 4, 0, 0.3, BROWN);
+    p.dot(4.2, 0, 0.6, STEEL);
+  },
+  flask(p) {
+    p.dot(0, -1.4, 2.6, ramp([70, 160, 110]));
+    p.line(0, 1, 0, 3.2, 0.9, ramp([200, 220, 226]));
+    p.plate(0, 3.6, 0.9, 0.4, BROWN);
+  },
+  bread(p) {
+    p.dot(-1.6, 0, 2, ramp([200, 140, 70]));
+    p.dot(1.6, 0, 2, ramp([200, 140, 70]));
+    for (const u of [-2, 0, 2]) p.line(u - 0.5, 1.4, u + 0.5, 0.6, 0.25, BROWN);
+  },
+  ham(p) {
+    p.dot(-1, 0.5, 2.6, ramp([170, 72, 64]));
+    p.line(1, -0.8, 3.6, -2.4, 0.6, WHITE);
+    p.dot(3.8, -2.6, 0.8, WHITE);
+  },
+  gem(p) {
+    const blue = ramp([80, 200, 230]);
+    p.line(-3, 1, 3, 1, 0.6, blue);
+    p.line(-3, 1, 0, -3.4, 0.9, blue);
+    p.line(3, 1, 0, -3.4, 0.9, blue);
+    p.line(-2, 2.2, 2, 2.2, 0.6, blue);
+    p.dot(0, 0, 1.2, blue);
+  },
+  quill(p) {
+    p.plate(-1, -1.6, 3, 1.4, WHITE);
+    p.line(0, -0.6, 3.4, 3.6, 0.9, WHITE);
+    p.line(0, -0.6, -0.6, -1.4, 0.3, DARK_IRON);
+  },
+  fish(p) {
+    const fish = ramp([90, 140, 170]);
+    p.dot(-0.5, 0, 2.2, fish);
+    p.dot(1.6, 0, 1.6, fish);
+    p.line(-2.4, 0, -4.2, 1.6, 0.7, fish);
+    p.line(-2.4, 0, -4.2, -1.6, 0.7, fish);
+    p.dot(2.6, 0.5, 0.35, DARK_IRON);
+  },
+  anchor(p) {
+    p.line(0, 3, 0, -2.6, 0.6, DARK_IRON);
+    p.line(-2, 1.6, 2, 1.6, 0.5, DARK_IRON);
+    p.dot(0, 3.4, 0.9, DARK_IRON);
+    p.line(0, -2.8, -3, -1, 0.6, DARK_IRON);
+    p.line(0, -2.8, 3, -1, 0.6, DARK_IRON);
+  },
+  house(p) {
+    p.plate(0, -1.2, 2.8, 2, WHITE);
+    p.line(-3.6, 0.8, 0, 3.6, 0.7, RED);
+    p.line(3.6, 0.8, 0, 3.6, 0.7, RED);
+    p.plate(0, -2, 0.8, 1.2, BROWN);
+  },
+  horseshoe(p) {
+    for (let k = 0; k < 9; k++) {
+      const a = -0.25 * Math.PI + (k / 8) * 1.5 * Math.PI;
+      p.dot(Math.cos(a + Math.PI / 2) * 2.8, Math.sin(a + Math.PI / 2) * 2.8 - 0.2, 0.75, STEEL);
+    }
+  },
+  axe(p) {
+    p.line(-3, -3, 2.6, 2.6, 0.5, BROWN);
+    p.plate(1.8, 2.4, 1.6, 1.4, STEEL);
+  },
+};
+
+/**
+ * Cartel de un comercio, como en UO: un brazo de hierro que sale de la pared
+ * junto a la puerta y una tabla colgada de dos cadenas, perpendicular a la
+ * pared (se ve desde la calle), con el ícono del oficio pintado.
+ */
+function shopSign(icon: ShopSignIcon, along: 0 | 2): Model {
+  return (c) => {
+    const iron = metal(DARK_IRON);
+    const inset = 15;
+    const scale = 1.55;
+    // La tabla mira de costado a la luz: se aclara para que el ícono se lea igual de los dos lados.
+    const lit =
+      (color: Ramp): Material =>
+      (s) =>
+        tone(color, 0.55 + s.light * 0.45);
+    // Brazo con una voluta de refuerzo, a la altura del alero.
+    c.limb(edge(along, 0, 50, 2.5), edge(along, 0, 50, inset + 11), 0.7, 0.6, iron);
+    c.limb(edge(along, 0, 42, 2.5), edge(along, 0, 50, inset - 3), 0.5, 0.5, iron);
+    c.sphere(edge(along, 0, 50, inset + 11.4), 0.9, iron);
+    // La tabla, perpendicular a la pared: borde oscuro y frente claro; las cadenas.
+    const center = edge(along, 0, 37, inset);
+    const plane: readonly [Vec3, Vec3, Vec3] =
+      along === 0
+        ? [
+            [0, 0, -1],
+            [0, 1, 0],
+            [1, 0, 0],
+          ]
+        : [
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+          ];
+    for (const side of [-1, 1] as const)
+      c.limb(
+        edge(along, 0, 50, inset + side * 7.5),
+        edge(along, 0, 45, inset + side * 7.5),
+        0.3,
+        0.3,
+        iron,
+      );
+    c.box(center, plane, [10, 8, 0.7], solid(SIGN_RIM));
+    c.box(center, plane, [9, 7, 1], lit(SIGN_BOARD));
+    const at = (u: number, v: number, lift: number): Vec3 => {
+      const [r, up, n] = plane;
+      return [
+        center[0] + r[0] * u + up[0] * v + n[0] * (1 + lift),
+        center[1] + r[1] * u + up[1] * v + n[1] * (1 + lift),
+        center[2] + r[2] * u + up[2] * v + n[2] * (1 + lift),
+      ];
+    };
+    const k = scale;
+    SIGN_ICONS[icon]({
+      line: (u1, v1, u2, v2, r, color) =>
+        c.limb(
+          at(u1 * k, v1 * k, r * k * 0.4),
+          at(u2 * k, v2 * k, r * k * 0.4),
+          r * k,
+          r * k,
+          solid(color),
+        ),
+      dot: (u, v, r, color) =>
+        c.ellipsoid(
+          at(u * k, v * k, r * k * 0.3),
+          plane,
+          [r * k, r * k, r * k * 0.5],
+          solid(color),
+        ),
+      plate: (u, v, hu, hv, color) =>
+        c.box(at(u * k, v * k, 0.3), plane, [hu * k, hv * k, 0.4], lit(color)),
+    });
+  };
+}
+
+/** Farol de mano colgado de un gancho en la pared, con su vidrio encendido. */
+function wallLantern(along: 0 | 2): Model {
+  return (c) => {
+    const iron = metal(DARK_IRON);
+    c.box(edge(along, 0, 38, 2.8), UP, edgeHalf(along, 1.6, 2.4, 0.5), iron);
+    c.limb(edge(along, 0, 38, 3), edge(along, 0, 38, 10), 0.6, 0.5, iron);
+    c.limb(edge(along, 0, 38, 10), edge(along, 0, 34, 10), 0.4, 0.4, iron);
+    const at = edge(along, 0, 0, 10);
+    c.ellipsoid([at[0], 33.5, at[2]], UP, [3.8, 0.9, 3.8], iron);
+    c.limb([at[0], 33.5, at[2]], [at[0], 35.5, at[2]], 2.8, 0.6, iron);
+    cylinder(c, [at[0], 24, at[2]], 9, () => 3.2, glowing(ramp([255, 212, 118])));
+    for (let k = 0; k < 4; k++) {
+      const a = (k / 4) * Math.PI * 2 + Math.PI / 4;
+      c.limb(
+        [at[0] + Math.cos(a) * 3.4, 24, at[2] + Math.sin(a) * 3.4],
+        [at[0] + Math.cos(a) * 3.4, 33, at[2] + Math.sin(a) * 3.4],
+        0.4,
+        0.4,
+        iron,
+      );
+    }
+    c.sphere([at[0], 28, at[2]], 1.8, glowing(ramp([255, 246, 200])));
+    c.ellipsoid([at[0], 23.6, at[2]], UP, [3.8, 0.9, 3.8], iron);
+  };
+}
+
+/** Antorcha en un soporte de hierro de la pared, con la llama encendida. */
+function wallTorch(along: 0 | 2): Model {
+  return (c) => {
+    const iron = metal(DARK_IRON);
+    c.box(edge(along, 0, 28, 2.8), UP, edgeHalf(along, 2, 4, 0.6), iron);
+    c.limb(edge(along, 0, 26, 3), edge(along, 0, 30, 8), 0.6, 0.6, iron);
+    c.ellipsoid(edge(along, 0, 31, 9), UP, [2.4, 1.1, 2.4], iron);
+    c.limb(edge(along, 0, 22, 6.5), edge(along, 0, 35, 9.6), 1, 1.3, solid(BROWN));
+    c.limb(
+      edge(along, 0, 35, 9.6),
+      edge(along, 0, 43, 10.4),
+      2.4,
+      0.3,
+      glowing(ramp([255, 150, 50])),
+    );
+    c.sphere(edge(along, 0, 37, 9.9), 1.6, glowing(ramp([255, 230, 140])));
+  };
+}
+
+/** Mesita redonda con un mantel y tres velas encendidas. */
+const candleTable: Model = (c, variant) => {
+  const wood = planks(FURNITURE, 1, 3);
+  c.limb([0, 0, 0], [0, 10, 0], 1.1, 1.1, wood);
+  c.ellipsoid([0, 0.6, 0], UP, [4, 0.6, 4], wood);
+  c.ellipsoid([0, 11, 0], UP, [7.5, 1, 7.5], wood);
+  c.ellipsoid(
+    [0, 11.8, 0],
+    UP,
+    [6, 0.4, 6],
+    solid(variant === 1 ? ramp([150, 40, 50]) : LINEN_WHITE),
+  );
+  for (const [x, z, h] of [
+    [-2.4, -1, 6],
+    [1.6, -2.2, 4.5],
+    [1, 2.2, 5.2],
+  ] as const) {
+    c.ellipsoid([x, 12.4, z], UP, [1.2, 0.4, 1.2], metal(BRASS));
+    c.limb([x, 12.6, z], [x, 12.6 + h, z], 0.7, 0.7, solid(LINEN_WHITE));
+    c.limb([x, 13 + h, z], [x, 15.6 + h, z], 0.8, 0.15, glowing(ramp([255, 214, 110])));
+  }
+};
+
+/** Ropero de madera oscura: dos puertas con tiradores de bronce y una cornisa. */
+const wardrobe: Model = (c, variant) => {
+  const wood = planks(variant === 1 ? FURNITURE : DARK_WOOD, 1, 5);
+  c.box(toCamera(0, 22, -2), FACING, [9, 22, 6], wood);
+  c.box(toCamera(0, 45, -2), FACING, [10, 1.5, 7], solid(DARK_WOOD, -1));
+  c.box(toCamera(0, 1.2, -2), FACING, [9.6, 1.2, 6.6], solid(DARK_WOOD, -1));
+  const front: Vec3 = [FACING[2][0], 0, FACING[2][2]];
+  c.decal(toCamera(0, 24, 4.1), front, [40, 26, 16], 1, 30);
+  for (const side of [1, -1] as const) c.sphere(toCamera(side * 1.6, 24, 4.4), 0.7, metal(BRASS));
+};
+
+/** Maceta de barro con una planta de hojas anchas. */
+const pottedPlant: Model = (c, variant) => {
+  const clay = ramp([176, 96, 62]);
+  cylinder(c, [0, 0, 0], 9, (t) => 4 + t * 1.6, solid(clay));
+  c.ellipsoid([0, 9, 0], UP, [5.8, 0.8, 5.8], solid(clay, -1));
+  c.ellipsoid([0, 9.2, 0], UP, [5, 0.5, 5], solid(ramp([70, 50, 34])));
+  const leaf = ramp(variant === 2 ? [70, 130, 60] : [52, 112, 50]);
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2 + variant;
+    const d: Vec3 = [Math.cos(a), 1.3, Math.sin(a)];
+    c.limb([0, 9, 0], [d[0] * 5, 16 + (i % 3) * 3, d[2] * 5], 0.4, 0.3, solid(ramp([70, 110, 46])));
+    c.ellipsoid(
+      [d[0] * 7, 18 + (i % 3) * 3, d[2] * 7],
+      axesAlong([d[0], 0.5, d[2]]),
+      [5, 0.5, 2.4],
+      solid(leaf),
+    );
+  }
+};
+
+/** Tapiz colgado de la pared: tela de color con borde dorado y un escudo en el medio. */
+function tapestry(along: 0 | 2): Model {
+  return (c, variant) => {
+    const cloth =
+      [ramp([130, 30, 40]), ramp([36, 60, 130]), ramp([40, 100, 60])][variant % 3] ?? RED;
+    c.limb(edge(along, -8, 44, 2.6), edge(along, 8, 44, 2.6), 0.5, 0.5, metal(BRASS));
+    c.box(edge(along, 0, 30, 2.8), UP, edgeHalf(along, 7, 13, 0.3), (s) => {
+      const t = s.p[along];
+      const edgeBand = Math.abs(t) > 6 || s.p[1] < 18.4 || s.p[1] > 42;
+      const crest = Math.hypot(t, s.p[1] - 31) < 3.2;
+      return tone(edgeBand || crest ? GOLD : cloth, s.light);
+    });
+  };
+}
+
+/** Estatua de un emperador con corona de laurel y manto, sobre un pedestal de mármol. */
+const statue: Model = (c, variant) => {
+  const marble = rocky(MARBLE, 12 + variant);
+  c.box([0, 4, 0], UP, [8, 4, 8], marble);
+  c.box([0, 9.5, 0], UP, [6.6, 1.5, 6.6], marble);
+  const at = (u: number, v: number, w: number): Vec3 => toCamera(u, v + 11, w);
+  c.limb(at(-1.6, 0, 0), at(-1.4, 15, 0), 1.8, 1.6, marble);
+  c.limb(at(1.6, 0, 0), at(1.4, 15, 0), 1.8, 1.6, marble);
+  c.ellipsoid(at(0, 22, 0), FACING, [4.6, 8, 3.2], marble);
+  c.limb(at(-4, 27, 0), at(-5.6, 18, 1.4), 1.2, 1, marble);
+  c.limb(at(4, 27, 0), at(7, 33, 2), 1.2, 1, marble);
+  c.limb(at(7, 33, 2), at(7.2, 40, 2), 0.6, 0.6, marble);
+  c.sphere(at(0, 34, 0), 2.8, marble);
+  c.ellipsoid(at(0, 35.6, 0), FACING, [3, 0.7, 3], solid(ramp([170, 190, 120])));
+  c.ellipsoid(at(0, 16, -1.6), FACING, [5.4, 9, 1.4], marble);
+};
+
 const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   oak: tree('oak'),
   pine: tree('pine'),
@@ -2917,6 +3303,24 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   'stone-ring': { model: stoneRing, shadow: [14, 6] },
   totem: { model: totem, shadow: [10, 4] },
   'thatched-hut': { model: thatchedHut, shadow: [28, 11] },
+  'wall-lantern-x': { model: wallLantern(0) },
+  'wall-lantern-y': { model: wallLantern(2) },
+  'wall-torch-x': { model: wallTorch(0) },
+  'wall-torch-y': { model: wallTorch(2) },
+  'candle-table': { model: candleTable, shadow: [9, 4] },
+  wardrobe: { model: wardrobe, shadow: [12, 5] },
+  'potted-plant': { model: pottedPlant, shadow: [8, 3] },
+  'tapestry-x': { model: tapestry(0) },
+  'tapestry-y': { model: tapestry(2) },
+  statue: { model: statue, shadow: [12, 5] },
+  ...(Object.fromEntries(
+    SHOP_SIGN_ICONS.flatMap((icon) =>
+      ([0, 2] as const).map((along) => {
+        const kind: ShopSignKind = `shop-sign-${icon}-${along === 0 ? 'x' : 'y'}`;
+        return [kind, { model: shopSign(icon, along) }];
+      }),
+    ),
+  ) as Record<ShopSignKind, StaticSpec>),
   ship: {
     model: ship(false),
     frame: { width: 260, height: 250, ground: { x: 130, y: 196 } },

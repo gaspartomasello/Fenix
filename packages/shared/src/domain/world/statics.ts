@@ -5,6 +5,40 @@
 import { Direction } from '../geometry/direction';
 import type { Position } from '../geometry/position';
 
+/**
+ * Los íconos de los carteles de los comercios, como en UO: una tabla colgada
+ * junto a la puerta con el dibujo del oficio (un yunque en la herrería, un
+ * serrucho en la carpintería, una estrella en la tienda de magia…).
+ */
+export const SHOP_SIGN_ICONS = [
+  'anvil',
+  'saw',
+  'star',
+  'coins',
+  'mug',
+  'heart',
+  'sack',
+  'scissors',
+  'bow',
+  'flask',
+  'bread',
+  'ham',
+  'gem',
+  'quill',
+  'fish',
+  'anchor',
+  'house',
+  'horseshoe',
+  'axe',
+] as const;
+export type ShopSignIcon = (typeof SHOP_SIGN_ICONS)[number];
+/** El cartel colgado de una pared a lo largo de x (la del sur) o de y (la del este). */
+export type ShopSignKind = `shop-sign-${ShopSignIcon}-${'x' | 'y'}`;
+export const SHOP_SIGN_KINDS: readonly ShopSignKind[] = SHOP_SIGN_ICONS.flatMap((icon) => [
+  `shop-sign-${icon}-x` as const,
+  `shop-sign-${icon}-y` as const,
+]);
+
 export const STATIC_KINDS = [
   'oak',
   'pine',
@@ -231,6 +265,18 @@ export const STATIC_KINDS = [
   'stone-ring',
   'totem',
   'thatched-hut',
+  // Luces de adentro y muebles nuevos (etapa 79).
+  'wall-lantern-x',
+  'wall-lantern-y',
+  'wall-torch-x',
+  'wall-torch-y',
+  'candle-table',
+  'wardrobe',
+  'potted-plant',
+  'tapestry-x',
+  'tapestry-y',
+  'statue',
+  ...SHOP_SIGN_KINDS,
 ] as const;
 
 export type StaticKind = (typeof STATIC_KINDS)[number];
@@ -364,7 +410,37 @@ export const CONTAINER_RANGE = 2;
 /** A cuántos tiles hay que estar de una puerta para abrirla o cerrarla. */
 export const DOOR_RANGE = 1;
 
+const SHOP_SIGN_NAMES: Readonly<Record<ShopSignIcon, string>> = {
+  anvil: 'cartel de la herrería',
+  saw: 'cartel de la carpintería',
+  star: 'cartel de la tienda de magia',
+  coins: 'cartel del banco',
+  mug: 'cartel de la taberna',
+  heart: 'cartel del curandero',
+  sack: 'cartel del almacén',
+  scissors: 'cartel de la sastrería',
+  bow: 'cartel del arquero',
+  flask: 'cartel del alquimista',
+  bread: 'cartel de la panadería',
+  ham: 'cartel de la carnicería',
+  gem: 'cartel de la joyería',
+  quill: 'cartel de la escribanía',
+  fish: 'cartel de la pescadería',
+  anchor: 'cartel del astillero',
+  house: 'cartel del arquitecto',
+  horseshoe: 'cartel de la caballeriza',
+  axe: 'cartel del leñador',
+};
+
 export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
+  ...(Object.fromEntries(
+    SHOP_SIGN_ICONS.flatMap((icon) =>
+      (['x', 'y'] as const).map((along) => {
+        const kind: ShopSignKind = `shop-sign-${icon}-${along}`;
+        return [kind, define(kind, SHOP_SIGN_NAMES[icon], false)];
+      }),
+    ),
+  ) as Record<ShopSignKind, StaticDefinition>),
   oak: define('oak', 'roble', true),
   pine: define('pine', 'pino', true),
   bush: define('bush', 'arbusto', false),
@@ -579,6 +655,16 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   'stone-ring': define('stone-ring', 'aro de piedra', true),
   totem: define('totem', 'tótem tallado', true),
   'thatched-hut': define('thatched-hut', 'choza de paja', true),
+  'wall-lantern-x': define('wall-lantern-x', 'farol colgado', false, 4),
+  'wall-lantern-y': define('wall-lantern-y', 'farol colgado', false, 4),
+  'wall-torch-x': define('wall-torch-x', 'antorcha', false, 4),
+  'wall-torch-y': define('wall-torch-y', 'antorcha', false, 4),
+  'candle-table': define('candle-table', 'mesita con velas', true, 3),
+  wardrobe: define('wardrobe', 'ropero', true),
+  'potted-plant': define('potted-plant', 'maceta', true),
+  'tapestry-x': define('tapestry-x', 'tapiz', false),
+  'tapestry-y': define('tapestry-y', 'tapiz', false),
+  statue: define('statue', 'estatua', true),
 };
 
 /**

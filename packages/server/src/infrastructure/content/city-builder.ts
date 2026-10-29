@@ -2,7 +2,13 @@ import type { CreatureKind } from '@fenix/shared/creatures/creature-catalog';
 import type { NpcRole } from '@fenix/shared/economy/vendors';
 import type { Position } from '@fenix/shared/geometry/position';
 import type { ItemKind } from '@fenix/shared/items/item-catalog';
-import { DOORS, STATICS, type StaticKind, type StaticPlacement } from '@fenix/shared/world/statics';
+import {
+  DOORS,
+  STATICS,
+  type ShopSignIcon,
+  type StaticKind,
+  type StaticPlacement,
+} from '@fenix/shared/world/statics';
 import { TERRAINS, Terrain } from '@fenix/shared/world/terrain';
 import type { RegionData } from '@fenix/shared/world/tile-map';
 import { SeededRandom } from '../system/seeded-random';
@@ -56,7 +62,8 @@ const HOUSE_WALL = /^(wall|log-wall|plank-wall|basalt-wall|sandstone-wall)-(x|y)
  * - `bandit`: carpas y chozas dentro de una empalizada, sin ley (el refugio de los bandidos).
  * Todas tienen afuera de la muralla un cementerio con no-muertos.
  */
-export type CityStyle = 'capital' | 'mountain' | 'swamp' | 'volcanic' | 'bandit' | 'jungle';
+export type CityStyle =
+  'capital' | 'mountain' | 'swamp' | 'volcanic' | 'bandit' | 'jungle' | 'imperial';
 
 export interface CitySpec {
   readonly name: string;
@@ -102,6 +109,13 @@ interface Style {
   readonly lawless: boolean;
   /** Un río cruza la ciudad de oeste a este, con puentes (la capital). */
   readonly river: boolean;
+  /**
+   * Ciudad puerto sobre el mar del sur: muelle de piedra al pie de la
+   * muralla, muelles de madera con barcos, un barrio flotante y un faro.
+   */
+  readonly harbor?: boolean;
+  /** Sede imperial: estatuas en la plaza, estandartes y más faroles. */
+  readonly imperial?: boolean;
 }
 
 const STONE: WallKit = {
@@ -214,6 +228,24 @@ const STYLES: Readonly<Record<CityStyle, Style>> = {
     castle: false,
     lawless: false,
     river: false,
+  },
+  // La sede imperial del sur: piedra y arenisca, calles de lajas, plaza de
+  // mármol, palacio y puerto con barrio flotante.
+  imperial: {
+    walls: STONE,
+    floor: Terrain.StoneTiles,
+    street: Terrain.Flagstone,
+    avenue: Terrain.Stone,
+    plaza: Terrain.MarbleLight,
+    ring: 'rampart',
+    towers: true,
+    trees: ['palm', 'cypress', 'gomero'],
+    light: 'lamp',
+    castle: true,
+    lawless: false,
+    river: false,
+    harbor: true,
+    imperial: true,
   },
   // El pueblo de la selva: casas de troncos levantadas sobre el empedrado de una ciudad antigua.
   jungle: {
@@ -452,6 +484,30 @@ class Plan {
     if (this.inside(x, y)) this.decor.push({ x, y, kind });
   }
 
+  /** ¿Es una pared lisa de casa (sin ventana) y no tiene nada colgado todavía? */
+  bareWall(x: number, y: number): boolean {
+    const kind = this.statics.get(y * this.width + x);
+    return (
+      kind !== undefined && HOUSE_WALL.test(kind) && !this.decor.some((d) => d.x === x && d.y === y)
+    );
+  }
+
+  /**
+   * El cartel del comercio, como en UO: colgado de la pared de afuera, en el
+   * primer tramo liso al lado de la puerta.
+   */
+  shopSign(door: Position, icon: ShopSignIcon): void {
+    const kind = this.statics.get(door.y * this.width + door.x) ?? '';
+    const alongX = /-x(-|$)/.test(kind);
+    for (const d of [1, -1, 2, -2, 3]) {
+      const x = alongX ? door.x + d : door.x;
+      const y = alongX ? door.y : door.y + d;
+      if (!this.bareWall(x, y)) continue;
+      this.onWall(x, y, `shop-sign-${icon}-${alongX ? 'x' : 'y'}`);
+      return;
+    }
+  }
+
   /**
    * Revisa que desde `from` se llegue caminando (con las puertas abiertas) a
    * todo el suelo libre y que cada puerta tenga paso de los dos lados, y
@@ -627,6 +683,7 @@ export function buildCity(spec: CitySpec): City {
     se: cut(southLimit),
   };
   buildRing(plan, style, inner, cx, cy, river, corners);
+  const port = style.harbor ? buildHarbor(plan, inner, cx) : null;
 
   // ── La plaza: fuente (o fogata), santuario, puestos del mercado y faroles ──
   if (style.lawless) plan.put(cx, cy, 'campfire');
@@ -666,6 +723,25 @@ export function buildCity(spec: CitySpec): City {
     [plazaR, -plazaR],
   ] as const)
     plan.put(cx + dx, cy + dy, style.light);
+  // La sede imperial: estatuas del emperador en la plaza y estandartes en las cuatro puertas.
+  if (style.imperial) {
+    for (const [dx, dy] of [
+      [-plazaR + 1, -plazaR + 1],
+      [plazaR - 1, plazaR - 1],
+    ] as const)
+      if (plan.isFree(cx + dx, cy + dy)) plan.put(cx + dx, cy + dy, 'statue');
+    for (const [x, y] of [
+      [cx - 3, inner.y0 + 1],
+      [cx + 3, inner.y0 + 1],
+      [cx - 3, inner.y1],
+      [cx + 3, inner.y1],
+      [inner.x0 + 1, cy - 3],
+      [inner.x0 + 1, cy + 3],
+      [inner.x1, cy - 3],
+      [inner.x1, cy + 3],
+    ] as const)
+      if (plan.isFree(x, y)) plan.put(x, y, 'banner');
+  }
   const spawn = { x: cx, y: cy + 3 };
 
   // ── Barrios: cuadras entre calles, con las casas del estilo de la región ──
@@ -755,6 +831,16 @@ export function buildCity(spec: CitySpec): City {
             'shipwright',
             'architect',
           ];
+  // En el puerto, el pescador y el astillero tienen su galpón en el barrio flotante.
+  if (port) {
+    for (const [role, room] of port.shops) {
+      shops.splice(shops.indexOf(role), 1);
+      const spot = furnishShop(plan, role, room, random);
+      const icon = SHOP_ICON[role];
+      if (icon) plan.shopSign(room.door, icon);
+      plan.npcs.push({ role, position: spot, ...named(spec, role) });
+    }
+  }
   const houses: Room[] = [];
   for (const lot of lots) {
     const house = building(plan, style, lot, cx, cy, random);
@@ -774,6 +860,8 @@ export function buildCity(spec: CitySpec): City {
     if (!style.lawless && role === 'mage')
       upstairs(plan, spec, room, 'mage', 'la torre del mago', 2, 'spiral-stairs');
     const spot = furnishShop(plan, role, room, random);
+    const icon = SHOP_ICON[role];
+    if (icon && !style.lawless) plan.shopSign(room.door, icon);
     // El banco tiene puerta de hierro.
     if (role === 'banker' && plan.statics.get(room.door.y * plan.width + room.door.x) === 'door-x')
       plan.put(room.door.x, room.door.y, 'iron-door-x');
@@ -814,7 +902,7 @@ export function buildCity(spec: CitySpec): City {
   if (!style.lawless)
     for (const house of houses) if (house !== abandoned) roofOnly(plan, spec, house);
   // Faroles a lo largo de las avenidas (en el refugio, solo las fogatas de las carpas).
-  for (let t = 4; !style.lawless && t < Math.max(width, height); t += 7) {
+  for (let t = 4; !style.lawless && t < Math.max(width, height); t += style.imperial ? 5 : 7) {
     for (const [x, y] of [
       [cx - 2, t],
       [cx + 2, t + 3],
@@ -833,30 +921,32 @@ export function buildCity(spec: CitySpec): City {
 
   // ── Afuera: la caballeriza, el leñador, huertas, árboles y el cementerio ──
   const outskirts = { x0: inner.x1 + 3, y0: inner.y1 + 3, x1: width - 2, y1: height - 2 };
-  const graveyard: Rect = {
-    x0: Math.max(cx + 4, outskirts.x0),
-    y0: Math.max(cy + 4, outskirts.y0),
-    x1: outskirts.x1,
-    y1: outskirts.y1,
-  };
+  // En el puerto, al sur está el mar: el cementerio queda al este, junto a la muralla.
+  const graveyard: Rect = port
+    ? { x0: outskirts.x0, y0: cy + 4, x1: outskirts.x1, y1: inner.y1 }
+    : {
+        x0: Math.max(cx + 4, outskirts.x0),
+        y0: Math.max(cy + 4, outskirts.y0),
+        x1: outskirts.x1,
+        y1: outskirts.y1,
+      };
   regions.push(buildGraveyard(plan, graveyard, spec, random));
   if (!style.lawless) {
-    buildStable(
-      plan,
-      style,
-      { x0: inner.x0, y0: inner.y1 + 3, x1: cx - 4, y1: height - 2 },
-      spec,
-      random,
-    );
     const eastBand = { x0: inner.x1 + 3, x1: width - 2 };
     const yardTop = river ? river.bottom + 3 : cy - 16;
+    const northBand = { ...eastBand, y0: inner.y0, y1: (river ? river.top : cy - 14) - 3 };
+    // En el puerto, la caballeriza va al noreste (donde los demás tienen las huertas).
+    if (port) buildStable(plan, style, northBand, spec, random);
+    else
+      buildStable(
+        plan,
+        style,
+        { x0: inner.x0, y0: inner.y1 + 3, x1: cx - 4, y1: height - 2 },
+        spec,
+        random,
+      );
     buildWoodcutter(plan, style, { ...eastBand, y0: yardTop, y1: cy - 3 }, spec, random);
-    buildFields(
-      plan,
-      style,
-      { ...eastBand, y0: inner.y0, y1: (river ? river.top : cy - 14) - 3 },
-      random,
-    );
+    if (!port) buildFields(plan, style, northBand, random);
   }
   // Árboles sueltos en lo que quedó libre de afuera.
   for (let i = 0; i < width * height * 0.01; i++) {
@@ -910,13 +1000,31 @@ export function buildCity(spec: CitySpec): City {
       if (free(post.x, post.y)) plan.npcs.push({ role: 'guard', position: post, name: 'guardia' });
   }
 
-  // La zona protegida (o sin ley) es lo de adentro de la muralla.
+  if (port) {
+    // El puerto tiene nombre propio (y está tan protegido como la ciudad).
+    regions.push({
+      name: `Puerto de ${spec.name}`,
+      x: 0,
+      y: inner.y1 + 2,
+      width: port.right + 1,
+      height: port.bottom - inner.y1 - 1,
+    });
+    // Guardias en el puente y en el barrio flotante, y marineros en el muelle.
+    for (const post of port.posts)
+      if (free(post.x, post.y)) plan.npcs.push({ role: 'guard', position: post, name: 'guardia' });
+    for (const at of port.folk) {
+      if (!free(at.x, at.y) || names.length === 0) continue;
+      const name = names.splice(Math.floor(random.next() * names.length), 1)[0] as string;
+      plan.npcs.push({ role: 'townsfolk', position: at, name });
+    }
+  }
+  // La zona protegida (o sin ley) es lo de adentro de la muralla (y el puerto).
   regions.push({
     name: spec.name,
     x: inner.x0 - 1,
     y: inner.y0 - 1,
-    width: innerW + 3,
-    height: innerH + 3,
+    width: port ? port.right - inner.x0 + 2 : innerW + 3,
+    height: port ? port.bottom - inner.y0 + 2 : innerH + 3,
     ...(style.lawless ? { wild: true } : {}),
   });
   // La capital tiene alcantarillas: se baja por una reja en una calle del suroeste.
@@ -943,6 +1051,168 @@ export function buildCity(spec: CitySpec): City {
   // Pasadizos secretos: en algunas casas de la capital, una baldosa floja baja a las catacumbas.
   if (spec.size === 'large' && !style.lawless) secretPassages(plan, spec, homes, 2);
   return plan.toCity(regions, spec.style === 'capital' || spec.starterItems ? spawn : null, spawn);
+}
+
+/** Lo que deja armado el puerto: los galpones, dónde van guardias y marineros, y hasta dónde llega. */
+interface Harbor {
+  readonly shops: readonly (readonly [NpcRole, Room])[];
+  readonly posts: readonly Position[];
+  readonly folk: readonly Position[];
+  /** Última columna y fila del puerto (el faro y el barrio flotante). */
+  readonly right: number;
+  readonly bottom: number;
+}
+
+/**
+ * El puerto de la sede imperial, al sur de la muralla: un muelle de piedra a
+ * lo largo de toda la ciudad, muelles de madera con barcos amarrados, un
+ * puente ancho que sale de la puerta del sur hasta un barrio flotante (una
+ * plataforma de tablones sobre el agua con mercado y dos galpones: el
+ * pescador y el astillero) y, desde ahí, otro puente hasta el islote del faro.
+ */
+function buildHarbor(plan: Plan, inner: Rect, cx: number): Harbor {
+  const quayTop = inner.y1 + 2;
+  const seaTop = quayTop + 3;
+  for (let y = quayTop; y < plan.height; y++)
+    for (let x = 0; x < plan.width; x++) {
+      plan.ground(x, y, y < seaTop ? Terrain.Stone : Terrain.Water);
+      plan.clear(x, y);
+    }
+  plan.claim({ x0: 0, y0: quayTop, x1: plan.width - 1, y1: plan.height - 1 });
+  // El puente de la puerta del sur, con baranda.
+  const platformTop = seaTop + 4;
+  for (let y = seaTop; y < platformTop; y++) {
+    for (let x = cx - 2; x <= cx + 2; x++) plan.ground(x, y, Terrain.Wood);
+    plan.put(cx - 2, y, 'fence-y');
+    plan.put(cx + 3, y, 'fence-y');
+  }
+  // El barrio flotante.
+  const platform: Rect = {
+    x0: cx - 16,
+    y0: platformTop,
+    x1: cx + 16,
+    y1: Math.min(plan.height - 5, platformTop + 10),
+  };
+  plan.fill(platform, Terrain.Wood);
+  for (let x = platform.x0; x <= platform.x1; x += 3) {
+    if (Math.abs(x - cx) > 3) plan.put(x, platform.y1 + 1, 'pier-post');
+  }
+  for (let y = platform.y0 + 1; y <= platform.y1; y += 3) {
+    plan.put(platform.x0 - 1, y, 'pier-post');
+    if (Math.abs(y - (platform.y0 + 5)) > 2) plan.put(platform.x1 + 1, y, 'pier-post');
+  }
+  // Dos galpones de tablones, uno a cada lado, con la puerta hacia la plaza del mercado.
+  const shed = (x0: number): Room => {
+    const house: Rect = { x0, y0: platform.y0 + 1, x1: x0 + 7, y1: platform.y0 + 5 };
+    const door = { x: x0 + 4, y: house.y1 + 1 };
+    plan.enclose(house, PLANKS, [door]);
+    plan.door(door, 'x');
+    plan.windows(house, PLANKS, door);
+    return {
+      kit: PLANKS,
+      floor: Terrain.Wood,
+      x0: house.x0 + 1,
+      y0: house.y0 + 1,
+      x1: house.x1,
+      y1: house.y1,
+      door,
+      entry: { x: door.x, y: house.y1 },
+      northWall: house.y0,
+      westWall: house.x0,
+    };
+  };
+  const fishery = shed(platform.x0 + 1);
+  const shipyard = shed(platform.x1 - 9);
+  // El mercado del medio: puestos, la estatua del emperador, mercadería y faroles.
+  const mid = platform.y0 + 5;
+  for (const [dx, dy] of [
+    [-5, -2],
+    [5, -2],
+    [-5, 2],
+    [5, 2],
+  ] as const)
+    plan.put(cx + dx, mid + dy, 'stall');
+  plan.put(cx, mid + 1, 'statue');
+  for (const [x, y, kind] of [
+    [cx - 7, platform.y1, 'crate'],
+    [cx - 8, platform.y1, 'crate'],
+    [cx - 8, platform.y1 - 1, 'barrel'],
+    [cx + 7, platform.y1, 'keg'],
+    [cx + 8, platform.y1, 'barrel'],
+    [cx + 8, platform.y1 - 1, 'crate'],
+    [platform.x0 + 1, platform.y1, 'lamp'],
+    [platform.x1, platform.y1, 'lamp'],
+    [cx - 3, platform.y0, 'lamp'],
+    [cx + 3, platform.y0, 'lamp'],
+    [cx - 9, mid, 'banner'],
+    [cx + 9, mid, 'banner'],
+    [platform.x0 + 3, platform.y1 - 2, 'potted-plant'],
+    [platform.x1 - 3, platform.y1 - 2, 'potted-plant'],
+  ] as const)
+    plan.put(x, y, kind);
+  // El islote del faro, al este, con su puente angosto.
+  const bridgeRow = mid;
+  const islet: Rect = {
+    x0: platform.x1 + 9,
+    y0: platform.y0 + 2,
+    x1: Math.min(plan.width - 3, platform.x1 + 15),
+    y1: platform.y0 + 8,
+  };
+  const hasIslet = islet.x1 - islet.x0 >= 5;
+  for (let x = platform.x1 + 1; hasIslet && x < islet.x0; x++) {
+    plan.ground(x, bridgeRow, Terrain.Wood);
+    plan.ground(x, bridgeRow + 1, Terrain.Wood);
+    plan.put(x, bridgeRow - 1, 'fence-x');
+    plan.put(x, bridgeRow + 2, 'fence-x');
+  }
+  if (hasIslet) {
+    plan.fill(islet, Terrain.Stone);
+    plan.big(islet.x0 + 2, islet.y0 + 2, 'lighthouse');
+    plan.put(islet.x1, islet.y1, 'lamp');
+  }
+  // Muelles de madera a lo largo del muelle de piedra, cada uno con su barco.
+  const busy = (x: number): boolean => x >= platform.x0 - 6 && x <= islet.x1 + 2;
+  for (let x = 4; x + 6 < plan.width; x += 12) {
+    if (busy(x) || busy(x + 6)) continue;
+    const end = Math.min(plan.height - 4, seaTop + 9);
+    for (let y = seaTop; y <= end; y++) {
+      plan.ground(x, y, Terrain.Wood);
+      plan.ground(x + 1, y, Terrain.Wood);
+      if ((y - seaTop) % 3 === 2) {
+        plan.put(x - 1, y, 'pier-post');
+        plan.put(x + 2, y, 'pier-post');
+      }
+    }
+    plan.put(x + 3, seaTop + 4, 'ship');
+    plan.put(x, seaTop, 'crate');
+  }
+  // El muelle de piedra: faroles y mercadería contra la muralla.
+  for (let x = 3; x < plan.width - 3; x += 9) {
+    if (Math.abs(x - cx) <= 3) continue;
+    plan.put(x, quayTop + 2, 'lamp');
+    plan.put(x + 3, quayTop, x % 2 ? 'barrel' : 'crate');
+  }
+  return {
+    shops: [
+      ['fisherman', fishery],
+      ['shipwright', shipyard],
+    ],
+    posts: [
+      { x: cx - 1, y: seaTop + 1 },
+      { x: cx + 1, y: seaTop + 1 },
+      { x: cx - 2, y: platform.y1 - 1 },
+      { x: cx + 2, y: platform.y1 - 1 },
+    ],
+    folk: [
+      { x: cx - 10, y: quayTop + 1 },
+      { x: cx + 12, y: quayTop + 1 },
+      { x: cx - 6, y: mid },
+      { x: cx + 6, y: mid },
+      ...(hasIslet ? [{ x: islet.x0 + 1, y: islet.y1 }] : []),
+    ],
+    right: hasIslet ? islet.x1 : platform.x1 + 1,
+    bottom: platform.y1 + 1,
+  };
 }
 
 /** El río de la capital: filas de agua honda con muelles de piedra y puentes. */
@@ -1535,6 +1805,53 @@ function alongWalls(
     for (let y = room.y0; y <= room.y1; y += every) plan.onWall(room.westWall, y, west);
 }
 
+/** El ícono del cartel de cada oficio. */
+const SHOP_ICON: Partial<Record<NpcRole, ShopSignIcon>> = {
+  innkeeper: 'mug',
+  banker: 'coins',
+  blacksmith: 'anvil',
+  mage: 'star',
+  healer: 'heart',
+  provisioner: 'sack',
+  carpenter: 'saw',
+  architect: 'house',
+  tailor: 'scissors',
+  bowyer: 'bow',
+  alchemist: 'flask',
+  baker: 'bread',
+  butcher: 'ham',
+  jeweler: 'gem',
+  scribe: 'quill',
+  fisherman: 'fish',
+  shipwright: 'anchor',
+  stablemaster: 'horseshoe',
+  woodcutter: 'axe',
+};
+
+/**
+ * Luces colgadas de las paredes de adentro (la del norte y la del oeste, las
+ * que se ven): faroles de mano o antorchas, en tramos lisos de pared.
+ */
+function wallLights(plan: Plan, room: Room, kind: 'wall-lantern' | 'wall-torch', count = 2): void {
+  const spots: [number, number, 'x' | 'y'][] = [];
+  const midX = Math.floor((room.x0 + room.x1) / 2);
+  const midY = Math.floor((room.y0 + room.y1) / 2);
+  for (const dx of [0, -1, 1, -2, 2]) spots.push([midX + dx, room.northWall, 'x']);
+  for (const dy of [0, -1, 1, 2]) spots.push([room.westWall, midY + dy, 'y']);
+  let placed = 0;
+  let last: 'x' | 'y' | null = null;
+  for (const [x, y, along] of spots) {
+    if (placed >= count) break;
+    // Una por pared, mientras alcance.
+    if (along === last && count > 1) continue;
+    if (x < room.x0 && along === 'x') continue;
+    if (!plan.bareWall(x, y)) continue;
+    plan.onWall(x, y, `${kind}-${along}`);
+    placed++;
+    last = along;
+  }
+}
+
 /**
  * Arma el negocio por dentro según el oficio y devuelve dónde atiende la
  * persona: la taberna con mostrador, toneles, mesas con sillas y el hogar;
@@ -1738,18 +2055,38 @@ function furnishShop(plan: Plan, role: NpcRole, room: Room, random: SeededRandom
     default:
       break;
   }
+  // La luz de adentro: antorchas en la herrería, la taberna y la carnicería; faroles en el resto.
+  const torches = role === 'blacksmith' || role === 'innkeeper' || role === 'butcher';
+  wallLights(plan, room, torches ? 'wall-torch' : 'wall-lantern', room.x1 - room.x0 >= 6 ? 2 : 1);
+  // Una mesita con velas en un rincón libre y una maceta junto a la entrada, si hay lugar.
+  for (const corner of corners)
+    if (
+      put(
+        corner.x,
+        corner.y,
+        role === 'innkeeper' || role === 'banker' ? 'candle-table' : 'potted-plant',
+      )
+    )
+      break;
   void random;
   return spot;
 }
 
-/** Una casa para vivir: cama, mesa con sillas, cofre y, a veces, hogar, biblioteca o alfombra. */
+/**
+ * Una casa para vivir: cama con su mesita de velas, ropero, mesa con sillas,
+ * cofre y, según la casa, hogar, biblioteca, alfombra, tapiz, plantas y un
+ * farol colgado.
+ */
 function furnishHome(plan: Plan, room: Room, random: SeededRandom, style: Style): void {
   if (style.lawless) return;
   const keep = reserved(room);
   const put = (x: number, y: number, kind: StaticKind): boolean =>
     furniture(plan, keep, x, y, kind);
   put(room.x0, room.y0, 'bed');
-  put(room.x1, room.y0, random.next() < 0.5 ? 'chest' : 'barrel');
+  put(room.x0 + 1, room.y0, 'candle-table');
+  put(room.x1, room.y0, random.next() < 0.5 ? 'chest' : 'wardrobe');
+  if (room.x1 - room.x0 >= 4)
+    put(room.x1 - 1, room.y0, random.next() < 0.5 ? 'wardrobe' : 'barrel');
   const tx = Math.min(room.x1 - 1, room.x0 + 2);
   const ty = Math.min(room.y1, room.y0 + 2);
   if (put(tx, ty, 'table')) {
@@ -1758,8 +2095,14 @@ function furnishHome(plan: Plan, room: Room, random: SeededRandom, style: Style)
   }
   if (random.next() < 0.5) put(room.x0, room.y1, 'hearth');
   else put(room.x0, room.y1, 'crate');
+  put(room.x1, room.y1, random.next() < 0.6 ? 'potted-plant' : 'carpet');
   if (random.next() < 0.4) alongWalls(plan, room, 'bookshelf-x', null, 3);
-  if (random.next() < 0.3) put(room.x1, room.y1, 'carpet');
+  // Un tapiz en la pared del oeste, en las casas de los barrios buenos.
+  if (random.next() < 0.5) {
+    const y = Math.floor((room.y0 + room.y1) / 2) + 1;
+    if (plan.bareWall(room.westWall, y)) plan.onWall(room.westWall, y, 'tapestry-y');
+  }
+  wallLights(plan, room, 'wall-lantern', 1);
 }
 
 /**
@@ -1865,6 +2208,23 @@ function buildStable(
   plan.windows(barn, style.walls, door);
   plan.ground(door.x, door.y, Terrain.Dirt);
   plan.ground(door.x, door.y + 1, Terrain.Dirt);
+  plan.shopSign(door, 'horseshoe');
+  wallLights(
+    plan,
+    {
+      ...barn,
+      x0: barn.x0 + 1,
+      y0: barn.y0 + 1,
+      door,
+      entry: door,
+      kit: style.walls,
+      floor: Terrain.Dirt,
+      northWall: barn.y0,
+      westWall: barn.x0,
+    },
+    'wall-lantern',
+    1,
+  );
   plan.npcs.push({
     role: 'stablemaster',
     position: { x: barn.x1 - 1, y: barn.y0 + 3 },
@@ -1914,6 +2274,7 @@ function buildWoodcutter(
   plan.door(door, 'y');
   plan.windows(cabin, LOGS, door);
   plan.ground(door.x, door.y, Terrain.Wood);
+  plan.shopSign(door, 'axe');
   plan.put(cabin.x0 + 1, cabin.y0 + 1, 'bed');
   plan.put(cabin.x0 + 1, cabin.y1, 'hearth');
   plan.put(cabin.x1, cabin.y0 + 1, 'table');
