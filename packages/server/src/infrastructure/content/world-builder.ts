@@ -33,7 +33,7 @@ import { generateFloors, type Ascent, type UpperFloor } from './upper-floors';
  * Versión de la forma del mundo: si cambia, los personajes guardados en el
  * mundo anterior aparecen en la capital (su posición vieja ya no sirve).
  */
-const WORLD_VERSION = 9;
+const WORLD_VERSION = 10;
 
 export interface WorldBuildOptions {
   /** Ancho del continente (y alto, si no se da `height`). */
@@ -219,6 +219,39 @@ function jungleTownPlans(seed: number): TownPlan[] {
       }),
       at: { x: 0.74, y: 0.36 },
       climate: 'jungle',
+    },
+    // La sede imperial, puerto grande sobre la costa sur.
+    {
+      map: buildCity({
+        name: 'Altamar',
+        style: 'imperial',
+        seed: seed + 106,
+        size: 'large',
+        people: {
+          innkeeper: 'Valerio el posadero',
+          banker: 'Aurelia la tesorera imperial',
+          blacksmith: 'Casiano el herrero',
+          mage: 'Octavia la maga de la corte',
+          healer: 'Fabiola la curandera',
+          provisioner: 'Lucio el proveedor',
+          carpenter: 'Tiberio el carpintero',
+          architect: 'Severino el arquitecto',
+          tailor: 'Livia la sastra',
+          bowyer: 'Marcial el arquero',
+          alchemist: 'Emiliana la alquimista',
+          baker: 'Flavio el panadero',
+          butcher: 'Cornelio el carnicero',
+          jeweler: 'Claudia la joyera',
+          scribe: 'Justiniano el escriba',
+          fisherman: 'Néstor el pescador',
+          shipwright: 'Horacio el maestro carpintero de barcos',
+          stablemaster: 'Quintín el caballerizo',
+          woodcutter: 'Ruperto el leñador',
+        },
+      }),
+      at: { x: 0.5, y: 0.86 },
+      climate: 'jungle',
+      harbor: true,
     },
   ];
 }

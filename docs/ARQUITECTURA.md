@@ -1307,6 +1307,26 @@ ningún monumento real):
 - **Habilidades**: hasta 50 se sube con cada uso (`FAST_GAIN_UNTIL`), de a 1,0 hasta 25 y de a 0,7
   hasta 50; de ahí en más, como antes.
 
+## Altamar, carteles de comercio y luces de adentro (etapa 79)
+
+- **Altamar**, sede imperial y puerto del sur del continente de la selva (estilo `imperial` de
+  `city-builder.ts`): piedra y arenisca, calles de lajas, plaza de mármol con estatuas del
+  emperador, estandartes en las puertas, faroles cada 5 tiles, palacio y todos los oficios.
+  `buildHarbor` arma el puerto al sur de la muralla: muelle de piedra, muelles de madera con barcos
+  amarrados, un puente hasta el **barrio flotante** (plataforma de tablones con mercado, estatua y
+  los galpones del pescador y el astillero) y otro puente hasta el islote del faro. La región
+  "Puerto de Altamar" es tan segura como la ciudad. En el continente, `TownPlan.harbor` abre un
+  canal desde el agua del borde sur de la ciudad hasta el mar abierto. `WORLD_VERSION` 10.
+- **Carteles de comercio** como en UO (`shop-sign-<ícono>-x|y`): una tabla colgada de un brazo de
+  hierro junto a la puerta, perpendicular a la pared, con el ícono del oficio (yunque, serrucho,
+  estrella, monedas, jarra, corazón, bolsa, tijera, arco, frasco, pan, jamón, gema, pluma, pez,
+  ancla, casa, herradura, hacha). `Plan.shopSign` la cuelga en el primer tramo liso de pared.
+- **Luces de adentro**: faroles de mano colgados y antorchas en las paredes (`wall-lantern-*`,
+  `wall-torch-*`), mesitas con velas, y el farol de la calle rediseñado (zócalo de piedra, poste con
+  anillos y volutas, farol de seis vidrios).
+- **Interiores**: las casas suman ropero, mesita de velas junto a la cama, macetas, tapices y un
+  farol; los comercios, su luz y una mesita con velas o una maceta en un rincón.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

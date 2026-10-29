@@ -51,6 +51,8 @@ export interface TownPlan {
   readonly climate: TownClimate;
   /** La capital: ahí aparecen los jugadores nuevos. */
   readonly capital?: boolean;
+  /** Ciudad puerto: su borde sur es mar y se abre un canal hasta el mar abierto. */
+  readonly harbor?: boolean;
 }
 
 export interface WorldGenerationOptions {
@@ -683,6 +685,23 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
         position: { x: it.position.x + ox, y: it.position.y + oy },
       })),
     );
+  }
+  // Los puertos: desde el agua del borde sur de la ciudad, un canal recto
+  // hasta el mar abierto, para que los barcos entren y salgan.
+  for (const { plan, x: ox, y: oy } of towns) {
+    if (!plan.harbor) continue;
+    const town = plan.map;
+    const bottom = oy + town.height;
+    for (let x = ox; x < ox + town.width; x++) {
+      if (town.terrain[(town.height - 1) * town.width + (x - ox)] !== Terrain.Water) continue;
+      for (let y = bottom; y < height - 1 && y < bottom + 120; y++) {
+        const i = index(x, y);
+        if (biomes[i] === 'ocean' && terrain[i] === Terrain.Water) break;
+        terrain[i] = Terrain.Water;
+        biomes[i] = 'ocean';
+        statics.delete(i);
+      }
+    }
   }
   // Los ríos que cruzan una ciudad siguen afuera: cuesta abajo hasta el mar
   // desde donde salen, y cuesta arriba hasta una vertiente desde donde entran.
