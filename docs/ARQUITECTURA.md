@@ -1294,6 +1294,19 @@ ningún monumento real):
   nuevo de cabeza (madera pintada con penacho de plumas) que pueden soltar al morir. También
   andan sueltos por la selva.
 
+## Botín de los humanos, más oro y habilidades más rápidas (etapa 78)
+
+- **Los humanos dejan lo que llevan**: cada humano hostil (bárbaros, piratas, corsarios,
+  bandoleros, guerreros, jinetes y chamanes tribales) tiene su `outfit` en el catálogo de
+  criaturas: lo que lleva puesto y en las manos. El dibujo sale de ahí (`human-foe-art.ts`) y, al
+  morir, todo eso queda entero en el cuerpo (máscaras tribales incluidas, que se pueden poner).
+- **Bolsa de reactivos**: los que hacen magia (el chamán tribal, el mago esquelético) tienen una
+  `bag` en el catálogo; al morir dejan una bolsa con sus reactivos adentro (`CorpseDrop.contents`).
+  Al desaparecer el cuerpo, se borra también lo de adentro de sus bolsas.
+- **Oro**: todo el oro del botín sale un 30 % más (`GOLD_BONUS`, en `rollLoot`).
+- **Habilidades**: hasta 50 se sube con cada uso (`FAST_GAIN_UNTIL`), de a 1,0 hasta 25 y de a 0,7
+  hasta 50; de ahí en más, como antes.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

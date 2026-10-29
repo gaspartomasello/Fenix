@@ -22,6 +22,14 @@ import type { TileMap } from '@fenix/shared/world/tile-map';
 import { Item, type ItemLocation } from './item';
 
 /** Quién actúa sobre un objeto. */
+
+/** Algo que queda dentro de un cuerpo; una bolsa puede traer cosas adentro. */
+export interface CorpseDrop {
+  readonly kind: ItemKind;
+  readonly amount: number;
+  readonly contents?: readonly CorpseDrop[];
+}
+
 export interface ItemActor {
   readonly id: EntityId;
   readonly position: Position;
@@ -143,13 +151,13 @@ export class Items {
   fillCorpse(
     corpseId: EntityId,
     at: Position,
-    drops: readonly { kind: ItemKind; amount: number }[],
+    drops: readonly CorpseDrop[],
     ids: () => EntityId,
   ): Item[] {
     const columns = Math.floor(CORPSE_AREA.width / ITEM_ICON_SIZE);
     const rows = Math.floor(CORPSE_AREA.height / ITEM_ICON_SIZE);
-    return drops.map((drop, index) =>
-      this.add(ids(), drop.kind, drop.amount, {
+    return drops.map((drop, index) => {
+      const item = this.add(ids(), drop.kind, drop.amount, {
         type: 'corpse',
         corpseId,
         at,
@@ -164,8 +172,17 @@ export class Items {
                 x: (index * 11) % (CORPSE_AREA.width - ITEM_ICON_SIZE),
                 y: (index * 17) % (CORPSE_AREA.height - ITEM_ICON_SIZE),
               },
-      }),
-    );
+      });
+      // Lo que trae adentro una bolsa (los reactivos del chamán), acomodado en fila.
+      (drop.contents ?? []).forEach((inner, k) =>
+        this.add(ids(), inner.kind, inner.amount, {
+          type: 'container',
+          containerId: item.id,
+          position: { x: (k % 5) * ITEM_ICON_SIZE, y: Math.floor(k / 5) * ITEM_ICON_SIZE },
+        }),
+      );
+      return item;
+    });
   }
 
   /** Saca un objeto del mundo (un portal que se cierra). */
@@ -185,7 +202,10 @@ export class Items {
 
   /** El cuerpo se deshizo: lo que quedaba adentro se pierde con él. */
   removeCorpse(corpseId: EntityId): void {
-    for (const item of this.corpseOf(corpseId)) this.byId.delete(item.id);
+    for (const item of this.corpseOf(corpseId)) {
+      for (const inner of this.descendantsOf(item.id)) this.byId.delete(inner.id);
+      this.byId.delete(item.id);
+    }
   }
 
   equipmentOf(ownerId: EntityId): Item[] {

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { SkillSet } from './skill-set';
 
 describe('SkillSet', () => {
-  it('sube cuando sale la tirada: rápido al principio, de a 0,1 cerca del máximo', () => {
+  it('sube cuando sale la tirada: siempre y rápido hasta 50, de a 0,1 cerca del máximo', () => {
     const skills = new SkillSet(STARTING_SKILLS);
     expect(skills.tryGain('magery', () => 0)).toBe(true);
     expect(skills.get('magery')).toBe(
@@ -12,7 +12,9 @@ describe('SkillSet', () => {
     const expert = new SkillSet({ ...STARTING_SKILLS, magery: 900 });
     expert.tryGain('magery', () => 0);
     expect(expert.get('magery')).toBe(901);
-    expect(skills.tryGain('magery', () => 0.99)).toBe(false);
+    // Hasta 50 se sube con cada uso; más arriba, solo si sale la tirada.
+    expect(skills.tryGain('magery', () => 0.99)).toBe(true);
+    expect(expert.tryGain('magery', () => 0.99)).toBe(false);
   });
 
   it('no pasa del máximo ni del tope total', () => {
