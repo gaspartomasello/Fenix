@@ -1399,6 +1399,10 @@ ningún monumento real):
   no respeta la etiqueta de la escala). `keepViewport` acomoda varias veces mientras termina el giro:
   vuelve a aplicar la escala, enfoca y suelta un campo invisible de solo lectura (lo que hace Safari
   al tocar el chat, sin abrir el teclado) y avisa un cambio de tamaño para que el juego se mida de nuevo.
+- Las ventanas con forma propia (el ataúd, la mochila de cuero, la bolsa…) no llevan marco: la
+  ventana es el dibujo, justa a su contorno. Arriba, una franja invisible para arrastrarla y el
+  medallón de cerrar en la esquina; el ataúd lleva sobre el pie una plaquita con el nombre y
+  "Tomar todo".
 - El joystick está despegado del borde (más cómodo hacia abajo y a la izquierda).
 - El minimapa es redondo y se arrastra a cualquier lugar (también en la computadora); el lugar se
   guarda en fracciones de la pantalla (`fenix.minimapa.lugar`), así sirve al girar el celular.

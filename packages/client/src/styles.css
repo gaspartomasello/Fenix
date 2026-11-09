@@ -4371,3 +4371,108 @@ html:not(.touch-ui) .info-strip .info-chip-icon {
 .paperdoll-buttons {
   min-width: max-content;
 }
+
+/*
+ * ── Ventanas con forma propia (el ataúd, la mochila de cuero, la bolsa…) ──
+ * No llevan marco: la ventana es el dibujo y nada más, justa a su contorno.
+ * Arriba, una franja invisible para arrastrarla, con el medallón de cerrar en
+ * la esquina; el título se lee al pasar por encima (y lo leen los lectores).
+ */
+.game-window.panel.coffin-window,
+.game-window.panel.skinned-window {
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+.coffin-window .window-bar,
+.skinned-window .window-bar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  justify-content: flex-end;
+  padding: 3px 3px 0 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+.coffin-window .window-title,
+.skinned-window .window-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.coffin-window .window-close,
+.skinned-window .window-close,
+.touch-ui .coffin-window .window-close,
+.touch-ui .skinned-window .window-close {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  min-height: 22px;
+  font-size: 0.7rem;
+}
+
+.coffin-window .window-body,
+.skinned-window .window-body {
+  padding: 0;
+}
+
+/* La ayuda de abajo queda fuera del dibujo: en estas ventanas no se muestra. */
+.skinned-window .window-hint {
+  display: none;
+}
+
+/* Abajo del ataúd: de quién es y "Tomar todo", sobre el pie. */
+.coffin-foot {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  transform: translateX(-50%);
+}
+
+.coffin-name {
+  max-width: 120px;
+  overflow: hidden;
+  padding: 0 6px;
+  font-size: 0.66rem;
+  color: #f3d58a;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: rgba(20, 12, 6, 0.75);
+  border: 1px solid var(--bronze-dark);
+  border-radius: 2px;
+  text-shadow: 0 1px 0 #000;
+}
+
+.coffin-name:empty {
+  display: none;
+}
+
+.coffin-take {
+  white-space: nowrap;
+}
+
+.coffin-take[hidden] {
+  display: none;
+}
+
+/* En la mochila (y la bolsa), cerrar va en la esquina del cuero, no al lado de la solapa. */
+.skinned-window .window-bar {
+  top: 12%;
+  right: 3%;
+  left: auto;
+  padding: 0;
+}
