@@ -654,6 +654,7 @@ export class GameLoop {
       this.mobiles.sendEffects(victim);
       victim.combat.targetId = null;
       this.services.mounts.dismountOnDeath(victim);
+      this.events.emit('playerDied', { player: victim });
       this.mobiles.broadcastHealth(victim);
       this.mobiles.sendVitals(victim);
       this.mobiles.sendTarget(victim);

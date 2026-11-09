@@ -179,6 +179,8 @@ export interface CorpseContents {
   readonly corpseId: EntityId;
   readonly name: string;
   readonly items: readonly BackpackItemSnapshot[];
+  /** El cuerpo de un jugador: sin "Tomar todo". */
+  readonly noTakeAll?: true;
 }
 
 /** Efectos activos propios; `receivedAt` sirve para descontar el tiempo que pasa. */
@@ -856,6 +858,11 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     if (!this.self) return;
     // Una bolsa se abre: se espera su ventana.
     const item = this.findItem(itemId);
+    // El cuerpo de un jugador se revisa como el de una criatura.
+    if (item?.kind === 'player-corpse' || item?.kind === 'player-bones') {
+      this.openCorpse(itemId);
+      return;
+    }
     if (item && ITEMS[item.kind].capacity) this.containersRequested.add(itemId);
     this.gateway.send({ type: 'useItem', itemId });
   }
@@ -963,7 +970,12 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       case 'corpse': {
         const opened = this.corpseRequested === message.corpseId;
         this.corpseRequested = null;
-        this._corpse = { corpseId: message.corpseId, name: message.name, items: message.items };
+        this._corpse = {
+          corpseId: message.corpseId,
+          name: message.name,
+          items: message.items,
+          ...(message.noTakeAll ? { noTakeAll: true as const } : {}),
+        };
         this.emit('corpseChanged', { corpse: this._corpse, opened });
         break;
       }

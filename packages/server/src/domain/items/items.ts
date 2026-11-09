@@ -200,6 +200,40 @@ export class Items {
     this.byId.delete(id);
   }
 
+  /**
+   * Al morir un jugador, todo lo que llevaba (la mochila y lo puesto) pasa a su
+   * cuerpo, salvo el equipo inicial, que se queda con él (como en UO). Lo de
+   * adentro de las bolsas va con la bolsa.
+   */
+  strip(ownerId: EntityId, corpseId: EntityId, at: Position): ItemChanges {
+    const changes = emptyChanges();
+    const taken = [...this.equipmentOf(ownerId), ...this.backpackOf(ownerId)].filter(
+      (item) => !item.newbie,
+    );
+    const columns = Math.floor(CORPSE_AREA.width / ITEM_ICON_SIZE);
+    taken.forEach((item, index) => {
+      if (item.location.type === 'equipment') changes.looks.add(ownerId);
+      item.location = {
+        type: 'corpse',
+        corpseId,
+        at,
+        position: {
+          x: (index % columns) * ITEM_ICON_SIZE,
+          y: (Math.floor(index / columns) * ITEM_ICON_SIZE) % (CORPSE_AREA.height - ITEM_ICON_SIZE),
+        },
+      };
+    });
+    changes.inventories.add(ownerId);
+    changes.corpses.add(corpseId);
+    return changes;
+  }
+
+  /** Lo de adentro de un cuerpo pasa a otro (el cuerpo de un jugador se vuelve huesos). */
+  moveCorpse(from: EntityId, to: EntityId): void {
+    for (const item of this.corpseOf(from))
+      if (item.location.type === 'corpse') item.location = { ...item.location, corpseId: to };
+  }
+
   /** El cuerpo se deshizo: lo que quedaba adentro se pierde con él. */
   removeCorpse(corpseId: EntityId): void {
     for (const item of this.corpseOf(corpseId)) {

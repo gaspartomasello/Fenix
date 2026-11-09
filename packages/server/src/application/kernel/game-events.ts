@@ -16,6 +16,8 @@ export interface GameEvents {
   attacked: { readonly attacker: Player; readonly targetId: EntityId };
   /** Un jugador empezó a lanzar un hechizo. */
   castStarted: { readonly caster: Player };
+  /** Murió un jugador (queda fantasma; sus cosas, en su cuerpo). */
+  playerDied: { readonly player: Player };
   /** Un jugador mató a una criatura salvaje que reaparece (misiones de caza). */
   creatureKilled: { readonly killer: Player; readonly creature: Creature };
   /** Un jugador mató a cualquier criatura salvaje, también a los jefes. */

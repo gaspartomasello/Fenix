@@ -83,6 +83,8 @@ export interface ItemSnapshot {
   readonly hue?: number;
   /** Equipo inicial: no se puede tirar, dar ni vender. */
   readonly newbie?: true;
+  /** Cuerpo o restos de un jugador: de quién es. */
+  readonly corpseOf?: string;
 }
 
 /** Lugar grabado en una runa con Marcar. */
@@ -846,6 +848,8 @@ export interface CorpseMessage {
   /** "lobo gris", "dragón rojo"… */
   readonly name: string;
   readonly items: readonly BackpackItemSnapshot[];
+  /** El cuerpo de un jugador no tiene "Tomar todo": se saquea de a un objeto, como en UO. */
+  readonly noTakeAll?: true;
 }
 
 /** Lo que hay en un recipiente abierto (se reenvía cuando cambia). */

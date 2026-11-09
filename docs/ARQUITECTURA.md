@@ -1368,6 +1368,18 @@ ningún monumento real):
   del juego genera el suyo. Si el navegador no deja guardar, anda igual (tarda como antes).
 - Medido en Chromium: la primera entrada ~17 s; las siguientes ~4 s hasta estar en el juego.
 
+## El cuerpo de los jugadores y el saqueo (etapa 83)
+
+- Al morir un jugador, el combate avisa `playerDied` y el módulo de cuerpos deja en el suelo un
+  objeto `player-corpse` (con `corpse`: nombre, dueño y si era inocente). `Items.strip` le pasa todo
+  lo que llevaba encima y en la mochila, menos el equipo inicial, que sigue con el fantasma.
+- Se abre con doble clic (la misma ventana que los cuerpos de las criaturas) y se revisa **de a un
+  objeto**: el mensaje `corpse` lleva `noTakeAll` y la ventana esconde "Tomar todo"; el servidor
+  también lo rechaza.
+- Sacar algo del cuerpo de un inocente (que no sea el propio) vuelve criminal a quien lo hace.
+- A los 7 minutos el cuerpo se vuelve un montón de huesos (`player-bones`) con lo que quedaba
+  adentro; a los otros 7 se deshace con todo.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

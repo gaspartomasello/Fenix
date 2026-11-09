@@ -1585,6 +1585,45 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     });
   },
   // Portal: un óvalo de luz azul parado, con remolinos.
+  'player-corpse'(c, color) {
+    // Un cuerpo tirado boca arriba, con la ropa puesta, sobre una mancha oscura.
+    const skin = solid(ramp([204, 150, 112]));
+    const cloth = solid(color);
+    const trousers = solid(ramp([70, 58, 48]));
+    c.ellipsoid([-0.5, 0.15, 0], lying(0), [9, 0.2, 4.2], solid(ramp([70, 20, 18])));
+    c.ellipsoid([-2.6, 1.5, 0], lying(0), [3.4, 1.4, 2.5], cloth);
+    c.sphere([-7, 1.7, 0.3], 1.9, skin);
+    c.ellipsoid([-7.6, 2.4, 0.3], lying(0), [1.2, 0.9, 1.7], solid(ramp([60, 40, 26])));
+    for (const side of [1, -1]) {
+      c.limb([0.6, 1.2, side * 1.1], [7.4, 0.9, side * 1.6], 1.05, 0.85, trousers);
+      c.ellipsoid([7.9, 1, side * 1.7], lying(0), [0.9, 0.9, 0.7], solid(ramp([50, 34, 22])));
+      c.limb([-4.4, 1.6, side * 2.5], [-1, 1, side * 4.4], 0.75, 0.65, cloth);
+      c.sphere([-0.6, 0.9, side * 4.6], 0.65, skin);
+    }
+  },
+  'player-bones'(c) {
+    // Los huesos que quedan: la calavera, el costillar y los huesos largos desparramados.
+    const bone = solid(ramp([222, 212, 188]));
+    c.sphere([-5.5, 1.5, 0.5], 1.7, bone);
+    c.ellipsoid([-5.1, 1.6, 1.9], lying(0), [0.5, 0.45, 0.2], solid(ramp([30, 26, 22])));
+    for (let i = 0; i < 4; i++)
+      c.limb([-2.6 + i * 1, 0.6, -2], [-2.6 + i * 1, 0.9, 2], 0.3, 0.3, bone);
+    for (const [a, b] of [
+      [
+        [1, 0.6, -1],
+        [7, 0.6, -2.5],
+      ],
+      [
+        [1.5, 0.6, 1.2],
+        [6.4, 0.6, 3],
+      ],
+      [
+        [-3, 0.6, 3.2],
+        [0.5, 0.6, 5],
+      ],
+    ] as [Vec3, Vec3][])
+      c.limb(a, b, 0.45, 0.45, bone);
+  },
   moongate(c) {
     c.ellipsoid([0, 10, 0], axesAlong([0, 0, 1]), [5.2, 10, 1.1], (s) => {
       const r = Math.hypot(s.p[0] / 5.2, (s.p[1] - 10) / 10);

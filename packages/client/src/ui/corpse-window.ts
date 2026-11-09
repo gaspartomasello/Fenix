@@ -26,6 +26,7 @@ export class CorpseWindow {
   readonly window: GameWindow;
   private readonly area: HTMLElement;
   private readonly empty: HTMLElement;
+  private readonly takeAll: HTMLElement;
   private corpseId: string | null = null;
 
   constructor(
@@ -46,11 +47,11 @@ export class CorpseWindow {
     this.area.style.height = `${CORPSE_AREA.height}px`;
     this.empty = el('p', { className: 'coffin-empty', text: 'No queda nada.' });
     coffin.append(this.area, this.empty);
-    const takeAll = el('button', {
+    const takeAll = (this.takeAll = el('button', {
       className: 'paperdoll-button',
       text: 'Tomar todo',
       attrs: { type: 'button' },
-    });
+    }));
     takeAll.addEventListener('click', () => {
       if (this.corpseId) lootAll(this.corpseId);
     });
@@ -60,6 +61,8 @@ export class CorpseWindow {
   render(corpse: CorpseContents): void {
     this.corpseId = corpse.corpseId;
     this.window.setTitle(`Cuerpo: ${corpse.name}`);
+    // El cuerpo de un jugador se saquea de a un objeto, como en UO.
+    this.takeAll.hidden = corpse.noTakeAll === true;
     this.empty.hidden = corpse.items.length > 0;
     this.area.replaceChildren(
       ...corpse.items.map((item) => {
