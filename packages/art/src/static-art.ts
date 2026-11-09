@@ -541,6 +541,25 @@ const iceCrystal: Model = (c, variant) => {
   c.ellipsoid([0, 0.8, 0], UP, [9, 1.2, 9], iceFace(variant));
 };
 
+/**
+ * Muro de la Tumba de los Reyes: bloques de arenisca con figuras talladas
+ * (ojos, aves y bastones) en una franja, y una cornisa arriba.
+ */
+const tombWall: Model = (c, variant) => {
+  const sand = ramp([196, 166, 116]);
+  const carved: Material = (s) => {
+    const course = Math.floor(s.p[1] / 6);
+    const along = s.p[0] + s.p[2] + (course % 2) * 5 + 100;
+    if (s.p[1] - course * 6 < 0.8) return tone(sand, s.light, -1);
+    const band = s.p[1] > 20 && s.p[1] < 30;
+    if (band && noise(Math.floor(along / 2.2), course, variant) > 0.62)
+      return tone(ramp([120, 92, 56]), s.light);
+    return tone(sand, s.light, noise(Math.floor(along / 10), course, variant + 3) > 0.8 ? 1 : 0);
+  };
+  c.box([0, 19, 0], UP, [H, 19, H], carved);
+  c.box([0, 39, 0], UP, [H + 0.6, 1.4, H + 0.6], solid(ramp([170, 140, 96])));
+};
+
 /** Boca de una cueva: un peñasco grande con un hueco oscuro que mira al frente. */
 const caveEntrance: Model = (c) => {
   const material = rocky(ramp([128, 118, 106]), 5);
@@ -3311,6 +3330,7 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   'cave-wall': { model: caveWall },
   'ice-wall': { model: iceWall },
   'ice-crystal': { model: iceCrystal, shadow: [9, 4] },
+  'tomb-wall': { model: tombWall },
   'cave-entrance': { model: caveEntrance, shadow: [34, 14] },
   ladder: { model: ladder },
   brazier: { model: brazier, shadow: [9, 4] },

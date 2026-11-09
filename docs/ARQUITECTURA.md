@@ -1343,6 +1343,19 @@ ningún monumento real):
   deja al morir, con su bolsa de reactivos). Yetis, trolls y magos andan también por la nieve.
 - Objetos nuevos: `ice-wall` (pared de hielo con carámbanos) y `ice-crystal` (alumbra).
 
+## Tumba de los Reyes (etapa 81)
+
+- **Tumba de los Reyes** (`kings-tomb.ts`): se baja por una escalinata entre ruinas de arenisca en
+  el desierto del continente principal (`tombEntrance`, con `findEntrance(bioma)`, la misma búsqueda
+  que la boca del calabozo de hielo). Pasillo angosto que dobla hasta el vestíbulo, el gran salón
+  con seis nichos de cada lado (sarcófago y un muerto en cada uno), la cripta del **rey de la
+  tumba** al fondo con su trono y su guardia, y un corredor al este hasta una cámara en cruz con un
+  liche, espectros y cofres. Muros de arenisca tallada (`tomb-wall`). Diseño propio, inspirado en
+  la de UO.
+- Criaturas nuevas: **momia** (cuerpo de zombi teñido de vendas viejas) y **rey de la tumba**
+  (liche teñido de oro), con las paletas `linen` y `gold` de `ice-art.ts`.
+- Los calabozos de afuera se arman igual en `world-builder.ts` (`specials` y `dungeonLinks`).
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

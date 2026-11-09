@@ -279,6 +279,8 @@ export const STATIC_KINDS = [
   // El calabozo de hielo (etapa 80).
   'ice-wall',
   'ice-crystal',
+  // La Tumba de los Reyes (etapa 81).
+  'tomb-wall',
   ...SHOP_SIGN_KINDS,
 ] as const;
 
@@ -670,6 +672,7 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   statue: define('statue', 'estatua', true),
   'ice-wall': define('ice-wall', 'pared de hielo', true),
   'ice-crystal': define('ice-crystal', 'cristal de hielo', true, 3),
+  'tomb-wall': define('tomb-wall', 'muro de la tumba', true),
 };
 
 /**

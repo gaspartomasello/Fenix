@@ -1,8 +1,8 @@
 import type { CreatureKind } from '@fenix/shared/creatures/creature-catalog';
 import { PixelImage, type Rgb } from './pixel-art';
 
-/** Cómo se tiñe una criatura de las tierras heladas: de hielo azul o de nieve blanca. */
-type Frost = 'ice' | 'snow';
+/** Cómo se tiñe: de hielo azul, de nieve blanca, de vendas viejas o de oro. */
+type Frost = 'ice' | 'snow' | 'linen' | 'gold';
 
 /**
  * Las criaturas de la nieve y del calabozo de hielo tienen el cuerpo de otra
@@ -18,6 +18,9 @@ export const FROST_VARIANTS: Readonly<
   'ice-elemental': { base: 'water-elemental', frost: 'ice' },
   'frost-lich': { base: 'lich', frost: 'ice' },
   'ice-wyrm': { base: 'drake', frost: 'ice' },
+  // Los de la tumba: la momia, de vendas viejas; el rey, todo de oro.
+  mummy: { base: 'zombie', frost: 'linen' },
+  'tomb-king': { base: 'lich', frost: 'gold' },
 };
 
 /** La criatura de la que toma el cuerpo (la misma, si no es de la nieve). */
@@ -35,6 +38,16 @@ const GRADIENTS: Readonly<Record<Frost, readonly [Rgb, Rgb, Rgb]>> = {
     [62, 66, 78],
     [178, 186, 200],
     [250, 252, 255],
+  ],
+  linen: [
+    [70, 58, 42],
+    [176, 158, 120],
+    [236, 226, 196],
+  ],
+  gold: [
+    [70, 46, 18],
+    [190, 146, 52],
+    [255, 226, 140],
   ],
 };
 

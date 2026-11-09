@@ -31,6 +31,8 @@ export interface PopulatedContinent extends Continent {
   readonly caveEntrance: Position | null;
   /** La boca del calabozo de hielo, en la nieve del norte (solo en el continente principal). */
   readonly iceEntrance: Position | null;
+  /** La escalinata de la Tumba de los Reyes, en el desierto (solo en el continente principal). */
+  readonly tombEntrance: Position | null;
   /** Criaturas de las tierras salvajes: las de cada bioma y las de cada lugar. */
   readonly homes: readonly { kind: CreatureKind; home: Position }[];
 }
@@ -1408,7 +1410,45 @@ export function populateContinent(
   }
 
   const caveEntrance = land === 'main' ? findCaveEntrance() : null;
-  const iceEntrance = land === 'main' ? findIceEntrance() : null;
+  const iceEntrance = land === 'main' ? findEntrance('snow') : null;
+  const tombEntrance =
+    land === 'main' ? (findEntrance('desert') ?? findEntrance('badlands')) : null;
+  if (tombEntrance) {
+    // Ruinas de arenisca alrededor de la escalinata que baja a la tumba.
+    const { x: tx, y: ty } = tombEntrance;
+    for (let dy = -4; dy <= 4; dy++)
+      for (let dx = -4; dx <= 4; dx++) {
+        if (!free(tx + dx, ty + dy) || Math.hypot(dx, dy) > 4.2) continue;
+        terrain[index(tx + dx, ty + dy)] = Terrain.Ruins;
+        statics.delete(index(tx + dx, ty + dy));
+      }
+    statics.set(index(tx, ty), { kind: 'stairs-stone', x: tx, y: ty });
+    for (const [dx, dy, kind] of [
+      [-3, -3, 'column'],
+      [3, -3, 'column'],
+      [-3, 3, 'fallen-column'],
+      [3, 3, 'column'],
+      [-4, 0, 'rubble'],
+      [4, 1, 'rubble'],
+      [0, -4, 'skull-pile'],
+    ] as const)
+      statics.set(index(tx + dx, ty + dy), { kind, x: tx + dx, y: ty + dy });
+    const region: RegionData = {
+      name: 'Entrada a la Tumba de los Reyes',
+      x: tx - 5,
+      y: ty - 5,
+      width: 11,
+      height: 11,
+      wild: true,
+    };
+    regions.push(region);
+    const creatures = [
+      { kind: 'mummy' as const, home: spotNear(tombEntrance, 4) },
+      { kind: 'skeleton' as const, home: spotNear(tombEntrance, 4) },
+    ];
+    homes.push(...creatures);
+    places.push({ name: region.name, region, center: tombEntrance, creatures });
+  }
   if (iceEntrance) {
     for (let dy = -1; dy <= 1; dy++)
       for (let dx = -1; dx <= 1; dx++)
@@ -1486,6 +1526,8 @@ export function populateContinent(
     trail({ x: caveEntrance.x, y: caveEntrance.y + 2 }, undefined, undefined, townCenters);
   if (iceEntrance)
     trail({ x: iceEntrance.x, y: iceEntrance.y + 2 }, undefined, undefined, townCenters);
+  if (tombEntrance)
+    trail({ x: tombEntrance.x, y: tombEntrance.y + 5 }, undefined, undefined, townCenters);
 
   function nearest(p: Position, targets: readonly Position[]): number {
     return Math.min(...targets.map((t) => Math.hypot(t.x - p.x, t.y - p.y)));
@@ -1603,6 +1645,7 @@ export function populateContinent(
     places,
     caveEntrance,
     iceEntrance,
+    tombEntrance,
     homes,
     npcs: [...continent.npcs, ...placeNpcs],
   };
@@ -1658,10 +1701,10 @@ export function populateContinent(
     return center;
   }
 
-  /** En la nieve, lejos de los pueblos y los lugares: la boca del calabozo de hielo. */
-  function findIceEntrance(): Position | null {
+  /** Un claro firme en un bioma, lejos de los pueblos y los lugares (la boca de un calabozo). */
+  function findEntrance(biome: Biome): Position | null {
     const snowy: number[] = [];
-    for (let i = 0; i < width * height; i += 7) if (continent.biomes[i] === 'snow') snowy.push(i);
+    for (let i = 0; i < width * height; i += 7) if (continent.biomes[i] === biome) snowy.push(i);
     for (let attempt = 0; attempt < 6000 && snowy.length > 0; attempt++) {
       const i = snowy[Math.floor(random.next() * snowy.length)] ?? 0;
       const x = i % width;
@@ -1675,8 +1718,8 @@ export function populateContinent(
           const t = terrain[j];
           ok =
             t !== undefined &&
-            CAVE_GROUND.has(t) &&
-            continent.biomes[j] === 'snow' &&
+            (CAVE_GROUND.has(t) || t === Terrain.Sand || t === Terrain.Clay) &&
+            continent.biomes[j] === biome &&
             !map.regionAt({ x: x + dx, y: y + dy });
         }
       if (ok) {
