@@ -7,6 +7,8 @@ export default defineConfig(({ mode }) => {
   return {
     // En modo solo la página es autocontenida: rutas relativas y un solo bundle.
     base: solo ? './' : '/',
+    // Cada compilación tiene su marca: el mundo guardado en el navegador por otra no sirve.
+    define: { __FENIX_BUILD__: JSON.stringify(String(Date.now())) },
     server: {
       port: 5173,
       // En modo solo no hay servidor al que reenviar.

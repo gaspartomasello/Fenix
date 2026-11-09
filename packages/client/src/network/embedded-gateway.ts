@@ -1,6 +1,7 @@
 import type { EmbeddedConnection, KeyValueStorage } from '@fenix/server/embedded';
 import { decodeServerMessage } from '@fenix/shared/protocol/codec';
 import type { ClientMessage } from '@fenix/shared/protocol/messages';
+import { loadWorld, saveWorld } from '../platform/world-cache';
 import type { GameGateway, GatewayHandlers } from './game-gateway';
 
 /**
@@ -16,11 +17,25 @@ export class EmbeddedGateway implements GameGateway {
   async connect(): Promise<void> {
     this.handlers.onStatus('connecting');
     // Carga diferida: el código del servidor solo se descarga en modo solo.
-    const { createEmbeddedServer } = await import('@fenix/server/embedded');
+    const { createEmbeddedServer, planSoloWorld, soloWorldKey, packBlueprint, unpackBlueprint } =
+      await import('@fenix/server/embedded');
+    // El mundo se genera una sola vez y queda guardado en el navegador; las
+    // siguientes veces se lee de ahí (mucho más rápido).
+    const key = `${soloWorldKey()}|${__FENIX_BUILD__}`;
+    this.handlers.onProgress?.('Cargando el mundo…');
+    let blueprint = unpackBlueprint(await loadWorld(key));
+    if (!blueprint) {
+      this.handlers.onProgress?.('Creando el mundo por primera vez: puede tardar un poco…');
+      // Un respiro para que el aviso se vea antes del trabajo pesado.
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      blueprint = planSoloWorld();
+      void saveWorld(key, packBlueprint(blueprint));
+    }
     // En el modo solo, Gaspar entra como personaje de prueba (todo al máximo).
     // `?hora=22` en la dirección arranca el mundo a esa hora (para probar la noche).
     const hour = Number(new URLSearchParams(window.location.search).get('hora'));
     const server = createEmbeddedServer({
+      blueprint,
       storage: browserStorage,
       testCharacters: ['Gaspar'],
       ...(Number.isFinite(hour) && hour > 0 && hour < 24 ? { startHour: hour } : {}),

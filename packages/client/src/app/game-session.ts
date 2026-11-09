@@ -151,6 +151,7 @@ export class GameSession {
       onStatus: (status) => {
         if (status === 'closed') this.onDisconnected();
       },
+      onProgress: (text) => this.login.showProgress(text),
     });
     this.game = new ClientGame(this.gateway, clock);
     // En ninguna parte del juego aparece el menú del navegador con el clic
