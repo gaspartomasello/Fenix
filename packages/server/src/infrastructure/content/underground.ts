@@ -46,7 +46,7 @@ const CRYPT_DWELLERS: Readonly<
 };
 
 /** Un plano vacío de roca, con ayudas para cavar y amueblar. */
-class Grid {
+export class Grid {
   readonly terrain: Terrain[];
   readonly statics: StaticPlacement[] = [];
   readonly lairs: { kind: CreatureKind; position: Position }[] = [];

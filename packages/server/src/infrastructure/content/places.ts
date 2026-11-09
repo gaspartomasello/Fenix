@@ -29,6 +29,8 @@ export interface PopulatedContinent extends Continent {
   readonly places: readonly Place[];
   /** La boca de la Cueva del Lamento (solo en el continente principal). */
   readonly caveEntrance: Position | null;
+  /** La boca del calabozo de hielo, en la nieve del norte (solo en el continente principal). */
+  readonly iceEntrance: Position | null;
   /** Criaturas de las tierras salvajes: las de cada bioma y las de cada lugar. */
   readonly homes: readonly { kind: CreatureKind; home: Position }[];
 }
@@ -1190,6 +1192,9 @@ const BIOME_CREATURES: Readonly<
     ['skeleton', 0.3],
   ],
   snow: [
+    ['yeti', 0.25],
+    ['frost-troll', 0.08],
+    ['frost-mage', 0.05],
     ['white-wolf', 0.8],
     ['polar-bear', 0.3],
     ['snow-leopard', 0.25],
@@ -1403,6 +1408,36 @@ export function populateContinent(
   }
 
   const caveEntrance = land === 'main' ? findCaveEntrance() : null;
+  const iceEntrance = land === 'main' ? findIceEntrance() : null;
+  if (iceEntrance) {
+    for (let dy = -1; dy <= 1; dy++)
+      for (let dx = -1; dx <= 1; dx++)
+        statics.delete(index(iceEntrance.x + dx, iceEntrance.y + dy));
+    statics.set(index(iceEntrance.x, iceEntrance.y), { kind: 'cave-entrance', ...iceEntrance });
+    // Hielo alrededor de la boca, y la región con nombre (sin protección).
+    for (let dy = -3; dy <= 3; dy++)
+      for (let dx = -3; dx <= 3; dx++) {
+        const x = iceEntrance.x + dx;
+        const y = iceEntrance.y + dy;
+        if (free(x, y) && Math.hypot(dx, dy) + random.next() < 3.4 && (dx || dy))
+          terrain[index(x, y)] = Terrain.Ice;
+      }
+    const region: RegionData = {
+      name: 'Boca del Calabozo de Hielo',
+      x: iceEntrance.x - 5,
+      y: iceEntrance.y - 5,
+      width: 11,
+      height: 11,
+      wild: true,
+    };
+    regions.push(region);
+    const creatures = [
+      { kind: 'yeti' as const, home: spotNear(iceEntrance, 5) },
+      { kind: 'frost-troll' as const, home: spotNear(iceEntrance, 5) },
+    ];
+    homes.push(...creatures);
+    places.push({ name: region.name, region, center: iceEntrance, creatures });
+  }
 
   function distanceToTowns(p: Position): number {
     return Math.min(
@@ -1449,6 +1484,8 @@ export function populateContinent(
   }
   if (caveEntrance)
     trail({ x: caveEntrance.x, y: caveEntrance.y + 2 }, undefined, undefined, townCenters);
+  if (iceEntrance)
+    trail({ x: iceEntrance.x, y: iceEntrance.y + 2 }, undefined, undefined, townCenters);
 
   function nearest(p: Position, targets: readonly Position[]): number {
     return Math.min(...targets.map((t) => Math.hypot(t.x - p.x, t.y - p.y)));
@@ -1565,6 +1602,7 @@ export function populateContinent(
     map: populated,
     places,
     caveEntrance,
+    iceEntrance,
     homes,
     npcs: [...continent.npcs, ...placeNpcs],
   };
@@ -1618,6 +1656,35 @@ export function populateContinent(
       if (ground !== undefined && TERRAINS[ground].walkable && !kind) return { x, y };
     }
     return center;
+  }
+
+  /** En la nieve, lejos de los pueblos y los lugares: la boca del calabozo de hielo. */
+  function findIceEntrance(): Position | null {
+    const snowy: number[] = [];
+    for (let i = 0; i < width * height; i += 7) if (continent.biomes[i] === 'snow') snowy.push(i);
+    for (let attempt = 0; attempt < 6000 && snowy.length > 0; attempt++) {
+      const i = snowy[Math.floor(random.next() * snowy.length)] ?? 0;
+      const x = i % width;
+      const y = (i - x) / width;
+      if (x < 8 || y < 8 || x >= width - 8 || y >= height - 8) continue;
+      if (taken.some((t) => Math.hypot(t.x - x, t.y - y) < t.r + 8)) continue;
+      let ok = true;
+      for (let dy = -2; dy <= 3 && ok; dy++)
+        for (let dx = -2; dx <= 2 && ok; dx++) {
+          const j = index(x + dx, y + dy);
+          const t = terrain[j];
+          ok =
+            t !== undefined &&
+            CAVE_GROUND.has(t) &&
+            continent.biomes[j] === 'snow' &&
+            !map.regionAt({ x: x + dx, y: y + dy });
+        }
+      if (ok) {
+        taken.push({ x, y, r: 10 });
+        return { x, y };
+      }
+    }
+    return null;
   }
 
   /** Al pie de la cordillera, un claro firme para la boca de la Cueva del Lamento. */

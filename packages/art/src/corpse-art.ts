@@ -2,6 +2,7 @@ import type { CreatureKind } from '@fenix/shared/creatures/creature-catalog';
 import type { Direction } from '@fenix/shared/geometry/direction';
 import { isMountKind } from '@fenix/shared/mounts/mount-catalog';
 import { drawCreatureFrame } from './creature-art';
+import { frostBase } from './ice-art';
 import { faunaLayout, isFaunaArtKind, type FaunaArtKind } from './fauna-art';
 import type { PixelImage } from './pixel-art';
 import { VolumeCanvas, add, pitch, roll, type Projection, type Vec3 } from './volume';
@@ -67,6 +68,9 @@ const POSES: Readonly<Partial<Record<CreatureKind, CorpsePose>>> = {
   brigand: { fall: 'back', angle: BACK, center: 30, rest: 3 },
   'tribal-warrior': { fall: 'back', angle: BACK, center: 30, rest: 3 },
   'tribal-shaman': { fall: 'back', angle: BACK, center: 30, rest: 3 },
+  'frost-mage': { fall: 'back', angle: BACK, center: 30, rest: 3 },
+  // El elemental de hielo no es un espíritu: se desploma como un bloque.
+  'ice-elemental': { fall: 'back', angle: BACK, center: 30, rest: 4 },
   // El jinete cae de la montura (el lagarto se escapa a la selva).
   'tribal-rider': { fall: 'back', angle: BACK, center: 30, rest: 3 },
   ghoul: { fall: 'back', angle: BACK, center: 28, rest: 3 },
@@ -79,7 +83,11 @@ const MOUNT_POSE: CorpsePose = { fall: 'side', angle: SIDE, center: 26, rest: 6 
 const ELEPHANT_POSE: CorpsePose = { fall: 'side', angle: SIDE, center: 56, rest: 17 };
 const isElephant = (kind: CreatureKind): boolean => kind === 'elephant' || kind === 'wild-elephant';
 
-function poseOf(kind: CreatureKind): CorpsePose | null {
+function poseOf(creature: CreatureKind): CorpsePose | null {
+  // Las de la nieve caen como su cuerpo, salvo las que tienen pose propia.
+  const own = POSES[creature];
+  if (own) return own;
+  const kind = frostBase(creature);
   if (isElephant(kind)) return ELEPHANT_POSE;
   if (isMountKind(kind)) return MOUNT_POSE;
   if (isFaunaArtKind(kind)) return faunaCorpse(kind).pose;
@@ -116,7 +124,8 @@ export function leavesCorpse(kind: CreatureKind): boolean {
   return poseOf(kind) !== null;
 }
 
-export function corpseLayout(kind: CreatureKind): CorpseLayout {
+export function corpseLayout(creature: CreatureKind): CorpseLayout {
+  const kind = frostBase(creature);
   if (isElephant(kind)) return ELEPHANT_LAYOUT;
   if (isMountKind(kind)) return MOUNT_LAYOUT;
   if (isFaunaArtKind(kind)) return faunaCorpse(kind).layout;

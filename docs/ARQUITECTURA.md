@@ -1327,6 +1327,22 @@ ningún monumento real):
 - **Interiores**: las casas suman ropero, mesita de velas junto a la cama, macetas, tapices y un
   farol; los comercios, su luz y una mesita con velas o una maceta en un rincón.
 
+## Calabozo de hielo y criaturas de la nieve (etapa 80)
+
+- **Calabozo de Hielo** (`ice-dungeon.ts`): se entra por una boca en la nieve del norte del
+  continente principal (`iceEntrance`, que busca `populateContinent`). Cavernas de nieve y hielo
+  unidas por túneles que serpentean (un árbol más tres atajos), un lago helado, un río subterráneo
+  en diagonal con puentes donde lo cruzan los túneles y cristales de hielo que alumbran. Dos
+  escaleras de piedra bajan a las **salas especiales**: el Trono de la Escarcha (liche de escarcha
+  con magos y elementales) y el Santuario del Dragón de Hielo (cámara en cruz con el dragón).
+  Diseño propio, inspirado en el calabozo de hielo de UO. Van como lugares bajo tierra en la
+  columna de las criptas; `iceLinks` arma las escaleras.
+- **Bestiario de la nieve**: yeti, troll de las nieves, araña de hielo, elemental de hielo, liche
+  de escarcha y dragón de hielo toman el cuerpo de otra criatura teñido de hielo o de nieve
+  (`ice-art.ts`: `FROST_VARIANTS` y `frosted`); el mago de escarcha es un humano con su ropa (la
+  deja al morir, con su bolsa de reactivos). Yetis, trolls y magos andan también por la nieve.
+- Objetos nuevos: `ice-wall` (pared de hielo con carámbanos) y `ice-crystal` (alumbra).
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

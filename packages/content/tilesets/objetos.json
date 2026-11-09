@@ -3,10 +3,10 @@
   "name": "objetos",
   "tilewidth": 136,
   "tileheight": 168,
-  "tilecount": 261,
-  "columns": 261,
+  "tilecount": 263,
+  "columns": 263,
   "image": "objetos.png",
-  "imagewidth": 35496,
+  "imagewidth": 35768,
   "imageheight": 168,
   "tileoffset": {
     "x": -46,
@@ -2249,7 +2249,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-anvil-x"
+          "value": "ice-wall"
         }
       ]
     },
@@ -2259,7 +2259,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-anvil-y"
+          "value": "ice-crystal"
         }
       ]
     },
@@ -2269,7 +2269,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-saw-x"
+          "value": "shop-sign-anvil-x"
         }
       ]
     },
@@ -2279,7 +2279,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-saw-y"
+          "value": "shop-sign-anvil-y"
         }
       ]
     },
@@ -2289,7 +2289,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-star-x"
+          "value": "shop-sign-saw-x"
         }
       ]
     },
@@ -2299,7 +2299,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-star-y"
+          "value": "shop-sign-saw-y"
         }
       ]
     },
@@ -2309,7 +2309,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-coins-x"
+          "value": "shop-sign-star-x"
         }
       ]
     },
@@ -2319,7 +2319,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-coins-y"
+          "value": "shop-sign-star-y"
         }
       ]
     },
@@ -2329,7 +2329,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-mug-x"
+          "value": "shop-sign-coins-x"
         }
       ]
     },
@@ -2339,7 +2339,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-mug-y"
+          "value": "shop-sign-coins-y"
         }
       ]
     },
@@ -2349,7 +2349,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-heart-x"
+          "value": "shop-sign-mug-x"
         }
       ]
     },
@@ -2359,7 +2359,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-heart-y"
+          "value": "shop-sign-mug-y"
         }
       ]
     },
@@ -2369,7 +2369,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-sack-x"
+          "value": "shop-sign-heart-x"
         }
       ]
     },
@@ -2379,7 +2379,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-sack-y"
+          "value": "shop-sign-heart-y"
         }
       ]
     },
@@ -2389,7 +2389,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-scissors-x"
+          "value": "shop-sign-sack-x"
         }
       ]
     },
@@ -2399,7 +2399,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-scissors-y"
+          "value": "shop-sign-sack-y"
         }
       ]
     },
@@ -2409,7 +2409,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-bow-x"
+          "value": "shop-sign-scissors-x"
         }
       ]
     },
@@ -2419,7 +2419,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-bow-y"
+          "value": "shop-sign-scissors-y"
         }
       ]
     },
@@ -2429,7 +2429,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-flask-x"
+          "value": "shop-sign-bow-x"
         }
       ]
     },
@@ -2439,7 +2439,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-flask-y"
+          "value": "shop-sign-bow-y"
         }
       ]
     },
@@ -2449,7 +2449,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-bread-x"
+          "value": "shop-sign-flask-x"
         }
       ]
     },
@@ -2459,7 +2459,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-bread-y"
+          "value": "shop-sign-flask-y"
         }
       ]
     },
@@ -2469,7 +2469,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-ham-x"
+          "value": "shop-sign-bread-x"
         }
       ]
     },
@@ -2479,7 +2479,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-ham-y"
+          "value": "shop-sign-bread-y"
         }
       ]
     },
@@ -2489,7 +2489,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-gem-x"
+          "value": "shop-sign-ham-x"
         }
       ]
     },
@@ -2499,7 +2499,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-gem-y"
+          "value": "shop-sign-ham-y"
         }
       ]
     },
@@ -2509,7 +2509,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-quill-x"
+          "value": "shop-sign-gem-x"
         }
       ]
     },
@@ -2519,7 +2519,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-quill-y"
+          "value": "shop-sign-gem-y"
         }
       ]
     },
@@ -2529,7 +2529,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-fish-x"
+          "value": "shop-sign-quill-x"
         }
       ]
     },
@@ -2539,7 +2539,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-fish-y"
+          "value": "shop-sign-quill-y"
         }
       ]
     },
@@ -2549,7 +2549,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-anchor-x"
+          "value": "shop-sign-fish-x"
         }
       ]
     },
@@ -2559,7 +2559,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-anchor-y"
+          "value": "shop-sign-fish-y"
         }
       ]
     },
@@ -2569,7 +2569,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-house-x"
+          "value": "shop-sign-anchor-x"
         }
       ]
     },
@@ -2579,7 +2579,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-house-y"
+          "value": "shop-sign-anchor-y"
         }
       ]
     },
@@ -2589,7 +2589,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-horseshoe-x"
+          "value": "shop-sign-house-x"
         }
       ]
     },
@@ -2599,7 +2599,7 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-horseshoe-y"
+          "value": "shop-sign-house-y"
         }
       ]
     },
@@ -2609,12 +2609,32 @@
         {
           "name": "static",
           "type": "string",
-          "value": "shop-sign-axe-x"
+          "value": "shop-sign-horseshoe-x"
         }
       ]
     },
     {
       "id": 260,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-horseshoe-y"
+        }
+      ]
+    },
+    {
+      "id": 261,
+      "properties": [
+        {
+          "name": "static",
+          "type": "string",
+          "value": "shop-sign-axe-x"
+        }
+      ]
+    },
+    {
+      "id": 262,
       "properties": [
         {
           "name": "static",

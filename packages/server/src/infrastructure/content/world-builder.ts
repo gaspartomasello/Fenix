@@ -28,6 +28,7 @@ import {
 } from './underground';
 import type { Descent } from './tiled-map-loader';
 import { generateFloors, type Ascent, type UpperFloor } from './upper-floors';
+import { generateIceDungeon } from './ice-dungeon';
 
 /**
  * Versión de la forma del mundo: si cambia, los personajes guardados en el
@@ -312,7 +313,14 @@ export function buildWorld({
     pockets.push({ place, at: { x: pocketLeft, y: pocketTop } });
     pocketTop += place.height + DUNGEON_GAP;
   }
-  const pocketWidth = Math.max(0, ...below.map((b) => b.place.width));
+  // El calabozo de hielo y sus dos salas especiales, debajo de lo de los pueblos.
+  const ice = continent.iceEntrance ? generateIceDungeon(seed + 400) : null;
+  const icePockets = ice ? [ice.caves, ...ice.halls] : [];
+  for (const place of icePockets) {
+    pockets.push({ place, at: { x: pocketLeft, y: pocketTop } });
+    pocketTop += place.height + DUNGEON_GAP;
+  }
+  const pocketWidth = Math.max(0, ...pockets.map((p) => p.place.width));
   // Los pisos altos de los edificios, todavía más a la derecha, en columnas.
   const upperLeft =
     (pockets.length > 0 ? pocketLeft + pocketWidth : left + dungeon.width) + FLOOR_GAP;
@@ -444,6 +452,9 @@ export function buildWorld({
       // Pasadizos bajo la ciudad: grietas entre alcantarilla, catacumbas y cripta, y
       // escaleras de las catacumbas a las baldosas flojas de las casas.
       ...undercityLinks(below, pockets, secrets),
+      // El calabozo de hielo: se baja por la boca en la nieve; adentro, dos escaleras
+      // de piedra bajan a las salas especiales, y la escalera de cada una vuelve.
+      ...iceLinks(continent.iceEntrance, pockets.slice(below.length)),
       // Subir por la escalera y bajar por el hueco, piso por piso.
       ...upper.flatMap(({ ascent, floors }) =>
         floors.flatMap(({ floor, at }, k) => {
@@ -598,6 +609,7 @@ function withJungleWest(
     map,
     spawnPoint: east(main.spawnPoint),
     caveEntrance: main.caveEntrance ? east(main.caveEntrance) : null,
+    iceEntrance: main.iceEntrance ? east(main.iceEntrance) : null,
     items: [...fromWest.items, ...fromMain.items],
     npcs: [...fromWest.npcs, ...fromMain.npcs],
     homes: [...fromWest.homes, ...fromMain.homes],
@@ -611,6 +623,27 @@ function withJungleWest(
     passes: [],
     townCreatures: [],
   };
+}
+
+/** Los teletransportes del calabozo de hielo: la boca, la escalera de salida y las de las salas. */
+function iceLinks(
+  entrance: Position | null,
+  placed: readonly { place: Underground; at: Position }[],
+): { x: number; y: number; to: Position }[] {
+  const [caves, ...halls] = placed;
+  if (!entrance || !caves) return [];
+  const shift = (at: Position, p: Position): Position => ({ x: p.x + at.x, y: p.y + at.y });
+  const links = [
+    { ...entrance, to: shift(caves.at, caves.place.arrival) },
+    { ...shift(caves.at, caves.place.ladder), to: { x: entrance.x, y: entrance.y + 2 } },
+  ];
+  (caves.place.passages ?? []).forEach((passage, i) => {
+    const hall = halls[i];
+    if (!hall) return;
+    links.push({ ...shift(caves.at, passage.at), to: shift(hall.at, hall.place.arrival) });
+    links.push({ ...shift(hall.at, hall.place.ladder), to: shift(caves.at, passage.arrival) });
+  });
+  return links;
 }
 
 /** Los lugares de `HOUSE_SLOT` × `HOUSE_SLOT` que entran en una columna de roca. */

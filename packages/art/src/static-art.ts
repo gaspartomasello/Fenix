@@ -501,6 +501,46 @@ const caveWall: Model = (c, variant) => {
   c.box([0, 19, 0], UP, [H, 19, H], rockFace(variant * 7));
 };
 
+/** Hielo de las paredes del calabozo: azul blanquecino, con vetas y brillos. */
+const ICE = ramp([150, 196, 226]);
+const iceFace =
+  (seed: number): Material =>
+  (s) => {
+    const vein = noise(
+      Math.floor(s.p[0] / 3) + seed,
+      Math.floor(s.p[1] / 5),
+      Math.floor(s.p[2] / 3),
+    );
+    const shine = s.light > 0.82 && vein > 0.55 ? 1 : 0;
+    return tone(ICE, 0.25 + s.light * 0.75, vein < 0.18 ? -1 : shine);
+  };
+
+/** Pared de hielo: un bloque de roca cubierto de hielo, con carámbanos que cuelgan. */
+const iceWall: Model = (c, variant) => {
+  c.box([0, 19, 0], UP, [H, 19, H], iceFace(variant * 11));
+  for (let i = 0; i < 3; i++) {
+    const x = (noise(i, variant, 5) - 0.5) * H * 1.6;
+    const z = H * 0.92;
+    c.limb([x, 37, z], [x, 30 - noise(i, variant, 6) * 6, z], 1.4, 0.15, iceFace(variant + i));
+  }
+};
+
+/** Cristal de hielo: prismas que salen del suelo y brillan con luz celeste. */
+const iceCrystal: Model = (c, variant) => {
+  const glow = glowing(ramp([150, 226, 255]));
+  const prisms: [number, number, number, number][] = [
+    [0, 0, 26, 3.6],
+    [5, -3, 16, 2.6],
+    [-4, 3, 18, 2.8],
+    [3, 5, 11, 2],
+  ];
+  for (const [x, z, h, r] of prisms) {
+    const lean = (noise(x + 9, z + 9, variant) - 0.5) * 5;
+    c.limb([x, 0, z], [x + lean, h + variant * 2, z + lean * 0.5], r, 0.3, glow);
+  }
+  c.ellipsoid([0, 0.8, 0], UP, [9, 1.2, 9], iceFace(variant));
+};
+
 /** Boca de una cueva: un peñasco grande con un hueco oscuro que mira al frente. */
 const caveEntrance: Model = (c) => {
   const material = rocky(ramp([128, 118, 106]), 5);
@@ -3269,6 +3309,8 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   forge: { model: forge, shadow: [20, 8] },
   anvil: { model: anvil, shadow: [14, 6] },
   'cave-wall': { model: caveWall },
+  'ice-wall': { model: iceWall },
+  'ice-crystal': { model: iceCrystal, shadow: [9, 4] },
   'cave-entrance': { model: caveEntrance, shadow: [34, 14] },
   ladder: { model: ladder },
   brazier: { model: brazier, shadow: [9, 4] },

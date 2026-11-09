@@ -465,6 +465,53 @@ describe('buildWorld: el continente de la selva, al oeste cruzando el mar', () =
   });
 });
 
+describe('el calabozo de hielo, en la nieve del norte', () => {
+  const { map, lairs, places } = buildWorld({ size: 420, height: 600, seed: 1997 });
+  const mouth = places.find((p) => p.name === 'Boca del Calabozo de Hielo');
+
+  it('la boca está en la nieve y lleva adentro; la escalera vuelve afuera', () => {
+    expect(mouth).toBeDefined();
+    if (!mouth) return;
+    const inside = map.teleportAt(mouth.center);
+    expect(inside).toBeTruthy();
+    if (!inside) return;
+    expect(map.regionAt(inside)?.name).toBe('Calabozo de Hielo');
+    expect(map.isWalkable(inside)).toBe(true);
+    const ladder = map.teleporters.find(
+      (t) => t.to.x === mouth.center.x && t.to.y === mouth.center.y + 2,
+    );
+    expect(ladder).toBeDefined();
+  });
+
+  it('desde adentro se llega caminando a las dos escaleras que bajan a las salas especiales', () => {
+    if (!mouth) return;
+    const inside = map.teleportAt(mouth.center);
+    if (!inside) return;
+    const walk = reachable(map, inside);
+    const halls = ['Trono de la Escarcha', 'Santuario del Dragón de Hielo'];
+    for (const hall of halls) {
+      const stair = map.teleporters.find(
+        (t) => map.regionAt(t)?.name === 'Calabozo de Hielo' && map.regionAt(t.to)?.name === hall,
+      );
+      expect(stair, hall).toBeDefined();
+      if (!stair) continue;
+      const near = [
+        { x: stair.x + 1, y: stair.y },
+        { x: stair.x - 1, y: stair.y },
+        { x: stair.x, y: stair.y + 1 },
+        { x: stair.x, y: stair.y - 1 },
+      ];
+      expect(
+        near.some((p) => walk.has(`${p.x},${p.y}`)),
+        hall,
+      ).toBe(true);
+    }
+    const kinds = new Set(lairs.map((l) => l.kind));
+    for (const kind of ['frost-lich', 'ice-wyrm', 'ice-elemental', 'frost-troll'] as const)
+      expect(kinds.has(kind), kind).toBe(true);
+  });
+});
+
 function median(values: readonly number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
   return sorted[Math.floor(sorted.length / 2)] ?? 0;

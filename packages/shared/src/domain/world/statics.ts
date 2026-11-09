@@ -276,6 +276,9 @@ export const STATIC_KINDS = [
   'tapestry-x',
   'tapestry-y',
   'statue',
+  // El calabozo de hielo (etapa 80).
+  'ice-wall',
+  'ice-crystal',
   ...SHOP_SIGN_KINDS,
 ] as const;
 
@@ -665,6 +668,8 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   'tapestry-x': define('tapestry-x', 'tapiz', false),
   'tapestry-y': define('tapestry-y', 'tapiz', false),
   statue: define('statue', 'estatua', true),
+  'ice-wall': define('ice-wall', 'pared de hielo', true),
+  'ice-crystal': define('ice-crystal', 'cristal de hielo', true, 3),
 };
 
 /**
