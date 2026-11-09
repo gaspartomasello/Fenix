@@ -1418,6 +1418,10 @@ ningún monumento real):
 - Tocar cualquier cosa que no sea un campo de texto cierra el teclado (`dismissKeyboardOnTapOutside`):
   el juego se queda con los toques de la pantalla y el navegador ya no lo cerraba solo.
 - Al cerrarse el teclado y al entrar al mundo, la página vuelve a su escala justa (`resetScale`).
+- Si un campo desaparece con el cursor adentro (al pasar del ingreso a la lista de personajes),
+  iOS deja el teclado abierto sin campo y no hay forma de cerrarlo. Por eso, antes de cambiar de
+  pantalla o entrar al mundo se saca el cursor (`blurField`), y si igual quedó uno huérfano, el
+  próximo toque afuera entra y sale de un campo de paso (`forceHideKeyboard`), que lo cierra.
 
 ## Convenciones
 

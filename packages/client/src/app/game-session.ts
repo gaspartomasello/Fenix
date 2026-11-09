@@ -209,6 +209,9 @@ export class GameSession {
 
   /** Muestra una de las pantallas de antes del mundo (cuenta, personajes, creación). */
   private showScreen(screen: 'login' | 'list' | 'create'): void {
+    // Primero se cierra el teclado: si el campo desaparece con el cursor adentro,
+    // iOS deja el teclado abierto sin forma de cerrarlo.
+    blurField();
     this.screen = screen;
     this.login.element.remove();
     this.characterList.element.remove();
@@ -248,6 +251,7 @@ export class GameSession {
   }
 
   private async startWorld(): Promise<void> {
+    blurField();
     this.inWorld = true;
     this.login.destroy();
     this.characterList.destroy();
@@ -1152,21 +1156,64 @@ function resetScale(): void {
  * pantalla (para caminar y atacar) y el navegador ya no lo cierra solo.
  */
 function dismissKeyboardOnTapOutside(): void {
-  // Al cerrarse el teclado, iOS a veces deja la página agrandada: se vuelve a la escala justa.
-  document.addEventListener('focusout', (e) => {
+  // ¿Puede haber un teclado abierto? Se prende al entrar a un campo y se apaga al
+  // salir. Si el campo desaparece con el cursor adentro (al cambiar de pantalla),
+  // no hay "salir": queda prendido y el próximo toque lo cierra a la fuerza.
+  let keyboardMayBeOpen = false;
+  document.addEventListener('focusin', (e) => {
     if (e.target instanceof Element && e.target.matches('input, textarea'))
-      window.setTimeout(resetScale, 60);
+      keyboardMayBeOpen = true;
+  });
+  document.addEventListener('focusout', (e) => {
+    if (!(e.target instanceof Element) || !e.target.matches('input, textarea')) return;
+    keyboardMayBeOpen = false;
+    // Al cerrarse el teclado, iOS a veces deja la página agrandada: se vuelve a la escala justa.
+    window.setTimeout(resetScale, 60);
   });
   document.addEventListener(
     'pointerdown',
     (e) => {
-      const active = document.activeElement;
-      if (!(active instanceof HTMLElement) || !active.matches('input, textarea')) return;
       if (e.target instanceof Element && e.target.closest('input, textarea, select')) return;
-      active.blur();
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && active.matches('input, textarea')) active.blur();
+      else if (keyboardMayBeOpen) {
+        keyboardMayBeOpen = false;
+        forceHideKeyboard();
+      }
     },
     { capture: true },
   );
+}
+
+/** Saca el cursor del campo en el que esté (y así se cierra el teclado). */
+function blurField(): void {
+  const active = document.activeElement;
+  if (active instanceof HTMLElement && active.matches('input, textarea')) active.blur();
+}
+
+/**
+ * Cierra un teclado que quedó abierto sin campo (iOS lo deja así cuando el campo
+ * desaparece con el cursor adentro): se entra un instante a un campo de paso y
+ * se sale, que es lo que hace que iOS lo guarde.
+ */
+function forceHideKeyboard(): void {
+  const field = document.createElement('input');
+  field.type = 'text';
+  field.setAttribute('aria-hidden', 'true');
+  Object.assign(field.style, {
+    position: 'fixed',
+    top: '0',
+    left: '0',
+    width: '1px',
+    height: '1px',
+    opacity: '0',
+    fontSize: '16px',
+  });
+  document.body.append(field);
+  field.focus({ preventScroll: true });
+  field.blur();
+  field.remove();
+  resetScale();
 }
 
 const HOTBAR_STORAGE_KEY = 'fenix.atajos';
