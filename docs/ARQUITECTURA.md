@@ -1411,6 +1411,14 @@ ningún monumento real):
   con bisel. La ventana de personaje pasó de piedra gris a nogal y bronce y se achica en pantallas
   bajas.
 
+## El teclado del celular (etapa 85)
+
+- En el celular, las pantallas de antes del mundo no ponen el cursor solas en el campo del nombre:
+  eso abría el teclado apenas se entraba y agrandaba la página.
+- Tocar cualquier cosa que no sea un campo de texto cierra el teclado (`dismissKeyboardOnTapOutside`):
+  el juego se queda con los toques de la pantalla y el navegador ya no lo cerraba solo.
+- Al cerrarse el teclado y al entrar al mundo, la página vuelve a su escala justa (`resetScale`).
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

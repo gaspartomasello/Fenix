@@ -195,7 +195,16 @@ export class GameSession {
 
   start(): void {
     this.hosts.ui.append(this.login.element);
-    this.login.focus();
+    if (prefersTouch()) dismissKeyboardOnTapOutside();
+    this.focusField(this.login);
+  }
+
+  /**
+   * Pone el cursor en el primer campo, solo en la computadora: en el celular
+   * eso abre el teclado apenas se entra (y lo agranda todo); ahí se toca el campo.
+   */
+  private focusField(screen: { focus(): void }): void {
+    if (!prefersTouch()) screen.focus();
   }
 
   /** Muestra una de las pantallas de antes del mundo (cuenta, personajes, creación). */
@@ -209,7 +218,7 @@ export class GameSession {
     }
     if (screen === 'login') {
       this.hosts.ui.append(this.login.element);
-      this.login.focus();
+      this.focusField(this.login);
     } else if (screen === 'list') this.hosts.ui.append(this.characterList.element);
   }
 
@@ -221,7 +230,7 @@ export class GameSession {
     });
     this.showScreen('create');
     this.hosts.ui.append(this.creation.element);
-    this.creation.focus();
+    this.focusField(this.creation);
   }
 
   private async enter(request: LoginRequest): Promise<void> {
@@ -1114,20 +1123,50 @@ function keepViewport(): void {
     { passive: false },
   );
   document.addEventListener('dblclick', stop, { passive: false });
-  const meta = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
   const reset = (): void => {
     const active = document.activeElement;
     if (active instanceof HTMLElement && active.matches('input, textarea')) active.blur();
-    if (meta) {
-      // Cambiar la etiqueta obliga al navegador a volver a aplicarla.
-      const content = meta.content;
-      meta.content = 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0';
-      window.requestAnimationFrame(() => (meta.content = content));
-    }
-    window.scrollTo(0, 0);
+    resetScale();
   };
   screen.orientation?.addEventListener('change', reset);
   window.addEventListener('orientationchange', reset);
+  // Al entrar al mundo: sin teclado abierto de las pantallas de antes y a la escala justa.
+  reset();
+}
+
+/** Vuelve la página a su escala justa (sin agrandar) y arriba de todo. */
+function resetScale(): void {
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
+  if (meta) {
+    // Cambiar la etiqueta obliga al navegador a volver a aplicarla.
+    const content = meta.content;
+    meta.content = 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0';
+    window.requestAnimationFrame(() => (meta.content = content));
+  }
+  window.scrollTo(0, 0);
+}
+
+/**
+ * Con el dedo, tocar cualquier cosa que no sea un campo de texto cierra el
+ * teclado. Hace falta porque el juego se queda con los toques sobre la
+ * pantalla (para caminar y atacar) y el navegador ya no lo cierra solo.
+ */
+function dismissKeyboardOnTapOutside(): void {
+  // Al cerrarse el teclado, iOS a veces deja la página agrandada: se vuelve a la escala justa.
+  document.addEventListener('focusout', (e) => {
+    if (e.target instanceof Element && e.target.matches('input, textarea'))
+      window.setTimeout(resetScale, 60);
+  });
+  document.addEventListener(
+    'pointerdown',
+    (e) => {
+      const active = document.activeElement;
+      if (!(active instanceof HTMLElement) || !active.matches('input, textarea')) return;
+      if (e.target instanceof Element && e.target.closest('input, textarea, select')) return;
+      active.blur();
+    },
+    { capture: true },
+  );
 }
 
 const HOTBAR_STORAGE_KEY = 'fenix.atajos';
