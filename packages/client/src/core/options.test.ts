@@ -93,4 +93,11 @@ describe('opciones', () => {
     });
     expect(chips.find((c) => c.key === 'reagent:black-pearl')?.value).toBe('150');
   });
+
+  it('la barra de información se apaga sin olvidar lo elegido', () => {
+    const off = parseOptions(JSON.stringify({ info: ['gold'], infoBar: false }));
+    expect(off.infoBar).toBe(false);
+    expect(off.info).toEqual(['gold']);
+    expect(parseOptions(JSON.stringify({ info: ['gold'] })).infoBar).toBe(true);
+  });
 });

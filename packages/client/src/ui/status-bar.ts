@@ -16,10 +16,22 @@ export interface StatusInfo {
 export class StatusBar {
   readonly element: HTMLElement;
   private readonly text: HTMLElement;
+  private readonly parts = {
+    name: el('span', { className: 'status-name' }),
+    place: el('span', { className: 'status-place' }),
+    time: el('span', { className: 'status-time' }),
+    company: el('span', { className: 'status-company' }),
+  };
   private last = '';
 
   constructor() {
-    this.text = el('span');
+    // Cada dato en su lugar: con el dedo se muestran solo el lugar y la hora.
+    this.text = el('span', { className: 'status-text' }, [
+      this.parts.name,
+      this.parts.place,
+      this.parts.time,
+      this.parts.company,
+    ]);
     this.element = el('div', { className: 'status-bar panel' }, [this.text]);
   }
 
@@ -32,10 +44,14 @@ export class StatusBar {
     const others = visible - 1;
     const company =
       others === 0 ? 'nadie cerca' : others === 1 ? '1 jugador cerca' : `${others} jugadores cerca`;
-    const value = `${name} · ${region} (${x}, ${y}) · ${time} · ${company}`;
+    const place = `${region} (${x}, ${y})`;
+    const value = `${name}|${place}|${time}|${company}`;
     if (value === this.last) return;
     this.last = value;
-    this.text.textContent = value;
+    this.parts.name.textContent = name;
+    this.parts.place.textContent = place;
+    this.parts.time.textContent = time;
+    this.parts.company.textContent = company;
   }
 
   destroy(): void {

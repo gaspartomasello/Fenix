@@ -374,6 +374,11 @@ export class GameRenderer {
     // entre cuadros) y no toda junta en el cuadro en que aparece.
     this.textures.onCreate = (texture) => this.app.renderer.texture.initSource(texture.source);
     host.appendChild(this.app.canvas);
+    // Pixi se mide de nuevo con el aviso de cambio de tamaño de la ventana, pero
+    // dentro de un marco (la app de Claude, por ejemplo) al girar el celular ese
+    // aviso puede llegar antes de que cambie el tamaño, o no llegar: el juego
+    // quedaba agrandado. Vigilar el tamaño real del contenedor no falla.
+    new ResizeObserver(() => this.app.resize()).observe(host);
     this.world.addChild(this.scene);
     this.glowing.addChild(this.effects.container, this.labelLayer);
     this.app.stage.addChild(this.world, this.lighting.overlay, this.glowing);

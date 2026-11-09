@@ -10,6 +10,8 @@ export interface TouchHudOptions {
   readonly hasTarget: () => boolean;
   /** Botones siempre a mano arriba a la derecha (mochila, mapa). */
   readonly quick: readonly Omit<HudButton, 'key'>[];
+  /** El dibujo de cada botón de arriba (por su nombre): son medallones chicos, sin texto. */
+  readonly icons?: Readonly<Record<string, string>>;
   /** Atajos alrededor del botón de atacar (la barra ya armada). */
   readonly ring?: HTMLElement | null;
   /** Todo lo demás, en el menú. */
@@ -62,13 +64,17 @@ export class TouchHud {
     ]);
     this.actions = el('div', { className: 'touch-actions' }, [this.side, area]);
 
-    const menuButton = el('button', {
-      className: 'touch-button',
-      text: 'Menú',
-      attrs: { type: 'button', 'aria-expanded': 'false' },
-    });
+    // El menú: tres rayas, como una hoja con renglones.
+    const menuButton = el(
+      'button',
+      {
+        className: 'touch-button touch-medal',
+        attrs: { type: 'button', 'aria-expanded': 'false', 'aria-label': 'Menú', title: 'Menú' },
+      },
+      [el('span', { className: 'touch-medal-lines', attrs: { 'aria-hidden': 'true' } })],
+    );
     this.top = el('div', { className: 'touch-top' }, [
-      ...options.quick.map((b) => this.button(b, 'touch-button')),
+      ...options.quick.map((b) => this.medal(b, options.icons?.[b.label])),
       menuButton,
     ]);
 
@@ -81,17 +87,29 @@ export class TouchHud {
       this.sheet.hidden = true;
       menuButton.setAttribute('aria-expanded', 'false');
     };
+    const closeButton = el('button', {
+      className: 'window-close',
+      text: '✕',
+      attrs: { type: 'button', 'aria-label': 'Cerrar el menú' },
+    });
+    closeButton.addEventListener('click', close, { signal });
     this.sheet.append(
-      el(
-        'div',
-        { className: 'touch-sheet-grid' },
-        options.menu.map((b) => {
-          const node = this.button(b, 'touch-sheet-button');
-          // Elegir algo del menú lo cierra (salvo lo que queda prendido o apagado).
-          if (!b.pressed) node.addEventListener('click', close, { signal });
-          return node;
-        }),
-      ),
+      el('div', { className: 'touch-sheet-panel' }, [
+        el('div', { className: 'touch-sheet-bar' }, [
+          el('span', { className: 'window-title', text: 'Menú' }),
+          closeButton,
+        ]),
+        el(
+          'div',
+          { className: 'touch-sheet-grid' },
+          options.menu.map((b) => {
+            const node = this.button(b, 'touch-sheet-button');
+            // Elegir algo del menú lo cierra (salvo lo que queda prendido o apagado).
+            if (!b.pressed) node.addEventListener('click', close, { signal });
+            return node;
+          }),
+        ),
+      ]),
     );
     menuButton.addEventListener(
       'click',
@@ -143,6 +161,21 @@ export class TouchHud {
   destroy(): void {
     this.abort.abort();
     for (const node of [this.actions, this.top, this.sheet, this.rotateHint]) node.remove();
+  }
+
+  /** Un botón de arriba: un medallón con su dibujo (o la palabra, si no tiene). */
+  private medal(button: Omit<HudButton, 'key'>, icon: string | undefined): HTMLButtonElement {
+    const node = this.button(button, 'touch-button touch-medal');
+    if (!icon) return node;
+    node.replaceChildren(
+      el('img', {
+        className: 'touch-medal-icon',
+        attrs: { src: icon, alt: '', draggable: 'false' },
+      }),
+    );
+    node.setAttribute('aria-label', button.label);
+    node.title = button.label;
+    return node;
   }
 
   private button(button: Omit<HudButton, 'key'>, className: string): HTMLButtonElement {

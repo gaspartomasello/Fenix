@@ -136,6 +136,7 @@ export class WorldMap {
       ctx.fillStyle = region.wild ? '#f2d9a6' : '#ffffff';
       ctx.fillText(region.name, x, y);
     }
+    drawCompass(ctx, this.canvas.width, this.canvas.height, ratio);
     // Uno mismo: un punto con un anillo que late, para encontrarse de un vistazo.
     const self = this.game.selfSeenAt();
     if (self && self.x < area.width) {
@@ -162,4 +163,70 @@ function overworld(map: TileMap): { width: number; height: number } {
   const dungeons = map.regions.filter((r) => r.dungeon && r.x > 0).map((r) => r.x);
   const width = dungeons.length > 0 ? Math.min(...dungeons) : map.width;
   return { width, height: map.height };
+}
+
+/**
+ * Rosa de los vientos abajo a la derecha: una estrella de bronce de cuatro
+ * puntas con N, E, S y O (el mapa del mundo tiene el norte arriba).
+ */
+function drawCompass(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  ratio: number,
+): void {
+  const r = Math.min(34 * ratio, Math.min(width, height) * 0.09);
+  const cx = width - r * 1.7;
+  const cy = height - r * 1.7;
+  ctx.save();
+  ctx.translate(cx, cy);
+  // El disco, como una tapa de bronce.
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 1.05, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(28, 18, 10, 0.72)';
+  ctx.fill();
+  ctx.lineWidth = 1.5 * ratio;
+  ctx.strokeStyle = '#c9a45c';
+  ctx.stroke();
+  // Las cuatro puntas: cada una con una mitad clara y una oscura, como en relieve.
+  for (let i = 0; i < 4; i++) {
+    const angle = (i * Math.PI) / 2;
+    const tip = [Math.sin(angle) * r * 0.82, -Math.cos(angle) * r * 0.82] as const;
+    const side = r * 0.18;
+    const left = [Math.sin(angle - Math.PI / 2) * side, -Math.cos(angle - Math.PI / 2) * side];
+    const right = [Math.sin(angle + Math.PI / 2) * side, -Math.cos(angle + Math.PI / 2) * side];
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(tip[0], tip[1]);
+    ctx.lineTo(left[0] ?? 0, left[1] ?? 0);
+    ctx.closePath();
+    ctx.fillStyle = i === 0 ? '#e86a3a' : '#f0d48c';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(tip[0], tip[1]);
+    ctx.lineTo(right[0] ?? 0, right[1] ?? 0);
+    ctx.closePath();
+    ctx.fillStyle = i === 0 ? '#9a3418' : '#8a6a3a';
+    ctx.fill();
+  }
+  // Las letras, por fuera de las puntas.
+  ctx.font = `700 ${Math.round(r * 0.42)}px Georgia, serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 3 * ratio;
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+  for (const [letter, dx, dy] of [
+    ['N', 0, -1],
+    ['E', 1, 0],
+    ['S', 0, 1],
+    ['O', -1, 0],
+  ] as const) {
+    const x = dx * r * 1.38;
+    const y = dy * r * 1.38;
+    ctx.strokeText(letter, x, y);
+    ctx.fillStyle = letter === 'N' ? '#ff9a6a' : '#f3d58a';
+    ctx.fillText(letter, x, y);
+  }
+  ctx.restore();
 }

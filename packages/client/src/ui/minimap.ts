@@ -1,5 +1,6 @@
 import type { ClientGame } from '../core/client-game';
 import { el } from './dom';
+import { makeDraggable, type Draggable } from './draggable';
 import { mapPicture } from './map-picture';
 
 /** Lado del minimapa en pantalla (pixeles CSS). */
@@ -7,19 +8,23 @@ const SIZE = 196;
 /** Acercamientos posibles: pixeles por tile. */
 const ZOOMS = [1.2, 2, 3.2] as const;
 const STORAGE_KEY = 'fenix.minimapa';
+/** Dónde lo dejó el jugador (ver `makeDraggable`). */
+const PLACE_KEY = 'fenix.minimapa.lugar';
 
 /**
  * Minimapa: el mundo visto desde arriba, girado como la vista isométrica
  * (arriba en el minimapa es arriba en la pantalla), centrado en uno mismo.
  * Muestra a la gente cerca y los nombres de pueblos y lugares. La tecla M (o
  * su botón) pasa del minimapa al mapa del mundo y después lo cierra; el clic
- * derecho lo cierra y la rueda acerca o aleja.
+ * derecho lo cierra y la rueda acerca o aleja. Es redondo y se arrastra a
+ * cualquier lugar de la pantalla (recuerda dónde quedó).
  */
 export class Minimap {
   readonly element: HTMLElement;
   private readonly canvas: HTMLCanvasElement;
   private zoom = 1;
   private timer: number | null = null;
+  private readonly drag: Draggable;
 
   constructor(
     private readonly game: ClientGame,
@@ -32,8 +37,27 @@ export class Minimap {
     this.canvas.height = SIZE * ratio;
     this.element = el(
       'div',
-      { className: 'minimap', attrs: { role: 'img', 'aria-label': 'Minimapa' } },
-      [this.canvas],
+      {
+        className: 'minimap',
+        attrs: {
+          role: 'img',
+          'aria-label': 'Minimapa',
+          title: 'Tocalo para acercar o alejar; arrastralo para moverlo.',
+        },
+      },
+      [
+        this.canvas,
+        // Puntos cardinales en el aro. El minimapa está girado como la vista del
+        // juego: el norte (y que baja) queda arriba a la derecha, el este abajo a
+        // la derecha, el sur abajo a la izquierda y el oeste arriba a la izquierda.
+        ...(['N', 'E', 'S', 'O'] as const).map((letter) =>
+          el('span', {
+            className: 'minimap-cardinal',
+            text: letter,
+            attrs: { 'data-dir': letter, 'aria-hidden': 'true' },
+          }),
+        ),
+      ],
     );
     this.canvas.addEventListener(
       'wheel',
@@ -46,6 +70,7 @@ export class Minimap {
     );
     // Tocar el minimapa cambia el acercamiento (en el celular no hay rueda).
     this.canvas.addEventListener('click', () => {
+      if (this.drag.consumeDrag()) return;
       this.zoom = (this.zoom + 1) % ZOOMS.length;
       this.draw();
     });
@@ -57,6 +82,7 @@ export class Minimap {
       this.onToggle();
     });
     this.setOpen(readOpen());
+    this.drag = makeDraggable(this.element, PLACE_KEY);
   }
 
   get open(): boolean {
@@ -73,6 +99,7 @@ export class Minimap {
   }
 
   destroy(): void {
+    this.drag.destroy();
     if (this.timer !== null) window.clearInterval(this.timer);
     this.element.remove();
   }

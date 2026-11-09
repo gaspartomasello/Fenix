@@ -1380,6 +1380,37 @@ ningún monumento real):
 - A los 7 minutos el cuerpo se vuelve un montón de huesos (`player-bones`) con lo que quedaba
   adentro; a los otros 7 se deshace con todo.
 
+## El celular mejor repartido y la línea estética de las ventanas (etapa 84)
+
+- Con el dedo, la pantalla se reparte en franjas: a la izquierda una columna (`.touch-column`) con
+  la vida, los efectos y el chat; arriba al centro solo el lugar y la hora (la barra separa nombre, lugar, hora y compañía en partes); arriba a la
+  derecha tres medallones con ícono (mochila, mapa y menú). Cambiar y soltar objetivo van a la
+  izquierda de Atacar, y los atajos del arco quedan más separados para no pisarse.
+- Los reactivos (lo elegido en Opciones) van en una barra larga arriba, entre la vida y los
+  medallones; se arrastra desde su agarre a cualquier lugar (`ui/draggable.ts`, la misma pieza que
+  mueve el minimapa). En Opciones se apaga sin olvidar lo elegido (`infoBar`) y se vuelve a su lugar.
+- Puntos cardinales: el aro del minimapa lleva N, E, S y O en la diagonal que les toca (el minimapa
+  está girado como la vista: el norte arriba a la derecha); el mapa del mundo, con el norte arriba,
+  tiene una rosa de los vientos de bronce.
+- En la computadora, los reactivos también van en su propia barra, debajo de la de arriba, y se
+  arrastran igual; lo que va debajo (la vida, el minimapa) baja lo que ella ocupe mientras está en
+  su lugar.
+- Al girar el celular dentro de un marco (la app de Claude), el aviso de cambio de tamaño puede
+  llegar antes de tiempo o no llegar, y el juego quedaba con el tamaño de antes (agrandado). El
+  dibujador vigila el tamaño real de su contenedor (`ResizeObserver`) y se vuelve a medir solo.
+- Las ventanas con forma propia (el ataúd, la mochila de cuero, la bolsa…) no llevan marco: la
+  ventana es el dibujo, justa a su contorno. Arriba, una franja invisible para arrastrarla y el
+  medallón de cerrar en la esquina; el ataúd lleva sobre el pie una plaquita con el nombre y
+  "Tomar todo".
+- El joystick está despegado del borde (más cómodo hacia abajo y a la izquierda).
+- El minimapa es redondo y se arrastra a cualquier lugar (también en la computadora); el lugar se
+  guarda en fracciones de la pantalla (`fenix.minimapa.lugar`), así sirve al girar el celular.
+- El menú tiene título y medallón para cerrar, y botones justos a la palabra.
+- Línea estética común (regla del repo): paneles de cuero con marco de bronce, remaches en las
+  esquinas (`--rivet`), barra de título con costura dorada, cerrar como medallón, botones dorados
+  con bisel. La ventana de personaje pasó de piedra gris a nogal y bronce y se achica en pantallas
+  bajas.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

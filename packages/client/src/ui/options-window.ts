@@ -53,6 +53,8 @@ export class OptionsWindow {
     private readonly onChange: (options: GameOptions) => void,
     /** En el celular no hay teclado: la pestaña de atajos explica cómo hacerlo con el dedo. */
     private readonly touch: boolean,
+    /** Volver la barra de información a su lugar de siempre (si se la movió). */
+    private readonly resetInfoPlace: () => void = () => undefined,
   ) {
     this.options = initial;
     this.window = new GameWindow('opciones', 'Opciones', { x: 340, y: 90 });
@@ -126,10 +128,36 @@ export class OptionsWindow {
         el('span', { className: 'options-order' }, controls),
       ]);
     };
+    const visible = el('input', {
+      attrs: { type: 'checkbox', 'aria-label': 'Mostrar la barra de información' },
+    });
+    visible.checked = this.options.infoBar;
+    visible.addEventListener('change', () =>
+      this.change({ ...this.options, infoBar: visible.checked }),
+    );
+    const extras: HTMLElement[] = [];
+    if (this.touch) {
+      const back = el('button', {
+        className: 'button button--plaque',
+        text: 'Volver la barra a su lugar',
+        attrs: { type: 'button' },
+      });
+      back.addEventListener('click', () => this.resetInfoPlace());
+      extras.push(back);
+    }
     this.page.replaceChildren(
+      el('div', { className: 'options-info-head' }, [
+        el('label', { className: 'options-check options-check--main' }, [
+          visible,
+          document.createTextNode('Mostrar la barra de información'),
+        ]),
+        ...extras,
+      ]),
       el('p', {
         className: 'window-hint',
-        text: 'Lo que marques se ve en una línea arriba de todo, en este orden. Lo que se está acabando se pone rojo.',
+        text: this.touch
+          ? 'Lo que marques se ve en una línea arriba, en este orden; lo que se está acabando se pone rojo. Arrastrala del agarre (a su izquierda) para ponerla donde quieras.'
+          : 'Lo que marques se ve en una línea arriba de todo, en este orden. Lo que se está acabando se pone rojo.',
       }),
       el('ul', { className: 'options-list' }, [
         ...shown.map((key, i) => row(key, true, i)),

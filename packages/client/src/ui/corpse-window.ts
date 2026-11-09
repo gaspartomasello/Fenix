@@ -28,6 +28,8 @@ export class CorpseWindow {
   private readonly empty: HTMLElement;
   private readonly takeAll: HTMLElement;
   private corpseId: string | null = null;
+  /** De quién es el cuerpo: una plaquita sobre el pie del ataúd. */
+  private readonly nameplate: HTMLElement;
 
   constructor(
     private readonly drag: DragController,
@@ -48,19 +50,23 @@ export class CorpseWindow {
     this.empty = el('p', { className: 'coffin-empty', text: 'No queda nada.' });
     coffin.append(this.area, this.empty);
     const takeAll = (this.takeAll = el('button', {
-      className: 'paperdoll-button',
+      className: 'button button--plaque coffin-take',
       text: 'Tomar todo',
       attrs: { type: 'button' },
     }));
     takeAll.addEventListener('click', () => {
       if (this.corpseId) lootAll(this.corpseId);
     });
-    this.window.body.append(coffin, el('div', { className: 'window-actions' }, [takeAll]));
+    this.nameplate = el('span', { className: 'coffin-name' });
+    // La plaquita y "Tomar todo" van abajo, sobre el pie del ataúd.
+    coffin.append(el('div', { className: 'coffin-foot' }, [this.nameplate, takeAll]));
+    this.window.body.append(coffin);
   }
 
   render(corpse: CorpseContents): void {
     this.corpseId = corpse.corpseId;
     this.window.setTitle(`Cuerpo: ${corpse.name}`);
+    this.nameplate.textContent = corpse.name;
     // El cuerpo de un jugador se saquea de a un objeto, como en UO.
     this.takeAll.hidden = corpse.noTakeAll === true;
     this.empty.hidden = corpse.items.length > 0;

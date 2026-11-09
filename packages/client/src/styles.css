@@ -3456,3 +3456,1023 @@ body {
     overflow-x: auto;
   }
 }
+
+/* ── Etapa 84: el celular, mejor repartido ────────────────────────── */
+
+/* La barra de arriba: cada dato con su separador (con el dedo, solo el lugar y la hora). */
+.status-text > span + span::before {
+  content: ' · ';
+}
+
+/*
+ * Con el dedo, la pantalla se reparte en tres franjas arriba (la columna de
+ * la izquierda, la ubicación al centro y los botones a la derecha) y abajo los
+ * pulgares: el joystick, la barra de atajos al medio y Atacar con sus atajos.
+ */
+.touch-column {
+  position: absolute;
+  top: calc(4px + env(safe-area-inset-top, 0px));
+  left: var(--safe-left);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 168px;
+  pointer-events: none;
+}
+
+.touch-column > * {
+  pointer-events: auto;
+}
+
+.touch-ui .touch-column .vitals-panel,
+.touch-ui .touch-column .effects-bar,
+.touch-ui .touch-column .hidden-badge,
+.touch-ui .touch-column .chat-panel {
+  position: static;
+  top: auto;
+  left: auto;
+  transform: none;
+}
+
+.touch-ui .touch-column .vitals-panel {
+  order: 1;
+  width: 100%;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.66rem;
+}
+
+.touch-ui .touch-column .vital-row {
+  grid-template-columns: 3.2rem 1fr;
+}
+
+.touch-ui .touch-column .effects-bar {
+  order: 3;
+}
+
+.touch-ui .touch-column .hidden-badge {
+  order: 4;
+}
+
+/* El chat, abajo de todo eso: tres renglones, sin tapar las barras. */
+.touch-ui .touch-column .chat-panel {
+  order: 5;
+  width: min(250px, 34vw);
+  pointer-events: none;
+}
+
+.touch-ui .touch-column .chat-log {
+  max-height: 46px;
+  font-size: 0.64rem;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+/* La ubicación sola, arriba al centro, en una línea. */
+.touch-ui .status-bar {
+  max-width: calc(100vw - 2 * (var(--safe-right) + 186px));
+  padding: 0.15rem 0.6rem;
+  font-size: 0.7rem;
+}
+
+.touch-ui .status-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.touch-ui .status-name,
+.touch-ui .status-company {
+  display: none;
+}
+
+.touch-ui .status-place::before {
+  content: none;
+}
+
+/* Arriba a la derecha: botones justos a la palabra y el minimapa más chico abajo. */
+.touch-ui .touch-top {
+  gap: 4px;
+}
+
+.touch-ui .touch-top .touch-button {
+  min-width: 0;
+  min-height: 34px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.78rem;
+}
+
+.touch-ui .minimap {
+  top: calc(42px + env(safe-area-inset-top, 0px));
+  padding: 2px;
+}
+
+.touch-ui .minimap-canvas {
+  width: 92px;
+  height: 92px;
+}
+
+/* Cambiar y soltar objetivo, a la izquierda de Atacar (no arriba, donde está el minimapa). */
+.touch-ui .touch-actions {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.touch-ui .touch-side {
+  grid-auto-flow: row;
+  gap: 6px;
+  margin-bottom: 0;
+}
+
+.touch-ui .touch-small {
+  width: 40px;
+  height: 40px;
+}
+
+/* Los atajos alrededor de Atacar, más separados para que no se pisen. */
+.touch-attack-area {
+  --ring-radius: 94px;
+}
+
+/* El menú: con título y para cerrar, y los botones justos. */
+.touch-sheet-panel {
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  background: var(--color-panel);
+  border: 2px solid var(--color-panel-border);
+  border-radius: var(--radius);
+}
+
+.touch-sheet-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.2rem 0.3rem 0.2rem 0.7rem;
+  border-bottom: 1px solid rgba(201, 164, 92, 0.35);
+}
+
+.touch-ui .touch-sheet:not([hidden]) {
+  padding: 12px;
+}
+
+.touch-sheet-grid {
+  grid-template-columns: repeat(5, minmax(92px, 1fr));
+  gap: 6px;
+  padding: 8px;
+  background: none;
+  border: none;
+}
+
+.touch-sheet-button {
+  min-width: 0;
+  min-height: 40px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+@media (orientation: landscape) and (max-width: 760px) {
+  .touch-attack-area {
+    --ring-radius: 86px;
+  }
+
+  .touch-ui .hotbar {
+    --hotbar-slot: 34px;
+  }
+}
+
+/* Celular parado (si se juega igual): la ubicación abajo de los botones y el menú en tres columnas. */
+@media (orientation: portrait) {
+  .touch-ui .status-bar {
+    top: calc(42px + env(safe-area-inset-top, 0px));
+    right: calc(var(--safe-right) + 104px);
+    left: calc(var(--safe-left) + 176px);
+    max-width: none;
+    transform: none;
+  }
+
+  .touch-ui .touch-column .chat-panel {
+    width: calc(100vw - 24px);
+  }
+
+  .touch-sheet-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/*
+ * ── Etapa 84: línea estética de las ventanas ─────────────────────────
+ * Todas las ventanas, menús y paneles comparten un mismo oficio: cuero oscuro
+ * curtido, marco de bronce forjado con un filo dorado por dentro, remaches en
+ * las esquinas y títulos dorados con un brillo de brasa (el fénix). Nada de
+ * cajas lisas: cada pieza tiene que parecer hecha en el mundo del juego.
+ */
+:root {
+  --bronze-dark: #4a3216;
+  --bronze: #8a6a3a;
+  --bronze-light: #d6b06a;
+  --leather: #1f150d;
+  --leather-light: #2e2014;
+  --ember: rgba(255, 138, 40, 0.38);
+  --rivet: radial-gradient(
+    circle,
+    #f0d48c 0 1.2px,
+    #9a7438 1.8px,
+    #3a2810 2.6px,
+    transparent 3.2px
+  );
+}
+
+.panel {
+  background-color: var(--color-panel);
+  background-image:
+    var(--rivet), var(--rivet), var(--rivet), var(--rivet),
+    linear-gradient(180deg, rgba(255, 214, 150, 0.06), transparent 38%),
+    repeating-linear-gradient(118deg, rgba(255, 240, 210, 0.014) 0 2px, transparent 2px 6px);
+  background-size:
+    8px 8px,
+    8px 8px,
+    8px 8px,
+    8px 8px,
+    auto,
+    auto;
+  background-position:
+    2px 2px,
+    calc(100% - 2px) 2px,
+    2px calc(100% - 2px),
+    calc(100% - 2px) calc(100% - 2px),
+    0 0,
+    0 0;
+  background-repeat: no-repeat;
+  border: 2px solid var(--bronze);
+  border-color: var(--bronze-light) var(--bronze) var(--bronze-dark);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.75),
+    inset 0 0 0 2px rgba(214, 176, 106, 0.22),
+    inset 0 0 18px rgba(0, 0, 0, 0.45),
+    0 8px 24px rgba(0, 0, 0, 0.55);
+}
+
+/* La barra del título: una franja de cuero más oscuro con una costura dorada abajo. */
+.window-bar {
+  background: linear-gradient(180deg, #3a2716, #1e140b);
+  border-bottom: 1px solid #000;
+  box-shadow: 0 1px 0 rgba(214, 176, 106, 0.4);
+}
+
+.window-title {
+  letter-spacing: 0.14em;
+  color: #f3d58a;
+  text-shadow:
+    0 0 8px var(--ember),
+    0 1px 0 #000;
+}
+
+/* Cerrar: un medallón de bronce. */
+.window-close {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 0.8rem;
+  color: #f3d58a;
+  background: radial-gradient(circle at 35% 30%, #8a5a2a, #3a2410 70%);
+  border: 1px solid var(--bronze-light);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 230, 170, 0.35),
+    0 1px 2px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+}
+
+.window-close:hover,
+.window-close:focus-visible {
+  color: #fff4d0;
+  border-color: #f0d48c;
+  box-shadow:
+    0 0 8px var(--ember),
+    inset 0 1px 0 rgba(255, 230, 170, 0.35);
+}
+
+/* Los botones dorados: lingote con bisel. */
+.button {
+  border-color: #3a2810;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 245, 210, 0.6),
+    inset 0 -2px 0 rgba(90, 60, 20, 0.45),
+    0 2px 4px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1px 0 rgba(255, 240, 200, 0.45);
+}
+
+/* Botones de la computadora (Mochila, Personaje…): placas de cuero con filo de bronce. */
+.hud-button {
+  background: linear-gradient(180deg, var(--leather-light), var(--leather));
+  border: 1px solid var(--bronze);
+  box-shadow:
+    inset 0 1px 0 rgba(214, 176, 106, 0.25),
+    0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* ── Con el dedo: medallones arriba, minimapa redondo y joystick más adentro ── */
+
+.touch-ui .touch-top {
+  gap: 6px;
+}
+
+.touch-ui .touch-top .touch-medal {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  min-width: 0;
+  height: 38px;
+  min-height: 0;
+  padding: 0;
+  background: radial-gradient(circle at 35% 30%, #4a321c, #1a110a 72%);
+  border: 2px solid var(--bronze);
+  border-color: var(--bronze-light) var(--bronze) var(--bronze-dark);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.7),
+    inset 0 2px 3px rgba(255, 220, 160, 0.18),
+    0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.touch-ui .touch-top .touch-medal[aria-pressed='true'],
+.touch-ui .touch-top .touch-medal[aria-expanded='true'] {
+  background: radial-gradient(circle at 35% 30%, #6a4622, #2a1a0c 72%);
+  border-color: #f0d48c;
+  box-shadow:
+    0 0 10px var(--ember),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.7);
+}
+
+.touch-medal-icon {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+/* Las tres rayas del menú, grabadas en dorado. */
+.touch-medal-lines {
+  width: 16px;
+  height: 12px;
+  background: linear-gradient(
+    #f0d48c 0 2px,
+    transparent 2px 5px,
+    #f0d48c 5px 7px,
+    transparent 7px 10px,
+    #f0d48c 10px 12px
+  );
+  filter: drop-shadow(0 1px 0 #000);
+}
+
+/* El minimapa: redondo, con un aro de bronce y cuatro remaches; se arrastra. */
+.touch-ui .minimap,
+.minimap {
+  padding: 4px;
+  background: radial-gradient(circle, #2a1c10 60%, #120b06);
+  border: 2px solid var(--bronze);
+  border-color: var(--bronze-light) var(--bronze) var(--bronze-dark);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.8),
+    inset 0 0 0 3px rgba(214, 176, 106, 0.25),
+    0 4px 14px rgba(0, 0, 0, 0.55);
+  touch-action: none;
+  cursor: grab;
+}
+
+.minimap.dragging {
+  cursor: grabbing;
+  filter: drop-shadow(0 0 8px var(--ember));
+}
+
+.minimap-canvas,
+.touch-ui .minimap-canvas {
+  border-radius: 50%;
+}
+
+.touch-ui .minimap {
+  top: calc(48px + env(safe-area-inset-top, 0px));
+}
+
+.touch-ui .minimap-canvas {
+  width: 96px;
+  height: 96px;
+}
+
+/* El joystick, despegado del borde: el pulgar llega cómodo hacia abajo y a la izquierda. */
+.touch-ui .joystick {
+  left: calc(var(--safe-left) + 26px);
+  bottom: calc(var(--safe-bottom) + 18px);
+}
+
+/* El menú: placas de cuero grabadas, justas a la palabra. */
+.touch-sheet-panel {
+  background-color: var(--color-panel);
+  background-image:
+    var(--rivet), var(--rivet), var(--rivet), var(--rivet),
+    linear-gradient(180deg, rgba(255, 214, 150, 0.06), transparent 38%);
+  background-size:
+    8px 8px,
+    8px 8px,
+    8px 8px,
+    8px 8px,
+    auto;
+  background-position:
+    2px 2px,
+    calc(100% - 2px) 2px,
+    2px calc(100% - 2px),
+    calc(100% - 2px) calc(100% - 2px),
+    0 0;
+  background-repeat: no-repeat;
+  border-color: var(--bronze-light) var(--bronze) var(--bronze-dark);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.75),
+    inset 0 0 0 2px rgba(214, 176, 106, 0.22),
+    0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+.touch-sheet-bar {
+  background: linear-gradient(180deg, #3a2716, #1e140b);
+  border-bottom: 1px solid #000;
+  box-shadow: 0 1px 0 rgba(214, 176, 106, 0.4);
+}
+
+.touch-sheet-grid {
+  grid-template-columns: repeat(5, auto);
+  justify-content: center;
+}
+
+.touch-sheet-button {
+  min-height: 32px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  color: #f0e2bf;
+  background: linear-gradient(180deg, #3b2918, #22170d);
+  border: 1px solid var(--bronze);
+  border-radius: 3px;
+  box-shadow:
+    inset 0 1px 0 rgba(214, 176, 106, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.6),
+    0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.touch-sheet-button[aria-pressed='true'] {
+  color: #1c140e;
+  background: linear-gradient(#e7c878, #b8903f);
+}
+
+@media (orientation: portrait) {
+  .touch-sheet-grid {
+    grid-template-columns: repeat(3, auto);
+  }
+
+  .touch-ui .status-bar {
+    right: calc(var(--safe-right) + 132px);
+  }
+}
+
+/* El medallón de cerrar, también con el dedo, a la medida del título. */
+.touch-ui .window-close {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  min-height: 30px;
+}
+
+.touch-medal-icon {
+  width: 30px;
+  height: 30px;
+}
+
+/*
+ * Ventana de personaje con la misma línea: madera de nogal y bronce en vez de
+ * piedra gris, casilleros de cuero y botones como placas grabadas.
+ */
+.paperdoll {
+  background:
+    repeating-linear-gradient(
+      92deg,
+      rgba(255, 220, 170, 0.035) 0 3px,
+      rgba(0, 0, 0, 0.06) 3px 7px,
+      rgba(255, 220, 170, 0.02) 7px 11px
+    ),
+    linear-gradient(#4a3220, #2a1b10);
+  border: 3px solid var(--bronze-dark);
+  border-radius: 14px;
+  box-shadow:
+    inset 0 0 0 2px var(--bronze),
+    inset 0 0 0 3px rgba(0, 0, 0, 0.6),
+    inset 0 0 22px rgba(0, 0, 0, 0.6);
+}
+
+.paperdoll-slot {
+  background: radial-gradient(#33241a, #17100a);
+  border: 2px solid var(--bronze-dark);
+  border-radius: 5px;
+  box-shadow:
+    inset 0 0 6px rgba(0, 0, 0, 0.85),
+    0 1px 0 rgba(214, 176, 106, 0.2);
+}
+
+.paperdoll-slot--filled {
+  border-color: var(--bronze-light);
+}
+
+.paperdoll-sheet {
+  border-color: var(--bronze-dark);
+  box-shadow:
+    inset 0 0 0 1px var(--bronze),
+    inset 0 0 20px #000;
+}
+
+.paperdoll-button {
+  min-width: 0;
+  padding: 0.25rem 0.6rem;
+  font-weight: normal;
+  letter-spacing: 0.06em;
+  color: #f3d58a;
+  text-shadow: 0 1px 0 #000;
+  background: linear-gradient(180deg, #3b2918, #1f150c);
+  border: 1px solid var(--bronze);
+  border-radius: 3px;
+  box-shadow:
+    inset 0 1px 0 rgba(214, 176, 106, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.6),
+    0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.paperdoll-button:hover,
+.paperdoll-button:focus-visible {
+  border-color: #f0d48c;
+  box-shadow: 0 0 8px var(--ember);
+}
+
+.paperdoll-button[aria-pressed='true'] {
+  color: #fff0d0;
+  background: linear-gradient(#8a2a1c, #4a120c);
+  border-color: #ff9a6a;
+}
+
+.paperdoll-plate {
+  background: linear-gradient(#ead9b0, #c7b083);
+  border: 2px solid var(--bronze-dark);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 245, 220, 0.6),
+    inset 0 0 8px rgba(80, 60, 20, 0.5);
+}
+
+/* Pantallas bajas (el celular acostado): el personaje y sus casilleros más chicos, entra entero. */
+@media (max-height: 500px) {
+  .paperdoll-figure {
+    width: 117px;
+    height: 208px;
+  }
+
+  .paperdoll-slots {
+    grid-template-columns: repeat(2, 28px);
+    grid-template-rows: repeat(7, 28px);
+    gap: 0.2rem;
+  }
+
+  .paperdoll-slot,
+  .paperdoll-slot img {
+    width: 28px;
+    height: 28px;
+  }
+
+  .paperdoll-button {
+    padding: 0.15rem 0.45rem;
+    font-size: 0.66rem;
+  }
+}
+
+/* ── Etapa 84: reactivos a lo largo, arriba, y menú ajustado ──────── */
+
+/*
+ * Los reactivos (y lo que se elija en Opciones) van en una barra larga arriba,
+ * entre la vida y los medallones. Se arrastra desde su agarre a donde se quiera;
+ * en Opciones se apaga o se vuelve a su lugar.
+ */
+.touch-ui .info-strip {
+  position: absolute;
+  top: calc(4px + env(safe-area-inset-top, 0px));
+  left: calc(var(--safe-left) + 176px);
+  right: calc(var(--safe-right) + 136px);
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: auto;
+  padding: 2px 8px 2px 3px;
+}
+
+.touch-ui .info-strip--placed {
+  width: max-content;
+  max-width: calc(100vw - 20px);
+}
+
+.touch-ui .info-strip .info-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0 9px;
+  min-width: 0;
+  overflow-x: auto;
+  touch-action: pan-x;
+  scrollbar-width: none;
+  font-size: 0.66rem;
+}
+
+.touch-ui .info-strip .info-chip:has(.info-chip-label) {
+  grid-column: auto;
+}
+
+/* El agarre: dos hileras de puntos dorados, como clavos. */
+.info-strip-grip {
+  flex: none;
+  width: 12px;
+  height: 20px;
+  background: radial-gradient(circle, #e7c878 0 1.3px, transparent 1.6px) 0 0 / 6px 5px;
+  opacity: 0.8;
+  cursor: grab;
+  touch-action: none;
+}
+
+.info-strip.dragging {
+  filter: drop-shadow(0 0 8px var(--ember));
+}
+
+/* Con la barra en su lugar, la ubicación baja un renglón. */
+.touch-ui:has(.info-strip:not(.info-strip--placed) .info-bar:not([hidden])) .status-bar {
+  top: calc(36px + env(safe-area-inset-top, 0px));
+}
+
+/* El menú, ajustado a la letra: placas finas, sin aire de sobra. */
+.touch-ui .touch-sheet:not([hidden]) {
+  padding: 8px;
+}
+
+.touch-sheet-bar {
+  padding: 2px 4px 2px 10px;
+}
+
+.touch-sheet-bar .window-title {
+  font-size: 0.74rem;
+}
+
+.touch-ui .touch-sheet .window-close {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  min-height: 22px;
+  font-size: 0.7rem;
+}
+
+.touch-sheet-grid {
+  gap: 5px;
+  padding: 6px 8px 8px;
+}
+
+.touch-sheet-button {
+  min-height: 0;
+  padding: 3px 9px;
+  font-size: 0.74rem;
+  line-height: 1.25;
+}
+
+/*
+ * Placa de bronce: el botón secundario de las ventanas (el dorado queda para
+ * la acción principal). Fina, justa a la palabra.
+ */
+.button--plaque {
+  padding: 0.15rem 0.6rem;
+  font-size: 0.74rem;
+  font-weight: normal;
+  letter-spacing: 0.03em;
+  color: #f3d58a;
+  text-shadow: 0 1px 0 #000;
+  background: linear-gradient(180deg, #3b2918, #1f150c);
+  border: 1px solid var(--bronze);
+  box-shadow:
+    inset 0 1px 0 rgba(214, 176, 106, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.6),
+    0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.button--plaque:hover:not(:disabled),
+.button--plaque:focus-visible {
+  border-color: #f0d48c;
+  box-shadow: 0 0 8px var(--ember);
+  filter: none;
+}
+
+/* Los botones chicos de las ventanas, sin aire de sobra. */
+.button--small {
+  padding: 0.15rem 0.55rem;
+  font-size: 0.76rem;
+}
+
+/* Pestañas: solapas de cuero con el borde de bronce. */
+.tab {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+.tab[aria-selected='true'] {
+  background: linear-gradient(180deg, #3a2716, #1e140b);
+  border-color: var(--bronze);
+  text-shadow: 0 0 6px var(--ember);
+}
+
+/* Opciones: filas finas, casillas doradas y subir/bajar como medallones chicos. */
+.options-window {
+  width: min(360px, calc(100vw - 32px));
+}
+
+.options-info-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 8px;
+  margin-top: 0.3rem;
+}
+
+.options-row {
+  padding: 1px 0;
+  font-size: 0.8rem;
+}
+
+.options-check input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: #c9a45c;
+}
+
+.options-check--main {
+  color: var(--color-accent);
+}
+
+.options-order .button {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 0.72rem;
+  font-weight: normal;
+  color: #f3d58a;
+  background: radial-gradient(circle at 35% 30%, #5a3c20, #22160c 72%);
+  border: 1px solid var(--bronze);
+  border-radius: 50%;
+  box-shadow: inset 0 1px 0 rgba(255, 220, 160, 0.2);
+  text-shadow: none;
+}
+
+.options-order .button:disabled {
+  opacity: 0.35;
+}
+
+/* Puntos cardinales en el aro del minimapa (girado como la vista: el norte arriba a la derecha). */
+.minimap-cardinal {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  font:
+    700 9px Georgia,
+    serif;
+  line-height: 1;
+  color: #f3d58a;
+  background: radial-gradient(circle at 35% 30%, #4a321c, #160e07 75%);
+  border: 1px solid var(--bronze-light);
+  border-radius: 50%;
+  text-shadow: 0 1px 0 #000;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.minimap-cardinal[data-dir='N'] {
+  left: 85.4%;
+  top: 14.6%;
+  color: #ff9a6a;
+  border-color: #ff9a6a;
+}
+
+.minimap-cardinal[data-dir='E'] {
+  left: 85.4%;
+  top: 85.4%;
+}
+
+.minimap-cardinal[data-dir='S'] {
+  left: 14.6%;
+  top: 85.4%;
+}
+
+.minimap-cardinal[data-dir='O'] {
+  left: 14.6%;
+  top: 14.6%;
+}
+
+/* El mapa del mundo, en un marco de bronce con el título grabado. */
+.world-map-frame {
+  background-color: var(--color-panel);
+  border: 2px solid var(--bronze);
+  border-color: var(--bronze-light) var(--bronze) var(--bronze-dark);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.75),
+    inset 0 0 0 2px rgba(214, 176, 106, 0.22),
+    0 10px 30px rgba(0, 0, 0, 0.65);
+}
+
+.world-map-title {
+  color: #f3d58a;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 13px;
+  text-shadow:
+    0 0 8px var(--ember),
+    0 1px 0 #000;
+}
+
+.world-map-canvas {
+  border: 1px solid var(--bronze-dark);
+}
+
+/*
+ * En la computadora, los reactivos también van aparte: una barra larga justo
+ * debajo de la de arriba (que queda con el lugar y los botones). Se arrastra
+ * desde su agarre como en el celular.
+ */
+html:not(.touch-ui) .info-strip {
+  position: absolute;
+  top: calc(52px + env(safe-area-inset-top, 0px));
+  left: 12px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100vw - 24px - 230px);
+  padding: 2px 10px 2px 3px;
+}
+
+html:not(.touch-ui) .info-strip:has(.info-bar[hidden]) {
+  display: none;
+}
+
+html:not(.touch-ui) .info-strip .info-bar {
+  flex-wrap: wrap;
+  gap: 0 0.8rem;
+  padding: 0;
+  border: none;
+  font-size: 0.8rem;
+}
+
+html:not(.touch-ui) .info-strip .info-chip-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Botones de la barra de arriba: el prendido (guerra, mapa) arde como brasa, no rojo plano. */
+.hud-button[aria-pressed='true'] {
+  color: #fff0d0;
+  background: linear-gradient(180deg, #8a2a1c, #4a120c);
+  border-color: #f0a060;
+  box-shadow: 0 0 8px var(--ember);
+}
+
+/* Los botones "Usar" de las habilidades: placas chicas, no lingotes. */
+.skills-use {
+  padding: 0.05rem 0.45rem;
+  font-size: 0.7rem;
+  font-weight: normal;
+  color: #f3d58a;
+  text-shadow: 0 1px 0 #000;
+  background: linear-gradient(180deg, #3b2918, #1f150c);
+  border: 1px solid var(--bronze);
+  box-shadow: inset 0 1px 0 rgba(214, 176, 106, 0.3);
+}
+
+/* Personaje: los nombres de los botones entran enteros. */
+.paperdoll-button {
+  padding: 0.22rem 0.5rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* La columna de botones de Personaje se ensancha lo que pida la palabra más larga. */
+.paperdoll-buttons {
+  min-width: max-content;
+}
+
+/*
+ * ── Ventanas con forma propia (el ataúd, la mochila de cuero, la bolsa…) ──
+ * No llevan marco: la ventana es el dibujo y nada más, justa a su contorno.
+ * Arriba, una franja invisible para arrastrarla, con el medallón de cerrar en
+ * la esquina; el título se lee al pasar por encima (y lo leen los lectores).
+ */
+.game-window.panel.coffin-window,
+.game-window.panel.skinned-window {
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+.coffin-window .window-bar,
+.skinned-window .window-bar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  justify-content: flex-end;
+  padding: 3px 3px 0 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+.coffin-window .window-title,
+.skinned-window .window-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.coffin-window .window-close,
+.skinned-window .window-close,
+.touch-ui .coffin-window .window-close,
+.touch-ui .skinned-window .window-close {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  min-height: 22px;
+  font-size: 0.7rem;
+}
+
+.coffin-window .window-body,
+.skinned-window .window-body {
+  padding: 0;
+}
+
+/* La ayuda de abajo queda fuera del dibujo: en estas ventanas no se muestra. */
+.skinned-window .window-hint {
+  display: none;
+}
+
+/* Abajo del ataúd: de quién es y "Tomar todo", sobre el pie. */
+.coffin-foot {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  transform: translateX(-50%);
+}
+
+.coffin-name {
+  max-width: 120px;
+  overflow: hidden;
+  padding: 0 6px;
+  font-size: 0.66rem;
+  color: #f3d58a;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: rgba(20, 12, 6, 0.75);
+  border: 1px solid var(--bronze-dark);
+  border-radius: 2px;
+  text-shadow: 0 1px 0 #000;
+}
+
+.coffin-name:empty {
+  display: none;
+}
+
+.coffin-take {
+  white-space: nowrap;
+}
+
+.coffin-take[hidden] {
+  display: none;
+}
+
+/* En la mochila (y la bolsa), cerrar va en la esquina del cuero, no al lado de la solapa. */
+.skinned-window .window-bar {
+  top: 12%;
+  right: 3%;
+  left: auto;
+  padding: 0;
+}

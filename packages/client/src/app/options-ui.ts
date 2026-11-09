@@ -47,21 +47,23 @@ export interface OptionsUiDeps {
 export class OptionsUi {
   readonly window: OptionsWindow;
   readonly infoBar = new InfoBar();
+  /** Devuelve la barra de información a su lugar de siempre (si se puede mover). */
+  infoPlaceReset: (() => void) | null = null;
   private options: GameOptions;
 
   constructor(private readonly deps: OptionsUiDeps) {
     this.options = parseOptions(deps.read(STORAGE_KEY));
-    this.window = new OptionsWindow(this.options, (next) => this.change(next), deps.touch);
+    this.window = new OptionsWindow(
+      this.options,
+      (next) => this.change(next),
+      deps.touch,
+      () => this.infoPlaceReset?.(),
+    );
     deps.host.append(this.window.window.element);
     deps.game.on('inventoryChanged', () => this.renderInfo());
     deps.game.on('vitalsChanged', () => this.renderInfo());
     if (!deps.touch) {
       window.addEventListener('keydown', (e) => this.onKey(e), { capture: true });
-      // Lo que va debajo de la barra superior baja lo que ocupe la barra de información.
-      new ResizeObserver(() => {
-        const height = this.infoBar.element.hidden ? 0 : this.infoBar.element.offsetHeight;
-        document.documentElement.style.setProperty('--info-bar-height', `${height}px`);
-      }).observe(this.infoBar.element);
     }
     this.apply();
   }
@@ -90,7 +92,7 @@ export class OptionsUi {
   private renderInfo(): void {
     const { weight, max } = this.deps.game.load;
     this.infoBar.render(
-      infoChips(this.options.info, {
+      infoChips(this.options.infoBar ? this.options.info : [], {
         backpack: this.deps.game.inventory.backpack,
         carried: this.deps.game.inventory.carried,
         vitals: this.deps.game.vitals?.vitals ?? null,
