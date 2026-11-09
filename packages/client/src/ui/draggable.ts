@@ -19,7 +19,12 @@ export interface Draggable {
 export function makeDraggable(
   element: HTMLElement,
   storageKey: string,
-  options: { readonly handle?: HTMLElement; readonly placedClass?: string } = {},
+  options: {
+    readonly handle?: HTMLElement;
+    readonly placedClass?: string;
+    /** Se llama cuando cambia de lugar (al soltarlo o al volverlo a su lugar). */
+    readonly onChange?: () => void;
+  } = {},
 ): Draggable {
   const abort = new AbortController();
   const signal = abort.signal;
@@ -38,6 +43,7 @@ export function makeDraggable(
       bottom: 'auto',
     });
     if (options.placedClass) element.classList.add(options.placedClass);
+    options.onChange?.();
   };
 
   const save = (): void => {
@@ -105,6 +111,7 @@ export function makeDraggable(
     reset: () => {
       for (const side of ['left', 'top', 'right', 'bottom'] as const) element.style[side] = '';
       if (options.placedClass) element.classList.remove(options.placedClass);
+      options.onChange?.();
       try {
         localStorage.removeItem(storageKey);
       } catch {

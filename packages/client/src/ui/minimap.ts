@@ -45,7 +45,19 @@ export class Minimap {
           title: 'Tocalo para acercar o alejar; arrastralo para moverlo.',
         },
       },
-      [this.canvas],
+      [
+        this.canvas,
+        // Puntos cardinales en el aro. El minimapa está girado como la vista del
+        // juego: el norte (y que baja) queda arriba a la derecha, el este abajo a
+        // la derecha, el sur abajo a la izquierda y el oeste arriba a la izquierda.
+        ...(['N', 'E', 'S', 'O'] as const).map((letter) =>
+          el('span', {
+            className: 'minimap-cardinal',
+            text: letter,
+            attrs: { 'data-dir': letter, 'aria-hidden': 'true' },
+          }),
+        ),
+      ],
     );
     this.canvas.addEventListener(
       'wheel',

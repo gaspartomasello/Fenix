@@ -64,11 +64,6 @@ export class OptionsUi {
     deps.game.on('vitalsChanged', () => this.renderInfo());
     if (!deps.touch) {
       window.addEventListener('keydown', (e) => this.onKey(e), { capture: true });
-      // Lo que va debajo de la barra superior baja lo que ocupe la barra de información.
-      new ResizeObserver(() => {
-        const height = this.infoBar.element.hidden ? 0 : this.infoBar.element.offsetHeight;
-        document.documentElement.style.setProperty('--info-bar-height', `${height}px`);
-      }).observe(this.infoBar.element);
     }
     this.apply();
   }

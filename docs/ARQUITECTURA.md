@@ -1389,6 +1389,12 @@ ningún monumento real):
 - Los reactivos (lo elegido en Opciones) van en una barra larga arriba, entre la vida y los
   medallones; se arrastra desde su agarre a cualquier lugar (`ui/draggable.ts`, la misma pieza que
   mueve el minimapa). En Opciones se apaga sin olvidar lo elegido (`infoBar`) y se vuelve a su lugar.
+- Puntos cardinales: el aro del minimapa lleva N, E, S y O en la diagonal que les toca (el minimapa
+  está girado como la vista: el norte arriba a la derecha); el mapa del mundo, con el norte arriba,
+  tiene una rosa de los vientos de bronce.
+- En la computadora, los reactivos también van en su propia barra, debajo de la de arriba, y se
+  arrastran igual; lo que va debajo (la vida, el minimapa) baja lo que ella ocupe mientras está en
+  su lugar.
 - El joystick está despegado del borde (más cómodo hacia abajo y a la izquierda).
 - El minimapa es redondo y se arrastra a cualquier lugar (también en la computadora); el lugar se
   guarda en fracciones de la pantalla (`fenix.minimapa.lugar`), así sirve al girar el celular.

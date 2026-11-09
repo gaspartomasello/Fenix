@@ -343,25 +343,33 @@ export class GameSession {
     this.setUpVitals();
     const status = new StatusBar();
     if (this.hud) status.dock(this.hud.element);
+    // Los reactivos (lo elegido en Opciones), en su propia barra larga, aparte de
+    // la de arriba: se arrastra desde su agarre a donde se quiera.
+    const grip = el('span', {
+      className: 'info-strip-grip',
+      attrs: { 'aria-hidden': 'true', title: 'Arrastrá para moverla' },
+    });
+    const strip = el('div', { className: 'info-strip panel' }, [grip, options.infoBar.element]);
+    // En la computadora, lo que va debajo de la barra (la vida, el minimapa) baja lo
+    // que ocupe esta barra mientras está en su lugar.
+    const reserve = (): void => {
+      const away = strip.classList.contains('info-strip--placed') || options.infoBar.element.hidden;
+      document.documentElement.style.setProperty(
+        '--info-bar-height',
+        away ? '0px' : `${strip.offsetHeight + 4}px`,
+      );
+    };
+    const stripDrag = makeDraggable(strip, 'fenix.reactivos.lugar', {
+      handle: grip,
+      placedClass: 'info-strip--placed',
+      onChange: reserve,
+    });
+    options.infoPlaceReset = () => stripDrag.reset();
+    if (!touch) new ResizeObserver(reserve).observe(strip);
     if (this.touchColumn) {
-      // Con el dedo, la ubicación arriba al centro y los reactivos en su propio panel, a la izquierda.
-      // Los reactivos, en una barra larga arriba que se arrastra de su agarre a donde se quiera.
-      const grip = el('span', {
-        className: 'touch-info-grip',
-        attrs: { 'aria-hidden': 'true', title: 'Arrastrá para moverla' },
-      });
-      const strip = el('div', { className: 'touch-info panel' }, [grip, options.infoBar.element]);
-      const drag = makeDraggable(strip, 'fenix.reactivos.lugar', {
-        handle: grip,
-        placedClass: 'touch-info--placed',
-      });
-      options.infoPlaceReset = () => drag.reset();
       this.touchColumn.append(chat.element);
       this.hosts.ui.append(strip, status.element);
-    } else {
-      status.dock(options.infoBar.element);
-      this.hosts.ui.append(status.element, chat.element);
-    }
+    } else this.hosts.ui.append(status.element, strip, chat.element);
     this.game.on('log', (entry) => chat.append(entry));
     chat.append({ kind: 'system', text: 'Bienvenido a Fenix.' });
 

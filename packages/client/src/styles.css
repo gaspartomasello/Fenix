@@ -3507,41 +3507,6 @@ body {
   grid-template-columns: 3.2rem 1fr;
 }
 
-/* Los reactivos (y lo que se elija en Opciones), en su propio panel abajo de la vida. */
-.touch-info {
-  order: 2;
-  width: 100%;
-  padding: 0.2rem 0.35rem;
-}
-
-.touch-info:has(.info-bar[hidden]) {
-  display: none;
-}
-
-.touch-info .info-bar {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1px 4px;
-  padding: 0;
-  border: none;
-  font-size: 0.64rem;
-}
-
-.touch-info .info-chip {
-  gap: 1px;
-  min-width: 0;
-}
-
-/* Lo que va con nombre (peso, oro…) ocupa dos lugares. */
-.touch-info .info-chip:has(.info-chip-label) {
-  grid-column: span 2;
-}
-
-.touch-info .info-chip-icon {
-  width: 14px;
-  height: 14px;
-}
-
 .touch-ui .touch-column .effects-bar {
   order: 3;
 }
@@ -3880,19 +3845,6 @@ body {
   cursor: grab;
 }
 
-.minimap::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: 50%;
-  background:
-    var(--rivet) 50% 0 / 8px 8px no-repeat,
-    var(--rivet) 50% 100% / 8px 8px no-repeat,
-    var(--rivet) 0 50% / 8px 8px no-repeat,
-    var(--rivet) 100% 50% / 8px 8px no-repeat;
-  pointer-events: none;
-}
-
 .minimap.dragging {
   cursor: grabbing;
   filter: drop-shadow(0 0 8px var(--ember));
@@ -4107,7 +4059,7 @@ body {
  * entre la vida y los medallones. Se arrastra desde su agarre a donde se quiera;
  * en Opciones se apaga o se vuelve a su lugar.
  */
-.touch-ui .touch-info {
+.touch-ui .info-strip {
   position: absolute;
   top: calc(4px + env(safe-area-inset-top, 0px));
   left: calc(var(--safe-left) + 176px);
@@ -4120,12 +4072,12 @@ body {
   padding: 2px 8px 2px 3px;
 }
 
-.touch-ui .touch-info--placed {
+.touch-ui .info-strip--placed {
   width: max-content;
   max-width: calc(100vw - 20px);
 }
 
-.touch-ui .touch-info .info-bar {
+.touch-ui .info-strip .info-bar {
   display: flex;
   flex-wrap: nowrap;
   gap: 0 9px;
@@ -4136,12 +4088,12 @@ body {
   font-size: 0.66rem;
 }
 
-.touch-ui .touch-info .info-chip:has(.info-chip-label) {
+.touch-ui .info-strip .info-chip:has(.info-chip-label) {
   grid-column: auto;
 }
 
 /* El agarre: dos hileras de puntos dorados, como clavos. */
-.touch-info-grip {
+.info-strip-grip {
   flex: none;
   width: 12px;
   height: 20px;
@@ -4151,12 +4103,12 @@ body {
   touch-action: none;
 }
 
-.touch-info.dragging {
+.info-strip.dragging {
   filter: drop-shadow(0 0 8px var(--ember));
 }
 
 /* Con la barra en su lugar, la ubicación baja un renglón. */
-.touch-ui:has(.touch-info:not(.touch-info--placed) .info-bar:not([hidden])) .status-bar {
+.touch-ui:has(.info-strip:not(.info-strip--placed) .info-bar:not([hidden])) .status-bar {
   top: calc(36px + env(safe-area-inset-top, 0px));
 }
 
@@ -4285,4 +4237,137 @@ body {
 
 .options-order .button:disabled {
   opacity: 0.35;
+}
+
+/* Puntos cardinales en el aro del minimapa (girado como la vista: el norte arriba a la derecha). */
+.minimap-cardinal {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  font:
+    700 9px Georgia,
+    serif;
+  line-height: 1;
+  color: #f3d58a;
+  background: radial-gradient(circle at 35% 30%, #4a321c, #160e07 75%);
+  border: 1px solid var(--bronze-light);
+  border-radius: 50%;
+  text-shadow: 0 1px 0 #000;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.minimap-cardinal[data-dir='N'] {
+  left: 85.4%;
+  top: 14.6%;
+  color: #ff9a6a;
+  border-color: #ff9a6a;
+}
+
+.minimap-cardinal[data-dir='E'] {
+  left: 85.4%;
+  top: 85.4%;
+}
+
+.minimap-cardinal[data-dir='S'] {
+  left: 14.6%;
+  top: 85.4%;
+}
+
+.minimap-cardinal[data-dir='O'] {
+  left: 14.6%;
+  top: 14.6%;
+}
+
+/* El mapa del mundo, en un marco de bronce con el título grabado. */
+.world-map-frame {
+  background-color: var(--color-panel);
+  border: 2px solid var(--bronze);
+  border-color: var(--bronze-light) var(--bronze) var(--bronze-dark);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.75),
+    inset 0 0 0 2px rgba(214, 176, 106, 0.22),
+    0 10px 30px rgba(0, 0, 0, 0.65);
+}
+
+.world-map-title {
+  color: #f3d58a;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 13px;
+  text-shadow:
+    0 0 8px var(--ember),
+    0 1px 0 #000;
+}
+
+.world-map-canvas {
+  border: 1px solid var(--bronze-dark);
+}
+
+/*
+ * En la computadora, los reactivos también van aparte: una barra larga justo
+ * debajo de la de arriba (que queda con el lugar y los botones). Se arrastra
+ * desde su agarre como en el celular.
+ */
+html:not(.touch-ui) .info-strip {
+  position: absolute;
+  top: calc(52px + env(safe-area-inset-top, 0px));
+  left: 12px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100vw - 24px - 230px);
+  padding: 2px 10px 2px 3px;
+}
+
+html:not(.touch-ui) .info-strip:has(.info-bar[hidden]) {
+  display: none;
+}
+
+html:not(.touch-ui) .info-strip .info-bar {
+  flex-wrap: wrap;
+  gap: 0 0.8rem;
+  padding: 0;
+  border: none;
+  font-size: 0.8rem;
+}
+
+html:not(.touch-ui) .info-strip .info-chip-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Botones de la barra de arriba: el prendido (guerra, mapa) arde como brasa, no rojo plano. */
+.hud-button[aria-pressed='true'] {
+  color: #fff0d0;
+  background: linear-gradient(180deg, #8a2a1c, #4a120c);
+  border-color: #f0a060;
+  box-shadow: 0 0 8px var(--ember);
+}
+
+/* Los botones "Usar" de las habilidades: placas chicas, no lingotes. */
+.skills-use {
+  padding: 0.05rem 0.45rem;
+  font-size: 0.7rem;
+  font-weight: normal;
+  color: #f3d58a;
+  text-shadow: 0 1px 0 #000;
+  background: linear-gradient(180deg, #3b2918, #1f150c);
+  border: 1px solid var(--bronze);
+  box-shadow: inset 0 1px 0 rgba(214, 176, 106, 0.3);
+}
+
+/* Personaje: los nombres de los botones entran enteros. */
+.paperdoll-button {
+  padding: 0.22rem 0.5rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* La columna de botones de Personaje se ensancha lo que pida la palabra más larga. */
+.paperdoll-buttons {
+  min-width: max-content;
 }
