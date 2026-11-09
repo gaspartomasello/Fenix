@@ -1115,19 +1115,56 @@ function keepViewport(): void {
   );
   document.addEventListener('dblclick', stop, { passive: false });
   const meta = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
-  const reset = (): void => {
+  // Un campo invisible y de solo lectura: enfocarlo y soltarlo hace que Safari
+  // vuelva a calcular la escala (lo mismo que pasa al tocar el chat), sin
+  // abrir el teclado. Sirve también cuando el juego está dentro de un marco,
+  // donde Safari no hace caso a la etiqueta de la escala.
+  const nudge = document.createElement('input');
+  nudge.readOnly = true;
+  nudge.tabIndex = -1;
+  nudge.setAttribute('aria-hidden', 'true');
+  Object.assign(nudge.style, {
+    position: 'fixed',
+    top: '0',
+    left: '0',
+    width: '1px',
+    height: '1px',
+    opacity: '0',
+    fontSize: '16px',
+    pointerEvents: 'none',
+  });
+  document.body.append(nudge);
+  const settle = (): void => {
     const active = document.activeElement;
-    if (active instanceof HTMLElement && active.matches('input, textarea')) active.blur();
+    if (active instanceof HTMLElement && active.matches('input, textarea') && active !== nudge)
+      active.blur();
     if (meta) {
       // Cambiar la etiqueta obliga al navegador a volver a aplicarla.
       const content = meta.content;
       meta.content = 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0';
       window.requestAnimationFrame(() => (meta.content = content));
     }
+    nudge.focus({ preventScroll: true });
+    nudge.blur();
     window.scrollTo(0, 0);
+    // Que el juego (y lo que se acomoda al tamaño) mida de nuevo la pantalla.
+    window.dispatchEvent(new Event('resize'));
+  };
+  // Al girar, el navegador tarda en dar el tamaño nuevo: se acomoda varias veces
+  // mientras termina el giro.
+  let timers: number[] = [];
+  const reset = (): void => {
+    for (const t of timers) window.clearTimeout(t);
+    timers = [0, 250, 600, 1100].map((ms) => window.setTimeout(settle, ms));
   };
   screen.orientation?.addEventListener('change', reset);
   window.addEventListener('orientationchange', reset);
+  // Si quedó ampliado por cualquier otro motivo, también se vuelve a la medida.
+  window.visualViewport?.addEventListener('resize', () => {
+    // (Salvo mientras se escribe: no se le cierra el teclado a nadie.)
+    const typing = document.activeElement?.matches('input:not([readonly]), textarea') ?? false;
+    if (!typing && (window.visualViewport?.scale ?? 1) > 1.01) reset();
+  });
 }
 
 const HOTBAR_STORAGE_KEY = 'fenix.atajos';

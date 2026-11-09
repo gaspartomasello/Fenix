@@ -1395,6 +1395,10 @@ ningún monumento real):
 - En la computadora, los reactivos también van en su propia barra, debajo de la de arriba, y se
   arrastran igual; lo que va debajo (la vida, el minimapa) baja lo que ella ocupe mientras está en
   su lugar.
+- Al girar el celular, Safari puede dejar la página ampliada (sobre todo dentro de un marco, donde
+  no respeta la etiqueta de la escala). `keepViewport` acomoda varias veces mientras termina el giro:
+  vuelve a aplicar la escala, enfoca y suelta un campo invisible de solo lectura (lo que hace Safari
+  al tocar el chat, sin abrir el teclado) y avisa un cambio de tamaño para que el juego se mida de nuevo.
 - El joystick está despegado del borde (más cómodo hacia abajo y a la izquierda).
 - El minimapa es redondo y se arrastra a cualquier lugar (también en la computadora); el lugar se
   guarda en fracciones de la pantalla (`fenix.minimapa.lugar`), así sirve al girar el celular.
