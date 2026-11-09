@@ -2,7 +2,16 @@ import type { ClientMessage } from '@fenix/shared/protocol/messages';
 import { encodeMessage } from '@fenix/shared/protocol/codec';
 import { createGame } from './application/game';
 import { WorldClock } from './domain/world-clock';
-import { createWorld } from './infrastructure/content/world-builder';
+import {
+  planWorld,
+  worldFromBlueprint,
+  worldId,
+  type WorldBlueprint,
+  type WorldBuildOptions,
+} from './infrastructure/content/world-builder';
+import { packBlueprint, unpackBlueprint } from './infrastructure/persistence/blueprint-codec';
+
+export { packBlueprint, unpackBlueprint, type WorldBlueprint };
 import {
   KeyValueCharacterStore,
   type KeyValueStorage,
@@ -30,6 +39,28 @@ export interface EmbeddedServerOptions {
   readonly storage?: KeyValueStorage;
   /** Personajes de prueba: entran con todo al máximo. */
   readonly testCharacters?: readonly string[];
+  /** El mundo ya generado (guardado de antes): si está, no se genera de nuevo. */
+  readonly blueprint?: WorldBlueprint;
+}
+
+/** Las medidas y la semilla del mundo del modo solo. */
+function soloWorld(options: EmbeddedServerOptions): WorldBuildOptions {
+  return {
+    size: options.mapSize ?? 1400,
+    height: options.mapHeight ?? options.mapSize ?? 2000,
+    seed: options.mapSeed ?? 1997,
+  };
+}
+
+/** Qué mundo arman estas opciones (para saber si el guardado sirve). */
+export function soloWorldKey(options: EmbeddedServerOptions = {}): string {
+  const world = soloWorld(options);
+  return worldId(world, world.size, world.height ?? world.size);
+}
+
+/** Genera el mundo del modo solo (lo lento: hay que hacerlo una sola vez y guardarlo). */
+export function planSoloWorld(options: EmbeddedServerOptions = {}): WorldBlueprint {
+  return planWorld(soloWorld(options));
 }
 
 export type { KeyValueStorage };
@@ -48,14 +79,7 @@ export interface EmbeddedServer {
 
 export function createEmbeddedServer(options: EmbeddedServerOptions = {}): EmbeddedServer {
   const ids = new UuidGenerator();
-  const world = createWorld(
-    {
-      size: options.mapSize ?? 1400,
-      height: options.mapHeight ?? options.mapSize ?? 2000,
-      seed: options.mapSeed ?? 1997,
-    },
-    ids,
-  );
+  const world = worldFromBlueprint(options.blueprint ?? planSoloWorld(options), ids);
   const sessions = new SessionRegistry();
   const clock = new SystemClock();
   const app = createGame({

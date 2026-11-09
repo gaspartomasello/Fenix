@@ -3,7 +3,7 @@ import { HOUSE_SLOT } from '@fenix/shared/housing/structure';
 import type { Position } from '@fenix/shared/geometry/position';
 import type { StaticPlacement } from '@fenix/shared/world/statics';
 import { Terrain } from '@fenix/shared/world/terrain';
-import { TileMap } from '@fenix/shared/world/tile-map';
+import { TileMap, type TileMapData } from '@fenix/shared/world/tile-map';
 import type { IdGenerator } from '../../application/ports';
 import { Creature } from '../../domain/creatures/creature';
 import { Npc } from '../../domain/npcs/npc';
@@ -674,26 +674,57 @@ function slotsIn(from: Position, width: number, bottom: number): Position[] {
   return slots;
 }
 
+/**
+ * El plano del mundo, listo para guardar: todo lo que sale de generarlo
+ * (mapa, gente, objetos y criaturas con su casa), sin nada vivo todavía. El
+ * modo solo lo guarda en el navegador para no generarlo cada vez.
+ */
+export interface WorldBlueprint {
+  /** Medidas, semilla y versión: si cambia, los personajes guardados vuelven a la capital. */
+  readonly mapId: string;
+  readonly map: TileMapData;
+  readonly spawnPoint: Position;
+  readonly items: BuiltWorld['items'];
+  readonly npcs: BuiltWorld['npcs'];
+  readonly creatures: readonly { kind: CreatureKind; home: Position }[];
+  readonly houseSlots: readonly Position[];
+}
+
+/** El identificador del mundo que arman estas opciones (sin generarlo). */
+export function worldId(options: WorldBuildOptions, width: number, height: number): string {
+  return `${width}x${height}@${options.seed}#${WORLD_VERSION}`;
+}
+
+/** Genera el mundo y lo deja como plano (la parte lenta). */
+export function planWorld(options: WorldBuildOptions): WorldBlueprint {
+  const { map, spawnPoint, items, npcs, lairs, wildlife, houseSlots } = buildWorld(options);
+  return {
+    mapId: worldId(options, map.width, map.height),
+    map: map.toData(),
+    spawnPoint,
+    items,
+    npcs,
+    creatures: options.creatures === false ? [] : [...wildlife, ...lairs],
+    houseSlots,
+  };
+}
+
+/** Arma el mundo vivo a partir de su plano: el mapa, la gente, los objetos y las criaturas. */
+export function worldFromBlueprint(blueprint: WorldBlueprint, ids: IdGenerator): World {
+  const world = new World(new TileMap(blueprint.map), blueprint.spawnPoint, blueprint.mapId);
+  world.houseSlots = blueprint.houseSlots;
+  for (const { role, position, name } of blueprint.npcs)
+    world.addNpc(new Npc(ids.next(), role, position, name));
+  for (const { kind, amount, position } of blueprint.items)
+    world.items.add(ids.next(), kind, amount, { type: 'ground', position });
+  for (const { kind, home } of blueprint.creatures)
+    world.addCreature(new Creature(ids.next(), kind, home));
+  return world;
+}
+
 /** Crea el mundo listo para jugar, con los objetos sueltos del mapa en el suelo. */
 export function createWorld(options: WorldBuildOptions, ids: IdGenerator): World {
-  const { map, spawnPoint, items, npcs, lairs, wildlife, houseSlots } = buildWorld(options);
-  const world = new World(
-    map,
-    spawnPoint,
-    `${map.width}x${map.height}@${options.seed}#${WORLD_VERSION}`,
-  );
-  world.houseSlots = houseSlots;
-  for (const { role, position, name } of npcs)
-    world.addNpc(new Npc(ids.next(), role, position, name));
-  for (const { kind, amount, position } of items) {
-    world.items.add(ids.next(), kind, amount, { type: 'ground', position });
-  }
-  if (options.creatures !== false) {
-    for (const { kind, home } of [...wildlife, ...lairs]) {
-      world.addCreature(new Creature(ids.next(), kind, home));
-    }
-  }
-  return world;
+  return worldFromBlueprint(planWorld(options), ids);
 }
 
 /** Criaturas de cada sala de la mazmorra, más fuertes cuanto más hondo. */

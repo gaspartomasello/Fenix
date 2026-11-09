@@ -95,7 +95,14 @@ export class LoginScreen {
     for (const button of this.buttons) button.disabled = busy;
   }
 
+  /** Un aviso mientras se entra (no es un error). */
+  showProgress(message: string): void {
+    this.errorText.textContent = message;
+    this.errorText.classList.add('login-progress');
+  }
+
   showError(message: string): void {
+    this.errorText.classList.remove('login-progress');
     this.errorText.textContent = message;
     this.setBusy(false);
   }

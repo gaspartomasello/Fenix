@@ -158,6 +158,11 @@ body {
   color: var(--color-error);
 }
 
+/* Un aviso mientras se entra (el mundo se está creando): no es un error. */
+.login-error.login-progress {
+  color: var(--text-muted, #cbbf9f);
+}
+
 .swatch-row {
   display: flex;
   align-items: center;

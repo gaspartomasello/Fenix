@@ -1356,6 +1356,18 @@ ningún monumento real):
   (liche teñido de oro), con las paletas `linen` y `gold` de `ice-art.ts`.
 - Los calabozos de afuera se arman igual en `world-builder.ts` (`specials` y `dungeonLinks`).
 
+## El mundo del modo solo se guarda en el navegador (etapa 82)
+
+- Generar el mundo es lo lento. `planWorld` lo deja como **plano** (`WorldBlueprint`: el mapa, la
+  gente, los objetos y las criaturas con su casa) y `worldFromBlueprint` arma el mundo vivo desde ahí;
+  `createWorld` hace las dos cosas.
+- En el modo solo, `EmbeddedGateway` busca el plano en IndexedDB (`platform/world-cache.ts`). Si no
+  está, lo genera una vez (con el aviso "Creando el mundo por primera vez…"), lo empaqueta
+  (`blueprint-codec.ts`: terreno, alturas y objetos fijos en arreglos de números) y lo guarda. La
+  clave lleva el id del mundo y la marca de la compilación (`__FENIX_BUILD__`): una versión nueva
+  del juego genera el suyo. Si el navegador no deja guardar, anda igual (tarda como antes).
+- Medido en Chromium: la primera entrada ~17 s; las siguientes ~4 s hasta estar en el juego.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.
