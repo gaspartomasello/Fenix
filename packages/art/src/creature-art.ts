@@ -16,6 +16,7 @@ import { drawSummonFrame, isSummonKind } from './summon-art';
 import { drawMonsterFrame, isMonsterKind } from './monster-art';
 import { drawFaunaFrame, isFaunaArtKind } from './fauna-art';
 import { drawHumanFoeFrame, isHumanFoe } from './human-foe-art';
+import { FROST_VARIANTS, frosted } from './ice-art';
 import type { VolumeCanvas } from './volume';
 import { add, axesAlong, normalize, ramp, solid, tone, type Vec3 } from './volume';
 import { biteOffset, fur, gait, tailWag } from './creature-motion';
@@ -27,6 +28,9 @@ export function drawCreatureFrame(
   frame: CharacterFrame,
   canvasFor: CanvasFactory = spriteCanvas,
 ): PixelImage {
+  // Las de la nieve: el cuerpo de otra criatura, teñido de hielo o de nieve.
+  const frost = FROST_VARIANTS[kind];
+  if (frost) return frosted(drawCreatureFrame(frost.base, direction, frame, canvasFor), kind);
   if (kind === 'skeleton') return drawSkeletonFrame(direction, frame, canvasFor);
   if (isHumanFoe(kind)) return drawHumanFoeFrame(kind, direction, frame, canvasFor);
   if (isSummonKind(kind)) return drawSummonFrame(kind, direction, frame, canvasFor);

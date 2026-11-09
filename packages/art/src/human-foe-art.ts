@@ -2,14 +2,14 @@ import { DEFAULT_APPEARANCE, type Appearance } from '@fenix/shared/character/app
 import { CREATURES, type CreatureKind } from '@fenix/shared/creatures/creature-catalog';
 import type { Direction } from '@fenix/shared/geometry/direction';
 import type { MountKind } from '@fenix/shared/mounts/mount-catalog';
-import type { EquipmentLook } from '@fenix/shared/protocol/messages';
+import type { EquipmentHues, EquipmentLook } from '@fenix/shared/protocol/messages';
 import { drawCharacterFrame, type CharacterFrame } from './character-art';
 import { spriteCanvas, type CanvasFactory } from './humanoid-rig';
 import type { PixelImage } from './pixel-art';
 
 /** Humanos hostiles: personas como los jugadores (su ropa y sus armas, en el catálogo). */
 const HUMAN_FOES: Readonly<
-  Partial<Record<CreatureKind, { appearance: Appearance; mount?: MountKind }>>
+  Partial<Record<CreatureKind, { appearance: Appearance; mount?: MountKind; hues?: EquipmentHues }>>
 > = {
   // Bárbaro del norte: pelo largo rubio, barba, pecho de cuero y hacha de guerra.
   barbarian: {
@@ -87,6 +87,18 @@ const HUMAN_FOES: Readonly<
       clothHue: 0x7a4a22,
     },
   },
+  // Mago de escarcha: viejo, de pelo y barba blancos, túnica clara y capa de piel.
+  'frost-mage': {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      skinTone: 0xf1d6c0,
+      hairHue: 0xe8eef4,
+      hairStyle: 'long',
+      facialHair: 'long-beard',
+      clothHue: 0xc8d8ea,
+    },
+    hues: { torso: 0xd6e4f2, head: 0xd6e4f2 },
+  },
 };
 
 /** La montura de un humano hostil que anda montado (el jinete tribal), o null. */
@@ -115,5 +127,6 @@ export function drawHumanFoeFrame(
     // Muerto, queda tirado sin la montura.
     frame === 'dead' ? null : (look?.mount ?? null),
     canvasFor,
+    look?.hues ?? {},
   );
 }

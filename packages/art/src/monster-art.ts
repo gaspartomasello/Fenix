@@ -5,6 +5,7 @@ import { OUTLINE } from './character-art';
 import { ART_DETAIL, spriteCanvas, type CanvasFactory } from './humanoid-rig';
 import { mountLayout } from './mount-art';
 import { humanFoeMount } from './human-foe-art';
+import { FROST_VARIANTS } from './ice-art';
 import { biteOffset, gait } from './creature-motion';
 import { faunaLayout, isFaunaArtKind } from './fauna-art';
 import { GREAT_DRAGON_LAYOUT, GREAT_DRAGON_ZOOM, drawGreatDragon } from './dragon-art';
@@ -91,6 +92,8 @@ const COMMON: CreatureLayout = {
 const DRAGON_LAYOUT: CreatureLayout = { width: 128, height: 112, feetY: 104, headY: 18 };
 
 export function creatureLayout(kind: CreatureKind): CreatureLayout {
+  const frost = FROST_VARIANTS[kind];
+  if (frost) return creatureLayout(frost.base);
   if (isMountKind(kind)) {
     // Las monturas sueltas usan el lienzo de los jinetes.
     const layout = mountLayout(kind);
