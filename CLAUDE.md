@@ -1,6 +1,11 @@
 # Fenix — guía para trabajar en el repo
 
-MMORPG web inspirado en Ultima Online / Sphere. Leé `docs/ARQUITECTURA.md` antes de cambiar algo.
+MMORPG web inspirado en Ultima Online / Sphere.
+
+`docs/ARQUITECTURA.md` es muy largo: **no lo leas entero**. Antes de cambiar algo, leé la
+introducción (hasta `## @fenix/shared`), buscá los títulos con `^## ` y leé solo las secciones del
+paquete o la funcionalidad que vas a tocar. Lo mismo con los demás `docs/`: solo si la tarea los
+necesita. El historial de etapas está en `docs/ETAPAS.md`: abrilo solo si la tarea toca una de ellas.
 
 ## Reglas
 

@@ -134,6 +134,7 @@ packages/
 └── client/   Cliente web: core → render / UI / input / red
 docs/
 ├── ARQUITECTURA.md
+├── ETAPAS.md  Historial de las etapas recientes
 ├── DEPLOY.md  Cómo poner el servidor en línea
 └── MAPAS.md   Cómo diseñar mapas con Tiled
 ```
