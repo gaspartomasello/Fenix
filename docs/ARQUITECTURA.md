@@ -1380,6 +1380,22 @@ ningún monumento real):
 - A los 7 minutos el cuerpo se vuelve un montón de huesos (`player-bones`) con lo que quedaba
   adentro; a los otros 7 se deshace con todo.
 
+## El celular mejor repartido y la línea estética de las ventanas (etapa 84)
+
+- Con el dedo, la pantalla se reparte en franjas: a la izquierda una columna (`.touch-column`) con
+  la vida, los reactivos en su propio panel (`.touch-info`), los efectos y el chat; arriba al centro
+  solo el lugar y la hora (la barra separa nombre, lugar, hora y compañía en partes); arriba a la
+  derecha tres medallones con ícono (mochila, mapa y menú). Cambiar y soltar objetivo van a la
+  izquierda de Atacar, y los atajos del arco quedan más separados para no pisarse.
+- El joystick está despegado del borde (más cómodo hacia abajo y a la izquierda).
+- El minimapa es redondo y se arrastra a cualquier lugar (también en la computadora); el lugar se
+  guarda en fracciones de la pantalla (`fenix.minimapa.lugar`), así sirve al girar el celular.
+- El menú tiene título y medallón para cerrar, y botones justos a la palabra.
+- Línea estética común (regla del repo): paneles de cuero con marco de bronce, remaches en las
+  esquinas (`--rivet`), barra de título con costura dorada, cerrar como medallón, botones dorados
+  con bisel. La ventana de personaje pasó de piedra gris a nogal y bronce y se achica en pantallas
+  bajas.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

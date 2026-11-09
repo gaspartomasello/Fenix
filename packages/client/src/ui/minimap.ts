@@ -7,19 +7,27 @@ const SIZE = 196;
 /** Acercamientos posibles: pixeles por tile. */
 const ZOOMS = [1.2, 2, 3.2] as const;
 const STORAGE_KEY = 'fenix.minimapa';
+/** Dónde lo dejó el jugador, en fracciones de la pantalla (sirve si gira el celular). */
+const PLACE_KEY = 'fenix.minimapa.lugar';
+/** Cuánto hay que mover el dedo para que sea arrastrar y no tocar. */
+const DRAG_THRESHOLD = 8;
 
 /**
  * Minimapa: el mundo visto desde arriba, girado como la vista isométrica
  * (arriba en el minimapa es arriba en la pantalla), centrado en uno mismo.
  * Muestra a la gente cerca y los nombres de pueblos y lugares. La tecla M (o
  * su botón) pasa del minimapa al mapa del mundo y después lo cierra; el clic
- * derecho lo cierra y la rueda acerca o aleja.
+ * derecho lo cierra y la rueda acerca o aleja. Es redondo y se arrastra a
+ * cualquier lugar de la pantalla (recuerda dónde quedó).
  */
 export class Minimap {
   readonly element: HTMLElement;
   private readonly canvas: HTMLCanvasElement;
   private zoom = 1;
   private timer: number | null = null;
+  /** El último toque fue para arrastrarlo (no para acercar). */
+  private dragged = false;
+  private readonly abort = new AbortController();
 
   constructor(
     private readonly game: ClientGame,
@@ -32,7 +40,14 @@ export class Minimap {
     this.canvas.height = SIZE * ratio;
     this.element = el(
       'div',
-      { className: 'minimap', attrs: { role: 'img', 'aria-label': 'Minimapa' } },
+      {
+        className: 'minimap',
+        attrs: {
+          role: 'img',
+          'aria-label': 'Minimapa',
+          title: 'Tocalo para acercar o alejar; arrastralo para moverlo.',
+        },
+      },
       [this.canvas],
     );
     this.canvas.addEventListener(
@@ -46,6 +61,10 @@ export class Minimap {
     );
     // Tocar el minimapa cambia el acercamiento (en el celular no hay rueda).
     this.canvas.addEventListener('click', () => {
+      if (this.dragged) {
+        this.dragged = false;
+        return;
+      }
       this.zoom = (this.zoom + 1) % ZOOMS.length;
       this.draw();
     });
@@ -57,6 +76,9 @@ export class Minimap {
       this.onToggle();
     });
     this.setOpen(readOpen());
+    this.enableDrag();
+    requestAnimationFrame(() => this.restorePlace());
+    window.addEventListener('resize', () => this.restorePlace(), { signal: this.abort.signal });
   }
 
   get open(): boolean {
@@ -73,8 +95,81 @@ export class Minimap {
   }
 
   destroy(): void {
+    this.abort.abort();
     if (this.timer !== null) window.clearInterval(this.timer);
     this.element.remove();
+  }
+
+  /** Arrastrar con el dedo o el mouse: se mueve con él y queda donde se suelta. */
+  private enableDrag(): void {
+    const signal = this.abort.signal;
+    this.element.addEventListener(
+      'pointerdown',
+      (down) => {
+        if (down.button !== 0) return;
+        down.stopPropagation();
+        const start = this.element.getBoundingClientRect();
+        this.dragged = false;
+        const move = (e: PointerEvent): void => {
+          const dx = e.clientX - down.clientX;
+          const dy = e.clientY - down.clientY;
+          if (!this.dragged && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+          this.dragged = true;
+          this.element.classList.add('minimap--dragging');
+          this.place(start.left + dx, start.top + dy);
+        };
+        const up = (): void => {
+          window.removeEventListener('pointermove', move);
+          window.removeEventListener('pointerup', up);
+          window.removeEventListener('pointercancel', up);
+          this.element.classList.remove('minimap--dragging');
+          if (this.dragged) this.savePlace();
+        };
+        window.addEventListener('pointermove', move, { signal });
+        window.addEventListener('pointerup', up, { signal });
+        window.addEventListener('pointercancel', up, { signal });
+      },
+      { signal },
+    );
+  }
+
+  /** Lo pone con la esquina de arriba a la izquierda en (left, top), sin salirse de la pantalla. */
+  private place(left: number, top: number): void {
+    const width = this.element.offsetWidth || 120;
+    const height = this.element.offsetHeight || 120;
+    const x = Math.max(0, Math.min(window.innerWidth - width, left));
+    const y = Math.max(0, Math.min(window.innerHeight - height, top));
+    Object.assign(this.element.style, {
+      left: `${Math.round(x)}px`,
+      top: `${Math.round(y)}px`,
+      right: 'auto',
+      bottom: 'auto',
+    });
+  }
+
+  private savePlace(): void {
+    const rect = this.element.getBoundingClientRect();
+    try {
+      localStorage.setItem(
+        PLACE_KEY,
+        JSON.stringify({ x: rect.left / window.innerWidth, y: rect.top / window.innerHeight }),
+      );
+    } catch {
+      // Sin almacenamiento: queda ahí hasta recargar.
+    }
+  }
+
+  private restorePlace(): void {
+    try {
+      const saved = JSON.parse(localStorage.getItem(PLACE_KEY) ?? 'null') as {
+        x?: unknown;
+        y?: unknown;
+      } | null;
+      if (typeof saved?.x !== 'number' || typeof saved.y !== 'number') return;
+      this.place(saved.x * window.innerWidth, saved.y * window.innerHeight);
+    } catch {
+      // Lo guardado no sirve: queda en su lugar de siempre.
+    }
   }
 
   private setOpen(open: boolean): void {

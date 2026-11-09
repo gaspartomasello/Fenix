@@ -8,6 +8,8 @@ import type { GameGateway } from '../network/game-gateway';
 import { GameRenderer } from '../rendering/game-renderer';
 import { BackpackWindow } from '../ui/backpack-window';
 import { ChatPanel } from '../ui/chat-panel';
+import { el } from '../ui/dom';
+import { itemIconUrl } from '../ui/item-icons';
 import { DragController } from '../ui/drag-controller';
 import { EquipmentWindow } from '../ui/equipment-window';
 import { PaperdollViewer } from '../ui/paperdoll-viewer';
@@ -137,6 +139,8 @@ export class GameSession {
   private loggingOut = false;
   /** Los atajos alrededor de Atacar (solo con el dedo). */
   private attackRing: HTMLElement | null = null;
+  /** Con el dedo: la columna de la izquierda (vida, reactivos, efectos y chat, uno abajo del otro). */
+  private touchColumn: HTMLElement | null = null;
   /** Botones de pantalla que agregan otros módulos (hechizos, habilidades…). */
   private readonly hudExtras: HudButton[] = [];
   private hud: HudButtons | null = null;
@@ -338,8 +342,17 @@ export class GameSession {
     this.setUpVitals();
     const status = new StatusBar();
     if (this.hud) status.dock(this.hud.element);
-    status.dock(options.infoBar.element);
-    this.hosts.ui.append(status.element, chat.element);
+    if (this.touchColumn) {
+      // Con el dedo, la ubicación arriba al centro y los reactivos en su propio panel, a la izquierda.
+      this.touchColumn.append(
+        el('div', { className: 'touch-info panel' }, [options.infoBar.element]),
+        chat.element,
+      );
+      this.hosts.ui.append(status.element);
+    } else {
+      status.dock(options.infoBar.element);
+      this.hosts.ui.append(status.element, chat.element);
+    }
     this.game.on('log', (entry) => chat.append(entry));
     chat.append({ kind: 'system', text: 'Bienvenido a Fenix.' });
 
@@ -440,7 +453,14 @@ export class GameSession {
     hiddenBadge.textContent = 'Escondido';
     hiddenBadge.hidden = true;
     this.game.on('hiddenChanged', (hidden) => (hiddenBadge.hidden = !hidden));
-    this.hosts.ui.append(panel.element, effects.element, ghost.element, hiddenBadge);
+    if (document.documentElement.classList.contains('touch-ui')) {
+      this.touchColumn = el('div', { className: 'touch-column' }, [
+        panel.element,
+        effects.element,
+        hiddenBadge,
+      ]);
+      this.hosts.ui.append(this.touchColumn, ghost.element);
+    } else this.hosts.ui.append(panel.element, effects.element, ghost.element, hiddenBadge);
     this.game.on('effectsChanged', (state) => {
       effects.update(state);
       panel.setPoisoned(state.effects.some((e) => e.kind === 'poison'));
@@ -932,6 +952,7 @@ export class GameSession {
       stopAttack: () => this.game.stopAttack(),
       hasTarget: () => this.game.targetId !== null,
       quick,
+      icons: { Mochila: itemIconUrl('bag'), Mapa: itemIconUrl('treasure-map') },
       ring: this.attackRing,
       menu: [
         ...rest,

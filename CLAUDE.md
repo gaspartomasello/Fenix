@@ -23,6 +23,12 @@ MMORPG web inspirado en Ultima Online / Sphere. Leé `docs/ARQUITECTURA.md` ante
   ellos. Las referencias no se usan como entrada directa de un generador, salvo con influencia
   baja y comparando el resultado lado a lado. Arte propio: procedural, hecho con IA a partir de
   descripciones propias, o con licencia libre verificada. Dirección de arte: `docs/ARTE.md`. Ideas pendientes: `docs/IDEAS.md`.
+- **Interfaz con identidad (regla estricta)**: cada ventana, menú y panel (incluidas las de casas y
+  construcción) sigue la línea estética del juego: cuero oscuro y madera, marco de bronce forjado
+  con remaches, títulos dorados con brillo de brasa, botones como placas grabadas o medallones. Nada
+  de cajas o botones genéricos. Los botones van justos a su texto o ícono (sin espacio de sobra) y
+  todo tiene que entrar y verse bien en el celular acostado. Al tocar una ventana, se mejora su
+  aspecto. Las piezas comunes están en `styles.css` (sección "línea estética de las ventanas").
 - **Trabajo por etapas**: cada etapa en su rama y Pull Request.
 - Código en inglés; comentarios, UI y docs en español.
 - **Todo lo que ve el jugador va en español claro**, sin jerga de UO ni anglicismos. Glosario:
