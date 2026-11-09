@@ -512,6 +512,31 @@ describe('el calabozo de hielo, en la nieve del norte', () => {
   });
 });
 
+describe('la Tumba de los Reyes, en el desierto', () => {
+  const { map, lairs, places } = buildWorld({ size: 420, height: 600, seed: 1997 });
+  const door = places.find((p) => p.name === 'Entrada a la Tumba de los Reyes');
+
+  it('la escalinata del desierto baja a la tumba y la escalera de adentro vuelve', () => {
+    expect(door).toBeDefined();
+    if (!door) return;
+    const inside = map.teleportAt(door.center);
+    expect(inside && map.regionAt(inside)?.name).toBe('Tumba de los Reyes');
+    if (!inside) return;
+    expect(map.isWalkable(inside)).toBe(true);
+    // Desde la entrada se llega caminando a la cripta del rey y a la cámara en cruz.
+    const walk = reachable(map, inside);
+    const king = lairs.find((l) => l.kind === 'tomb-king');
+    const lich = lairs.find(
+      (l) => l.kind === 'lich' && map.regionAt(l.home)?.name === 'Tumba de los Reyes',
+    );
+    for (const l of [king, lich]) {
+      expect(l).toBeDefined();
+      if (l) expect(walk.has(`${l.home.x},${l.home.y}`)).toBe(true);
+    }
+    expect(lairs.filter((l) => l.kind === 'mummy').length).toBeGreaterThanOrEqual(5);
+  });
+});
+
 function median(values: readonly number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
   return sorted[Math.floor(sorted.length / 2)] ?? 0;

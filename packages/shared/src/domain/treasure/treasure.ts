@@ -102,6 +102,8 @@ export const TREASURE_MAP_DROPS: Readonly<
   'ice-elemental': { level: 3, chance: 0.12 },
   'frost-lich': { level: 4, chance: 0.5 },
   'ice-wyrm': { level: 4, chance: 0.6 },
+  mummy: { level: 2, chance: 0.08 },
+  'tomb-king': { level: 4, chance: 0.6 },
   pirate: { level: 2, chance: 0.15 },
   corsair: { level: 2, chance: 0.12 },
   troll: { level: 2, chance: 0.1 },
