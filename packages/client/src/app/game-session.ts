@@ -9,6 +9,7 @@ import { GameRenderer } from '../rendering/game-renderer';
 import { BackpackWindow } from '../ui/backpack-window';
 import { ChatPanel } from '../ui/chat-panel';
 import { el } from '../ui/dom';
+import { makeDraggable } from '../ui/draggable';
 import { itemIconUrl } from '../ui/item-icons';
 import { DragController } from '../ui/drag-controller';
 import { EquipmentWindow } from '../ui/equipment-window';
@@ -344,11 +345,19 @@ export class GameSession {
     if (this.hud) status.dock(this.hud.element);
     if (this.touchColumn) {
       // Con el dedo, la ubicación arriba al centro y los reactivos en su propio panel, a la izquierda.
-      this.touchColumn.append(
-        el('div', { className: 'touch-info panel' }, [options.infoBar.element]),
-        chat.element,
-      );
-      this.hosts.ui.append(status.element);
+      // Los reactivos, en una barra larga arriba que se arrastra de su agarre a donde se quiera.
+      const grip = el('span', {
+        className: 'touch-info-grip',
+        attrs: { 'aria-hidden': 'true', title: 'Arrastrá para moverla' },
+      });
+      const strip = el('div', { className: 'touch-info panel' }, [grip, options.infoBar.element]);
+      const drag = makeDraggable(strip, 'fenix.reactivos.lugar', {
+        handle: grip,
+        placedClass: 'touch-info--placed',
+      });
+      options.infoPlaceReset = () => drag.reset();
+      this.touchColumn.append(chat.element);
+      this.hosts.ui.append(strip, status.element);
     } else {
       status.dock(options.infoBar.element);
       this.hosts.ui.append(status.element, chat.element);

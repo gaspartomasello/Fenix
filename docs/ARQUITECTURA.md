@@ -1383,10 +1383,12 @@ ningún monumento real):
 ## El celular mejor repartido y la línea estética de las ventanas (etapa 84)
 
 - Con el dedo, la pantalla se reparte en franjas: a la izquierda una columna (`.touch-column`) con
-  la vida, los reactivos en su propio panel (`.touch-info`), los efectos y el chat; arriba al centro
-  solo el lugar y la hora (la barra separa nombre, lugar, hora y compañía en partes); arriba a la
+  la vida, los efectos y el chat; arriba al centro solo el lugar y la hora (la barra separa nombre, lugar, hora y compañía en partes); arriba a la
   derecha tres medallones con ícono (mochila, mapa y menú). Cambiar y soltar objetivo van a la
   izquierda de Atacar, y los atajos del arco quedan más separados para no pisarse.
+- Los reactivos (lo elegido en Opciones) van en una barra larga arriba, entre la vida y los
+  medallones; se arrastra desde su agarre a cualquier lugar (`ui/draggable.ts`, la misma pieza que
+  mueve el minimapa). En Opciones se apaga sin olvidar lo elegido (`infoBar`) y se vuelve a su lugar.
 - El joystick está despegado del borde (más cómodo hacia abajo y a la izquierda).
 - El minimapa es redondo y se arrastra a cualquier lugar (también en la computadora); el lugar se
   guarda en fracciones de la pantalla (`fenix.minimapa.lugar`), así sirve al girar el celular.

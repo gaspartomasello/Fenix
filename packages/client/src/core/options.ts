@@ -303,6 +303,8 @@ export function removeHotkey(hotkeys: readonly Hotkey[], combo: string): Hotkey[
 export interface GameOptions {
   /** Qué muestra la barra de información, en orden (vacía: no se muestra). */
   readonly info: readonly InfoKey[];
+  /** Si se ve la barra de información (apagarla no olvida lo elegido). */
+  readonly infoBar: boolean;
   /** Nombres sobre las cabezas. */
   readonly names: boolean;
   /** Números de daño y curación que saltan sobre las cabezas. */
@@ -318,6 +320,7 @@ export interface GameOptions {
 export function defaultOptions(): GameOptions {
   return {
     info: ['reagents', 'gold', 'weight', 'bandages'],
+    infoBar: true,
     names: true,
     numbers: true,
     minimap: true,
@@ -360,6 +363,7 @@ export function parseOptions(raw: string | null): GameOptions {
     : defaults.hotkeys;
   return {
     info: [...new Set(info)],
+    infoBar: flag('infoBar', defaults.infoBar),
     names: flag('names', defaults.names),
     numbers: flag('numbers', defaults.numbers),
     minimap: flag('minimap', defaults.minimap),
