@@ -10,7 +10,7 @@ import type { Notifier } from '../ports';
  * mochila, a su dueño; lo que alguien tiene puesto, a quienes lo ven.
  */
 export class ItemNotifications {
-  private readonly corpseWatchers: ((corpseId: EntityId) => void)[] = [];
+  private readonly corpseWatchers: ((corpseId: EntityId, actorId: EntityId) => void)[] = [];
   private readonly containerWatchers: ((containerId: string) => void)[] = [];
 
   constructor(
@@ -19,7 +19,7 @@ export class ItemNotifications {
   ) {}
 
   /** Avisar a quien muestra los cuerpos cuando cambia lo que hay dentro de uno. */
-  watchCorpses(watch: (corpseId: EntityId) => void): void {
+  watchCorpses(watch: (corpseId: EntityId, actorId: EntityId) => void): void {
     this.corpseWatchers.push(watch);
   }
 
@@ -55,7 +55,7 @@ export class ItemNotifications {
     for (const ownerId of owners) this.sendInventory(ownerId);
     for (const ownerId of changes.looks) this.sendLook(ownerId);
     for (const corpseId of changes.corpses)
-      for (const watch of this.corpseWatchers) watch(corpseId);
+      for (const watch of this.corpseWatchers) watch(corpseId, actorId);
     for (const containerId of changes.containers)
       for (const watch of this.containerWatchers) watch(containerId);
     if (changes.message) this.notifier.send(actorId, { type: 'system', text: changes.message });

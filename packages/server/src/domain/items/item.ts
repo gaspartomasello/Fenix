@@ -59,9 +59,23 @@ export class Item {
    */
   newbie = false;
 
+  /**
+   * El cuerpo (o los restos) de un jugador muerto: de quién es y si era
+   * inocente al morir (saquearlo es un crimen, salvo para el dueño).
+   */
+  corpse: { readonly name: string; readonly ownerId: EntityId; readonly innocent: boolean } | null =
+    null;
+
   /** Lo que el cliente ve además de tipo y cantidad. */
-  private get extra(): { mark?: RuneMark; bookTitle?: string; hue?: number; newbie?: true } {
+  private get extra(): {
+    mark?: RuneMark;
+    bookTitle?: string;
+    hue?: number;
+    newbie?: true;
+    corpseOf?: string;
+  } {
     return {
+      ...(this.corpse ? { corpseOf: this.corpse.name } : {}),
       ...(this.newbie ? { newbie: true as const } : {}),
       ...(this.mark ? { mark: this.mark } : {}),
       ...(this.book?.title ? { bookTitle: this.book.title } : {}),

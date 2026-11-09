@@ -152,6 +152,9 @@ export const BASE_ITEM_KINDS = [
   'blank-scroll',
   'rune',
   'moongate',
+  // El cuerpo de un jugador muerto, con lo que llevaba, y los restos en que se convierte.
+  'player-corpse',
+  'player-bones',
   // Muros y campos mágicos (fijos en el suelo, por un rato)
   'field-stone',
   'field-fire',
@@ -399,6 +402,19 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
   // Viajes: la runa guarda un lugar (con Marcar) y el portal lo abre Portal.
   rune: { name: 'runa', plural: 'runas', article: 'una', color: 0x8a7a9c },
   moongate: { name: 'portal', plural: 'portales', article: 'un', fixed: true, color: 0x4aa8ff },
+  'player-corpse': {
+    name: 'cuerpo',
+    plural: 'cuerpos',
+    article: 'un',
+    fixed: true,
+    color: 0x7a5a3a,
+  },
+  'player-bones': {
+    name: 'montón de huesos',
+    plural: 'montones de huesos',
+    article: 'un',
+    fixed: true,
+  },
   'field-stone': { name: 'muro de piedra', plural: 'muros de piedra', article: 'un', fixed: true },
   'field-fire': { name: 'campo de fuego', plural: 'campos de fuego', article: 'un', fixed: true },
   'field-poison': {

@@ -10,6 +10,8 @@ export function itemLabel(item: ItemSnapshot): string {
 
 function baseLabel(item: ItemSnapshot): string {
   const base = describeItem(item.kind, item.amount);
+  if (item.corpseOf)
+    return `${item.kind === 'player-bones' ? 'restos' : 'cuerpo'} de ${item.corpseOf}`;
   if (item.kind === 'book')
     return item.bookTitle ? `libro: «${item.bookTitle}»` : 'libro en blanco';
   if (item.kind !== 'rune') return base;

@@ -34,6 +34,9 @@ export class ItemLayer {
       sprite.scale.set(CHARACTER_SCALE);
       sprite.position.set(screen.x, screen.y - 4);
       sprite.zIndex = groundItemDepth(item.position);
+      // El cuerpo de un jugador, del tamaño de una persona.
+      if (item.kind === 'player-corpse' || item.kind === 'player-bones')
+        sprite.scale.set(CHARACTER_SCALE * 2.2);
       if (item.kind === 'moongate') {
         // El portal está parado y es alto como una persona: se apoya en el piso y brilla.
         sprite.anchor.set(0.5, 0.92);
