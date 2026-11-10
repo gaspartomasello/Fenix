@@ -1,6 +1,7 @@
 import { drawItem, itemVariant } from '@fenix/art';
 import type { ItemKind } from '@fenix/shared/items/item-catalog';
 import { toCanvas } from '../platform/canvas';
+import rawFishSprite from '../assets/raw-fish-88.png?inline';
 
 const cache = new Map<string, string>();
 
@@ -10,6 +11,8 @@ const cache = new Map<string, string>();
  * una montaña.
  */
 export function itemIconUrl(kind: ItemKind, amount = 1, hue?: number): string {
+  // Sprite de prueba: pequeño e incrustado para que el HTML del modo solo siga siendo un archivo.
+  if (kind === 'raw-fish') return rawFishSprite;
   const key = `${kind}:${itemVariant(kind, amount)}:${hue ?? ''}`;
   let url = cache.get(key);
   if (!url) {
