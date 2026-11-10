@@ -1,0 +1,68 @@
+# Fenix en un servidor propio (Oracle u otro): el juego, la dirección https y
+# las copias de seguridad. Se configura con el archivo .env (ver .env.ejemplo)
+# y se levanta con `docker compose up -d --build`. Guía: docs/SERVIDOR.md.
+services:
+  # El juego: sirve la página y el WebSocket en el puerto 3000 (solo adentro).
+  fenix:
+    build: .
+    restart: unless-stopped
+    environment:
+      DATA_DIR: /data
+      MAP_SEED: ${MAP_SEED:-1997}
+      ADMINS: ${ADMINS:-}
+      TEST_CHARACTERS: ${TEST_CHARACTERS:-}
+    volumes:
+      - datos:/data
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:3000/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 120s
+      retries: 3
+    # Al apagar, el juego guarda todo: se le da tiempo.
+    stop_grace_period: 30s
+
+  # La puerta de entrada: https con certificado gratis (Let's Encrypt) y el WebSocket.
+  caddy:
+    image: caddy:2.8
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      DOMINIO: ${DOMINIO:?Falta DOMINIO en .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-datos:/data
+    depends_on:
+      - fenix
+
+  # Copias de seguridad: cada hora en el servidor (quedan las últimas 48) y,
+  # si está configurado, una vez por día afuera (Cloudflare R2 u otro S3).
+  copias:
+    image: rclone/rclone:1.68
+    restart: unless-stopped
+    entrypoint: ['/bin/sh', '/copias.sh']
+    environment:
+      COPIAS_REMOTO: ${COPIAS_REMOTO:-}
+      RCLONE_CONFIG_REMOTO_TYPE: s3
+      RCLONE_CONFIG_REMOTO_PROVIDER: ${COPIAS_PROVEEDOR:-Cloudflare}
+      RCLONE_CONFIG_REMOTO_ACCESS_KEY_ID: ${COPIAS_CLAVE_ID:-}
+      RCLONE_CONFIG_REMOTO_SECRET_ACCESS_KEY: ${COPIAS_CLAVE_SECRETA:-}
+      RCLONE_CONFIG_REMOTO_ENDPOINT: ${COPIAS_ENDPOINT:-}
+      RCLONE_CONFIG_REMOTO_NO_CHECK_BUCKET: 'true'
+    volumes:
+      - ./deploy/copias.sh:/copias.sh:ro
+      - datos:/data:ro
+      - copias:/copias
+
+volumes:
+  datos:
+  copias:
+  caddy-datos:

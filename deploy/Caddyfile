@@ -1,0 +1,6 @@
+# La dirección del juego, con https automático (Let's Encrypt). DOMINIO sale de .env:
+# un dominio propio, o la IP del servidor con guiones + .sslip.io (gratis, sin comprar nada).
+{$DOMINIO} {
+	encode gzip
+	reverse_proxy fenix:3000
+}
