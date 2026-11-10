@@ -1,3 +1,4 @@
+import { creatureStepMs } from '@fenix/shared/creatures/creature-pace';
 import { REGEN_INTERVAL_MS } from '@fenix/shared/combat/vitals';
 import { wearsMetalArmor } from '@fenix/shared/combat/weapons';
 import { step } from '@fenix/shared/geometry/direction';
@@ -465,8 +466,14 @@ export class GameLoop {
     }
     if (now >= creature.nextMoveAt && !creature.combat.isParalyzed) {
       const direction = chooseStep(creature, target, this.world, this.roll);
-      creature.nextMoveAt =
-        now + creature.definition.moveMs * (direction === null && !target ? 3 : 1);
+      // Cada una con su paso; las que pelean cuerpo a cuerpo persiguen más despacio
+      // (las invocaciones y monturas siguen a su dueño a su paso de siempre).
+      const stepMs = creatureStepMs(
+        creature.definition,
+        creature.id,
+        target !== null && !creature.ownerId,
+      );
+      creature.nextMoveAt = now + stepMs * (direction === null && !target ? 3 : 1);
       if (direction !== null && canMoveTo(creature, direction, this.world)) {
         const watchersBefore = this.mobiles.watchers(creature);
         creature.position = step(creature.position, direction);
