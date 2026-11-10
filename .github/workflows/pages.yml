@@ -32,7 +32,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:solo
-      - run: mkdir -p sitio && cp packages/client/dist-solo/fenix.html sitio/index.html
+      # La página, y al lado lo que la hace aplicación en el celular: el manifiesto y los íconos.
+      - run: |
+          mkdir -p sitio
+          cp packages/client/dist-solo/fenix.html sitio/index.html
+          cp -r packages/client/dist-solo/manifest.webmanifest packages/client/dist-solo/icons packages/client/dist-solo/favicon.svg sitio/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
