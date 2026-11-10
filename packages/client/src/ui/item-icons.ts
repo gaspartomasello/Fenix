@@ -1,7 +1,7 @@
 import { drawItem, itemVariant } from '@fenix/art';
 import type { ItemKind } from '@fenix/shared/items/item-catalog';
 import { toCanvas } from '../platform/canvas';
-import rawFishSprite from '../assets/raw-fish-88.png?inline';
+import rawFishSprite from '../assets/raw-fish-72.png?inline';
 
 const cache = new Map<string, string>();
 

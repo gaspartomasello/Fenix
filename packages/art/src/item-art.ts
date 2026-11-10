@@ -2166,7 +2166,11 @@ export function drawItem(
   else if (definition.spell)
     scroll(canvas, ramp(CIRCLE_RIBBON[SPELLS[definition.spell].circle - 1] ?? [200, 60, 50]));
   else MODELS[kind as BaseItemKind](canvas, color);
-  return canvas.toImage(OUTLINE);
+  const image = canvas.toImage(OUTLINE);
+  // En el suelo el dibujo es pequeño y compite con el terreno: un segundo
+  // píxel oscuro hace que la silueta se lea sin agregar trabajo por cuadro.
+  if (style === 'ground') image.outline([12, 9, 8], 0.95);
+  return image;
 }
 
 // ── Etapa 59: katana, mangual, escudos grandes y armaduras samurái, legionaria y templaria ──
