@@ -6,6 +6,7 @@ import { isItemKind } from '../domain/items/item-catalog';
 import { BOOK_PAGES, cleanBookPage, cleanBookTitle } from '../domain/items/books';
 import { isDyeHue } from '../domain/items/dyes';
 import { isPolymorphForm, isSpellKey } from '../domain/magic/spell-catalog';
+import { isSkillKey, isSkillDirection } from '../domain/skills/skill-catalog';
 import { isActiveSkill } from '../domain/skills/stealth';
 import { isTrackingCategory } from '../domain/skills/tracking';
 import { isMountKind } from '../domain/mounts/mount-catalog';
@@ -426,6 +427,13 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
     case 'followTrack':
       if (isId(data.targetId))
         return { ok: true, message: { type: 'followTrack', targetId: data.targetId } };
+      break;
+    case 'setSkillDirection':
+      if (isSkillKey(data.skill) && isSkillDirection(data.direction))
+        return {
+          ok: true,
+          message: { type: 'setSkillDirection', skill: data.skill, direction: data.direction },
+        };
       break;
     case 'useSkill':
       if (isActiveSkill(data.skill))

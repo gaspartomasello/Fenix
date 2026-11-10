@@ -37,6 +37,10 @@ export const SKILL_KEYS = [
 
 export type SkillKey = (typeof SKILL_KEYS)[number];
 export type SkillValues = Readonly<Record<SkillKey, number>>;
+export type SkillDirection = 'up' | 'down' | 'lock';
+export type SkillDirections = Readonly<Partial<Record<SkillKey, SkillDirection>>>;
+export const isSkillDirection = (value: unknown): value is SkillDirection =>
+  value === 'up' || value === 'down' || value === 'lock';
 
 export const SKILL_NAMES: Readonly<Record<SkillKey, string>> = {
   wrestling: 'Lucha',

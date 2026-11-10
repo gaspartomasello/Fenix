@@ -14,6 +14,7 @@ import {
   STARTING_SKILLS,
   type SkillKey,
   type SkillValues,
+  type SkillDirections,
 } from '@fenix/shared/skills/skill-catalog';
 import {
   SKILL_STATS,
@@ -59,6 +60,7 @@ export interface PlayerProps {
   readonly direction: Direction;
   /** Habilidades guardadas; un personaje nuevo empieza con las iniciales. */
   readonly skills?: SkillValues;
+  readonly skillDirections?: SkillDirections;
   /** Atributos guardados (fuerza, destreza, inteligencia). */
   readonly attributes?: Attributes;
 }
@@ -119,8 +121,10 @@ export class Player implements Mobile {
     this.name = props.name;
     this.appearance = props.appearance;
     this.combat = new Combatant(props.attributes ?? PLAYER_ATTRIBUTES);
-    this.skills = new SkillSet(props.skills ?? STARTING_SKILLS, (key, random) =>
-      this.trainAttributes(key, random),
+    this.skills = new SkillSet(
+      props.skills ?? STARTING_SKILLS,
+      (key, random) => this.trainAttributes(key, random),
+      props.skillDirections,
     );
     this._position = props.position;
     this._direction = props.direction;

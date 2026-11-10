@@ -69,7 +69,11 @@ export class MobileNotifications {
   }
 
   sendSkills(player: Player): void {
-    this.notifier.send(player.id, { type: 'skills', values: player.skills.snapshot() });
+    this.notifier.send(player.id, {
+      type: 'skills',
+      values: player.skills.snapshot(),
+      directions: player.skills.directionsSnapshot(),
+    });
   }
 
   /** Avisa cada habilidad que subió y manda la lista actualizada. */

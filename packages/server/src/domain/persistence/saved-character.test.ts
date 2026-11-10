@@ -33,4 +33,33 @@ describe('personaje guardado y cambio de mundo', () => {
     const other = restoreCharacter(saved, worldWithId('mundo-nuevo'), id, () => 0, 0);
     expect(Math.abs(other.position.x - 2) + Math.abs(other.position.y - 2)).toBeLessThan(6);
   });
+  it('guarda las flechas y conserva el valor por defecto de personajes viejos', () => {
+    const world = worldWithId('mundo');
+    const player = world.spawn({ id: 'p1', name: 'Ana', appearance: DEFAULT_APPEARANCE }, () => 0);
+    player.skills.setDirection('fishing', 'down');
+    player.skills.setDirection('magery', 'lock');
+    const saved = parseSavedCharacter(
+      JSON.parse(JSON.stringify(captureCharacter(player, world, null))),
+    );
+    if (!saved) throw new Error('no se pudo leer');
+    const restored = restoreCharacter(
+      saved,
+      worldWithId('mundo'),
+      () => 'p2',
+      () => 0,
+      0,
+    );
+    expect(restored.skills.direction('fishing')).toBe('down');
+    expect(restored.skills.direction('magery')).toBe('lock');
+    const old = { ...saved };
+    delete old.skillDirections;
+    const legacy = restoreCharacter(
+      old,
+      worldWithId('mundo'),
+      () => 'p3',
+      () => 0,
+      0,
+    );
+    expect(legacy.skills.direction('fishing')).toBe('up');
+  });
 });

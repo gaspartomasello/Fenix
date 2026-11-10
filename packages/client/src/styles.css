@@ -5165,3 +5165,30 @@ html:not(.touch-ui) .info-strip .info-chip-icon {
   padding: 4px;
   gap: 0;
 }
+
+/* Dirección de entrenamiento, en la línea estética de cuero y bronce. */
+.skills-direction {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-left: 0.4rem;
+  padding: 0;
+  color: #82d9ab;
+  background: #352719;
+  border: 1px solid #a17a43;
+  border-radius: 3px;
+  cursor: pointer;
+  vertical-align: middle;
+  touch-action: manipulation;
+}
+.skills-direction--down {
+  color: #e79c77;
+}
+.skills-direction--lock {
+  color: #eccb7a;
+  font-size: 0.78rem;
+}
+.skills-direction:focus-visible {
+  outline: 2px solid #eccb7a;
+}

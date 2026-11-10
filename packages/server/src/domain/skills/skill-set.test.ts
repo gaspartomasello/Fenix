@@ -37,4 +37,23 @@ describe('SkillSet', () => {
     expect(almostCapped.total).toBe(10000);
     expect(almostCapped.tryGain('magery', () => 0)).toBe(false);
   });
+  it('intercambia puntos al llegar al tope, sin tocar habilidades bloqueadas', () => {
+    const zero = Object.fromEntries(SKILL_KEYS.map((key) => [key, 0])) as typeof STARTING_SKILLS;
+    const values = {
+      ...zero,
+      ...Object.fromEntries(SKILL_KEYS.slice(0, 10).map((key) => [key, 1000])),
+    };
+    const skills = new SkillSet(values);
+    skills.setDirection('wrestling', 'down');
+    skills.setDirection('swordsmanship', 'lock');
+    expect(skills.tryGain('magery', () => 1)).toBe(false);
+    expect(skills.get('wrestling')).toBe(1000);
+    expect(skills.tryGain('magery', () => 0)).toBe(true);
+    expect(skills.get('magery')).toBe(10);
+    expect(skills.get('wrestling')).toBe(990);
+    expect(skills.get('swordsmanship')).toBe(1000);
+    expect(skills.total).toBe(10000);
+    expect(skills.tryGain('wrestling', () => 0)).toBe(false);
+    expect(skills.tryGain('swordsmanship', () => 0)).toBe(false);
+  });
 });

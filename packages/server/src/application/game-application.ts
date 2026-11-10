@@ -76,7 +76,15 @@ export class GameApplication {
     // Las habilidades con botón las reparte el núcleo entre los módulos que las registraron.
     this.register({
       name: 'habilidades',
-      handles: { useSkill: (playerId, m) => kernel.skills.use(m.skill, playerId, m.targetId) },
+      handles: {
+        useSkill: (playerId, m) => kernel.skills.use(m.skill, playerId, m.targetId),
+        setSkillDirection: (playerId, m) => {
+          const player = kernel.world.get(playerId);
+          if (!player) return;
+          player.skills.setDirection(m.skill, m.direction);
+          kernel.mobiles.sendSkills(player);
+        },
+      },
     });
     this.modules = modules.map((build) => build(kernel));
     for (const module of this.modules) this.register(module);
