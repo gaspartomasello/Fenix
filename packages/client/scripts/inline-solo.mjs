@@ -22,17 +22,40 @@ const style = styleHref ? await readFile(join(dist, styleHref), 'utf8') : '';
 const viewport = html.match(/<meta\s+name="viewport"[^>]*>/s)?.[0];
 if (!viewport) throw new Error('No se encontró la etiqueta viewport en index.html');
 
-const page = `<title>Fenix</title>
+// Las etiquetas que hacen de la página una aplicación al agregarla a la
+// pantalla de inicio (sin barras del navegador, con su ícono): las mismas de
+// index.html, más el manifiesto y el ícono, que se publican al lado.
+const appMeta = [
+  ...html.matchAll(
+    /<meta\s+name="(?:mobile-web-app-capable|apple-mobile-web-app-[a-z-]+|theme-color)"[^>]*>/gs,
+  ),
+]
+  .map((m) => m[0].replace(/\s+/g, ' '))
+  .join('\n');
+
+const page = `<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Fenix</title>
 <meta name="description" content="Fenix — MMORPG web, modo solo" />
 ${viewport.replace(/\s+/g, ' ')}
+${appMeta}
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icons/fenix-180.png" />
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
 <style>
 ${style}
 </style>
+</head>
+<body>
 <div id="game"></div>
 <div id="ui"></div>
 <script type="module">
 ${script}
 </script>
+</body>
+</html>
 `;
 
 const out = join(dist, 'fenix.html');

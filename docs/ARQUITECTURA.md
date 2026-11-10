@@ -1470,6 +1470,19 @@ ningún monumento real):
 - El iPhone no tiene pantalla completa para páginas: la primera vez se muestra un aviso para
   agregarlo a la pantalla de inicio, donde se abre como aplicación, sin barras.
 
+## Fenix como aplicación en el celular (etapa 92)
+
+- La página publicada lleva lo que la hace aplicación al agregarla a la pantalla de inicio:
+  `manifest.webmanifest` (pantalla completa, acostada, con ícono) y las etiquetas de Apple
+  (`apple-mobile-web-app-capable`, `apple-touch-icon`). Sin esto, el iPhone guardaba un acceso
+  directo común que se abría en el navegador, con sus barras.
+- Los íconos (`public/icons/`) son propios: un ave fénix de alas de fuego abiertas, sobre brasa y
+  con borde de bronce.
+- `scripts/inline-solo.mjs` arma la página completa (doctype, head y body) y GitHub Pages publica
+  al lado el manifiesto y los íconos.
+- Lo ya agregado antes de esto hay que borrarlo y volver a agregarlo (desde Safari) para que el
+  iPhone lo tome como aplicación.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.
