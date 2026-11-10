@@ -64,7 +64,13 @@ import { OptionsUi } from './options-ui';
 import { RunePicker } from '../ui/rune-picker';
 import { PolymorphPicker } from '../ui/polymorph-picker';
 import { Joystick } from '../input/joystick';
-import { TouchHud, enterFullscreen, prefersTouch } from '../ui/touch-hud';
+import { TouchHud, prefersTouch } from '../ui/touch-hud';
+import {
+  HOME_SCREEN_HINT,
+  enterFullscreen,
+  fullscreenOnLandscape,
+  shouldExplainHomeScreen,
+} from '../ui/fullscreen';
 import {
   ATTACK_RING_SIZE,
   HOTBAR_SIZE,
@@ -195,7 +201,11 @@ export class GameSession {
 
   start(): void {
     this.hosts.ui.append(this.login.element);
-    if (prefersTouch()) dismissKeyboardOnTapOutside();
+    if (prefersTouch()) {
+      dismissKeyboardOnTapOutside();
+      // Acostado, sin las barras del navegador (con el toque de "Jugar" o al girar).
+      fullscreenOnLandscape();
+    }
     this.focusField(this.login);
   }
 
@@ -994,6 +1004,7 @@ export class GameSession {
     this.hosts.ui.append(hud.actions, hud.top, hud.sheet, hud.rotateHint);
     chat.tapToType();
     keepViewport();
+    if (shouldExplainHomeScreen()) this.hosts.ui.append(homeScreenHint());
     this.game.on('targetChanged', () => hud.refresh());
     this.game.on('warModeChanged', () => hud.refresh());
   }
@@ -1136,6 +1147,26 @@ function keepViewport(): void {
   window.addEventListener('orientationchange', reset);
   // Al entrar al mundo: sin teclado abierto de las pantallas de antes y a la escala justa.
   reset();
+}
+
+/**
+ * El aviso de iPhone para jugar sin barras: una placa arriba al centro, con
+ * ✕ para cerrarla; se va sola a los 20 segundos.
+ */
+function homeScreenHint(): HTMLElement {
+  const close = el('button', {
+    className: 'window-close',
+    text: '✕',
+    attrs: { type: 'button', 'aria-label': 'Cerrar el aviso' },
+  });
+  const hint = el('div', { className: 'home-hint panel', attrs: { role: 'status' } }, [
+    el('span', { text: HOME_SCREEN_HINT }),
+    close,
+  ]);
+  const remove = (): void => hint.remove();
+  close.addEventListener('click', remove);
+  window.setTimeout(remove, 20_000);
+  return hint;
 }
 
 /** Vuelve la página a su escala justa (sin agrandar) y arriba de todo. */
