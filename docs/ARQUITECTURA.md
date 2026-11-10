@@ -1461,6 +1461,15 @@ ningún monumento real):
   prueba cantidades raras (0, negativas, decimales, NaN, infinitas, enormes) contra todos los
   destinos y orígenes, y que el oro total del mundo no cambie nunca.
 
+## Pantalla completa en el celular (etapa 91)
+
+- `ui/fullscreen.ts`: con el celular acostado, el juego pide pantalla completa (sin pestañas ni
+  barra de la dirección). Los navegadores solo la dan con un toque: al girar se intenta y, si no
+  la dan, se pone con el próximo toque (el de "Jugar" o cualquiera en el juego). Si el jugador sale
+  de pantalla completa, se respeta hasta que vuelva a girar (o use "Pantalla completa" del menú).
+- El iPhone no tiene pantalla completa para páginas: la primera vez se muestra un aviso para
+  agregarlo a la pantalla de inicio, donde se abre como aplicación, sin barras.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

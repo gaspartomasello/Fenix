@@ -203,16 +203,3 @@ export function prefersTouch(): boolean {
     window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches
   );
 }
-
-/** Pantalla completa y, si el navegador deja, trabada acostada. */
-export async function enterFullscreen(): Promise<void> {
-  try {
-    if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
-    const orientation = screen.orientation as ScreenOrientation & {
-      lock?: (o: string) => Promise<void>;
-    };
-    await orientation.lock?.('landscape');
-  } catch {
-    // Algunos navegadores (iPhone) no dejan: se sigue jugando igual.
-  }
-}
