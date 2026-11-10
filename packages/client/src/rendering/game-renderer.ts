@@ -373,6 +373,7 @@ export class GameRenderer {
     // Cada textura nueva se sube a la placa de video al dibujarla (de a poco,
     // entre cuadros) y no toda junta en el cuadro en que aparece.
     this.textures.onCreate = (texture) => this.app.renderer.texture.initSource(texture.source);
+    await this.textures.prepareRawFish();
     host.appendChild(this.app.canvas);
     // Pixi se mide de nuevo con el aviso de cambio de tamaño de la ventana, pero
     // dentro de un marco (la app de Claude, por ejemplo) al girar el celular ese
