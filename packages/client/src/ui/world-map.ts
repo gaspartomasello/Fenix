@@ -5,6 +5,8 @@ import { mapPicture } from './map-picture';
 
 /** Lugar que ocupa el mapa en la pantalla, como fracción de la ventana. */
 const SCREEN_FILL = { width: 0.92, height: 0.82 };
+/** Lado de la rosa de los vientos, al costado del mapa (pixeles CSS). */
+const COMPASS_SIZE = 76;
 
 /**
  * El mapa del mundo entero, como el de UO: el continente y las islas de una
@@ -14,6 +16,7 @@ const SCREEN_FILL = { width: 0.92, height: 0.82 };
 export class WorldMap {
   readonly element: HTMLElement;
   private readonly canvas: HTMLCanvasElement;
+  private readonly compass: HTMLCanvasElement;
   private timer: number | null = null;
   private readonly onResize = (): void => this.layout();
 
@@ -23,13 +26,18 @@ export class WorldMap {
     private readonly onClose: () => void = () => undefined,
   ) {
     this.canvas = el('canvas', { className: 'world-map-canvas' }) as HTMLCanvasElement;
+    this.compass = el('canvas', {
+      className: 'world-map-compass',
+      attrs: { 'aria-hidden': 'true' },
+    }) as HTMLCanvasElement;
     this.element = el(
       'div',
       { className: 'world-map', attrs: { role: 'dialog', 'aria-label': 'Mapa del mundo' } },
       [
         el('div', { className: 'world-map-frame' }, [
           el('div', { className: 'world-map-title', text: 'Mapa del mundo' }),
-          this.canvas,
+          // El mapa y, al costado (abajo a la derecha, sin taparlo), la rosa de los vientos.
+          el('div', { className: 'world-map-body' }, [this.canvas, this.compass]),
           el('div', { className: 'world-map-hint', text: 'M o un clic para cerrar' }),
         ]),
       ],
@@ -73,7 +81,7 @@ export class WorldMap {
     if (!map) return;
     const { width, height } = overworld(map);
     const scale = Math.min(
-      (window.innerWidth * SCREEN_FILL.width) / width,
+      (window.innerWidth * SCREEN_FILL.width - COMPASS_SIZE - 8) / width,
       (window.innerHeight * SCREEN_FILL.height) / height,
     );
     const cssWidth = Math.max(1, Math.floor(width * scale));
@@ -83,6 +91,12 @@ export class WorldMap {
     this.canvas.style.height = `${cssHeight}px`;
     this.canvas.width = cssWidth * ratio;
     this.canvas.height = cssHeight * ratio;
+    this.compass.style.width = `${COMPASS_SIZE}px`;
+    this.compass.style.height = `${COMPASS_SIZE}px`;
+    this.compass.width = COMPASS_SIZE * ratio;
+    this.compass.height = COMPASS_SIZE * ratio;
+    const compass = this.compass.getContext('2d');
+    if (compass) drawCompass(compass, this.compass.width, this.compass.height, ratio);
     this.draw();
   }
 
@@ -136,7 +150,6 @@ export class WorldMap {
       ctx.fillStyle = region.wild ? '#f2d9a6' : '#ffffff';
       ctx.fillText(region.name, x, y);
     }
-    drawCompass(ctx, this.canvas.width, this.canvas.height, ratio);
     // Uno mismo: un punto con un anillo que late, para encontrarse de un vistazo.
     const self = this.game.selfSeenAt();
     if (self && self.x < area.width) {
@@ -175,9 +188,11 @@ function drawCompass(
   height: number,
   ratio: number,
 ): void {
-  const r = Math.min(34 * ratio, Math.min(width, height) * 0.09);
-  const cx = width - r * 1.7;
-  const cy = height - r * 1.7;
+  // Del tamaño del lienzo, centrada, con lugar para las letras alrededor.
+  const r = Math.min(width, height) / 3.3;
+  const cx = width / 2;
+  const cy = height / 2;
+  ctx.clearRect(0, 0, width, height);
   ctx.save();
   ctx.translate(cx, cy);
   // El disco, como una tapa de bronce.

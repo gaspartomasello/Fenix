@@ -5159,3 +5159,14 @@ html:not(.touch-ui) .info-strip .info-chip-icon {
   min-height: 22px;
   font-size: 0.65rem;
 }
+
+/* El mapa del mundo y, al costado, la rosa de los vientos (no tapa el mapa). */
+.world-map-body {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.world-map-compass {
+  flex: none;
+}
