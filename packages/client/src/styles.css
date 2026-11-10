@@ -4476,3 +4476,518 @@ html:not(.touch-ui) .info-strip .info-chip-icon {
   left: auto;
   padding: 0;
 }
+
+/*
+ * ── Etapa 89: campos de texto y listas de las ventanas ───────────────
+ * Cuero hundido con filo de bronce y la misma letra del juego (no la caja
+ * clara del navegador). Vale para todas las ventanas.
+ */
+.game-window input[type='text'],
+.game-window input[type='number'],
+.game-window input:not([type]),
+.game-window select {
+  min-height: 26px;
+  padding: 0.15rem 0.45rem;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--color-text);
+  background: linear-gradient(180deg, #120c07, #1c130b);
+  border: 1px solid var(--bronze-dark);
+  border-bottom-color: var(--bronze);
+  border-radius: 3px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.game-window input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+.game-window input:focus-visible,
+.game-window select:focus-visible {
+  border-color: var(--bronze-light);
+  outline: none;
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.7),
+    0 0 6px var(--ember);
+}
+
+.game-window select option {
+  color: var(--color-text);
+  background: #1c130b;
+}
+
+/* ── La ventana de una casa: como su cartel ─────────────────────────── */
+
+.house-window {
+  width: min(330px, calc(100vw - 16px));
+}
+
+.house-window .window-body {
+  gap: 6px;
+}
+
+/* La placa de arriba: qué casa es y de quién, con el sello de pública o privada. */
+.house-plate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background: linear-gradient(180deg, #3a2716, #241709);
+  border: 1px solid var(--bronze-dark);
+  border-radius: 3px;
+  box-shadow: inset 0 1px 0 rgba(214, 176, 106, 0.25);
+}
+
+.house-plate-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.house-plate-kind {
+  font-size: 0.8rem;
+  color: #f3d58a;
+}
+
+.house-plate-owner {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+/* El sello: lacre rojo si es privada, verde si es pública. */
+.house-seal {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ffe2c8;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7);
+  background: radial-gradient(circle at 35% 30%, #b0402c, #5a1a10 72%);
+  border: 2px solid #3a0e08;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 180, 140, 0.25),
+    0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.house-seal.is-public {
+  color: #e6ffd8;
+  background: radial-gradient(circle at 35% 30%, #4f8a3a, #1e3f16 72%);
+  border-color: #0f2a0a;
+  box-shadow:
+    inset 0 0 0 2px rgba(200, 255, 170, 0.25),
+    0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* Los cofres: una barra como las de vida. */
+.house-meter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.house-meter-bar {
+  flex: 1;
+  height: 7px;
+  overflow: hidden;
+  background: #120c07;
+  border: 1px solid var(--bronze-dark);
+  border-radius: 2px;
+}
+
+.house-meter-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(180deg, #e7c878, #9a7438);
+}
+
+.house-meter-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.house-tabs .tab {
+  flex: 1;
+}
+
+.house-page {
+  display: grid;
+  gap: 8px;
+}
+
+.house-section {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.house-section h3 {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f3d58a;
+}
+
+.house-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+}
+
+.house-input {
+  flex: 1;
+  min-width: 100px;
+}
+
+.house-section .window-hint {
+  font-size: 0.68rem;
+}
+
+/* Diseñar (lo principal) y demoler (lo peligroso), cada uno con su ayuda al lado. */
+.house-design,
+.house-demolish {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.house-demolish {
+  padding-top: 6px;
+  border-top: 1px solid rgba(214, 176, 106, 0.18);
+}
+
+.house-danger.button--plaque {
+  color: #ffd8c8;
+  background: linear-gradient(180deg, #6a2216, #3a0e08);
+  border-color: #b8463a;
+}
+
+/* La gente de la casa: fichas con el nombre; la ✕ la saca. */
+.house-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.house-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 3px 1px 8px;
+  font-size: 0.75rem;
+  background: linear-gradient(180deg, #3b2918, #22170d);
+  border: 1px solid var(--bronze);
+  border-radius: 999px;
+}
+
+.house-people--banned .house-chip {
+  border-color: #8a3a2a;
+  color: #ffc8b8;
+}
+
+.house-chip-remove {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  font-size: 0.6rem;
+  color: #f3d58a;
+  background: rgba(0, 0, 0, 0.35);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.house-chip-remove:hover,
+.house-chip-remove:focus-visible {
+  color: #fff0d0;
+  background: #6a2216;
+  outline: none;
+}
+
+.house-chips-empty {
+  font-size: 0.7rem;
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+/* Sumar a alguien: un medallón con +. */
+.house-add {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 0.95rem;
+  line-height: 1;
+  color: #f3d58a;
+  background: radial-gradient(circle at 35% 30%, #5a3c20, #22160c 72%);
+  border: 1px solid var(--bronze);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.house-add:hover,
+.house-add:focus-visible {
+  border-color: #f0d48c;
+  box-shadow: 0 0 6px var(--ember);
+  outline: none;
+}
+
+/*
+ * ── Diseñar la casa: el plano sobre la mesa ──────────────────────────
+ * El plano (la grilla) a la izquierda y la paleta de herramientas a la
+ * derecha, con las plantas arriba y el costo abajo. Entra entera en la
+ * pantalla, también en el celular acostado.
+ */
+.design-window {
+  --design-cell: 18px;
+  width: auto;
+  max-width: calc(100vw - 16px);
+}
+
+.design-window .window-body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'hint hint'
+    'board levels'
+    'board tools'
+    'board summary';
+  grid-template-rows: auto auto auto 1fr;
+  align-items: start;
+  gap: 6px 10px;
+  max-height: calc(100dvh - 60px);
+  overflow-y: auto;
+}
+
+.design-window .window-body > .window-hint {
+  grid-area: hint;
+  font-size: 0.7rem;
+}
+
+.design-levels {
+  grid-area: levels;
+  margin: 0;
+}
+
+.design-tools {
+  grid-area: tools;
+  gap: 6px;
+  margin: 0;
+  width: 290px;
+}
+
+.design-summary {
+  grid-area: summary;
+  font-size: 0.75rem;
+}
+
+.design-summary .house-summary {
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+/* El plano: papel viejo con la grilla en tinta. */
+.design-board {
+  grid-area: board;
+  margin: 0;
+  padding: 6px;
+  background: linear-gradient(180deg, #d9c49a, #c2a774);
+  border: 1px solid var(--bronze-dark);
+  border-radius: 2px;
+  box-shadow:
+    inset 0 0 12px rgba(80, 50, 20, 0.45),
+    0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.design-grid {
+  background: rgba(60, 40, 20, 0.55);
+}
+
+.design-cell {
+  background: rgba(240, 225, 190, 0.85);
+}
+
+.design-cell.is-below {
+  background: rgba(200, 180, 140, 0.9);
+}
+
+.design-street {
+  margin-top: 3px;
+  font-size: 0.66rem;
+  font-style: italic;
+  color: #4a3218;
+  opacity: 1;
+}
+
+/* La paleta: cada grupo con su título grabado y las herramientas como placas chicas. */
+.design-group {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3px;
+}
+
+.design-group-title {
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f3d58a;
+  opacity: 0.85;
+}
+
+.design-group-items {
+  gap: 3px;
+}
+
+.design-window .design-tools .button,
+.design-window .design-levels .button,
+.design-window .design-summary .button {
+  min-width: 0;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.7rem;
+  font-weight: normal;
+  color: #f3d58a;
+  text-shadow: 0 1px 0 #000;
+  background: linear-gradient(180deg, #3b2918, #1f150c);
+  border: 1px solid var(--bronze);
+  box-shadow:
+    inset 0 1px 0 rgba(214, 176, 106, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* La herramienta elegida (y la planta): dorada. */
+.design-window .button.is-active {
+  color: #1c140e;
+  text-shadow: 0 1px 0 rgba(255, 240, 200, 0.45);
+  background: linear-gradient(#e7c878, #b8903f);
+  border-color: #3a2810;
+  outline: none;
+}
+
+/* Pagar: la acción principal de la ventana, dorada. */
+.design-window .design-summary .house-row:first-of-type .button {
+  color: #1c140e;
+  text-shadow: 0 1px 0 rgba(255, 240, 200, 0.45);
+  background: linear-gradient(#e7c878, #b8903f);
+  border-color: #3a2810;
+}
+
+.design-window .design-summary .button:disabled {
+  opacity: 0.45;
+}
+
+.design-swatch {
+  width: 9px;
+  height: 9px;
+  margin-right: 3px;
+}
+
+.design-select {
+  min-height: 22px;
+  font-size: 0.7rem;
+}
+
+/* En el celular acostado: celdas más chicas, sin la ayuda larga y la paleta más angosta. */
+.touch-ui .design-window {
+  --design-cell: 14px;
+}
+
+.touch-ui .design-window .window-body > .window-hint {
+  display: none;
+}
+
+.touch-ui .design-window .window-body {
+  grid-template-areas:
+    'board levels'
+    'board tools'
+    'board summary';
+  grid-template-rows: auto auto 1fr;
+}
+
+.touch-ui .design-tools {
+  width: min(330px, calc(100vw - 16px - 14px * 11 - 60px));
+}
+
+/* Las listas del diseño, al tamaño de las placas (no al de los campos de las ventanas). */
+.design-window .design-select {
+  min-height: 20px;
+  padding: 0 0.3rem;
+  font-size: 0.68rem;
+}
+
+/* En el celular la paleta va apretada: los pisos son solo su color y todo más chico. */
+.touch-ui .design-window .design-tools .button,
+.touch-ui .design-window .design-levels .button,
+.touch-ui .design-window .design-summary .button {
+  padding: 0 0.35rem;
+  font-size: 0.62rem;
+  line-height: 1.5;
+}
+
+.touch-ui .design-tools {
+  gap: 3px;
+}
+
+.touch-ui .design-group {
+  grid-template-columns: 4.6rem minmax(0, 1fr);
+  align-items: center;
+}
+
+.touch-ui .design-group-title {
+  font-size: 0.55rem;
+  line-height: 1.1;
+}
+
+.touch-ui .design-tool--swatch .design-tool-label {
+  display: none;
+}
+
+.touch-ui .design-tool--swatch {
+  padding: 2px !important;
+}
+
+.touch-ui .design-tool--swatch .design-swatch {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+.touch-ui .design-summary,
+.touch-ui .design-summary .house-summary,
+.touch-ui .design-summary .window-hint {
+  font-size: 0.62rem;
+}
+
+/* En el celular acostado la casa aprovecha el ancho: la gente, en tres columnas, sin las ayudas largas. */
+.touch-ui .house-window {
+  width: min(600px, calc(100vw - 16px));
+}
+
+.touch-ui .house-page--people {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 10px;
+}
+
+.touch-ui .house-page--people .window-hint {
+  display: none;
+}
+
+.touch-ui .house-page--people .house-input {
+  min-width: 0;
+}
