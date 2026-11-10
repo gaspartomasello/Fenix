@@ -5160,13 +5160,19 @@ html:not(.touch-ui) .info-strip .info-chip-icon {
   font-size: 0.65rem;
 }
 
-/* El mapa del mundo y, al costado, la rosa de los vientos (no tapa el mapa). */
-.world-map-body {
+/* Abajo del mapa del mundo: la ayuda al centro y la rosa de los vientos, chica, en la esquina. */
+.world-map-foot {
+  position: relative;
   display: flex;
-  align-items: flex-end;
-  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  min-height: 38px;
 }
 
 .world-map-compass {
-  flex: none;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  opacity: 0.85;
 }

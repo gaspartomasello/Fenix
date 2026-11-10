@@ -5,8 +5,10 @@ import { mapPicture } from './map-picture';
 
 /** Lugar que ocupa el mapa en la pantalla, como fracción de la ventana. */
 const SCREEN_FILL = { width: 0.92, height: 0.82 };
-/** Lado de la rosa de los vientos, al costado del mapa (pixeles CSS). */
-const COMPASS_SIZE = 76;
+/** Lado de la rosa de los vientos: un sello chico en la esquina de abajo (pixeles CSS). */
+const COMPASS_SIZE = 38;
+/** Alto del marco que no es mapa: título, línea de abajo, bordes y un poco de aire. */
+const FRAME_EXTRA = 100;
 
 /**
  * El mapa del mundo entero, como el de UO: el continente y las islas de una
@@ -36,9 +38,12 @@ export class WorldMap {
       [
         el('div', { className: 'world-map-frame' }, [
           el('div', { className: 'world-map-title', text: 'Mapa del mundo' }),
-          // El mapa y, al costado (abajo a la derecha, sin taparlo), la rosa de los vientos.
-          el('div', { className: 'world-map-body' }, [this.canvas, this.compass]),
-          el('div', { className: 'world-map-hint', text: 'M o un clic para cerrar' }),
+          this.canvas,
+          // Abajo: la ayuda y, chica en la esquina, la rosa de los vientos (el mapa es lo importante).
+          el('div', { className: 'world-map-foot' }, [
+            el('div', { className: 'world-map-hint', text: 'M o un clic para cerrar' }),
+            this.compass,
+          ]),
         ]),
       ],
     );
@@ -81,8 +86,9 @@ export class WorldMap {
     if (!map) return;
     const { width, height } = overworld(map);
     const scale = Math.min(
-      (window.innerWidth * SCREEN_FILL.width - COMPASS_SIZE - 8) / width,
-      (window.innerHeight * SCREEN_FILL.height) / height,
+      (window.innerWidth * SCREEN_FILL.width) / width,
+      // Lo que queda después del título, la línea de abajo y los bordes del marco.
+      Math.min(window.innerHeight * SCREEN_FILL.height, window.innerHeight - FRAME_EXTRA) / height,
     );
     const cssWidth = Math.max(1, Math.floor(width * scale));
     const cssHeight = Math.max(1, Math.floor(height * scale));

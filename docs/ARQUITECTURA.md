@@ -1391,7 +1391,8 @@ ningún monumento real):
   mueve el minimapa). En Opciones se apaga sin olvidar lo elegido (`infoBar`) y se vuelve a su lugar.
 - Puntos cardinales: el aro del minimapa lleva N, E, S y O en la diagonal que les toca (el minimapa
   está girado como la vista: el norte arriba a la derecha); el mapa del mundo, con el norte arriba,
-  tiene una rosa de los vientos de bronce, al costado del mapa (abajo a la derecha), sin taparlo.
+  tiene una rosa de los vientos de bronce, chica, en la esquina de abajo (en la línea de la ayuda),
+  sin taparlo: el mapa es lo importante.
 - En la computadora, los reactivos también van en su propia barra, debajo de la de arriba, y se
   arrastran igual; lo que va debajo (la vida, el minimapa) baja lo que ella ocupe mientras está en
   su lugar.
