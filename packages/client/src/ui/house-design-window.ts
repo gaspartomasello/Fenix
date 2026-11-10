@@ -181,10 +181,14 @@ export class HouseDesignWindow {
         if (next.kind === 'floor') this.floor = next.floor;
         this.renderTools();
       });
-      if (swatch)
-        button.prepend(
+      if (swatch) {
+        // Los pisos llevan su color; en el celular queda solo el color (el nombre, al tocar y mantener).
+        button.classList.add('design-tool--swatch');
+        button.replaceChildren(
           el('span', { className: 'design-swatch', attrs: { style: `background:${swatch}` } }),
+          el('span', { className: 'design-tool-label', text: label }),
         );
+      }
       if (sameTool(this.tool, next)) button.classList.add('is-active');
       return button;
     };

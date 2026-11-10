@@ -1432,6 +1432,21 @@ ningún monumento real):
     invocaciones y monturas siguen a su dueño a su paso de siempre.
   - Las que hacen magia esperan un 35 % menos entre hechizo y hechizo (`SPELL_COOLDOWN_FACTOR`).
 
+## Ventanas de las casas y galería de ventanas (etapa 89)
+
+- **Galería de ventanas** (solo en desarrollo): `npm run dev -w @fenix/client` y abrir
+  `/ventanas.html` (`?ventana=casa`, `?tactil` para ver la versión del celular). Muestra cada
+  ventana con datos de ejemplo (`src/dev/window-gallery.ts`), sin jugar hasta abrirla. Al mejorar
+  una ventana se suma ahí, para revisarla en la computadora y en el celular acostado.
+- **La casa**, como su cartel: una placa con qué casa es y de quién, un sello de lacre (rojo si es
+  privada, verde si es pública), la barra de los cofres y dos solapas: **Casa** (diseñar, nombre,
+  pública o privada, echar a las visitas, demoler en rojo brasa) y **Gente** (copropietarios,
+  amigos y echados como fichas con ✕ y un medallón + para sumar; en el celular, en tres columnas).
+- **Diseñar la casa**: el plano en papel viejo a la izquierda y la paleta a la derecha (plantas,
+  pisos, paredes, puertas, sacar, atajos y el costo abajo, con "Pagar" dorado). En el celular los
+  pisos son solo su color y todo entra sin desplazar.
+- Los campos de texto y las listas de todas las ventanas son de cuero hundido con filo de bronce.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.
