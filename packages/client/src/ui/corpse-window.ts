@@ -103,7 +103,7 @@ export class CorpseWindow {
               onDrop: (target) => {
                 const to = destinationFor(target, this.actions, item.kind);
                 if (!to) return false;
-                this.actions.moveItem(item.id, to);
+                this.actions.moveStack(item, to);
                 return true;
               },
               onDoubleTap: () => this.actions.moveItem(item.id, { type: 'backpack' }),

@@ -7,6 +7,7 @@
 import { emptyDesign } from '@fenix/shared/housing/design';
 import type { HouseSnapshot } from '@fenix/shared/protocol/messages';
 import '../styles.css';
+import { AmountPicker } from '../ui/amount-picker';
 import { HouseDesignWindow } from '../ui/house-design-window';
 import { HouseWindow } from '../ui/house-window';
 import { prefersTouch } from '../ui/touch-hud';
@@ -53,6 +54,18 @@ const gallery: Record<string, () => void> = {
     ui.append(window.window.element);
     window.open(house);
   },
+};
+
+gallery.cantidad = () => {
+  const picker = new AmountPicker();
+  ui.append(picker.element);
+  // Cada respuesta queda anotada en la página (para probarla) y se vuelve a preguntar.
+  const ask = (): void =>
+    void picker.ask('gold', 1250).then((amount) => {
+      document.body.dataset.cantidad = String(amount);
+      ask();
+    });
+  ask();
 };
 
 const only = new URLSearchParams(location.search).get('ventana');

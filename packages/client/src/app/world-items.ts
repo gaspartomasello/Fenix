@@ -3,6 +3,7 @@ import { withinReach } from '@fenix/shared/items/item-rules';
 import type { ItemDestination } from '@fenix/shared/protocol/messages';
 import type { ClientGame } from '../core/client-game';
 import type { GameRenderer } from '../rendering/game-renderer';
+import { AmountPicker } from '../ui/amount-picker';
 import { destinationFor, type ItemActions } from '../ui/backpack-window';
 import type { DragController } from '../ui/drag-controller';
 import { itemIconUrl } from '../ui/item-icons';
@@ -22,8 +23,20 @@ export class WorldItems {
     private readonly drag: DragController,
     private readonly tooltip: WorldTooltip,
   ) {
+    const picker = new AmountPicker();
+    document.body.append(picker.element);
     this.actions = {
       moveItem: (itemId, to) => game.moveItem(itemId, to),
+      moveStack: (item, to) => {
+        if (!ITEMS[item.kind].stackable || item.amount <= 1) {
+          game.moveItem(item.id, to);
+          return;
+        }
+        void picker.ask(item.kind, item.amount).then((amount) => {
+          if (amount === null) return;
+          game.moveItem(item.id, to, amount < item.amount ? amount : undefined);
+        });
+      },
       useItem: (itemId) => game.useItem(itemId),
       worldDestination: (clientX, clientY) => this.groundAt(clientX, clientY),
     };

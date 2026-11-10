@@ -4,7 +4,7 @@ import type { Player } from '../../../domain/player';
 import type { World } from '../../../domain/world';
 import type { Guards } from '../../kernel/guards';
 import type { ItemNotifications } from '../../kernel/item-notifications';
-import type { Notifier } from '../../ports';
+import type { IdGenerator, Notifier } from '../../ports';
 import type { GameServices } from '../../kernel/services';
 
 /** Arrastrar y soltar un objeto: al suelo, a la mochila o al equipo. */
@@ -16,9 +16,11 @@ export class MoveItem {
     private readonly banking: GameServices['banking'],
     /** Reglas de otros módulos que no dejan levantar algo (lo de adentro de una casa ajena). */
     private readonly guards: Guards<[player: Player, item: Item]>,
+    private readonly ids: IdGenerator,
   ) {}
 
-  execute(playerId: EntityId, itemId: EntityId, to: ItemDestination): void {
+  /** Con `amount` menor que la pila, se separa esa parte y se mueve solo ella. */
+  execute(playerId: EntityId, itemId: EntityId, to: ItemDestination, amount?: number): void {
     const player = this.world.get(playerId);
     if (!player) return;
     if (player.combat.isDead) {
@@ -36,7 +38,25 @@ export class MoveItem {
       return;
     }
     const nearBanker = this.banking.nearBanker(player);
-    const result = this.world.items.move(player, itemId, to, this.world.map, nearBanker);
+    // Una parte de la pila: se separa (en el mismo lugar) y se mueve esa parte.
+    // Una cantidad que no sirve (0, negativa, con decimales) no mueve nada; y una
+    // parte de algo que no se separa (lo del suelo, lo que no es pila) tampoco.
+    if (amount !== undefined && (!Number.isSafeInteger(amount) || amount <= 0)) {
+      this.refuse(playerId, 'Esa cantidad no sirve.');
+      return;
+    }
+    const partial = item !== undefined && amount !== undefined && amount < item.amount;
+    const part =
+      partial && amount !== undefined
+        ? this.world.items.split(item.id, amount, this.ids.next())
+        : null;
+    if (partial && !part) {
+      this.refuse(playerId, 'Eso se mueve entero.');
+      return;
+    }
+    const moving = part?.id ?? itemId;
+    const result = this.world.items.move(player, moving, to, this.world.map, nearBanker);
+    if (!result.ok && part && item) this.world.items.rejoin(part.id, item.id);
     if (!result.ok) {
       this.notifier.send(playerId, { type: 'system', text: result.reason });
       // Reenviar el estado real para que el cliente deshaga lo que haya mostrado.
@@ -44,5 +64,11 @@ export class MoveItem {
       return;
     }
     this.notifications.publish(result.changes, playerId);
+  }
+
+  /** No se mueve nada: se avisa y se reenvía el estado real (el cliente deshace lo que mostró). */
+  private refuse(playerId: EntityId, text: string): void {
+    this.notifier.send(playerId, { type: 'system', text });
+    this.notifications.sendInventory(playerId);
   }
 }

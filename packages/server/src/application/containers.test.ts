@@ -118,4 +118,30 @@ describe('recipientes', () => {
     expect(savedBag?.contents?.[0]?.kind).toBe('pouch');
     expect(savedBag?.contents?.[0]?.contents?.[0]?.kind).toBe('gold');
   });
+
+  it('de una pila se mueve solo la cantidad elegida, y si no se puede, la pila queda entera', () => {
+    const { world, app, join } = createRoom();
+    const ana = join('Ana');
+    world.get(ana)?.teleport({ x: 5, y: 5 });
+    const chest = staticContainerId({ x: 5, y: 4 });
+    app.handle(ana, { type: 'openContainer', containerId: chest });
+    const gold = world.items.contentsOf(chest).find((i) => i.kind === 'gold');
+    if (!gold) throw new Error('sin oro en el cofre');
+    const total = gold.amount;
+    const before = world.items.countInBackpack(ana, 'gold');
+
+    app.handle(ana, { type: 'moveItem', itemId: gold.id, to: { type: 'backpack' }, amount: 3 });
+    expect(world.items.countInBackpack(ana, 'gold')).toBe(before + 3);
+    expect(world.items.get(gold.id)?.amount).toBe(total - 3);
+
+    // Al suelo lejos no se puede: la parte vuelve a la pila.
+    app.handle(ana, {
+      type: 'moveItem',
+      itemId: gold.id,
+      to: { type: 'ground', position: { x: 0, y: 0 } },
+      amount: 2,
+    });
+    expect(world.items.get(gold.id)?.amount).toBe(total - 3);
+    expect(world.items.contentsOf(chest).filter((i) => i.kind === 'gold')).toHaveLength(1);
+  });
 });

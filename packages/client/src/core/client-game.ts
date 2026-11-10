@@ -564,8 +564,15 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   }
 
   /** Arrastrar y soltar un objeto. El servidor decide si se puede. */
-  moveItem(itemId: EntityId, to: ItemDestination): void {
-    if (this.self) this.gateway.send({ type: 'moveItem', itemId, to });
+  /** Mover un objeto; con `amount`, solo esa parte de la pila. */
+  moveItem(itemId: EntityId, to: ItemDestination, amount?: number): void {
+    if (this.self)
+      this.gateway.send({
+        type: 'moveItem',
+        itemId,
+        to,
+        ...(amount === undefined ? {} : { amount }),
+      });
   }
 
   /** Atacar a una criatura: el servidor golpea mientras esté al alcance. */

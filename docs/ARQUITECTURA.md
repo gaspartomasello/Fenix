@@ -1447,6 +1447,20 @@ ningún monumento real):
   pisos son solo su color y todo entra sin desplazar.
 - Los campos de texto y las listas de todas las ventanas son de cuero hundido con filo de bronce.
 
+## Cuántos mover de una pila (etapa 90)
+
+- `moveItem` lleva una cantidad opcional (`amount`). Si es menor que la pila, `Items.split` separa
+  esa parte en el mismo lugar y se mueve solo ella; si no se puede mover, `Items.rejoin` la vuelve
+  a juntar. Lo que está en el suelo se mueve entero.
+- En el cliente, soltar una pila de más de uno (desde la mochila, el banco, un recipiente o un
+  cuerpo) abre `AmountPicker`: "Todo", "Mitad", "Uno" o un número con el teclado numérico (en la
+  computadora también con las teclas, Enter y Escape). El doble clic sigue llevando la pila entera.
+- Contra duplicar: una cantidad que no es un entero positivo hace inválido el mensaje (codec) y el
+  servidor no mueve nada ("Esa cantidad no sirve."); una parte de algo que no se separa (lo del
+  suelo) tampoco ("Eso se mueve entero."). En el panel, 0 es cancelar. `stack-split.test.ts`
+  prueba cantidades raras (0, negativas, decimales, NaN, infinitas, enormes) contra todos los
+  destinos y orígenes, y que el oro total del mundo no cambie nunca.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

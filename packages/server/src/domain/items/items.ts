@@ -350,6 +350,32 @@ export class Items {
   }
 
   /**
+   * Separa `amount` de una pila: queda un objeto nuevo con esa cantidad, en
+   * el mismo lugar, y la pila original con el resto. Solo para pilas que no
+   * están en el suelo (lo del suelo se mueve entero). Devuelve null si no se
+   * puede separar (no es una pila, o la cantidad no es menor que la pila).
+   */
+  split(itemId: EntityId, amount: number, id: EntityId): Item | null {
+    const item = this.byId.get(itemId);
+    if (!item || !ITEMS[item.kind].stackable || item.location.type === 'ground') return null;
+    if (!Number.isInteger(amount) || amount <= 0 || amount >= item.amount) return null;
+    const part = this.add(id, item.kind, amount, { ...item.location });
+    part.hue = item.hue;
+    part.newbie = item.newbie;
+    item.amount -= amount;
+    return part;
+  }
+
+  /** Vuelve a juntar una parte separada con su pila (si mover la parte no se pudo). */
+  rejoin(partId: EntityId, intoId: EntityId): void {
+    const part = this.byId.get(partId);
+    const into = this.byId.get(intoId);
+    if (!part || !into) return;
+    into.amount += part.amount;
+    this.byId.delete(part.id);
+  }
+
+  /**
    * Mueve un objeto al suelo, a la mochila, al banco o al equipo de `actor`.
    * El banco solo se puede usar con `nearBanker`.
    */

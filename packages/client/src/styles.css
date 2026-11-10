@@ -4991,3 +4991,146 @@ html:not(.touch-ui) .info-strip .info-chip-icon {
 .touch-ui .house-page--people .house-input {
   min-width: 0;
 }
+
+/*
+ * ── Etapa 90: cuántos mover de una pila ──────────────────────────────
+ * Un panel chico en el medio, sobre todo: el objeto, el número grande como
+ * en una balanza, "Todo / Mitad / Uno" y el teclado numérico de bronce.
+ */
+.amount-picker {
+  position: fixed;
+  inset: 0;
+  z-index: 8000;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.amount-picker[hidden] {
+  display: none;
+}
+
+.amount-panel {
+  display: grid;
+  gap: 6px;
+  width: max-content;
+  min-width: 200px;
+  max-width: calc(100vw - 24px);
+  padding: 0 8px 8px;
+}
+
+.amount-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 0 -8px;
+  padding: 3px 4px 3px 8px;
+  background: linear-gradient(180deg, #3a2716, #1e140b);
+  border-bottom: 1px solid #000;
+  box-shadow: 0 1px 0 rgba(214, 176, 106, 0.4);
+}
+
+.amount-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.amount-header .window-title {
+  overflow: hidden;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.amount-icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+/* El número: grabado en una placa hundida. */
+.amount-display {
+  display: block;
+  padding: 2px 8px;
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: #f3d58a;
+  text-shadow: 0 0 8px var(--ember);
+  background: linear-gradient(180deg, #120c07, #1c130b);
+  border: 1px solid var(--bronze-dark);
+  border-bottom-color: var(--bronze);
+  border-radius: 3px;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Sin número escrito se muestra la pila entera, apagada: Enter (o ✓) la mueve toda. */
+.amount-display.is-placeholder {
+  color: rgba(243, 213, 138, 0.45);
+  text-shadow: none;
+}
+
+.amount-quicks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.amount-quick {
+  padding: 0.15rem 0;
+}
+
+.amount-keys {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.amount-key {
+  height: 30px;
+  padding: 0;
+  font: inherit;
+  font-size: 0.95rem;
+  color: #f3d58a;
+  text-shadow: 0 1px 0 #000;
+  background: radial-gradient(circle at 35% 25%, #4a321c, #1c120a 75%);
+  border: 1px solid var(--bronze);
+  border-radius: 4px;
+  box-shadow:
+    inset 0 1px 0 rgba(214, 176, 106, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.amount-key:hover,
+.amount-key:focus-visible {
+  border-color: #f0d48c;
+  outline: none;
+}
+
+.amount-key:active {
+  transform: translateY(1px);
+}
+
+.amount-key--back {
+  font-size: 0.85rem;
+}
+
+/* Mover: la acción principal, dorada. */
+.amount-key--ok {
+  color: #1c140e;
+  text-shadow: 0 1px 0 rgba(255, 240, 200, 0.45);
+  background: linear-gradient(#e7c878, #b8903f);
+  border-color: #3a2810;
+}
+
+.amount-panel .window-close {
+  width: 22px;
+  height: 22px;
+  font-size: 0.7rem;
+}
