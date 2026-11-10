@@ -9,7 +9,10 @@ import { GameApplication, type GameApplicationDeps } from './game-application';
 import type { GameMessage, ModuleFactory } from './kernel/game-module';
 
 /** Todos los pedidos de un jugador en el mundo: TypeScript exige que estén todos. */
-const EVERY_MESSAGE: Record<Exclude<GameMessage, 'useSkill' | 'setSkillDirection'>, true> = {
+const EVERY_MESSAGE: Record<
+  Exclude<GameMessage, 'useSkill' | 'setSkillDirection' | 'setStatDirection'>,
+  true
+> = {
   move: true,
   chat: true,
   moveItem: true,
@@ -82,6 +85,7 @@ describe('armado del juego', () => {
     expect(missing).toEqual([]);
     expect(app.handles('useSkill')).toBe(true);
     expect(app.handles('setSkillDirection')).toBe(true);
+    expect(app.handles('setStatDirection')).toBe(true);
   });
 
   it('los servicios que se piden, alguien los da', () => {

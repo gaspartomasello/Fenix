@@ -11,7 +11,8 @@ import {
   type SkillDirection,
   type SkillDirections,
 } from '@fenix/shared/skills/skill-catalog';
-import { ATTRIBUTE_NAMES } from '@fenix/shared/skills/stat-gain';
+import type { AttributeKey } from '@fenix/shared/magic/effects';
+import { ATTRIBUTE_NAMES, STAT_KEYS, type StatDirections } from '@fenix/shared/skills/stat-gain';
 import { isActiveSkill, type ActiveSkill } from '@fenix/shared/skills/stealth';
 import { el } from './dom';
 import { GameWindow } from './game-window';
@@ -27,6 +28,10 @@ export class SkillsWindow {
     private readonly onUse: (skill: ActiveSkill) => void = () => undefined,
     private readonly onDirection: (skill: SkillKey, direction: SkillDirection) => void = () =>
       undefined,
+    private readonly onStatDirection: (
+      stat: AttributeKey,
+      direction: SkillDirection,
+    ) => void = () => undefined,
   ) {
     this.window = new GameWindow('habilidades', 'Habilidades', { x: 16, y: 150 });
     this.attributes = el('p', { className: 'skills-attributes' });
@@ -44,10 +49,29 @@ export class SkillsWindow {
   }
 
   /** Fuerza, destreza e inteligencia (con lo que suman o restan los efectos). */
-  renderAttributes(attributes: Attributes): void {
-    this.attributes.textContent = (['strength', 'dexterity', 'intelligence'] as const)
-      .map((key) => `${ATTRIBUTE_NAMES[key]} ${attributes[key]}`)
-      .join(' · ');
+  renderAttributes(attributes: Attributes, directions: StatDirections = {}): void {
+    this.attributes.replaceChildren(
+      ...STAT_KEYS.flatMap((key) => [
+        el('span', { text: `${ATTRIBUTE_NAMES[key]} ${attributes[key]} ` }),
+        this.statDirectionButton(key, directions[key] ?? 'up'),
+      ]),
+    );
+  }
+
+  private statDirectionButton(stat: AttributeKey, direction: SkillDirection): HTMLElement {
+    const next: Record<SkillDirection, SkillDirection> = { up: 'down', down: 'lock', lock: 'up' };
+    const names = { up: 'Subir', down: 'Bajar', lock: 'Bloquear' };
+    const button = el('button', {
+      className: `skills-direction skills-direction--${direction}`,
+      text: { up: '▲', down: '▼', lock: '🔒' }[direction],
+      attrs: {
+        type: 'button',
+        title: `${names[direction]} ${ATTRIBUTE_NAMES[stat]}`,
+        'aria-label': `${ATTRIBUTE_NAMES[stat]}: ${names[direction]}. Tocar para cambiar.`,
+      },
+    });
+    button.addEventListener('click', () => this.onStatDirection(stat, next[direction]));
+    return button;
   }
 
   render(values: SkillValues, directions: SkillDirections = {}): void {

@@ -6,6 +6,7 @@ import { isItemKind } from '../domain/items/item-catalog';
 import { BOOK_PAGES, cleanBookPage, cleanBookTitle } from '../domain/items/books';
 import { isDyeHue } from '../domain/items/dyes';
 import { isPolymorphForm, isSpellKey } from '../domain/magic/spell-catalog';
+import { STAT_KEYS } from '../domain/skills/stat-gain';
 import { isSkillKey, isSkillDirection } from '../domain/skills/skill-catalog';
 import { isActiveSkill } from '../domain/skills/stealth';
 import { isTrackingCategory } from '../domain/skills/tracking';
@@ -427,6 +428,20 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
     case 'followTrack':
       if (isId(data.targetId))
         return { ok: true, message: { type: 'followTrack', targetId: data.targetId } };
+      break;
+    case 'setStatDirection':
+      if (
+        (STAT_KEYS as readonly string[]).includes(data.stat as string) &&
+        isSkillDirection(data.direction)
+      )
+        return {
+          ok: true,
+          message: {
+            type: 'setStatDirection',
+            stat: data.stat as (typeof STAT_KEYS)[number],
+            direction: data.direction,
+          },
+        };
       break;
     case 'setSkillDirection':
       if (isSkillKey(data.skill) && isSkillDirection(data.direction))

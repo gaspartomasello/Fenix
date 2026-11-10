@@ -684,8 +684,10 @@ export class GameSession {
         { people: true, self: false, npcs: true },
       );
     };
-    const skills = new SkillsWindow(useSkill, (skill, direction) =>
-      this.game.setSkillDirection(skill, direction),
+    const skills = new SkillsWindow(
+      useSkill,
+      (skill, direction) => this.game.setSkillDirection(skill, direction),
+      (stat, direction) => this.game.setStatDirection(stat, direction),
     );
     this.hosts.ui.append(spellbook.window.element, skills.window.element);
     const render = (): void => {
@@ -694,7 +696,11 @@ export class GameSession {
       if (values) skills.render(values, this.game.skillDirections);
     };
     this.game.on('skillsChanged', render);
-    this.game.on('effectsChanged', (state) => skills.renderAttributes(state.attributes));
+    this.game.on('effectsChanged', (state) =>
+      skills.renderAttributes(state.attributes, state.statDirections),
+    );
+    if (this.game.effects)
+      skills.renderAttributes(this.game.effects.attributes, this.game.effects.statDirections);
     render();
 
     // Con el libro abierto, las teclas 1 a 8 lanzan los hechizos de su página;

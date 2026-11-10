@@ -78,6 +78,12 @@ export class GameApplication {
       name: 'habilidades',
       handles: {
         useSkill: (playerId, m) => kernel.skills.use(m.skill, playerId, m.targetId),
+        setStatDirection: (playerId, m) => {
+          const player = kernel.world.get(playerId);
+          if (!player) return;
+          player.setStatDirection(m.stat, m.direction);
+          kernel.mobiles.sendEffects(player);
+        },
         setSkillDirection: (playerId, m) => {
           const player = kernel.world.get(playerId);
           if (!player) return;

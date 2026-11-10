@@ -15,11 +15,14 @@ import {
   type SkillKey,
   type SkillValues,
   type SkillDirections,
+  type SkillDirection,
 } from '@fenix/shared/skills/skill-catalog';
 import {
   SKILL_STATS,
   STAT_GAIN_MIN_USES,
   STAT_TOTAL_CAP,
+  STAT_KEYS,
+  type StatDirections,
   statGainChance,
 } from '@fenix/shared/skills/stat-gain';
 import type { Notoriety } from '@fenix/shared/social/reputation';
@@ -61,6 +64,7 @@ export interface PlayerProps {
   /** Habilidades guardadas; un personaje nuevo empieza con las iniciales. */
   readonly skills?: SkillValues;
   readonly skillDirections?: SkillDirections;
+  readonly statDirections?: StatDirections;
   /** Atributos guardados (fuerza, destreza, inteligencia). */
   readonly attributes?: Attributes;
 }
@@ -79,6 +83,7 @@ export class Player implements Mobile {
   pendingBandage: { targetId: EntityId; resolveAt: number } | null = null;
   /** Atributos que subieron y todavía no se avisaron. */
   readonly statGains: AttributeKey[] = [];
+  private readonly statDirections: Partial<Record<AttributeKey, SkillDirection>>;
   /** Misiones aceptadas (ver `Quests`). */
   quests: QuestProgress[] = [];
   /** Leyendas que conoce y en qué paso va (ver `Legends`). */
@@ -121,6 +126,7 @@ export class Player implements Mobile {
     this.name = props.name;
     this.appearance = props.appearance;
     this.combat = new Combatant(props.attributes ?? PLAYER_ATTRIBUTES);
+    this.statDirections = { ...props.statDirections };
     this.skills = new SkillSet(
       props.skills ?? STARTING_SKILLS,
       (key, random) => this.trainAttributes(key, random),
@@ -157,6 +163,18 @@ export class Player implements Mobile {
     return { ok: true };
   }
 
+  statDirectionsSnapshot(): StatDirections {
+    return { ...this.statDirections };
+  }
+
+  statDirection(key: AttributeKey): SkillDirection {
+    return this.statDirections[key] ?? 'up';
+  }
+
+  setStatDirection(key: AttributeKey, direction: SkillDirection): void {
+    this.statDirections[key] = direction;
+  }
+
   /**
    * Usar una habilidad entrena sus atributos, como en UO: sube de a un punto,
    * no muy seguido, hasta 120 cada uno y 235 entre los tres.
@@ -165,10 +183,19 @@ export class Player implements Mobile {
     this.usesSinceStatGain += 1;
     if (this.usesSinceStatGain < STAT_GAIN_MIN_USES) return;
     const base = this.combat.baseAttributes;
-    if (base.strength + base.dexterity + base.intelligence >= STAT_TOTAL_CAP) return;
+    const atCap = base.strength + base.dexterity + base.intelligence >= STAT_TOTAL_CAP;
     for (const [index, key] of SKILL_STATS[skill].entries()) {
+      if (this.statDirection(key) !== 'up') continue;
+      const donor = atCap
+        ? STAT_KEYS.find(
+            (other) => other !== key && this.statDirection(other) === 'down' && base[other] > 10,
+          )
+        : undefined;
+      if (atCap && !donor) continue;
       if (random() >= statGainChance(base[key], index === 0)) continue;
-      this.combat.raiseAttribute(key);
+      if (donor)
+        this.combat.setBaseAttributes({ ...base, [donor]: base[donor] - 1, [key]: base[key] + 1 });
+      else this.combat.raiseAttribute(key);
       this.statGains.push(key);
       this.usesSinceStatGain = 0;
       return;

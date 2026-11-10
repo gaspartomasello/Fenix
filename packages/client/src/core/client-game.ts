@@ -1,4 +1,6 @@
 import type { SkillKey, SkillDirection, SkillDirections } from '@fenix/shared/skills/skill-catalog';
+import type { AttributeKey } from '@fenix/shared/magic/effects';
+import type { StatDirections } from '@fenix/shared/skills/stat-gain';
 import { effectiveMoveMode } from '@fenix/shared/combat/combat-rules';
 import { PLAYER_ATTRIBUTES, type Attributes, type Vitals } from '@fenix/shared/combat/vitals';
 import { CREATURES, bodyMoveMs, isCreatureKind } from '@fenix/shared/creatures/creature-catalog';
@@ -188,6 +190,7 @@ export interface CorpseContents {
 export interface EffectsState {
   readonly effects: readonly EffectSnapshot[];
   readonly attributes: Attributes;
+  readonly statDirections: StatDirections;
   readonly receivedAt: number;
 }
 
@@ -285,6 +288,10 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
 
   get skillDirections(): SkillDirections {
     return this._skillDirections;
+  }
+
+  setStatDirection(stat: AttributeKey, direction: SkillDirection): void {
+    this.gateway.send({ type: 'setStatDirection', stat, direction });
   }
 
   setSkillDirection(skill: SkillKey, direction: SkillDirection): void {
@@ -968,6 +975,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this._effects = {
           effects: message.effects,
           attributes: message.attributes,
+          statDirections: message.statDirections ?? {},
           receivedAt: now,
         };
         this.emit('effectsChanged', this._effects);

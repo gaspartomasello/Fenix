@@ -38,6 +38,8 @@ describe('personaje guardado y cambio de mundo', () => {
     const player = world.spawn({ id: 'p1', name: 'Ana', appearance: DEFAULT_APPEARANCE }, () => 0);
     player.skills.setDirection('fishing', 'down');
     player.skills.setDirection('magery', 'lock');
+    player.setStatDirection('strength', 'down');
+    player.setStatDirection('intelligence', 'lock');
     const saved = parseSavedCharacter(
       JSON.parse(JSON.stringify(captureCharacter(player, world, null))),
     );
@@ -51,8 +53,11 @@ describe('personaje guardado y cambio de mundo', () => {
     );
     expect(restored.skills.direction('fishing')).toBe('down');
     expect(restored.skills.direction('magery')).toBe('lock');
+    expect(restored.statDirection('strength')).toBe('down');
+    expect(restored.statDirection('intelligence')).toBe('lock');
     const old = { ...saved };
     delete old.skillDirections;
+    delete old.statDirections;
     const legacy = restoreCharacter(
       old,
       worldWithId('mundo'),
@@ -61,5 +66,6 @@ describe('personaje guardado y cambio de mundo', () => {
       0,
     );
     expect(legacy.skills.direction('fishing')).toBe('up');
+    expect(legacy.statDirection('strength')).toBe('up');
   });
 });

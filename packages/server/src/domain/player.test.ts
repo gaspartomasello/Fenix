@@ -72,3 +72,32 @@ describe('Player.tryMove', () => {
     expect(accepted).toBeLessThanOrEqual(legit + maxBonus);
   });
 });
+
+describe('dirección de atributos', () => {
+  it('intercambia un punto al statcap solo con un atributo marcado para bajar', () => {
+    const player = createPlayer();
+    player.combat.setBaseAttributes({ strength: 100, dexterity: 100, intelligence: 35 });
+    player.setStatDirection('strength', 'down');
+    for (let i = 0; i < 6; i++) player.skills.tryGain('magery', () => 0);
+    expect(player.combat.baseAttributes).toEqual({
+      strength: 99,
+      dexterity: 100,
+      intelligence: 36,
+    });
+    expect(player.statGains).toEqual(['intelligence']);
+    player.setStatDirection('intelligence', 'lock');
+    for (let i = 0; i < 12; i++) player.skills.tryGain('magery', () => 0);
+    expect(player.combat.baseAttributes.intelligence).toBe(36);
+  });
+
+  it('respeta el candado, el mínimo de 10 y la ausencia de donante', () => {
+    const player = createPlayer();
+    player.combat.setBaseAttributes({ strength: 120, dexterity: 105, intelligence: 10 });
+    player.setStatDirection('intelligence', 'up');
+    for (let i = 0; i < 12; i++) player.skills.tryGain('magery', () => 0);
+    expect(player.combat.baseAttributes.intelligence).toBe(10);
+    player.setStatDirection('intelligence', 'down');
+    for (let i = 0; i < 12; i++) player.skills.tryGain('magery', () => 0);
+    expect(player.combat.baseAttributes.intelligence).toBe(10);
+  });
+});
