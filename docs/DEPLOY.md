@@ -48,6 +48,21 @@ descarta al leerlo y el resto carga normalmente.
 
 ## Modo solo
 
+### En internet, gratis (GitHub Pages)
+
+El flujo `.github/workflows/pages.yml` compila el modo solo y lo publica en
+`https://gaspartomasello.github.io/Fenix/` cada vez que algo entra a `main`. Es la forma más
+compatible de compartirlo: anda igual en iPhone, Android y la computadora, con la partida guardada
+en el navegador de cada uno. En el celular se puede agregar a la pantalla de inicio y se abre a
+pantalla completa, como una aplicación.
+
+Hay que activarlo una sola vez: en GitHub, **Settings → Pages → Build and deployment → Source:
+GitHub Actions**. Después, **Actions → Pages → Run workflow** para publicarlo sin esperar a un cambio.
+
+### Como archivo suelto
+
 La página del modo solo (`npm run build:solo`) no necesita servidor: el personaje se guarda en el
 navegador (`localStorage`). Si el navegador no permite guardar datos, se puede jugar igual, pero
-el progreso se pierde al cerrar la pestaña.
+el progreso se pierde al cerrar la pestaña. En el celular, abrir el archivo suelto es poco
+confiable (iOS lo muestra en una vista previa y Android a veces lo abre como texto): para
+compartirlo, mejor la dirección de GitHub Pages.
