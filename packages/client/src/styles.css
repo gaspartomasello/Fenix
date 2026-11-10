@@ -5160,19 +5160,35 @@ html:not(.touch-ui) .info-strip .info-chip-icon {
   font-size: 0.65rem;
 }
 
-/* Abajo del mapa del mundo: la ayuda al centro y la rosa de los vientos, chica, en la esquina. */
-.world-map-foot {
-  position: relative;
-  display: flex;
+/* Arriba del mapa del mundo, en una sola barra: la ayuda, el título y la rosa de los vientos chica. */
+.world-map-head {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: center;
   align-self: stretch;
-  min-height: 38px;
+  gap: 8px;
+}
+
+.world-map-head .world-map-hint {
+  justify-self: start;
+  font-size: 11px;
 }
 
 .world-map-compass {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  opacity: 0.85;
+  justify-self: end;
+  opacity: 0.9;
+}
+
+/* En el celular, sin la ayuda arriba (se cierra con un toque): así la barra no ensancha el marco. */
+.touch-ui .world-map-head .world-map-hint {
+  display: none;
+}
+
+/* El título siempre al medio y la rosa a la derecha, haya o no ayuda. */
+.world-map-head .world-map-title {
+  grid-column: 2;
+}
+
+.world-map-head .world-map-compass {
+  grid-column: 3;
 }

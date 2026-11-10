@@ -6,9 +6,9 @@ import { mapPicture } from './map-picture';
 /** Lugar que ocupa el mapa en la pantalla, como fracción de la ventana. */
 const SCREEN_FILL = { width: 0.92, height: 0.82 };
 /** Lado de la rosa de los vientos: un sello chico en la esquina de abajo (pixeles CSS). */
-const COMPASS_SIZE = 38;
+const COMPASS_SIZE = 30;
 /** Alto del marco que no es mapa: título, línea de abajo, bordes y un poco de aire. */
-const FRAME_EXTRA = 100;
+const FRAME_EXTRA = 64;
 
 /**
  * El mapa del mundo entero, como el de UO: el continente y las islas de una
@@ -37,13 +37,14 @@ export class WorldMap {
       { className: 'world-map', attrs: { role: 'dialog', 'aria-label': 'Mapa del mundo' } },
       [
         el('div', { className: 'world-map-frame' }, [
-          el('div', { className: 'world-map-title', text: 'Mapa del mundo' }),
-          this.canvas,
-          // Abajo: la ayuda y, chica en la esquina, la rosa de los vientos (el mapa es lo importante).
-          el('div', { className: 'world-map-foot' }, [
+          // Una sola barra arriba: la ayuda, el título y la rosa de los vientos chica.
+          // Abajo no hay nada: todo el resto es mapa.
+          el('div', { className: 'world-map-head' }, [
             el('div', { className: 'world-map-hint', text: 'M o un clic para cerrar' }),
+            el('div', { className: 'world-map-title', text: 'Mapa del mundo' }),
             this.compass,
           ]),
+          this.canvas,
         ]),
       ],
     );
