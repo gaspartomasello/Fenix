@@ -31,6 +31,8 @@ MMORPG web inspirado en Ultima Online / Sphere. Leé `docs/ARQUITECTURA.md` ante
   aspecto. Las piezas comunes están en `styles.css` (sección "línea estética de las ventanas").
 - **Trabajo por etapas**: cada etapa en su rama y Pull Request.
 - Código en inglés; comentarios, UI y docs en español.
+- **Con Gaspar se habla siempre en español**: todos los mensajes, resúmenes y explicaciones, sin pasar
+  nunca al inglés.
 - **Todo lo que ve el jugador va en español claro**, sin jerga de UO ni anglicismos. Glosario:
 
   | En vez de… | Usar…                         |
