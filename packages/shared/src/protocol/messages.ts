@@ -184,6 +184,8 @@ export interface MoveItemRequest {
   readonly type: 'moveItem';
   readonly itemId: EntityId;
   readonly to: ItemDestination;
+  /** Cuántos mover de una pila (sin esto, o con la pila entera, se mueve toda). */
+  readonly amount?: number;
 }
 
 /** Doble clic: comer, beber, equipar o sacarse un objeto. */

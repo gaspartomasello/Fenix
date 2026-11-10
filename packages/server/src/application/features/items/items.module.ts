@@ -10,6 +10,7 @@ export const itemsModule: ModuleFactory = (kernel) => {
     kernel.notifier,
     kernel.services.lazy('banking'),
     kernel.guards.take,
+    kernel.ids,
   );
   const useItem = new UseItem(
     kernel.world,
@@ -27,7 +28,7 @@ export const itemsModule: ModuleFactory = (kernel) => {
   return {
     name: 'items',
     handles: {
-      moveItem: (playerId, m) => moveItem.execute(playerId, m.itemId, m.to),
+      moveItem: (playerId, m) => moveItem.execute(playerId, m.itemId, m.to, m.amount),
       useItem: (playerId, m) => useItem.execute(playerId, m.itemId),
       useOn: (playerId, m) => useItem.useOn(playerId, m.itemId, m.targetId),
     },

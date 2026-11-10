@@ -185,7 +185,19 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
     case 'moveItem': {
       const to = asDestination(data.to);
       if (isId(data.itemId) && to) {
-        return { ok: true, message: { type: 'moveItem', itemId: data.itemId, to } };
+        const amount =
+          typeof data.amount === 'number' && Number.isInteger(data.amount) && data.amount > 0
+            ? data.amount
+            : undefined;
+        return {
+          ok: true,
+          message: {
+            type: 'moveItem',
+            itemId: data.itemId,
+            to,
+            ...(amount === undefined ? {} : { amount }),
+          },
+        };
       }
       break;
     }

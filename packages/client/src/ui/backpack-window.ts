@@ -11,6 +11,14 @@ import { itemIconUrl } from './item-icons';
 
 export interface ItemActions {
   readonly moveItem: (itemId: string, to: ItemDestination) => void;
+  /**
+   * Soltar algo arrastrado: si es una pila de más de uno, primero pregunta
+   * cuántos mover (todo, la mitad, uno o un número).
+   */
+  readonly moveStack: (
+    item: { readonly id: string; readonly kind: ItemKind; readonly amount: number },
+    to: ItemDestination,
+  ) => void;
   readonly useItem: (itemId: string) => void;
   /** Convierte un punto de la pantalla en el tile del mundo donde soltar. */
   readonly worldDestination: (clientX: number, clientY: number) => ItemDestination | null;
@@ -103,7 +111,7 @@ export class BackpackWindow {
           onDrop: (target) => {
             const to = destinationFor(target, this.actions, item.kind);
             if (!to) return false;
-            this.actions.moveItem(item.id, to);
+            this.actions.moveStack(item, to);
             return true;
           },
           onDoubleTap: () => this.actions.useItem(item.id),

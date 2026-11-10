@@ -1447,6 +1447,15 @@ ningún monumento real):
   pisos son solo su color y todo entra sin desplazar.
 - Los campos de texto y las listas de todas las ventanas son de cuero hundido con filo de bronce.
 
+## Cuántos mover de una pila (etapa 90)
+
+- `moveItem` lleva una cantidad opcional (`amount`). Si es menor que la pila, `Items.split` separa
+  esa parte en el mismo lugar y se mueve solo ella; si no se puede mover, `Items.rejoin` la vuelve
+  a juntar. Lo que está en el suelo se mueve entero.
+- En el cliente, soltar una pila de más de uno (desde la mochila, el banco, un recipiente o un
+  cuerpo) abre `AmountPicker`: "Todo", "Mitad", "Uno" o un número con el teclado numérico (en la
+  computadora también con las teclas, Enter y Escape). El doble clic sigue llevando la pila entera.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.
