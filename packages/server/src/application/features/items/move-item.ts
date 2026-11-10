@@ -39,10 +39,21 @@ export class MoveItem {
     }
     const nearBanker = this.banking.nearBanker(player);
     // Una parte de la pila: se separa (en el mismo lugar) y se mueve esa parte.
+    // Una cantidad que no sirve (0, negativa, con decimales) no mueve nada; y una
+    // parte de algo que no se separa (lo del suelo, lo que no es pila) tampoco.
+    if (amount !== undefined && (!Number.isSafeInteger(amount) || amount <= 0)) {
+      this.refuse(playerId, 'Esa cantidad no sirve.');
+      return;
+    }
+    const partial = item !== undefined && amount !== undefined && amount < item.amount;
     const part =
-      item && amount !== undefined
+      partial && amount !== undefined
         ? this.world.items.split(item.id, amount, this.ids.next())
         : null;
+    if (partial && !part) {
+      this.refuse(playerId, 'Eso se mueve entero.');
+      return;
+    }
     const moving = part?.id ?? itemId;
     const result = this.world.items.move(player, moving, to, this.world.map, nearBanker);
     if (!result.ok && part && item) this.world.items.rejoin(part.id, item.id);
@@ -53,5 +64,11 @@ export class MoveItem {
       return;
     }
     this.notifications.publish(result.changes, playerId);
+  }
+
+  /** No se mueve nada: se avisa y se reenvía el estado real (el cliente deshace lo que mostró). */
+  private refuse(playerId: EntityId, text: string): void {
+    this.notifier.send(playerId, { type: 'system', text });
+    this.notifications.sendInventory(playerId);
   }
 }

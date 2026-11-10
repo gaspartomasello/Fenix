@@ -92,10 +92,15 @@ export class AmountPicker {
   }
 
   private press(key: string): void {
-    if (key === '✓') this.finish(this.typed ? Number(this.typed) : this.max);
-    else if (key === '⌫') this.typed = this.typed.slice(0, -1);
+    if (key === '✓') {
+      // Sin número escrito: la pila entera. Con 0: nada (es como cancelar).
+      const amount = this.typed ? Number(this.typed) : this.max;
+      this.finish(amount > 0 ? amount : null);
+      return;
+    }
+    if (key === '⌫') this.typed = this.typed.slice(0, -1);
     else if (this.typed.length < 7) {
-      const next = `${this.typed}${key}`.replace(/^0+/, '');
+      const next = this.typed === '0' ? key : `${this.typed}${key}`;
       this.typed = Number(next) > this.max ? String(this.max) : next;
     }
     this.render();

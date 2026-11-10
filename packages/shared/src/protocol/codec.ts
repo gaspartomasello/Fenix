@@ -185,10 +185,13 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
     case 'moveItem': {
       const to = asDestination(data.to);
       if (isId(data.itemId) && to) {
-        const amount =
-          typeof data.amount === 'number' && Number.isInteger(data.amount) && data.amount > 0
-            ? data.amount
-            : undefined;
+        // Una cantidad que no es un entero positivo hace inválido todo el mensaje.
+        const amount = data.amount;
+        if (
+          amount !== undefined &&
+          !(typeof amount === 'number' && Number.isSafeInteger(amount) && amount > 0)
+        )
+          break;
         return {
           ok: true,
           message: {

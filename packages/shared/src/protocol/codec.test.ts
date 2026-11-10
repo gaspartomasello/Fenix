@@ -143,3 +143,20 @@ describe('decodeServerMessage', () => {
     expect(decodeServerMessage(JSON.stringify({ type: 'hack' })).ok).toBe(false);
   });
 });
+
+describe('mover una parte de una pila', () => {
+  const move = (amount: unknown) =>
+    decodeClientMessage(
+      JSON.stringify({ type: 'moveItem', itemId: 'oro', to: { type: 'backpack' }, amount }),
+    );
+
+  it('acepta una cantidad entera positiva, o ninguna', () => {
+    expect(move(5)).toMatchObject({ ok: true, message: { amount: 5 } });
+    const whole = move(undefined);
+    expect(whole.ok && whole.message.type === 'moveItem' && whole.message.amount).toBe(undefined);
+  });
+
+  it('rechaza 0, negativas, decimales, textos y números enormes', () => {
+    for (const amount of [0, -3, 1.5, '5', null, 1e20, true]) expect(move(amount).ok).toBe(false);
+  });
+});

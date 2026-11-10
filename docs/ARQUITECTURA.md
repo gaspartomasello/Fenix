@@ -1455,6 +1455,11 @@ ningún monumento real):
 - En el cliente, soltar una pila de más de uno (desde la mochila, el banco, un recipiente o un
   cuerpo) abre `AmountPicker`: "Todo", "Mitad", "Uno" o un número con el teclado numérico (en la
   computadora también con las teclas, Enter y Escape). El doble clic sigue llevando la pila entera.
+- Contra duplicar: una cantidad que no es un entero positivo hace inválido el mensaje (codec) y el
+  servidor no mueve nada ("Esa cantidad no sirve."); una parte de algo que no se separa (lo del
+  suelo) tampoco ("Eso se mueve entero."). En el panel, 0 es cancelar. `stack-split.test.ts`
+  prueba cantidades raras (0, negativas, decimales, NaN, infinitas, enormes) contra todos los
+  destinos y orígenes, y que el oro total del mundo no cambie nunca.
 
 ## Convenciones
 

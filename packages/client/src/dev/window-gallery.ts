@@ -59,7 +59,13 @@ const gallery: Record<string, () => void> = {
 gallery.cantidad = () => {
   const picker = new AmountPicker();
   ui.append(picker.element);
-  void picker.ask('gold', 1250);
+  // Cada respuesta queda anotada en la página (para probarla) y se vuelve a preguntar.
+  const ask = (): void =>
+    void picker.ask('gold', 1250).then((amount) => {
+      document.body.dataset.cantidad = String(amount);
+      ask();
+    });
+  ask();
 };
 
 const only = new URLSearchParams(location.search).get('ventana');
