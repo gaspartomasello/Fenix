@@ -137,9 +137,9 @@ export const SKILL_GROUPS: readonly {
   },
 ];
 
-/** Máximo de una habilidad y de la suma de todas (en décimas), como los 700 puntos de UO. */
+/** Máximo de cada habilidad y de la suma de todas (en décimas). */
 export const SKILL_MAX = 1000;
-export const SKILL_TOTAL_CAP = 7000;
+export const SKILL_TOTAL_CAP = 10000;
 
 export const STARTING_SKILLS: SkillValues = {
   wrestling: 300,
