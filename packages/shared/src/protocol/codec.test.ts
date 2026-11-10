@@ -11,6 +11,13 @@ describe('decodeClientMessage', () => {
     });
   });
 
+  it('valida la dirección de habilidades', () => {
+    const request = { type: 'setSkillDirection', skill: 'fishing', direction: 'down' };
+    expect(decodeClientMessage(JSON.stringify(request))).toEqual({ ok: true, message: request });
+    expect(decodeClientMessage(JSON.stringify({ ...request, direction: 'erase' })).ok).toBe(false);
+    expect(decodeClientMessage(JSON.stringify({ ...request, skill: 'unknown' })).ok).toBe(false);
+  });
+
   it('acepta los comandos de administrador para ver todos los objetos y eliminar uno', () => {
     const catalog = { type: 'gm', command: { kind: 'catalog' } };
     expect(decodeClientMessage(JSON.stringify(catalog))).toEqual({ ok: true, message: catalog });

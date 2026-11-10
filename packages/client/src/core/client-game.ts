@@ -1,3 +1,4 @@
+import type { SkillKey, SkillDirection, SkillDirections } from '@fenix/shared/skills/skill-catalog';
 import { effectiveMoveMode } from '@fenix/shared/combat/combat-rules';
 import { PLAYER_ATTRIBUTES, type Attributes, type Vitals } from '@fenix/shared/combat/vitals';
 import { CREATURES, bodyMoveMs, isCreatureKind } from '@fenix/shared/creatures/creature-catalog';
@@ -243,6 +244,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   private _vitals: { vitals: Vitals; dead: boolean } | null = null;
   private _targetId: EntityId | null = null;
   private _skills: SkillValues | null = null;
+  private _skillDirections: SkillDirections = {};
   private _social: SocialState | null = null;
   private _warMode = false;
   private _hidden = false;
@@ -279,6 +281,14 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
 
   get vitals(): { vitals: Vitals; dead: boolean } | null {
     return this._vitals;
+  }
+
+  get skillDirections(): SkillDirections {
+    return this._skillDirections;
+  }
+
+  setSkillDirection(skill: SkillKey, direction: SkillDirection): void {
+    this.gateway.send({ type: 'setSkillDirection', skill, direction });
   }
 
   get skills(): SkillValues | null {
@@ -1158,6 +1168,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         break;
       case 'skills':
         this._skills = message.values;
+        this._skillDirections = message.directions ?? {};
         this.emit('skillsChanged', message.values);
         break;
       case 'castStart':

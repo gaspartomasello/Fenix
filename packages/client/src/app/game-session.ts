@@ -684,12 +684,14 @@ export class GameSession {
         { people: true, self: false, npcs: true },
       );
     };
-    const skills = new SkillsWindow(useSkill);
+    const skills = new SkillsWindow(useSkill, (skill, direction) =>
+      this.game.setSkillDirection(skill, direction),
+    );
     this.hosts.ui.append(spellbook.window.element, skills.window.element);
     const render = (): void => {
       const values = this.game.skills;
       spellbook.render(values);
-      if (values) skills.render(values);
+      if (values) skills.render(values, this.game.skillDirections);
     };
     this.game.on('skillsChanged', render);
     this.game.on('effectsChanged', (state) => skills.renderAttributes(state.attributes));

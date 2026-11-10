@@ -12,7 +12,12 @@ import type { ContainerLook } from '../domain/world/statics';
 import type { ChatChannel, SocialCommand } from '../domain/social/groups';
 import type { Notoriety } from '../domain/social/reputation';
 import type { PolymorphForm, SpellKey } from '../domain/magic/spell-catalog';
-import type { SkillKey, SkillValues } from '../domain/skills/skill-catalog';
+import type {
+  SkillKey,
+  SkillValues,
+  SkillDirection,
+  SkillDirections,
+} from '../domain/skills/skill-catalog';
 import type { CharacterCreation } from '../domain/character/creation';
 import type { ActiveSkill } from '../domain/skills/stealth';
 import type { TrackingCategory } from '../domain/skills/tracking';
@@ -437,6 +442,12 @@ export interface FollowTrackRequest {
   readonly targetId: EntityId;
 }
 
+export interface SetSkillDirectionRequest {
+  readonly type: 'setSkillDirection';
+  readonly skill: SkillKey;
+  readonly direction: SkillDirection;
+}
+
 export interface UseSkillRequest {
   readonly type: 'useSkill';
   readonly skill: ActiveSkill;
@@ -573,6 +584,7 @@ export type ClientMessage =
   | DismountRequest
   | ReleasePetRequest
   | UseSkillRequest
+  | SetSkillDirectionRequest
   | TrackRequest
   | FollowTrackRequest
   | SetWarModeRequest
@@ -735,6 +747,7 @@ export interface SwingMessage {
 export interface SkillsMessage {
   readonly type: 'skills';
   readonly values: SkillValues;
+  readonly directions?: SkillDirections;
 }
 
 /** Alguien empezó a lanzar un hechizo: se ven sus palabras. */

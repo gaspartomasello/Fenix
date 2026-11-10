@@ -7,6 +7,9 @@ import {
   SKILL_TOTAL_CAP,
   formatSkill,
   type SkillValues,
+  type SkillKey,
+  type SkillDirection,
+  type SkillDirections,
 } from '@fenix/shared/skills/skill-catalog';
 import { ATTRIBUTE_NAMES } from '@fenix/shared/skills/stat-gain';
 import { isActiveSkill, type ActiveSkill } from '@fenix/shared/skills/stealth';
@@ -20,7 +23,11 @@ export class SkillsWindow {
   private readonly total: HTMLElement;
   private readonly attributes: HTMLElement;
 
-  constructor(private readonly onUse: (skill: ActiveSkill) => void = () => undefined) {
+  constructor(
+    private readonly onUse: (skill: ActiveSkill) => void = () => undefined,
+    private readonly onDirection: (skill: SkillKey, direction: SkillDirection) => void = () =>
+      undefined,
+  ) {
     this.window = new GameWindow('habilidades', 'Habilidades', { x: 16, y: 150 });
     this.attributes = el('p', { className: 'skills-attributes' });
     this.list = el('dl', { className: 'skills-list' });
@@ -31,7 +38,7 @@ export class SkillsWindow {
       this.total,
       el('p', {
         className: 'window-hint',
-        text: 'Suben de a 0,1 cada vez que las usás, y con ellas tus atributos.',
+        text: '↑ sube · ↓ cede puntos al llegar al tope · 🔒 conserva su valor.',
       }),
     );
   }
@@ -43,7 +50,7 @@ export class SkillsWindow {
       .join(' · ');
   }
 
-  render(values: SkillValues): void {
+  render(values: SkillValues, directions: SkillDirections = {}): void {
     this.list.replaceChildren(
       ...SKILL_GROUPS.flatMap((group) => [
         el('dt', { className: 'skills-group', text: group.name }),
@@ -51,6 +58,7 @@ export class SkillsWindow {
           el('dt', { text: SKILL_NAMES[key], attrs: { title: SKILL_DESCRIPTIONS[key] } }),
           el('dd', {}, [
             document.createTextNode(formatSkill(values[key])),
+            this.directionButton(key, directions[key] ?? 'up'),
             ...(isActiveSkill(key) ? [this.useButton(key)] : []),
           ]),
         ]),
@@ -58,6 +66,22 @@ export class SkillsWindow {
     );
     const sum = SKILL_KEYS.reduce((acc, key) => acc + values[key], 0);
     this.total.textContent = `Total: ${formatSkill(sum)} de ${formatSkill(SKILL_TOTAL_CAP)}`;
+  }
+
+  private directionButton(skill: SkillKey, direction: SkillDirection): HTMLElement {
+    const next: Record<SkillDirection, SkillDirection> = { up: 'down', down: 'lock', lock: 'up' };
+    const names = { up: 'Subir', down: 'Bajar', lock: 'Bloquear' };
+    const button = el('button', {
+      className: `skills-direction skills-direction--${direction}`,
+      text: { up: '▲', down: '▼', lock: '🔒' }[direction],
+      attrs: {
+        type: 'button',
+        title: `${names[direction]} ${SKILL_NAMES[skill]}`,
+        'aria-label': `${SKILL_NAMES[skill]}: ${names[direction]}. Tocar para cambiar.`,
+      },
+    });
+    button.addEventListener('click', () => this.onDirection(skill, next[direction]));
+    return button;
   }
 
   /** Las que se usan a propósito tienen su botón. */
