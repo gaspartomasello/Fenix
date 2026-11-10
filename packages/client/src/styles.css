@@ -5159,3 +5159,9 @@ html:not(.touch-ui) .info-strip .info-chip-icon {
   min-height: 22px;
   font-size: 0.65rem;
 }
+
+/* El mapa del mundo ocupa casi toda la pantalla: el marco es fino y sin barra de título. */
+.world-map-frame {
+  padding: 4px;
+  gap: 0;
+}

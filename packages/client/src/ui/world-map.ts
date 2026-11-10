@@ -1,10 +1,13 @@
+import { isWater } from '@fenix/shared/world/terrain';
 import type { TileMap } from '@fenix/shared/world/tile-map';
 import type { ClientGame } from '../core/client-game';
 import { el } from './dom';
 import { mapPicture } from './map-picture';
 
-/** Lugar que ocupa el mapa en la pantalla, como fracción de la ventana. */
-const SCREEN_FILL = { width: 0.92, height: 0.82 };
+/** Ancho máximo del mapa, como fracción de la ventana. */
+const SCREEN_FILL_WIDTH = 0.97;
+/** Lo que no es mapa, a lo alto y a lo ancho: el marco fino y un poco de aire (pixeles CSS). */
+const FRAME_EXTRA = 20;
 
 /**
  * El mapa del mundo entero, como el de UO: el continente y las islas de una
@@ -14,6 +17,8 @@ const SCREEN_FILL = { width: 0.92, height: 0.82 };
 export class WorldMap {
   readonly element: HTMLElement;
   private readonly canvas: HTMLCanvasElement;
+  /** La esquina del mapa donde va la rosa de los vientos (la que tiene solo mar), por mapa. */
+  private compassCorner: { map: TileMap; corner: Corner } | null = null;
   private timer: number | null = null;
   private readonly onResize = (): void => this.layout();
 
@@ -26,13 +31,7 @@ export class WorldMap {
     this.element = el(
       'div',
       { className: 'world-map', attrs: { role: 'dialog', 'aria-label': 'Mapa del mundo' } },
-      [
-        el('div', { className: 'world-map-frame' }, [
-          el('div', { className: 'world-map-title', text: 'Mapa del mundo' }),
-          this.canvas,
-          el('div', { className: 'world-map-hint', text: 'M o un clic para cerrar' }),
-        ]),
-      ],
+      [el('div', { className: 'world-map-frame' }, [this.canvas])],
     );
     this.element.hidden = true;
     const close = (e: Event): void => {
@@ -72,9 +71,10 @@ export class WorldMap {
     const map = this.game.map;
     if (!map) return;
     const { width, height } = overworld(map);
+    // Lo más grande que entre: casi toda la pantalla, menos el marco fino.
     const scale = Math.min(
-      (window.innerWidth * SCREEN_FILL.width) / width,
-      (window.innerHeight * SCREEN_FILL.height) / height,
+      Math.min(window.innerWidth * SCREEN_FILL_WIDTH, window.innerWidth - FRAME_EXTRA) / width,
+      (window.innerHeight - FRAME_EXTRA) / height,
     );
     const cssWidth = Math.max(1, Math.floor(width * scale));
     const cssHeight = Math.max(1, Math.floor(height * scale));
@@ -84,6 +84,12 @@ export class WorldMap {
     this.canvas.width = cssWidth * ratio;
     this.canvas.height = cssHeight * ratio;
     this.draw();
+  }
+
+  private cornerFor(map: TileMap, area: { width: number; height: number }, side: number): Corner {
+    if (this.compassCorner?.map !== map)
+      this.compassCorner = { map, corner: seaCorner(map, area, side) };
+    return this.compassCorner.corner;
   }
 
   private draw(): void {
@@ -136,7 +142,18 @@ export class WorldMap {
       ctx.fillStyle = region.wild ? '#f2d9a6' : '#ffffff';
       ctx.fillText(region.name, x, y);
     }
-    drawCompass(ctx, this.canvas.width, this.canvas.height, ratio);
+    // La rosa de los vientos, chica, en la esquina que tiene solo mar.
+    const cssSide = Math.min(this.canvas.width, this.canvas.height) / ratio;
+    const r = Math.max(14, Math.min(26, cssSide * 0.045)) * ratio;
+    const corner = this.cornerFor(map, area, (r * 2.9) / k);
+    const margin = r * 1.55;
+    drawCompass(
+      ctx,
+      corner.right ? this.canvas.width - margin : margin,
+      corner.bottom ? this.canvas.height - margin : margin,
+      r,
+      ratio,
+    );
     // Uno mismo: un punto con un anillo que late, para encontrarse de un vistazo.
     const self = this.game.selfSeenAt();
     if (self && self.x < area.width) {
@@ -159,6 +176,39 @@ export class WorldMap {
 }
 
 /** La parte del mapa a la luz del día: sin la franja de la mazmorra, que queda aparte. */
+interface Corner {
+  readonly right: boolean;
+  readonly bottom: boolean;
+}
+
+/** Las esquinas, en el orden en que se prefieren si varias son solo mar. */
+const CORNERS: readonly Corner[] = [
+  { right: true, bottom: true },
+  { right: false, bottom: true },
+  { right: true, bottom: false },
+  { right: false, bottom: false },
+];
+
+/** La esquina con más mar (en un cuadrado de `side` tiles): ahí la rosa no tapa tierra ni nombres. */
+function seaCorner(map: TileMap, area: { width: number; height: number }, side: number): Corner {
+  const tiles = Math.max(4, Math.ceil(side));
+  const step = Math.max(1, Math.floor(tiles / 12));
+  let best = CORNERS[0] as Corner;
+  let bestSea = -1;
+  for (const corner of CORNERS) {
+    const x0 = corner.right ? area.width - tiles : 0;
+    const y0 = corner.bottom ? area.height - tiles : 0;
+    let sea = 0;
+    for (let y = y0; y < y0 + tiles; y += step)
+      for (let x = x0; x < x0 + tiles; x += step) if (isWater(map.terrainAt({ x, y }))) sea++;
+    if (sea > bestSea) {
+      best = corner;
+      bestSea = sea;
+    }
+  }
+  return best;
+}
+
 function overworld(map: TileMap): { width: number; height: number } {
   const dungeons = map.regions.filter((r) => r.dungeon && r.x > 0).map((r) => r.x);
   const width = dungeons.length > 0 ? Math.min(...dungeons) : map.width;
@@ -166,18 +216,16 @@ function overworld(map: TileMap): { width: number; height: number } {
 }
 
 /**
- * Rosa de los vientos abajo a la derecha: una estrella de bronce de cuatro
- * puntas con N, E, S y O (el mapa del mundo tiene el norte arriba).
+ * Rosa de los vientos chica sobre el mapa, en (cx, cy): una estrella de bronce de
+ * cuatro puntas con N, E, S y O (el mapa del mundo tiene el norte arriba).
  */
 function drawCompass(
   ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
+  cx: number,
+  cy: number,
+  r: number,
   ratio: number,
 ): void {
-  const r = Math.min(34 * ratio, Math.min(width, height) * 0.09);
-  const cx = width - r * 1.7;
-  const cy = height - r * 1.7;
   ctx.save();
   ctx.translate(cx, cy);
   // El disco, como una tapa de bronce.
