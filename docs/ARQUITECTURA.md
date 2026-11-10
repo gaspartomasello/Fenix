@@ -1423,6 +1423,15 @@ ningún monumento real):
   pantalla o entrar al mundo se saca el cursor (`blurField`), y si igual quedó uno huérfano, el
   próximo toque afuera entra y sale de un campo de paso (`forceHideKeyboard`), que lo cierra.
 
+## El ritmo de las criaturas (etapa 86)
+
+- Reglas en `@fenix/shared/creatures/creature-pace`, aplicadas por el ciclo del servidor:
+  - Cada criatura camina a su manera: sobre el paso de su especie (`moveMs`) suma hasta un 12 % más
+    rápido o más lento, fijo para cada individuo (sale de su id). Dos lobos no van iguales.
+  - Las que pelean cuerpo a cuerpo persiguen un 20 % más despacio (`MELEE_CHASE_PACE`); las
+    invocaciones y monturas siguen a su dueño a su paso de siempre.
+  - Las que hacen magia esperan un 35 % menos entre hechizo y hechizo (`SPELL_COOLDOWN_FACTOR`).
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

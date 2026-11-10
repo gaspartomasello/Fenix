@@ -1,3 +1,4 @@
+import { spellCooldownMs } from '@fenix/shared/creatures/creature-pace';
 import { tileDistance } from '@fenix/shared/geometry/position';
 import {
   attributeModifier,
@@ -59,7 +60,7 @@ export function startCreatureCast(
     targetId: healing ? creature.id : target.id,
     resolveAt: now + SPELLS[spell].castMs,
   };
-  creature.nextSpellAt = now + SPELLS[spell].castMs + spells.cooldownMs;
+  creature.nextSpellAt = now + SPELLS[spell].castMs + spellCooldownMs(spells.cooldownMs);
   return spell;
 }
 
