@@ -1,5 +1,8 @@
 import type { AttributeKey } from '../magic/effects';
-import type { SkillKey } from './skill-catalog';
+import type { SkillKey, SkillDirection } from './skill-catalog';
+
+export type StatDirections = Readonly<Partial<Record<AttributeKey, SkillDirection>>>;
+export const STAT_KEYS = ['strength', 'dexterity', 'intelligence'] as const;
 
 /**
  * Atributos que se entrenan con cada habilidad, como en UO: el primero sube

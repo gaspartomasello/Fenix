@@ -34,7 +34,7 @@ import {
   type SkillValues,
   type SkillDirections,
 } from '@fenix/shared/skills/skill-catalog';
-import { STAT_CAP } from '@fenix/shared/skills/stat-gain';
+import { STAT_CAP, STAT_KEYS, type StatDirections } from '@fenix/shared/skills/stat-gain';
 import { isTreasureLevel, type TreasureMark } from '@fenix/shared/treasure/treasure';
 import { Creature } from '../creatures/creature';
 import type { ShipRecord } from '../ships/ship';
@@ -86,6 +86,7 @@ export interface SavedCharacter {
   readonly dead: boolean;
   readonly skills: SkillValues;
   readonly skillDirections?: SkillDirections;
+  readonly statDirections?: StatDirections;
   /** Atributos entrenados (los personajes viejos no los tienen: se usan los iniciales). */
   readonly attributes: Attributes;
   readonly reputation: { readonly fame: number; readonly karma: number; readonly murders: number };
@@ -130,6 +131,7 @@ export function captureCharacter(
     dead: player.combat.isDead,
     skills: player.skills.snapshot(),
     skillDirections: player.skills.directionsSnapshot(),
+    statDirections: player.statDirectionsSnapshot(),
     attributes: player.combat.baseAttributes,
     reputation: {
       fame: player.reputation.fame,
@@ -222,6 +224,15 @@ function parseSkillDirections(value: unknown): SkillDirections {
   const source = isObject(value) ? value : {};
   const result: Partial<Record<(typeof SKILL_KEYS)[number], 'up' | 'down' | 'lock'>> = {};
   for (const key of SKILL_KEYS) {
+    if (isSkillDirection(source[key])) result[key] = source[key];
+  }
+  return result;
+}
+
+function parseStatDirections(value: unknown): StatDirections {
+  const source = isObject(value) ? value : {};
+  const result: Partial<Record<(typeof STAT_KEYS)[number], 'up' | 'down' | 'lock'>> = {};
+  for (const key of STAT_KEYS) {
     if (isSkillDirection(source[key])) result[key] = source[key];
   }
   return result;
@@ -419,6 +430,9 @@ export function parseSavedCharacter(value: unknown): SavedCharacter | null {
       ? { skillDirections: parseSkillDirections(value.skillDirections) }
       : {}),
     attributes: parseAttributes(value.attributes),
+    ...(isObject(value.statDirections)
+      ? { statDirections: parseStatDirections(value.statDirections) }
+      : {}),
     reputation: {
       fame: number(reputation, 'fame'),
       karma: number(reputation, 'karma'),
@@ -467,6 +481,7 @@ export function restoreCharacter(
       appearance: saved.appearance,
       skills: saved.skills,
       ...(saved.skillDirections ? { skillDirections: saved.skillDirections } : {}),
+      ...(saved.statDirections ? { statDirections: saved.statDirections } : {}),
       attributes: saved.attributes,
     },
     random,

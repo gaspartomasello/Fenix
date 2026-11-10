@@ -22,6 +22,7 @@ export class MobileNotifications {
   sendEffects(player: Player): void {
     this.notifier.send(player.id, {
       type: 'effects',
+      statDirections: player.statDirectionsSnapshot(),
       effects: player.combat.effectsSnapshot(this.clock.now()),
       attributes: player.combat.attributes,
     });

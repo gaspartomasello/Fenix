@@ -19,6 +19,8 @@ import type {
   SkillDirections,
 } from '../domain/skills/skill-catalog';
 import type { CharacterCreation } from '../domain/character/creation';
+import type { StatDirections } from '../domain/skills/stat-gain';
+import type { AttributeKey } from '../domain/magic/effects';
 import type { ActiveSkill } from '../domain/skills/stealth';
 import type { TrackingCategory } from '../domain/skills/tracking';
 import type { WorldTime } from '../domain/rules/daylight';
@@ -442,6 +444,12 @@ export interface FollowTrackRequest {
   readonly targetId: EntityId;
 }
 
+export interface SetStatDirectionRequest {
+  readonly type: 'setStatDirection';
+  readonly stat: AttributeKey;
+  readonly direction: SkillDirection;
+}
+
 export interface SetSkillDirectionRequest {
   readonly type: 'setSkillDirection';
   readonly skill: SkillKey;
@@ -585,6 +593,7 @@ export type ClientMessage =
   | ReleasePetRequest
   | UseSkillRequest
   | SetSkillDirectionRequest
+  | SetStatDirectionRequest
   | TrackRequest
   | FollowTrackRequest
   | SetWarModeRequest
@@ -772,6 +781,7 @@ export interface SpellEffectMessage {
 /** Efectos activos propios (hechizos, pociones, veneno) y atributos con sus cambios. */
 export interface EffectsMessage {
   readonly type: 'effects';
+  readonly statDirections?: StatDirections;
   readonly effects: readonly EffectSnapshot[];
   readonly attributes: Attributes;
 }
