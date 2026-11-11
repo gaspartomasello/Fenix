@@ -76,8 +76,12 @@ export function resolveBandage(
 
   const healing = player.skills.get('healing');
   const anatomy = player.skills.get('anatomy');
-  const gains = (['healing', 'anatomy'] as const).filter((skill) =>
-    player.skills.tryGain(skill, random),
+  // Primeros auxilios tiene dos oportunidades de subir por venda: cada venda
+  // tarda unos segundos y, con una sola, pasar de 50 costaba cientos de vendas.
+  const gains = (['healing', 'anatomy'] as const).filter(
+    (skill) =>
+      player.skills.tryGain(skill, random) ||
+      (skill === 'healing' && player.skills.tryGain(skill, random)),
   );
   if (random() >= bandageChance(healing)) return { kind: 'failed', gains };
 

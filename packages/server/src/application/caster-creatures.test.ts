@@ -82,4 +82,18 @@ describe('criaturas que lanzan hechizos', () => {
         .some((d) => JSON.stringify(d.message).includes('pierde la concentración')),
     ).toBe(true);
   });
+
+  it('sus hechizos entrenan la Resistencia mágica de quien los recibe', () => {
+    const { world, app, clock, ana } = createArena();
+    ana.teleport({ x: 3, y: 2 });
+    const before = ana.skills.get('magic-resist');
+    const mage = new Creature('mago', 'skeleton-mage', { x: 7, y: 2 });
+    world.addCreature(mage);
+    mage.pendingCast = { spell: 'magic-arrow', targetId: ana.id, resolveAt: clock.now() + 100 };
+    for (let t = 0; t < 500; t += 100) {
+      clock.advance(100);
+      app.tick(clock.now());
+    }
+    expect(ana.skills.get('magic-resist')).toBeGreaterThan(before);
+  });
 });
