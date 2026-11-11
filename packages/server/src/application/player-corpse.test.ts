@@ -121,4 +121,57 @@ describe('el cuerpo de un jugador', () => {
     expect(arena.world.items.get(bones.id)).toBeUndefined();
     expect(arena.world.items.corpseOf(bones.id)).toHaveLength(0);
   });
+
+  it('etapa 112: el cuerpo se ve con lo que tenía puesto, y lo que se le saca deja de verse', () => {
+    const arena = createArena();
+    const beto = arena.join('Beto');
+    arena.world.items.add('casco', 'iron-helmet', 1, {
+      type: 'equipment',
+      ownerId: beto,
+      slot: 'head',
+    });
+    const corpseId = arena.killBeto(beto);
+    const corpse = arena.world.items.get(corpseId);
+    expect(corpse?.toGroundSnapshot()?.corpseLook?.equipment.head).toBe('iron-helmet');
+    // Ana le saca el casco: el cuerpo ya no lo tiene puesto.
+    const ana = arena.join('Ana');
+    arena.app.handle(ana, { type: 'useItem', itemId: corpseId });
+    arena.app.handle(ana, { type: 'moveItem', itemId: 'casco', to: { type: 'backpack' } });
+    expect(
+      arena.world.items.get(corpseId)?.toGroundSnapshot()?.corpseLook?.equipment.head,
+    ).toBeUndefined();
+  });
+
+  it('etapa 112: de fantasma no se revisa el propio cuerpo; resucitado, "Recuperar todo" te vuelve a vestir', () => {
+    const arena = createArena();
+    const beto = arena.join('Beto');
+    arena.world.items.add('casco', 'iron-helmet', 1, {
+      type: 'equipment',
+      ownerId: beto,
+      slot: 'head',
+    });
+    const corpseId = arena.killBeto(beto);
+    arena.app.handle(beto, { type: 'openCorpse', corpseId });
+    expect(
+      arena.notifier
+        .ofType('system')
+        .some((m) => /un fantasma no puede agarrar/.test((m.message as { text: string }).text)),
+    ).toBe(true);
+    const player = arena.world.get(beto);
+    player?.combat.resurrect(0.5, arena.clock.now());
+    arena.app.handle(beto, { type: 'useItem', itemId: corpseId });
+    const opened = arena.notifier.ofType('corpse').at(-1)?.message;
+    expect(opened?.type === 'corpse' && opened.noTakeAll).toBeFalsy();
+    const before = arena.world.items.countInBackpack(beto, 'gold');
+    const inCorpse = arena.world.items
+      .corpseOf(corpseId)
+      .filter((i) => i.kind === 'gold')
+      .reduce((n, i) => n + i.amount, 0);
+    arena.app.handle(beto, { type: 'lootAll', corpseId });
+    const helmet = arena.world.items.get('casco');
+    expect(helmet?.location).toMatchObject({ type: 'equipment', slot: 'head' });
+    expect(arena.world.items.countInBackpack(beto, 'gold')).toBe(before + inCorpse);
+    // Recuperar lo propio no es crimen.
+    expect(player?.reputation.notoriety).toBe('innocent');
+  });
 });

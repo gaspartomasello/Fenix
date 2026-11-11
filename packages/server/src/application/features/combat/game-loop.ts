@@ -767,11 +767,24 @@ export class GameLoop {
 
   private tryResurrect(player: Player, now: number): void {
     const nearShrine = this.shrines.some((s) => tileDistance(s, player.position) <= SHRINE_RANGE);
-    if (!nearShrine) return;
+    // Como en UO, los sanadores del pueblo también devuelven la vida a los fantasmas.
+    const healer = nearShrine
+      ? undefined
+      : this.world
+          .allNpcs()
+          .find(
+            (n) => n.role === 'healer' && tileDistance(n.position, player.position) <= SHRINE_RANGE,
+          );
+    if (!nearShrine && !healer) return;
     player.combat.resurrect(RESURRECT_HEALTH, now);
     this.mobiles.sendVitals(player);
     this.mobiles.broadcastHealth(player);
-    this.notifier.send(player.id, { type: 'system', text: '¡Volviste a la vida!' });
+    this.notifier.send(player.id, {
+      type: 'system',
+      text: healer
+        ? `${healer.name} reza por vos y volvés a la vida. Andá a buscar tu cuerpo: tus cosas siguen ahí.`
+        : '¡Volviste a la vida! Andá a buscar tu cuerpo: tus cosas siguen ahí.',
+    });
   }
 }
 

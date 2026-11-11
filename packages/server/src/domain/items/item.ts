@@ -5,6 +5,7 @@ import type { EquipmentSlot } from '@fenix/shared/items/equipment';
 import type { ItemKind } from '@fenix/shared/items/item-catalog';
 import type {
   BackpackItemSnapshot,
+  CorpseLook,
   EntityId,
   EquippedItemSnapshot,
   GroundItemSnapshot,
@@ -22,6 +23,8 @@ export type ItemLocation =
       readonly at: Position;
       /** Lugar en pixeles dentro de la ventana del cuerpo. */
       readonly position: Position;
+      /** Lo llevaba puesto el muerto, en ese lugar del cuerpo (se ve en el cadáver). */
+      readonly worn?: EquipmentSlot;
     }
   | { readonly type: 'backpack'; readonly ownerId: EntityId; readonly position: Position }
   | { readonly type: 'bank'; readonly ownerId: EntityId; readonly position: Position }
@@ -63,8 +66,13 @@ export class Item {
    * El cuerpo (o los restos) de un jugador muerto: de quién es y si era
    * inocente al morir (saquearlo es un crimen, salvo para el dueño).
    */
-  corpse: { readonly name: string; readonly ownerId: EntityId; readonly innocent: boolean } | null =
-    null;
+  corpse: {
+    readonly name: string;
+    readonly ownerId: EntityId;
+    readonly innocent: boolean;
+    /** Cómo se ve tirado (solo el cuerpo; los huesos no). */
+    readonly look?: CorpseLook;
+  } | null = null;
 
   /** Lo que el cliente ve además de tipo y cantidad. */
   private get extra(): {
@@ -73,9 +81,11 @@ export class Item {
     hue?: number;
     newbie?: true;
     corpseOf?: string;
+    corpseLook?: CorpseLook;
   } {
     return {
       ...(this.corpse ? { corpseOf: this.corpse.name } : {}),
+      ...(this.corpse?.look ? { corpseLook: this.corpse.look } : {}),
       ...(this.newbie ? { newbie: true as const } : {}),
       ...(this.mark ? { mark: this.mark } : {}),
       ...(this.book?.title ? { bookTitle: this.book.title } : {}),

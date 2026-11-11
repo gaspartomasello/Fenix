@@ -1545,6 +1545,16 @@ ningún monumento real):
   robar). El cliente lo muestra en `SnoopWindow`: tocar un objeto manda `stealItem` y se intenta
   robar **justo eso**, con la misma chance y las mismas consecuencias que Robar.
 
+## El cuerpo del jugador como en UO (etapa 112)
+
+- Al morir, lo que llevaba puesto pasa al cuerpo recordando su lugar (`worn` en la ubicación
+  `corpse`). El cuerpo guarda la apariencia y la dirección (`corpse.look`) y el suelo lo manda en
+  `corpseLook`; el cliente lo dibuja con `drawPlayerCorpse` (la persona tirada de espaldas con su
+  equipo). Al sacarle algo, se recalcula y se vuelve a mandar: deja de verse puesto.
+- En el propio cuerpo, "Tomar todo" recupera todo y se vuelve a poner lo que estaba puesto (si el
+  lugar está libre). De fantasma no se puede: hay que resucitar (santuario o sanador del pueblo).
+- De fantasma no hay oscuridad (como con visión nocturna).
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

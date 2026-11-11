@@ -322,7 +322,8 @@ export class GameRenderer {
         focus,
         lights: this.statics?.visibleLights() ?? [],
         carried: this.carriedLights(now),
-        nightVision: this.game.hasEffect('night-sight'),
+        // De fantasma se ve sin sombras (para encontrar el cuerpo aunque sea de noche).
+        nightVision: this.game.hasEffect('night-sight') || self.dead,
         underground: this.game.currentRegion()?.dungeon === true,
       });
     }

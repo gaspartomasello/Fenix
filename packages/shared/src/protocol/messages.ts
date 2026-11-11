@@ -92,6 +92,16 @@ export interface ItemSnapshot {
   readonly newbie?: true;
   /** Cuerpo o restos de un jugador: de quién es. */
   readonly corpseOf?: string;
+  /** Cuerpo de un jugador: cómo era y lo que todavía tiene puesto (se dibuja así, tirado). */
+  readonly corpseLook?: CorpseLook;
+}
+
+/** Cómo se ve el cuerpo de un jugador: su apariencia y lo que le queda puesto. */
+export interface CorpseLook {
+  readonly appearance: Appearance;
+  readonly direction: Direction;
+  readonly equipment: EquipmentLook;
+  readonly hues: EquipmentHues;
 }
 
 /** Lugar grabado en una runa con Marcar. */

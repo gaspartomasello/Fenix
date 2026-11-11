@@ -1,4 +1,8 @@
+import type { Appearance } from '@fenix/shared/character/appearance';
 import type { CreatureKind } from '@fenix/shared/creatures/creature-catalog';
+import type { EquipmentHues, EquipmentLook } from '@fenix/shared/protocol/messages';
+import { drawCharacterFrame } from './character-art';
+import type { CanvasFactory } from './humanoid-rig';
 import type { Direction } from '@fenix/shared/geometry/direction';
 import { isMountKind } from '@fenix/shared/mounts/mount-catalog';
 import { drawCreatureFrame } from './creature-art';
@@ -154,9 +158,40 @@ export function drawCreatureCorpse(
   fallen = 1,
 ): PixelImage {
   const pose = poseOf(kind) ?? { fall: 'back', angle: BACK, center: 30, rest: 4 };
-  const layout = corpseLayout(kind);
+  return drawCreatureFrame(kind, direction, 'dead', posedCanvas(pose, corpseLayout(kind), fallen));
+}
+
+/** Lienzo del cuerpo de un jugador (el de una persona tirada de espaldas). */
+export const PLAYER_CORPSE_LAYOUT: CorpseLayout = HUMANOID_LAYOUT;
+
+/**
+ * El cuerpo de un jugador, como en UO: la misma persona, tirada de
+ * espaldas, con su cara, su pelo y lo que todavía tiene puesto (lo que se le
+ * saca deja de verse).
+ */
+export function drawPlayerCorpse(
+  appearance: Appearance,
+  direction: Direction,
+  equipment: EquipmentLook,
+  hues: EquipmentHues,
+): PixelImage {
+  const pose: CorpsePose = { fall: 'back', angle: BACK, center: 30, rest: 3 };
+  return drawCharacterFrame(
+    appearance,
+    direction,
+    'dead',
+    equipment,
+    null,
+    null,
+    posedCanvas(pose, PLAYER_CORPSE_LAYOUT, 1),
+    hues,
+  );
+}
+
+/** El lienzo que dibuja el modelo girado y apoyado en el piso según cómo cae. */
+function posedCanvas(pose: CorpsePose, layout: CorpseLayout, fallen: number): CanvasFactory {
   const t = Math.max(0, Math.min(1, fallen));
-  return drawCreatureFrame(kind, direction, 'dead', (_width, _height, camera) => {
+  return (_width, _height, camera) => {
     const angle = t * pose.angle;
     const turn = (v: Vec3): Vec3 => (pose.fall === 'back' ? pitch(v, -angle) : roll(v, angle));
     const height = pose.center + (pose.rest - pose.center) * t;
@@ -168,7 +203,7 @@ export function drawCreatureCorpse(
     // Lo que queda bajo el suelo (patas debajo del cuerpo) no se ve.
     const aboveGround = (p: Vec3): boolean => turn(p)[1] + shift[1] > -0.5;
     return new VolumeCanvas(layout.width, layout.height, projection, aboveGround);
-  });
+  };
 }
 
 /**

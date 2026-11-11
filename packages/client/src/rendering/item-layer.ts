@@ -1,4 +1,4 @@
-import { ITEM_ART_SIZE } from '@fenix/art';
+import { ITEM_ART_SIZE, PLAYER_CORPSE_LAYOUT } from '@fenix/art';
 import type { EntityId, GroundItemSnapshot } from '@fenix/shared/protocol/messages';
 import { Sprite, type Container } from 'pixi.js';
 import { characterDepth, groundItemDepth } from './depth';
@@ -28,7 +28,10 @@ export class ItemLayer {
       this.remove(item.id);
       // El fuego, el veneno y el muro de piedra los dibuja la capa de campos.
       if (drawnAsField(item.kind)) continue;
-      const sprite = new Sprite(this.textures.item(item.kind, item.amount));
+      const dressed = item.kind === 'player-corpse' ? item.corpseLook : undefined;
+      const sprite = new Sprite(
+        dressed ? this.textures.playerCorpse(dressed) : this.textures.item(item.kind, item.amount),
+      );
       const screen = this.ground.toScreen(item.position);
       sprite.anchor.set(0.5);
       sprite.scale.set(CHARACTER_SCALE);
@@ -36,8 +39,15 @@ export class ItemLayer {
         sprite.scale.set((CHARACTER_SCALE * ITEM_ART_SIZE) / sprite.texture.width);
       sprite.position.set(screen.x, screen.y - 4);
       sprite.zIndex = groundItemDepth(item.position);
-      // El cuerpo de un jugador, del tamaño de una persona.
-      if (item.kind === 'player-corpse' || item.kind === 'player-bones')
+      // El cuerpo de un jugador, del tamaño de una persona: tirado como cayó, con lo que tiene puesto.
+      if (dressed) {
+        sprite.scale.set(CHARACTER_SCALE);
+        sprite.anchor.set(
+          PLAYER_CORPSE_LAYOUT.groundX / PLAYER_CORPSE_LAYOUT.width,
+          PLAYER_CORPSE_LAYOUT.groundY / PLAYER_CORPSE_LAYOUT.height,
+        );
+        sprite.position.set(screen.x, screen.y);
+      } else if (item.kind === 'player-corpse' || item.kind === 'player-bones')
         sprite.scale.set(CHARACTER_SCALE * 2.2);
       if (item.kind === 'moongate') {
         // El portal está parado y es alto como una persona: se apoya en el piso y brilla.
