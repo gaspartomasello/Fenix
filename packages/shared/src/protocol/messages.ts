@@ -1019,6 +1019,8 @@ export interface LegendsMessage {
     readonly title: string;
     readonly hint: string;
     readonly done: boolean;
+    /** El lugar al que hay que ir ahora (se marca en el mapa del mundo). */
+    readonly place?: string;
   }[];
 }
 

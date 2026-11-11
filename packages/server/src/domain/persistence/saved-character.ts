@@ -14,7 +14,7 @@ import { isEquipmentSlot, type EquipmentSlot } from '@fenix/shared/items/equipme
 import { ITEMS, MAX_STACK, isItemKind, type ItemKind } from '@fenix/shared/items/item-catalog';
 import { isMountKind, type MountKind } from '@fenix/shared/mounts/mount-catalog';
 import type { RuneMark } from '@fenix/shared/protocol/messages';
-import { LEGEND_DONE, isLegendId, type LegendId } from '@fenix/shared/quests/legends';
+import { isLegendId, legendEnd, type LegendId } from '@fenix/shared/quests/legends';
 import { MAX_QUESTS, type QuestGoal, type QuestProgress } from '@fenix/shared/quests/quests';
 import {
   DEFAULT_SHIP_SECURITY,
@@ -451,7 +451,7 @@ export function parseSavedCharacter(value: unknown): SavedCharacter | null {
           legends: Object.fromEntries(
             Object.entries(value.legends).filter(
               ([id, step]) =>
-                isLegendId(id) && typeof step === 'number' && step >= 0 && step <= LEGEND_DONE,
+                isLegendId(id) && typeof step === 'number' && step >= 0 && step <= legendEnd(id),
             ),
           ),
         }

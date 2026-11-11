@@ -256,6 +256,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   private lastBurdenNotice = -Infinity;
   private _corpse: CorpseContents | null = null;
   private readonly _containers = new Map<string, ContainerContents>();
+  private _legendPlaces: readonly string[] = [];
   /** Los barcos que se ven. */
   private readonly _ships = new Map<EntityId, ShipSnapshot>();
   /** Todas las casas de los jugadores (también están armadas en el mapa). */
@@ -405,6 +406,11 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
    * Dónde se ve uno: en un piso alto, encima de su edificio (para el mapa,
    * el minimapa y las coordenadas); si no, donde está.
    */
+  /** Los lugares a los que lo mandan sus leyendas (se marcan en el mapa del mundo). */
+  get legendPlaces(): readonly string[] {
+    return this._legendPlaces;
+  }
+
   selfSeenAt(): Position | null {
     const self = this.self;
     if (!self) return null;
@@ -1023,6 +1029,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         this.emit('questsChanged', message.quests);
         break;
       case 'legends':
+        this._legendPlaces = message.legends.flatMap((l) => (l.place && !l.done ? [l.place] : []));
         this.emit('legendsChanged', message.legends);
         break;
       case 'ships': {
