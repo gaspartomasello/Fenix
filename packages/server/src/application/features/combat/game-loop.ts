@@ -551,13 +551,14 @@ export class GameLoop {
             : 'Quedaste helado: no te podés mover.';
       this.notifier.send(target.id, { type: 'system', text });
     }
-    if (target instanceof Player) this.practiceResist(target);
+    // Los campos (fuego, veneno, parálisis) no entrenan la Resistencia mágica:
+    // pararse adentro sería una forma fácil de subirla sin pelear.
     this.afterHarm(caster ?? target, target, hit.damage, killed, true, now);
   }
 
   /**
-   * Recibir magia dañina (un hechizo de quien sea, el aliento de un dragón, un
-   * campo) entrena la Resistencia mágica. Antes solo subía con hechizos de
+   * Recibir magia dañina (un hechizo de quien sea, el aliento de un dragón)
+   * entrena la Resistencia mágica; los campos, no. Antes solo subía con hechizos de
    * otros jugadores: contra criaturas no subía nunca.
    */
   private practiceResist(target: Player): void {
