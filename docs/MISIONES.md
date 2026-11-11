@@ -169,3 +169,44 @@ Tienen su carácter (cálido, gruñón, misterioso o charlatán) y **reaccionan*
 ofenden y no te hablan hasta que les pidas perdón; si los elogiás, les caés bien. A los
 **asesinos** los atienden con miedo, a los **criminales** con desconfianza, y a los **famosos**
 los reconocen.
+
+## La gente de paz de los caminos
+
+Por los caminos, lejos de los pueblos, anda gente de paz con el **nombre en azul**: viajeros,
+buhoneras, peregrinos y cazadoras. No atacan a nadie; si los atacan, se defienden o escapan.
+
+- **Atacarlos es un crimen**: quedás como **criminal** (nombre gris) un rato, y los guardias te
+  persiguen dentro de los pueblos.
+- **Matarlos ensucia el karma.** Llevan algo de oro y cosas del camino.
+
+## El gremio de asesinos (Refugio de los Bandidos)
+
+El **Refugio de los Bandidos**, en una isla, es el pueblo sin ley: **no hay guardias** y nadie le
+teme a un asesino.
+
+1. **La pista.** Preguntale a cualquier vecino por _gremios_ o por _asesinos / bandidos_: alguno
+   cuenta que en el Refugio hay una mendiga ciega que ve demasiado, y que hay que hablarle de
+   **«la sombra»**.
+2. **La contraseña.** En el Refugio, cerca de la taberna, está **Silvana la Sombra**, disfrazada de
+   mendiga. Si no le decís la contraseña, pide una moneda y nada más. Decile _"vengo por la
+   sombra"_ (o nombrale el _gremio_ o los _asesinos_) y entrás al gremio.
+3. **Los encargos.** Pedile un _encargo_ (o _contrato_, _trabajo_): te da el nombre de una víctima
+   de nombre azul, su historia (por qué alguien pagó) y dónde anda, con la dirección desde el
+   Refugio. Hay **40 minutos** para cumplirlo. Atacarla te deja criminal.
+4. **Cobrar.** Al matarla, volvé con Silvana: paga según tu rango. Si otro jugador la mata antes,
+   el encargo se cae. También se puede _dejar_ un encargo.
+
+| Rango                 | Encargos cumplidos | Paga por encargo |
+| --------------------- | ------------------ | ---------------- |
+| Aprendiz de la Sombra | 0 a 2              | 300 de oro       |
+| Puñal                 | 3 a 5              | 500 de oro       |
+| Sombra                | 6 a 9              | 800 de oro       |
+| Mano de la Muerte     | 10 o más           | 1200 de oro      |
+
+Al subir de rango, el gremio regala **10 ganzúas y un pergamino de maestría en Sigilo**. Las
+víctimas de los rangos altos andan **custodiadas** (cazadoras y viajeros armados). Preguntale a
+Silvana por tu _rango_ cuando quieras.
+
+**Las víctimas** (cada una con su historia): Don Ernesto el prestamista, Clarisa la buhonera,
+Hermano Tadeo, Brígida la cazadora, Fausto el recaudador, Leonor la contrabandista, Maese
+Gervasio, Sor Inés y Rodrigo el heredero.

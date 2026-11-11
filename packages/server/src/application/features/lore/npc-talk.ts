@@ -4,7 +4,8 @@ import type { EntityId } from '@fenix/shared/protocol/messages';
 import type { Npc } from '../../../domain/npcs/npc';
 import type { Player } from '../../../domain/player';
 import type { World } from '../../../domain/world';
-import { directions } from './directions';
+import type { NpcDialogue } from '../../kernel/npc-dialogue';
+import { directions } from '@fenix/shared/world/compass';
 import { INSULT, PRAISE, STORIES, TOPICS } from './npc-lore';
 import { rumorOf, type Legends } from './legends';
 import type { Notifier, RandomSource } from '../../ports';
@@ -106,6 +107,7 @@ export class NpcTalk {
   constructor(
     private readonly world: World,
     private readonly legends: Legends,
+    private readonly dialogue: NpcDialogue,
     private readonly notifier: Notifier,
     private readonly random: RandomSource,
     private readonly now: () => number,
@@ -147,6 +149,9 @@ export class NpcTalk {
     const legend = this.legends.ask(player, npc, words);
     if (legend) return legend;
     if (this.legends.isLegendPerson(npc)) return null;
+    // Lo que suman otros módulos (el gremio, los mercenarios…).
+    const other = this.dialogue.answer(player, npc, words);
+    if (other) return other;
 
     // Enojado: hasta que se le pida perdón, no quiere saber nada.
     if ((this.grudges.get(key) ?? 0) > this.now()) {
@@ -178,7 +183,8 @@ export class NpcTalk {
 
     // A los asesinos se los atiende con miedo (o no se los atiende).
     const notoriety = player.reputation.notoriety;
-    if (notoriety === 'murderer' && npc.role !== 'beggar')
+    const lawless = this.world.map.regionAt(npc.position)?.wild === true;
+    if (notoriety === 'murderer' && npc.role !== 'beggar' && !lawless)
       return npc.role === 'guard'
         ? `¡Asesino! ${player.name}, entregate o te vamos a buscar.`
         : 'Yo... yo no quiero problemas. Por favor, andate.';

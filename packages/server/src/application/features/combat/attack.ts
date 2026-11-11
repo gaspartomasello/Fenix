@@ -47,6 +47,9 @@ export class Attack {
       if (reason) return refuse(reason);
       commitAggression(player, target, this.clock.now(), this.notifier, this.social);
     }
+    // La gente de paz de los caminos: atacarla también es un crimen.
+    if (target instanceof Creature && !target.isPet)
+      commitAggression(player, target, this.clock.now(), this.notifier, this.social);
 
     // Atacar pone en modo guerra, como en UO.
     this.warMode.set(player, true);

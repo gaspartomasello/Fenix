@@ -900,6 +900,9 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
   'mastery-meditation'(c) {
     scroll(c, ramp([90, 200, 210]));
   },
+  'mastery-stealth'(c) {
+    scroll(c, ramp([30, 30, 34]));
+  },
   'mastery-magery'(c) {
     scroll(c, ramp([120, 70, 200]));
   },

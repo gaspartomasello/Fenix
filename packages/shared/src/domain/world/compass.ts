@@ -1,5 +1,5 @@
-import type { Position } from '@fenix/shared/geometry/position';
-import type { RegionData } from '@fenix/shared/world/tile-map';
+import type { Position } from '../geometry/position';
+import type { RegionData } from './tile-map';
 
 const COMPASS = [
   'el este',

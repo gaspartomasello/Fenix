@@ -88,6 +88,12 @@ export class Player implements Mobile {
   quests: QuestProgress[] = [];
   /** Leyendas que conoce y en qué paso va (ver `Legends`). */
   legends = new Map<LegendId, number>();
+  /**
+   * Cómo está con los gremios y facciones (cuánto avanzó en cada uno): por
+   * ejemplo, los encargos cumplidos para el gremio de asesinos. La clave la
+   * elige cada módulo.
+   */
+  standing = new Map<string, number>();
   private usesSinceStatGain = 0;
   /** Cuándo puede volver a recolectar o fabricar. */
   nextActionAt = 0;

@@ -1263,6 +1263,10 @@ const CAVE_GROUND: ReadonlySet<Terrain> = new Set<Terrain>([
 
 /** Sin criaturas a menos de esta distancia de un pueblo. */
 const QUIET_RADIUS = 14;
+/** Gente de paz en los caminos: una cada tantos tiles de camino, hasta un máximo, separadas. */
+const TRAVELER_EVERY = 90;
+const TRAVELERS_MAX = 60;
+const TRAVELER_GAP = 30;
 
 /**
  * Ubica los lugares, la boca de la cueva y las criaturas sobre el continente.
@@ -1638,7 +1642,7 @@ export function populateContinent(
     signs: map.signs.filter((s) => statics.get(index(s.x, s.y))?.kind === 'sign'),
     ...(heights ? { heights } : {}),
   });
-  homes.push(...biomeCreatures(populated), ...continent.townCreatures);
+  homes.push(...biomeCreatures(populated), ...roadTravelers(populated), ...continent.townCreatures);
   return {
     ...continent,
     map: populated,
@@ -1762,6 +1766,36 @@ export function populateContinent(
   }
 
   /** Criaturas sueltas por bioma, proporcionales a su superficie. */
+  /**
+   * La gente de paz de los caminos (nombre azul): viajeros, buhoneras,
+   * peregrinos y cazadoras, repartidos a lo largo de los caminos, fuera de
+   * los pueblos y separados entre sí.
+   */
+  function roadTravelers(world: TileMap): { kind: CreatureKind; home: Position }[] {
+    const kinds: readonly CreatureKind[] = ['traveler', 'peddler', 'pilgrim', 'huntress'];
+    const tiles = [...continent.roads]
+      .map((i) => ({ x: i % width, y: Math.floor(i / width) }))
+      .filter((p) =>
+        continent.towns.every(
+          (t) =>
+            p.x < t.x - QUIET_RADIUS ||
+            p.y < t.y - QUIET_RADIUS ||
+            p.x > t.x + t.width + QUIET_RADIUS ||
+            p.y > t.y + t.height + QUIET_RADIUS,
+        ),
+      );
+    const out: { kind: CreatureKind; home: Position }[] = [];
+    const count = Math.min(TRAVELERS_MAX, Math.round(tiles.length / TRAVELER_EVERY));
+    for (let tries = 0; out.length < count && tries < count * 40; tries++) {
+      const p = tiles[Math.floor(random.next() * tiles.length)];
+      if (!p || !world.isWalkable(p) || world.regionAt(p)) continue;
+      if (out.some((o) => Math.abs(o.home.x - p.x) + Math.abs(o.home.y - p.y) < TRAVELER_GAP))
+        continue;
+      out.push({ kind: kinds[out.length % kinds.length] ?? 'traveler', home: p });
+    }
+    return out;
+  }
+
   function biomeCreatures(world: TileMap): { kind: CreatureKind; home: Position }[] {
     const tiles = new Map<Biome, Position[]>();
     for (let y = 2; y < height - 2; y++) {

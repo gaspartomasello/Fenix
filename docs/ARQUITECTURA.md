@@ -1508,6 +1508,22 @@ ningún monumento real):
   enojo por insultos (hasta que se pide perdón), simpatía por elogios y miedo a los asesinos.
 - Guía completa de las leyendas: `docs/MISIONES.md`.
 
+## Gente de paz, el Refugio sin ley y el gremio de asesinos (etapa 104)
+
+- Criaturas humanas **inocentes** (`innocent` en el catálogo: viajero, buhonera, peregrino,
+  cazadora): no atacan, se defienden y huyen; el cliente pinta su nombre de azul. Se reparten por
+  los caminos fuera de los pueblos (`roadTravelers` en `places.ts`).
+- `commitAggression` (núcleo) acepta cualquier objetivo: atacar a un inocente, jugador o criatura,
+  deja criminal. Lo llaman el ataque, los hechizos y los golpes de área.
+- **Diálogos de los módulos** (`kernel/npc-dialogue.ts`): un módulo suma lo que le hace decir a un
+  vecino; la charla de siempre (`lore`) los consulta antes de contestar.
+- **`Player.standing`**: cómo está el jugador con gremios y facciones (la clave la elige cada
+  módulo), guardado con el personaje.
+- **Gremio de asesinos** (`features/assassins`, datos en `shared/guilds/assassins.ts`): la jefa,
+  disfrazada de mendiga en el Refugio de los Bandidos, da encargos de matar a una víctima con
+  nombre en un lugar del campo; paga según el rango (encargos cumplidos en `standing`).
+- Las direcciones ("queda hacia el este de…") pasaron a `shared/world/compass.ts`.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

@@ -12,8 +12,13 @@ export const loreModule: ModuleFactory = (kernel) => {
     kernel.mobiles,
     kernel.notifier,
   );
-  const npcTalk = new NpcTalk(kernel.world, legends, kernel.notifier, kernel.random, () =>
-    kernel.clock.now(),
+  const npcTalk = new NpcTalk(
+    kernel.world,
+    legends,
+    kernel.dialogue,
+    kernel.notifier,
+    kernel.random,
+    () => kernel.clock.now(),
   );
   // Los vecinos cercanos escuchan y contestan.
   kernel.events.on('spoke', ({ player, text }) => npcTalk.hear(player.id, text));

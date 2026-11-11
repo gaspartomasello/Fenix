@@ -129,7 +129,7 @@ export const TOPICS: readonly Topic[] = [
     words: /\b(asesino|asesinos|criminal|criminales|ladron|ladrones|bandido|bandidos)\b/,
     replies: [
       'Los asesinos tienen el nombre rojo: si ves uno, corré. Los guardias no los dejan entrar.',
-      'Dicen que los bandidos tienen un refugio propio, donde no entra ningún guardia.',
+      'Dicen que los bandidos tienen un refugio propio, en una isla, donde no entra ningún guardia. Ahí se compra cualquier cosa... hasta una muerte.',
       'Un ladrón me vació la bolsa en la plaza y ni lo sentí. Desde entonces la llevo atada al cuello.',
     ],
   },
@@ -193,6 +193,7 @@ export const TOPICS: readonly Topic[] = [
     words: /\b(gremio|gremios|hermandad)\b/,
     replies: [
       'Los gremios se juntan en sus propias casas. Hay uno del que nadie habla en voz alta...',
+      'Dicen que en el Refugio de los Bandidos hay una mendiga ciega que ve demasiado. Si le hablás de «la sombra», capaz te contesta.',
       'Un gremio te cuida las espaldas. Siempre que no se las des vuelta.',
     ],
   },
