@@ -26,6 +26,8 @@ export const thieveryModule: ModuleFactory = (kernel) => {
     name: 'thievery',
     handles: {
       pickLock: (playerId, m) => thievery.pickLock(playerId, m.toolId, m.position),
+      // Robar lo elegido en la ventana de fisgonear (usa Robar, como siempre).
+      stealItem: (playerId, m) => thievery.steal(playerId, m.targetId, m.kind),
     },
   };
 };

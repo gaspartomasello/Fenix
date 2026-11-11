@@ -14,6 +14,7 @@ import { itemIconUrl } from '../ui/item-icons';
 import { DragController } from '../ui/drag-controller';
 import { EquipmentWindow } from '../ui/equipment-window';
 import { PaperdollViewer } from '../ui/paperdoll-viewer';
+import { SnoopWindow } from '../ui/snoop-window';
 import { WorldPaperdolls } from './world-paperdolls';
 import { HudButtons, type HudButton } from '../ui/hud-buttons';
 import { SocialWindow } from '../ui/social-window';
@@ -832,15 +833,20 @@ export class GameSession {
     });
     const backpack = new BackpackWindow(drag, actions);
     // Como en UO, la ventana de personaje tiene a mano las demás ventanas.
-    const equipment = new EquipmentWindow(drag, actions, self.appearance, [
-      { label: 'Mochila', onPress: () => backpack.window.toggle() },
-      ...this.hudExtras.map((b) => ({
-        label: b.label,
-        onPress: b.onPress,
-        ...(b.pressed ? { pressed: b.pressed } : {}),
-      })),
-      { label: 'Salir', onPress: () => this.logout() },
-    ]);
+    const equipment = new EquipmentWindow(
+      drag,
+      actions,
+      self.appearance,
+      [
+        ...this.hudExtras.map((b) => ({
+          label: b.label,
+          onPress: b.onPress,
+          ...(b.pressed ? { pressed: b.pressed } : {}),
+        })),
+        { label: 'Salir', onPress: () => this.logout() },
+      ],
+      () => backpack.window.toggle(),
+    );
     this.game.on('logoutRequested', () => this.logout());
     const minimap = new Minimap(this.game, () => buttons.refresh());
     const worldMap = new WorldMap(this.game, () => buttons.refresh());
@@ -879,8 +885,12 @@ export class GameSession {
     this.game.on('socialChanged', identity);
     identity();
     // Doble clic sobre una persona: su ventana de personaje (la propia, con botones).
-    const viewer = new PaperdollViewer();
+    const viewer = new PaperdollViewer((id) => this.game.useSkill('snooping', id));
     this.hosts.ui.append(viewer.window.element);
+    // Lo que se vio al fisgonear: de ahí se elige qué robar.
+    const snoop = new SnoopWindow((targetId, kind) => this.game.stealItem(targetId, kind));
+    this.hosts.ui.append(snoop.window.element);
+    this.game.on('snooped', (m) => snoop.show(m.targetId, m.name, m.items));
     new WorldPaperdolls(this.game, renderer, viewer, () => equipment.window.show());
     // Cuerpos que se revisan: la ventana se abre con el doble clic y se
     // actualiza cuando alguien saca algo.

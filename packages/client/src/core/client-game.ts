@@ -128,6 +128,8 @@ export interface ClientGameEvents extends Record<string, unknown> {
   questsChanged: readonly QuestProgress[];
   /** Las leyendas que conoce y la pista de cada una. */
   legendsChanged: Extract<ServerMessage, { type: 'legends' }>['legends'];
+  /** Se vio la mochila de alguien al fisgonear. */
+  snooped: Extract<ServerMessage, { type: 'snooped' }>;
   /** Se abrió un libro (respuesta al doble clic). */
   bookOpened: BookContents;
   /** Cambiaron los barcos que se ven (o alguno se movió). */
@@ -329,6 +331,11 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   }
 
   /** Usar una habilidad a propósito (Esconderse, Mirar). */
+  /** Robar algo elegido de la mochila de alguien (después de fisgonearla). */
+  stealItem(targetId: EntityId, kind: ItemKind): void {
+    this.gateway.send({ type: 'stealItem', targetId, kind });
+  }
+
   useSkill(skill: ActiveSkill, targetId?: EntityId): void {
     // Rastrear primero pide qué buscar (la ventana de Rastrear).
     if (skill === 'tracking') return void this.emit('trackingRequested', null);
@@ -1027,6 +1034,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         break;
       case 'quests':
         this.emit('questsChanged', message.quests);
+        break;
+      case 'snooped':
+        this.emit('snooped', message);
         break;
       case 'legends':
         this._legendPlaces = message.legends.flatMap((l) => (l.place && !l.done ? [l.place] : []));

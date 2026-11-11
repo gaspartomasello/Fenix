@@ -24,9 +24,13 @@ export class EquipmentWindow {
     private readonly actions: ItemActions,
     private readonly appearance: Appearance,
     buttons: readonly PaperdollButton[],
+    openBackpack: () => void,
   ) {
     this.window = new GameWindow('equipo', 'Personaje', { x: window.innerWidth - 400, y: 160 });
-    this.view = new PaperdollView({ grab: (slot, e) => this.grab(slot, e) }, buttons);
+    this.view = new PaperdollView({ grab: (slot, e) => this.grab(slot, e) }, buttons, {
+      label: 'Abrir tu mochila',
+      onPress: openBackpack,
+    });
     this.window.body.append(
       this.view.element,
       el('p', {

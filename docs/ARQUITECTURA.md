@@ -1536,6 +1536,15 @@ ningún monumento real):
   avisa sin querer y puede traicionar (se cambia por una criatura suelta que ataca al patrón).
 - La lealtad se guarda en `Player.standing` (`merc:<nombre>`; -1 = traidor).
 
+## La mochila en la ventana de equipo y fisgonear (etapa 106)
+
+- `PaperdollView` lleva, si se le pasa, una **mochila al costado** (un medallón de bronce con la
+  bolsa, abajo a la derecha de la figura). En la ventana propia abre la mochila; en la de otro
+  (jugador o vecino) usa **Fisgonear** sobre él.
+- Al fisgonear con éxito, el servidor manda `snooped` con lo que lleva (lo mismo que se puede
+  robar). El cliente lo muestra en `SnoopWindow`: tocar un objeto manda `stealItem` y se intenta
+  robar **justo eso**, con la misma chance y las mismas consecuencias que Robar.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.
