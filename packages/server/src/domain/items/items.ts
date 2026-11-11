@@ -410,7 +410,13 @@ export class Items {
       }
       case 'backpack':
         return this.putInBackpack(actor.id, item, to.position, changes);
-      case 'bank':
+      case 'bank': {
+        const onto = this.stackUnder(
+          item,
+          to.position,
+          this.all().filter((i) => i.location.type === 'bank' && i.location.ownerId === actor.id),
+        );
+        if (onto) return this.mergeInto(item, onto, changes);
         this.relocate(
           item,
           {
@@ -421,6 +427,7 @@ export class Items {
           changes,
         );
         return { ok: true, changes };
+      }
       case 'equipment':
         if (wearRefusal(actor, item.kind)) return fail(wearRefusal(actor, item.kind) ?? '');
         return this.equip(actor.id, item, to.slot, changes);
@@ -435,6 +442,46 @@ export class Items {
           changes,
         );
     }
+  }
+
+  /**
+   * La pila del mismo tipo sobre la que se soltó `item` (el centro del ícono
+   * soltado cae sobre ella), para sumarlas como en UO. null si no hay o si no
+   * entra todo junto.
+   */
+  private stackUnder(
+    item: Item,
+    position: Position | undefined,
+    among: readonly Item[],
+  ): Item | null {
+    if (!position || !ITEMS[item.kind].stackable) return null;
+    const drop = clampToBackpack(position);
+    const cx = drop.x + ITEM_ICON_SIZE / 2;
+    const cy = drop.y + ITEM_ICON_SIZE / 2;
+    return (
+      among.find((other) => {
+        if (other.id === item.id || other.kind !== item.kind || other.newbie !== item.newbie)
+          return false;
+        if (other.hue !== item.hue || other.amount + item.amount > MAX_STACK) return false;
+        const at = 'position' in other.location ? other.location.position : null;
+        return (
+          at !== null &&
+          cx >= at.x &&
+          cx <= at.x + ITEM_ICON_SIZE &&
+          cy >= at.y &&
+          cy <= at.y + ITEM_ICON_SIZE
+        );
+      }) ?? null
+    );
+  }
+
+  /** Suma `item` a la pila `stack` (el objeto soltado deja de existir). */
+  private mergeInto(item: Item, stack: Item, changes: ItemChanges): ItemResult {
+    this.detach(item, changes);
+    this.byId.delete(item.id);
+    stack.amount += item.amount;
+    this.attach(stack, changes);
+    return { ok: true, changes };
   }
 
   /** El equipo inicial solo va entre las cosas de su dueño: mochila, equipo, banco y sus bolsas. */
@@ -536,6 +583,12 @@ export class Items {
       id = parent?.location.type === 'container' ? parent.location.containerId : null;
     }
     const inside = this.contentsOf(containerId);
+    // Soltado sobre una pila del mismo tipo: se suman.
+    const onto = this.stackUnder(item, position, inside);
+    if (onto) {
+      changes.containers.add(containerId);
+      return this.mergeInto(item, onto, changes);
+    }
     const already = item.location.type === 'container' && item.location.containerId === containerId;
     if (already) {
       if (position)
@@ -673,6 +726,12 @@ export class Items {
     position: Position | undefined,
     changes: ItemChanges,
   ): ItemResult {
+    // Soltado sobre una pila del mismo tipo: se suman (también dentro de la misma mochila).
+    const onto = this.stackUnder(item, position, this.backpackOf(ownerId));
+    if (onto) {
+      changes.inventories.add(ownerId);
+      return this.mergeInto(item, onto, changes);
+    }
     const alreadyInside = item.location.type === 'backpack' && item.location.ownerId === ownerId;
     if (alreadyInside) {
       if (position)

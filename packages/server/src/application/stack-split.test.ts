@@ -161,4 +161,39 @@ describe('separar pilas no duplica ni borra objetos', () => {
         .some((d) => d.message.type === 'system' && d.message.text === 'Esa cantidad no sirve.'),
     ).toBe(true);
   });
+
+  it('soltar una pila sobre otra del mismo tipo las suma, como en UO', () => {
+    const room = createRoom();
+    const total = room.gold();
+    const stack = room.world.items.backpackOf(room.ana).find((i) => i.kind === 'gold');
+    if (!stack || stack.location.type !== 'backpack') throw new Error('sin oro');
+    const original = stack.amount;
+    // Separar 10 a otro lugar de la mochila: quedan dos pilas.
+    room.move(stack.id, { type: 'backpack', position: { x: 180, y: 100 } }, 10);
+    const piles = () => room.world.items.backpackOf(room.ana).filter((i) => i.kind === 'gold');
+    expect(piles()).toHaveLength(2);
+    const small = piles().find((p) => p.id !== stack.id);
+    if (!small) throw new Error('sin la pila chica');
+    // Soltarla encima de la otra: se juntan.
+    room.move(small.id, { type: 'backpack', position: stack.location.position });
+    expect(piles()).toHaveLength(1);
+    expect(piles()[0]?.amount).toBe(original);
+    expect(room.gold()).toBe(total);
+  });
+
+  it('en un cofre también se suman', () => {
+    const room = createRoom();
+    const total = room.gold();
+    const inChest = room.world.items.contentsOf(room.chest).find((i) => i.kind === 'gold');
+    const mine = room.world.items.backpackOf(room.ana).find((i) => i.kind === 'gold');
+    if (!inChest || !mine || inChest.location.type !== 'container') throw new Error('sin oro');
+    const before = inChest.amount;
+    room.move(
+      mine.id,
+      { type: 'container', containerId: room.chest, position: inChest.location.position },
+      5,
+    );
+    expect(room.world.items.get(inChest.id)?.amount).toBe(before + 5);
+    expect(room.gold()).toBe(total);
+  });
 });
