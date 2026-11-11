@@ -49,6 +49,7 @@ export function drawPaperdoll(
     cache.set(key, cached);
     return cached;
   }
+  const portrait = detail > 1;
   const scale = detail;
   const draw = (): PixelImage =>
     drawCharacterFrame(
@@ -69,12 +70,13 @@ export function drawPaperdoll(
         );
         const canvas = new VolumeCanvas(width * scale, height * scale, camera);
         canvas.detail = scale;
+        canvas.portrait = portrait;
         return canvas;
       },
       hues,
     );
   // Grande: con sombreado continuo (sin franjas). Chico (las siluetas para agarrar prendas): tal cual.
-  const image = detail > 1 ? withSmoothShading(draw) : draw();
+  const image = portrait ? withSmoothShading(draw) : draw();
   cache.set(key, image);
   if (cache.size > CACHE_SIZE) cache.delete(cache.keys().next().value as string);
   return image;

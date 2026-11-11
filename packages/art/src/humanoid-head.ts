@@ -124,7 +124,11 @@ export function drawHumanHead(
   look: HeadLook,
 ): void {
   const head = new HeadParts(canvas, basis);
-  canvas.limb(neck, head.at([0, -3.2, 0.2]), 1.9, 1.8, solid(look.skin, -1));
+  if (canvas.portrait) {
+    // De cerca: el cuello con su grosor (la sombra bajo el mentón la pone la luz).
+    const thick = look.female ? 1 : 1.22;
+    canvas.limb(neck, head.at([0, -3.2, 0.2]), 2.15 * thick, 1.9 * thick, solid(look.skin));
+  } else canvas.limb(neck, head.at([0, -3.2, 0.2]), 1.9, 1.8, solid(look.skin, -1));
   drawSkull(head, solid(look.skin), look.female);
   head.ellipsoid(
     [0, -0.9, 4.3],

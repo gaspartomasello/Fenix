@@ -310,6 +310,8 @@ export interface Sample {
   readonly n: Vec3;
   /** Luz que recibe, de 0 (sombra) a 1 (de frente a la luz). */
   readonly light: number;
+  /** En la figura grande: el reflejo de la luz en ese punto (0–1), para lo que brilla. */
+  readonly gloss?: number;
 }
 
 /** Color de un pixel, o null para dejarlo sin pintar (por ejemplo, fuera del pelo). */
@@ -340,10 +342,19 @@ export function ramp(base: Rgb): Ramp {
 /** Tono de la escala según la luz; `bias` corre uno o más escalones. */
 export function tone(colors: Ramp, light: number, bias = 0): Rgb {
   if (smooth) {
-    // Sin escalones: el color se mezcla entre los dos tonos más cercanos.
+    // Sin escalones: el color se mezcla entre los dos tonos más cercanos. Las
+    // sombras salen del color base, más hondas y apenas rojizas (las de la
+    // rampa, frías, a este tamaño ensucian la piel y las telas claras).
     const f = Math.max(0, Math.min(4, light * 4.6 - 0.7 + bias));
-    const a = colors[Math.floor(f)] ?? colors[2];
-    const b = colors[Math.ceil(f)] ?? colors[2];
+    const base = colors[2];
+    const at = (k: number): Rgb =>
+      k === 0
+        ? [base[0] * 0.42, base[1] * 0.34, base[2] * 0.37]
+        : k === 1
+          ? [base[0] * 0.72, base[1] * 0.65, base[2] * 0.66]
+          : (colors[k] ?? base);
+    const a = at(Math.floor(f));
+    const b = at(Math.ceil(f));
     const t = f - Math.floor(f);
     return [
       Math.round(a[0] + (b[0] - a[0]) * t),
@@ -379,8 +390,14 @@ export const solid =
 /** Material metálico: más contraste y un brillo puntual. */
 export const metal =
   (colors: Ramp): Material =>
-  (s) =>
-    s.light > 0.92 ? [250, 250, 245] : tone(colors, s.light * 1.15 - 0.08);
+  (s) => {
+    if (s.gloss === undefined)
+      return s.light > 0.92 ? [250, 250, 245] : tone(colors, s.light * 1.15 - 0.08);
+    // De cerca: más contraste que la tela y un reflejo que se funde hacia el blanco.
+    const [r, g, b] = tone(colors, s.light * 1.25 - 0.14);
+    const k = Math.min(1, s.gloss * 1.1);
+    return [r + (252 - r) * k, g + (252 - g) * k, b + (248 - b) * k];
+  };
 
 /** Materiales que pueden dejar un pixel sin pintar (devuelven null): se resuelven en el momento. */
 const CLIPPING = new WeakSet<Material>();
@@ -421,6 +438,28 @@ export class VolumeCanvas {
    * para que mantengan su tamaño en el modelo.
    */
   detail = 1;
+  /**
+   * Acabado de retrato (la figura grande de la ventana de personaje): las
+   * uniones entre formas se funden, los huecos se oscurecen, hay una luz de
+   * contorno y todo se calcula al final, con las normales ya suavizadas.
+   */
+  portrait = false;
+  /**
+   * En retrato: cuánto se funden las normales de lo que se dibuje de acá en
+   * más (en pixeles de sprite). Alto para el cuerpo y la tela; bajo para la
+   * cara, las armas y el metal, que tienen que quedar nítidos.
+   */
+  softness = 0.5;
+  private softAt: Float32Array | null = null;
+  /** Zonas dibujadas a otra escala (ver `scaled`): la 0 es "sin cambio". */
+  private readonly scopes: { pivot: Vec3; k: number }[] = [{ pivot: [0, 0, 0], k: 1 }];
+  private scope = 0;
+  /** Los argumentos ya están llevados a la escala de la zona (no hacerlo dos veces). */
+  private applied = false;
+  private scopeAt: Uint8Array | null = null;
+  /** En retrato: la calcomanía (ojo, botón…) que lleva cada pixel, o -1. */
+  private decalAt: Int32Array | null = null;
+  private readonly decalColors: Rgb[] = [];
 
   constructor(
     readonly width: number,
@@ -436,6 +475,68 @@ export class VolumeCanvas {
     this.painter = new Int32Array(width * height).fill(-1);
   }
 
+  /**
+   * Dibuja lo que haga `draw` a otra escala, alrededor de `pivot` (por
+   * ejemplo, la cabeza más chica en la figura de retrato). Los materiales
+   * siguen viendo los puntos sin escalar, así sus dibujos no se corren.
+   */
+  scaled(pivot: Vec3, k: number, draw: () => void): void {
+    if (k === 1) {
+      draw();
+      return;
+    }
+    const before = this.scope;
+    this.scopes.push({ pivot, k });
+    this.scope = this.scopes.length - 1;
+    this.scopeAt ??= new Uint8Array(this.width * this.height);
+    try {
+      draw();
+    } finally {
+      this.scope = before;
+    }
+  }
+
+  /** Un punto del modelo, llevado a la escala de la zona actual. */
+  private place(p: Vec3): Vec3 {
+    const { pivot, k } = this.scopes[this.scope] ?? { pivot: p, k: 1 };
+    return [
+      pivot[0] + (p[0] - pivot[0]) * k,
+      pivot[1] + (p[1] - pivot[1]) * k,
+      pivot[2] + (p[2] - pivot[2]) * k,
+    ];
+  }
+
+  /** ¿Hay que llevar los argumentos a la escala de la zona? */
+  private get rescale(): number {
+    return this.scope !== 0 && !this.applied ? (this.scopes[this.scope]?.k ?? 1) : 1;
+  }
+
+  private raw<T>(draw: () => T): T {
+    const before = this.applied;
+    this.applied = true;
+    try {
+      return draw();
+    } finally {
+      this.applied = before;
+    }
+  }
+
+  /**
+   * Extremidad con forma: de `a` a `b`, con los radios de `profile` repartidos
+   * a lo largo (el muslo que se afina, la pantorrilla con su curva).
+   */
+  shapedLimb(a: Vec3, b: Vec3, profile: readonly number[], material: Material): void {
+    const last = profile.length - 1;
+    for (let i = 0; i < last; i++)
+      this.limb(
+        lerp(a, b, i / last),
+        lerp(a, b, (i + 1) / last),
+        profile[i] ?? 1,
+        profile[i + 1] ?? 1,
+        material,
+      );
+  }
+
   /** Elipsoide con centro y ejes (ortonormales) en el espacio del modelo. */
   ellipsoid(
     center: Vec3,
@@ -448,6 +549,13 @@ export class VolumeCanvas {
      */
     flatten = 0,
   ): void {
+    const k = this.rescale;
+    if (k !== 1) {
+      this.raw(() =>
+        this.ellipsoid(this.place(center), axes, scale(modelRadii, k), material, flatten),
+      );
+      return;
+    }
     if (flatten === 0) {
       this.rasterize(center, axes, modelRadii, (x, y, t, normal) =>
         this.paint(x, y, t, normal, material),
@@ -560,6 +668,11 @@ export class VolumeCanvas {
 
   /** Extremidad redondeada de `a` a `b`, que se afina de `ra` a `rb`. */
   limb(a: Vec3, b: Vec3, ra: number, rb: number, material: Material): void {
+    const k = this.rescale;
+    if (k !== 1) {
+      this.raw(() => this.limb(this.place(a), this.place(b), ra * k, rb * k, material));
+      return;
+    }
     const length = Math.hypot(...sub(b, a));
     const steps = Math.max(1, Math.ceil(length / 0.6));
     if (this.detail === 1 || length < 1e-6) {
@@ -596,6 +709,11 @@ export class VolumeCanvas {
 
   /** Caja con centro, ejes y medias medidas (libros, lingotes, cabezas de martillo). */
   box(center: Vec3, axes: readonly [Vec3, Vec3, Vec3], half: Vec3, material: Material): void {
+    const k = this.rescale;
+    if (k !== 1) {
+      this.raw(() => this.box(this.place(center), axes, scale(half, k), material));
+      return;
+    }
     const [ax, ay, az] = axes;
     const corner = (sx: number, sy: number, sz: number): Vec3 =>
       add(
@@ -649,6 +767,15 @@ export class VolumeCanvas {
 
   /** Polígono plano (capa, delantal, hoja de un arma…), visible de los dos lados. */
   polygon(points: readonly Vec3[], material: Material): void {
+    if (this.rescale !== 1) {
+      this.raw(() =>
+        this.polygon(
+          points.map((q) => this.place(q)),
+          material,
+        ),
+      );
+      return;
+    }
     const [p0, p1, p2] = points;
     if (!p0 || !p1 || !p2) return;
     // Normal en el modelo, siempre hacia quien mira.
@@ -691,8 +818,13 @@ export class VolumeCanvas {
    * solo si esa cara mira a la cámara y nada lo tapa.
    */
   decal(point: Vec3, normal: Vec3, color: Rgb, width = 1, height = 1): void {
+    const k = this.rescale;
+    if (k !== 1) {
+      this.raw(() => this.decal(this.place(point), normal, color, width * k, height * k));
+      return;
+    }
     if (dot(normalize(normal), this.camera.viewDir) < 0.2) return;
-    this.resolve();
+    if (!this.portrait) this.resolve();
     const [cx, cy, cz] = this.camera.point(point);
     // En la ventana de personaje, las calcomanías un poco más finas que agrandadas.
     const grow = this.detail === 1 ? 1 : this.detail * 0.8;
@@ -700,14 +832,21 @@ export class VolumeCanvas {
     const h = Math.max(1, Math.round(height * grow));
     const left = Math.round(cx - w / 2);
     const top = Math.round(cy - h / 2);
+    const decalsBefore = this.decalColors.length;
     for (let y = top; y < top + h; y++) {
       for (let x = left; x < left + w; x++) {
         if (x < 0 || y < 0 || x >= this.width || y >= this.height) continue;
         const i = y * this.width + x;
-        if (this.colors[i] && Math.abs((this.depth[i] ?? 0) - cz) < 1.6 * this.detail)
-          this.colors[i] = color;
+        if (Math.abs((this.depth[i] ?? 0) - cz) >= 1.6 * this.detail) continue;
+        if (this.portrait) {
+          // Se pinta al final, sobre el sombreado (si nada lo tapa después).
+          if ((this.painter[i] ?? -1) < 0) continue;
+          this.decalAt ??= new Int32Array(this.width * this.height).fill(-1);
+          this.decalAt[i] = this.decalColors.length;
+        } else if (this.colors[i]) this.colors[i] = color;
       }
     }
+    if (this.portrait && decalsBefore === this.decalColors.length) this.decalColors.push(color);
   }
 
   private depthAt(x: number, y: number): number {
@@ -717,6 +856,11 @@ export class VolumeCanvas {
   private paint(x: number, y: number, z: number, modelNormal: Vec3, material: Material): void {
     const i = y * this.width + x;
     if (this.keep && !this.keep(this.camera.unproject(x + 0.5, y + 0.5, z))) return;
+    if (this.portrait) {
+      this.softAt ??= new Float32Array(this.width * this.height);
+      // Una máscara que al final no pinta deja esto escrito, pero no importa: nadie lo lee.
+      if (!CLIPPING.has(material)) this.softAt[i] = this.softness;
+    }
     let index = this.materialIndex.get(material);
     if (index === undefined) {
       index = this.materials.length;
@@ -731,8 +875,19 @@ export class VolumeCanvas {
       this.colors[i] = color;
       this.pending[i] = -1;
       this.painter[i] = index;
+      if (this.scopeAt) this.scopeAt[i] = this.scope;
+      if (this.softAt) this.softAt[i] = this.softness;
+      if (this.portrait) {
+        // En retrato se vuelve a sombrear al final: hace falta la normal.
+        this.normals[i * 3] = modelNormal[0];
+        this.normals[i * 3 + 1] = modelNormal[1];
+        this.normals[i * 3 + 2] = modelNormal[2];
+        if (this.decalAt) this.decalAt[i] = -1;
+      }
       return;
     }
+    if (this.decalAt) this.decalAt[i] = -1;
+    if (this.scopeAt) this.scopeAt[i] = this.scope;
     this.painter[i] = index;
     this.depth[i] = z;
     this.pending[i] = index;
@@ -750,7 +905,19 @@ export class VolumeCanvas {
   ): Rgb | null {
     const n = normalize(modelNormal);
     const light = AMBIENT + (1 - AMBIENT) * Math.max(0, dot(n, this.camera.lightDir));
-    return material({ x, y, p: this.camera.unproject(x + 0.5, y + 0.5, z), n, light });
+    return material({ x, y, p: this.modelPoint(x, y, z, this.scope), n, light });
+  }
+
+  /** El punto del modelo de un pixel, como lo ve su material (sin la escala de su zona). */
+  private modelPoint(x: number, y: number, z: number, scope: number): Vec3 {
+    const p = this.camera.unproject(x + 0.5, y + 0.5, z);
+    if (scope === 0) return p;
+    const { pivot, k } = this.scopes[scope] ?? { pivot: p, k: 1 };
+    return [
+      pivot[0] + (p[0] - pivot[0]) / k,
+      pivot[1] + (p[1] - pivot[1]) / k,
+      pivot[2] + (p[2] - pivot[2]) / k,
+    ];
   }
 
   /** Calcula el color de los pixeles que quedaron pendientes. */
@@ -768,7 +935,10 @@ export class VolumeCanvas {
         this.normals[i * 3 + 1] ?? 0,
         this.normals[i * 3 + 2] ?? 1,
       ];
+      const scope = this.scope;
+      this.scope = this.scopeAt ? (this.scopeAt[i] ?? 0) : 0;
       const color = this.shade(x, y, this.depth[i] ?? 0, normal, material);
+      this.scope = scope;
       if (color) this.colors[i] = color;
       else this.depth[i] = -Infinity;
     }
@@ -779,6 +949,7 @@ export class VolumeCanvas {
    * (diferencia grande de profundidad) y agrega el contorno exterior.
    */
   toImage(outline: Rgb | null): PixelImage {
+    if (this.portrait) return this.portraitImage(outline);
     this.resolve();
     const image = new PixelImage(this.width, this.height);
     for (let y = 0; y < this.height; y++) {
@@ -804,6 +975,146 @@ export class VolumeCanvas {
     }
     if (outline) image.outline(outline, 0.95);
     return image;
+  }
+
+  /**
+   * El acabado de retrato. Con todo ya dibujado:
+   * 1. Las normales se suavizan entre pixeles vecinos de profundidad parecida:
+   *    las uniones entre las formas (hombro y brazo, pecho y cintura) se funden
+   *    y el cuerpo se lee como una sola superficie.
+   * 2. Se sombrea con una luz principal envolvente y una de relleno.
+   * 3. Una línea suave separa las piezas que se tapan y una luz fría de
+   *    contorno despega la figura del fondo.
+   * Todo en una pasada por pixel: cuesta casi lo mismo que el sombreado común.
+   */
+  private portraitImage(outline: Rgb | null): PixelImage {
+    const { width, height, depth, painter } = this;
+    const count = width * height;
+    const d = this.detail;
+    const normals = this.smoothedNormals(d, d * 0.9);
+    const [vx, vy, vz] = this.camera.viewDir;
+    // La luz principal, menos de frente que en el sprite: más de arriba y del
+    // costado, así modela las formas (sombra bajo el pecho, el mentón, un lado
+    // de cada brazo y cada pierna).
+    const key = this.camera.lightDir;
+    const [lx, ly, lz] = normalize([key[0] - vx * 0.32, key[1] - vy * 0.32, key[2] - vz * 0.32]);
+    // El reflejo: a medio camino entre la luz y quien mira.
+    const [hx, hy, hz] = normalize([lx + vx, ly + vy, lz + vz]);
+    // Relleno: desde el otro lado y un poco de abajo, tenue.
+    const fill = normalize([-lx * 0.9 + vx * 0.4, -0.25 + vy * 0.4, -lz * 0.3 + vz * 0.6]);
+    const image = new PixelImage(width, height);
+    const edgeDepth = EDGE_DEPTH * d;
+    for (let i = 0; i < count; i++) {
+      const index = painter[i] ?? -1;
+      if (index < 0 || !((depth[i] ?? -Infinity) > -Infinity)) continue;
+      const material = this.materials[index];
+      if (!material) continue;
+      const x = i % width;
+      const y = (i - x) / width;
+      const nx = normals[i * 3] ?? 0;
+      const ny = normals[i * 3 + 1] ?? 0;
+      const nz = normals[i * 3 + 2] ?? 1;
+      const lambert = nx * lx + ny * ly + nz * lz;
+      // Envolvente: la sombra propia empieza un poco pasada la línea de la luz y cae suave.
+      const wrapped = Math.pow(Math.max(0, (lambert + 0.3) / 1.3), 1.25);
+      const filled = Math.max(0, nx * fill[0] + ny * fill[1] + nz * fill[2]);
+      const light = Math.min(1, 0.13 + 0.87 * wrapped + 0.12 * filled);
+      const pending = (this.pending[i] ?? -1) >= 0;
+      const shaded = material({
+        x,
+        y,
+        p: this.modelPoint(x, y, depth[i] ?? 0, this.scopeAt ? (this.scopeAt[i] ?? 0) : 0),
+        n: [nx, ny, nz],
+        light,
+        gloss: Math.pow(Math.max(0, nx * hx + ny * hy + nz * hz), 26),
+      });
+      // Una máscara que ya había pintado el pixel lo conserva; una pieza lisa que no pinta, no.
+      const color = shaded ?? (pending ? null : this.colors[i]);
+      if (!color) continue;
+      const decal = this.decalAt ? (this.decalAt[i] ?? -1) : -1;
+      if (decal >= 0) {
+        const mark = this.decalColors[decal];
+        if (mark) {
+          image.set(x, y, mark);
+          continue;
+        }
+      }
+      // Donde una pieza tapa a otra, una línea suave las separa (barata: mira los cuatro vecinos).
+      const z = depth[i] ?? 0;
+      const own = painter[i];
+      const covered =
+        (x > 0 && (depth[i - 1] ?? -Infinity) > z + edgeDepth && painter[i - 1] !== own) ||
+        (x < width - 1 && (depth[i + 1] ?? -Infinity) > z + edgeDepth && painter[i + 1] !== own) ||
+        (y > 0 && (depth[i - width] ?? -Infinity) > z + edgeDepth && painter[i - width] !== own) ||
+        (y < height - 1 &&
+          (depth[i + width] ?? -Infinity) > z + edgeDepth &&
+          painter[i + width] !== own);
+      const open = covered ? 0.72 : 1;
+      // Contorno: donde la superficie se pone de canto, del lado contrario a la luz principal.
+      const facing = Math.max(0, nx * vx + ny * vy + nz * vz);
+      const edge = Math.pow(1 - facing, 4) * Math.max(0, 0.45 - lambert);
+      image.set(x, y, [
+        Math.min(255, color[0] * open + 70 * edge),
+        Math.min(255, color[1] * open + 84 * edge),
+        Math.min(255, color[2] * open + 112 * edge),
+      ]);
+    }
+    if (outline) image.outline(outline, 0.9);
+    return image;
+  }
+
+  /**
+   * Las normales promediadas con las de los pixeles vecinos que están a una
+   * profundidad parecida (dos pasadas: horizontal y vertical). Donde una pieza
+   * tapa a otra hay un salto de profundidad y no se mezclan.
+   */
+  private smoothedNormals(pixelsPerUnit: number, depthRange: number): Float32Array {
+    const { width, height, depth, painter } = this;
+    const soft = this.softAt;
+    let from = this.normals;
+    // Normalizadas primero: cada forma las deja con su propia escala.
+    const unit = new Float32Array(from.length);
+    for (let i = 0; i < width * height; i++) {
+      const x = from[i * 3] ?? 0;
+      const y = from[i * 3 + 1] ?? 0;
+      const z = from[i * 3 + 2] ?? 0;
+      const k = 1 / (Math.hypot(x, y, z) || 1);
+      unit[i * 3] = x * k;
+      unit[i * 3 + 1] = y * k;
+      unit[i * 3 + 2] = z * k;
+    }
+    from = unit;
+    for (const step of [1, width]) {
+      const to = new Float32Array(from.length);
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const i = y * width + x;
+          if ((painter[i] ?? -1) < 0) continue;
+          const z = depth[i] ?? 0;
+          const radius = Math.max(1, Math.round((soft ? (soft[i] ?? 0.5) : 0.5) * pixelsPerUnit));
+          let sx = 0;
+          let sy = 0;
+          let sz = 0;
+          for (let k = -radius; k <= radius; k++) {
+            if (step === 1 ? x + k < 0 || x + k >= width : y + k < 0 || y + k >= height) continue;
+            const j = i + k * step;
+            if ((painter[j] ?? -1) < 0) continue;
+            const dz = ((depth[j] ?? 0) - z) / depthRange;
+            if (dz > 1 || dz < -1) continue;
+            const w = (1 - dz * dz) * (1 - Math.abs(k) / (radius + 1));
+            sx += (from[j * 3] ?? 0) * w;
+            sy += (from[j * 3 + 1] ?? 0) * w;
+            sz += (from[j * 3 + 2] ?? 0) * w;
+          }
+          const k = 1 / (Math.hypot(sx, sy, sz) || 1);
+          to[i * 3] = sx * k;
+          to[i * 3 + 1] = sy * k;
+          to[i * 3 + 2] = sz * k;
+        }
+      }
+      from = to;
+    }
+    return from;
   }
 }
 

@@ -236,12 +236,29 @@ export interface Build {
   readonly hip: number;
   /** Altura relativa. */
   readonly stature: number;
+  /** Largo relativo de las piernas y de los brazos (1 si no se dice). */
+  readonly legs?: number;
+  readonly arms?: number;
 }
 
 export const BUILDS: Readonly<Record<'male' | 'female', Build>> = {
   male: { shoulder: 6.5, hip: 3.4, stature: 1 },
   female: { shoulder: 5.7, hip: 3.7, stature: 0.95 },
 };
+
+/**
+ * Las proporciones de la figura grande (la ventana de personaje): más
+ * esbeltas que las del sprite del mundo, que es cabezón y de piernas cortas
+ * para leerse de lejos. Piernas más largas y, en la mujer, hombros más
+ * angostos que la cadera.
+ */
+export const PORTRAIT_BUILDS: Readonly<Record<'male' | 'female', Build>> = {
+  male: { shoulder: 6.5, hip: 3.2, stature: 1, legs: 1.17, arms: 1.07 },
+  female: { shoulder: 5.1, hip: 3.5, stature: 0.96, legs: 1.17, arms: 1.06 },
+};
+
+/** La cabeza de la figura grande, respecto de la del sprite del mundo. */
+export const PORTRAIT_HEAD = 0.86;
 
 const STAND: LegPose = { thigh: 0, knee: 0.04, spread: 0.03 };
 const FORWARD: LegPose = { thigh: 0.42, knee: 0.08 };
@@ -705,6 +722,8 @@ export function humanoidRig(
         }
       : base;
   const k = build.stature;
+  const legLength = build.legs ?? 1;
+  const armLength = build.arms ?? 1;
   const hipShift = pose.hipShift ?? 0;
   const twist = pose.twist ?? 0;
   const lean = pose.lean ?? 0;
@@ -713,10 +732,13 @@ export function humanoidRig(
 
   const legFor = (side: 1 | -1, leg: LegPose) => {
     const hip: Vec3 = [side * build.hip + hipShift, hipHeight, 0];
-    const knee = add(hip, scale(boneDir(leg.thigh, leg.spread ?? 0, side), THIGH * k));
+    const knee = add(hip, scale(boneDir(leg.thigh, leg.spread ?? 0, side), THIGH * k * legLength));
     const ankle = add(
       knee,
-      scale(boneDir(leg.thigh - leg.knee, leg.shinSpread ?? leg.spread ?? 0, side), SHIN * k),
+      scale(
+        boneDir(leg.thigh - leg.knee, leg.shinSpread ?? leg.spread ?? 0, side),
+        SHIN * k * legLength,
+      ),
     );
     return { hip, knee, ankle, toe: add(ankle, [side * 0.4, -1.2, 4.2]) };
   };
@@ -757,10 +779,10 @@ export function humanoidRig(
     const shoulder = chest.at([side * build.shoulder, 4 * k - side * tilt, -0.2]);
     const elbow = add(
       shoulder,
-      scale(chest.dir(boneDir(armPose.raise, armPose.spread, side)), UPPER_ARM * k),
+      scale(chest.dir(boneDir(armPose.raise, armPose.spread, side)), UPPER_ARM * k * armLength),
     );
     const forearm = chest.dir(boneDir(armPose.raise + armPose.bend, armPose.spread * 0.6, side));
-    const hand = add(elbow, scale(forearm, FOREARM * k));
+    const hand = add(elbow, scale(forearm, FOREARM * k * armLength));
     const weaponDir = chest.dir(
       boneDir(armPose.raise + armPose.bend + GRIP, armPose.spread * 0.5, side),
     );
