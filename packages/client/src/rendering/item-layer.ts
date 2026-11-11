@@ -32,6 +32,8 @@ export class ItemLayer {
       const screen = this.ground.toScreen(item.position);
       sprite.anchor.set(0.5);
       sprite.scale.set(CHARACTER_SCALE);
+      if (item.kind === 'raw-fish')
+        sprite.scale.set((CHARACTER_SCALE * ITEM_ART_SIZE) / sprite.texture.width);
       sprite.position.set(screen.x, screen.y - 4);
       sprite.zIndex = groundItemDepth(item.position);
       // El cuerpo de un jugador, del tamaño de una persona.

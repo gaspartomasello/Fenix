@@ -24,6 +24,7 @@ import type { StaticKind } from '@fenix/shared/world/statics';
 import type { Terrain } from '@fenix/shared/world/terrain';
 import { Texture } from 'pixi.js';
 import { toCanvas } from '../platform/canvas';
+import rawFishSprite from '../assets/raw-fish-72.png?inline';
 
 /**
  * Convierte el arte generado en texturas de Pixi y las reutiliza.
@@ -42,6 +43,22 @@ export class TextureCache {
 
   /** Se llama con cada textura nueva (para subirla a la placa de video en el momento). */
   onCreate: ((texture: Texture) => void) | null = null;
+
+  /** Carga una sola vez el mismo PNG que usa la mochila para los pescados del suelo. */
+  async prepareRawFish(): Promise<void> {
+    const image = new Image();
+    image.src = rawFishSprite;
+    try {
+      await image.decode();
+    } catch {
+      // Si el navegador no puede decodificarlo, queda el dibujo procedural.
+      return;
+    }
+    const texture = Texture.from(image);
+    texture.source.scaleMode = 'linear';
+    this.textures.set('i:raw-fish:0', texture);
+    this.onCreate?.(texture);
+  }
 
   terrain(terrain: Terrain, variant: number, neighbors: TerrainNeighbors): Texture {
     return this.fromEntry(this.terrainEntry(terrain, variant, neighbors));
