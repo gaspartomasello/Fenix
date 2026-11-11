@@ -51,6 +51,10 @@ export function startBandage(
   return { ok: true, changes, target };
 }
 
+/** Oportunidades de subir Primeros auxilios por venda, y cuánto más sube cada vez. */
+const HEALING_GAIN_TRIES = 3;
+const HEALING_GAIN_BOOST = 2;
+
 export type BandageOutcome =
   | { kind: 'lost-target' }
   | { kind: 'failed'; gains: SkillKey[] }
@@ -76,13 +80,16 @@ export function resolveBandage(
 
   const healing = player.skills.get('healing');
   const anatomy = player.skills.get('anatomy');
-  // Primeros auxilios tiene dos oportunidades de subir por venda: cada venda
-  // tarda unos segundos y, con una sola, pasar de 50 costaba cientos de vendas.
-  const gains = (['healing', 'anatomy'] as const).filter(
-    (skill) =>
-      player.skills.tryGain(skill, random) ||
-      (skill === 'healing' && player.skills.tryGain(skill, random)),
+  // Primeros auxilios sube mucho más que lo normal: cada venda tarda unos
+  // segundos y solo se usa estando herido. Tiene varias oportunidades por venda
+  // y sube el doble cada vez (de 50 a 100, unas 250 vendas en vez de cientos más).
+  const healingGain = Array.from({ length: HEALING_GAIN_TRIES }).some(() =>
+    player.skills.tryGain('healing', random, HEALING_GAIN_BOOST),
   );
+  const gains: SkillKey[] = [
+    ...(healingGain ? (['healing'] as const) : []),
+    ...(player.skills.tryGain('anatomy', random) ? (['anatomy'] as const) : []),
+  ];
   if (random() >= bandageChance(healing)) return { kind: 'failed', gains };
 
   let cured = false;

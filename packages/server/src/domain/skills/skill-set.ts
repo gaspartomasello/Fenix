@@ -55,14 +55,15 @@ export class SkillSet {
   }
 
   /** Intenta subir una habilidad por haberla usado. Devuelve true si subió. */
-  tryGain(key: SkillKey, random: () => number): boolean {
+  /** `boost` multiplica cuánto sube (para las habilidades que se usan poco y despacio). */
+  tryGain(key: SkillKey, random: () => number, boost = 1): boolean {
     this.onUse?.(key, random);
     const value = this.values[key];
     if (this.direction(key) !== 'up' || value >= SKILL_MAX) return false;
     const free = Math.max(0, SKILL_TOTAL_CAP - this.total);
     const donors = SKILL_KEYS.filter((other) => other !== key && this.direction(other) === 'down');
     const available = donors.reduce((sum, other) => sum + this.values[other], 0);
-    const amount = Math.min(skillGainAmount(value), SKILL_MAX - value, free + available);
+    const amount = Math.min(skillGainAmount(value) * boost, SKILL_MAX - value, free + available);
     if (amount <= 0 || random() >= skillGainChance(value)) return false;
     let needed = Math.max(0, amount - free);
     for (const donor of donors) {
