@@ -1485,6 +1485,14 @@ ningún monumento real):
 - Lo ya agregado antes de esto hay que borrarlo y volver a agregarlo (desde Safari) para que el
   iPhone lo tome como aplicación.
 
+## Apilar objetos y el cartelito de cantidad (etapa 102)
+
+- Soltar una pila sobre otra del mismo tipo (mismo color, mismo equipo inicial) las suma, como en
+  UO: en la mochila, en el banco y en bolsas o muebles. Lo decide el servidor (`Items.stackUnder`)
+  según dónde cae el centro del ícono soltado; no cambia el protocolo.
+- El panel de cantidad es un cartelito chico: el objeto y su pila, una barra deslizable (con − y +
+  para afinar), el número, "Todo" y "Aceptar". En la computadora se escribe el número y Enter acepta.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.
