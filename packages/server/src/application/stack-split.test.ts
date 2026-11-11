@@ -175,7 +175,7 @@ describe('separar pilas no duplica ni borra objetos', () => {
     const small = piles().find((p) => p.id !== stack.id);
     if (!small) throw new Error('sin la pila chica');
     // Soltarla encima de la otra: se juntan.
-    room.move(small.id, { type: 'backpack', position: stack.location.position });
+    room.move(small.id, { type: 'backpack', position: stack.location.position }, undefined);
     expect(piles()).toHaveLength(1);
     expect(piles()[0]?.amount).toBe(original);
     expect(room.gold()).toBe(total);
