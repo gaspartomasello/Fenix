@@ -25,6 +25,8 @@ const EVERY_MESSAGE: Record<
   followTrack: true,
   pickLock: true,
   stealItem: true,
+  setHome: true,
+  goHome: true,
   setWarMode: true,
   gather: true,
   buy: true,

@@ -77,7 +77,8 @@ export class GameLoop {
     >,
     private readonly warMode: WarMode,
   ) {
-    this.shrines = world.map.statics.filter((s) => s.kind === 'shrine');
+    // Los santuarios de las ciudades y las cruces de la resurrección de las mazmorras.
+    this.shrines = world.map.statics.filter((s) => s.kind === 'shrine' || s.kind === 'ankh');
     this.fields = new Fields(world, ids, items);
   }
 

@@ -1504,6 +1504,46 @@ export function populateContinent(
       }
   }
 
+  // Una cruz de la resurrección cerca de cada entrada a una mazmorra: quien muere
+  // adentro no tiene que volver al pueblo como fantasma.
+  for (const entrance of [caveEntrance, iceEntrance, tombEntrance])
+    if (entrance) placeAnkh(entrance);
+
+  /** La cruz, a unos pasos de la entrada: en un lugar libre y con suelo firme alrededor. */
+  function placeAnkh(entrance: Position): void {
+    const ground = (x: number, y: number): boolean => {
+      const t = terrain[index(x, y)];
+      return free(x, y) && t !== undefined && TERRAINS[t].walkable && !isWater(t);
+    };
+    for (let r = 3; r <= 6; r++)
+      for (const [dx, dy] of [
+        [r, 0],
+        [-r, 0],
+        [0, r],
+        [0, -r],
+        [r, r],
+        [-r, r],
+        [r, -r],
+        [-r, -r],
+      ] as const) {
+        const x = entrance.x + dx;
+        const y = entrance.y + dy;
+        if (!ground(x, y) || statics.has(index(x, y))) continue;
+        // Que se pueda llegar caminando: al menos dos vecinos libres.
+        const around = [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ].filter(
+          ([ax = 0, ay = 0]) => ground(x + ax, y + ay) && !statics.has(index(x + ax, y + ay)),
+        );
+        if (around.length < 2) continue;
+        statics.set(index(x, y), { kind: 'ankh', x, y });
+        return;
+      }
+  }
+
   // Senderos: de cada lugar (y de la cueva) hasta el camino más cercano.
   const roads = new Set(continent.roads);
   const townCenters = continent.towns.map((t) => ({

@@ -52,6 +52,11 @@ export class World {
     }
   }
 
+  /** Dónde aparecen los jugadores nuevos (la capital). */
+  get start(): Position {
+    return this.spawnPoint;
+  }
+
   get playerCount(): number {
     return this.players.size;
   }

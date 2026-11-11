@@ -15,6 +15,8 @@ import { DragController } from '../ui/drag-controller';
 import { EquipmentWindow } from '../ui/equipment-window';
 import { PaperdollViewer } from '../ui/paperdoll-viewer';
 import { SnoopWindow } from '../ui/snoop-window';
+import { ConfirmDialog } from '../ui/confirm-dialog';
+import { WorldShrines } from './world-shrines';
 import { WorldPaperdolls } from './world-paperdolls';
 import { HudButtons, type HudButton } from '../ui/hud-buttons';
 import { SocialWindow } from '../ui/social-window';
@@ -284,6 +286,9 @@ export class GameSession {
     const worldCorpses = new WorldCorpses(this.game, renderer, tooltip);
     const worldDoors = new WorldDoors(this.game, renderer, tooltip);
     const worldContainers = new WorldContainers(this.game, renderer, tooltip);
+    const confirmDialog = new ConfirmDialog();
+    this.hosts.ui.append(confirmDialog.element);
+    const worldShrines = new WorldShrines(this.game, renderer, tooltip, confirmDialog);
     const worldMounts = new WorldMounts(this.game, renderer, tooltip);
     new WorldSigns(renderer, tooltip);
     new WorldShips(this.game, renderer, tooltip);
@@ -309,6 +314,7 @@ export class GameSession {
         !worldCorpses.hasCorpseAt(point) &&
         !worldDoors.hasDoorAt(point) &&
         !worldContainers.hasContainerAt(point) &&
+        !worldShrines.hasShrineAt(point) &&
         !worldMounts.hasPetAt(point) &&
         !worldNpcs.hasNpcAt(point),
     });

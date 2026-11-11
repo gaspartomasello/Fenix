@@ -183,6 +183,18 @@ export class GameRenderer {
     return null;
   }
 
+  /** El santuario (la piedra azul de las ciudades) bajo un punto de la pantalla: es alto. */
+  shrineAt(point: ScreenPoint): Position | null {
+    const map = this.game.map;
+    if (!map) return null;
+    for (const lift of [0, 14, 28, 42, 56]) {
+      const tile = this.screenToTile({ x: point.x, y: point.y + lift * this.zoom });
+      if (map.statics.some((s) => s.kind === 'shrine' && s.x === tile.x && s.y === tile.y))
+        return tile;
+    }
+    return null;
+  }
+
   /** Objeto del suelo bajo un punto de la pantalla, si hay. */
   groundItemAt(point: ScreenPoint): GroundItemSnapshot | null {
     return this.groundItems.itemAt(this.toWorld(point));

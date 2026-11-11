@@ -270,3 +270,15 @@ el guardia más cercano, aunque no haya visto nada, y ajusticia a los criminales
 haya a tu alrededor (unos 12 pasos). Si no hay nadie a quien buscar, no viene. Fuera de los pueblos y en
 el Refugio de los Bandidos nadie te escucha. Se puede llamar una vez cada 5 segundos. Los vecinos
 también la llaman: si pescan a alguien robándoles, gritan _"¡Guardia! ¡Ladrón!"_.
+
+## Morir, el hogar y volver a la vida
+
+- Al morir quedás como **fantasma** (ves sin oscuridad) y tu cuerpo queda donde caíste, con lo que
+  llevabas puesto. Para volver a la vida: acercate a un **santuario** (la piedra azul de cada
+  ciudad), a una **cruz de la resurrección** (hay una a la entrada de cada mazmorra) o a un
+  **sanador** del pueblo.
+- **home**: siendo fantasma, escribí _home_ en el chat y volvés al instante a tu santuario (y ahí
+  resucitás). Sin elegir, es el de la capital.
+- **Cambiar el hogar**: doble clic (o un toque) sobre el santuario de otra ciudad; aparece un cartel
+  para confirmar.
+- Después, volvé a tu cuerpo: con "Tomar todo" recuperás todo y te volvés a poner lo que tenías.

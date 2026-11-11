@@ -331,6 +331,11 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   }
 
   /** Usar una habilidad a propósito (Esconderse, Mirar). */
+  /** Que este santuario sea el hogar (a donde lleva `home` al morir). */
+  setHome(position: Position): void {
+    this.gateway.send({ type: 'setHome', position });
+  }
+
   /** Robar algo elegido de la mochila de alguien (después de fisgonearla). */
   stealItem(targetId: EntityId, kind: ItemKind): void {
     this.gateway.send({ type: 'stealItem', targetId, kind });
@@ -509,6 +514,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       case 'releasePet':
         // El servidor sabe si hay montura (suelta o montada) y responde.
         this.gateway.send({ type: 'releasePet' });
+        return;
+      case 'home':
+        this.gateway.send({ type: 'goHome' });
         return;
       case 'hour':
         this.gateway.send({ type: 'setHour', hour: input.hour });

@@ -23,6 +23,8 @@ export type ChatInput =
   | { readonly kind: 'releasePet' }
   /** `/esconderse`, `/mirar`: usar esas habilidades. */
   | { readonly kind: 'useSkill'; readonly skill: ActiveSkill }
+  /** `home` (o `/home`): de fantasma, volver al santuario que es tu hogar. */
+  | { readonly kind: 'home' }
   /** `/hora 22`: mover la hora del mundo (solo personajes de prueba). */
   | { readonly kind: 'hour'; readonly hour: number }
   /** `/cueva` y `/cueva fondo`: viajar a la mazmorra (solo personajes de prueba). */
@@ -59,6 +61,7 @@ export const CHAT_HELP = [
   '/esconderse — esconderte (habilidad Esconderse)',
   '/mirar — buscar a los escondidos cerca (habilidad Mirar)',
   '/rastrear — buscar rastros de animales, monstruos, personas o vecinos (habilidad Rastrear)',
+  'home — de fantasma, volver al santuario que es tu hogar (para resucitar)',
   '/hora 22 — cambiar la hora del mundo (solo personajes de prueba)',
   '/cueva o /cueva fondo — ir a la mazmorra (solo personajes de prueba)',
   '/invul — volverte invulnerable (nombre amarillo) o dejar de serlo (solo personajes de prueba)',
@@ -78,6 +81,7 @@ export const CHAT_HELP = [
 /** Interpreta una línea del chat: texto común o un comando que empieza con "/". */
 export function parseChatInput(raw: string): ChatInput {
   const line = raw.trim();
+  if (/^\/?home$/i.test(line)) return { kind: 'home' };
   if (!line.startsWith('/')) return { kind: 'chat', channel: 'say', text: line };
   const [word = '', ...rest] = line.slice(1).split(/\s+/);
   const args = rest.join(' ');

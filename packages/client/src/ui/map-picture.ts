@@ -20,7 +20,13 @@ function staticColor(kind: StaticKind): string | null {
   if (kind === 'baobab') return '#6a7a3c';
   if (kind.startsWith('wall') || kind === 'lighthouse') return '#c9c2b4';
   if (kind === 'tent') return '#c49a62';
-  if (kind === 'lamp' || kind === 'campfire' || kind === 'brazier' || kind === 'shrine')
+  if (
+    kind === 'lamp' ||
+    kind === 'campfire' ||
+    kind === 'brazier' ||
+    kind === 'shrine' ||
+    kind === 'ankh'
+  )
     return '#ffd36b';
   if (kind === 'cave-entrance') return '#1b1410';
   if (kind === 'reeds' || kind === 'flowers' || kind === 'bush') return null;

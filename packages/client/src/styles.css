@@ -5349,3 +5349,60 @@ html:not(.touch-ui) .info-strip .info-chip-icon {
 .skills-attributes .skills-direction {
   margin: 0 0.55rem 0 0;
 }
+
+/* Cartel para confirmar (por ejemplo, elegir un santuario como hogar): cuero y bronce. */
+.confirm-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 8000;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.confirm-dialog[hidden] {
+  display: none;
+}
+
+.confirm-panel {
+  display: grid;
+  gap: 8px;
+  width: min(320px, calc(100vw - 24px));
+  padding: 6px 12px 12px;
+}
+
+.confirm-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.confirm-title {
+  flex: 1;
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  text-shadow: 0 0 8px var(--ember);
+}
+
+.confirm-head .window-close {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  min-height: 22px;
+  font-size: 0.7rem;
+}
+
+.confirm-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
