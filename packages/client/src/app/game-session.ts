@@ -349,6 +349,13 @@ export class GameSession {
     );
     this.hosts.ui.append(trackingWindow.window.element, trackingArrow.element);
     this.game.on('trackingRequested', () => trackingWindow.open());
+    this.game.on('memoryRequested', () => {
+      const { count, megabytes } = renderer.textureStats();
+      const heap = (performance as { memory?: { usedJSHeapSize: number } }).memory;
+      this.game.notify(
+        `Imágenes cargadas: ${count} (${megabytes} MB)${heap ? ` · memoria del juego: ${Math.round(heap.usedJSHeapSize / 1e6)} MB` : ''}.`,
+      );
+    });
     this.game.on('trackingFound', ({ category, found }) => trackingWindow.show(category, found));
     this.game.on('trackPoint', (point) => {
       if ('lost' in point) {

@@ -255,6 +255,14 @@ export class TextureCache {
     return this.getOrCreate(`x:${key}`, draw, 'linear');
   }
 
+  /** Cuántas imágenes hay cargadas y cuánto ocupan (aproximado, en megabytes). */
+  stats(): { count: number; megabytes: number } {
+    let bytes = 0;
+    for (const texture of this.textures.values())
+      bytes += texture.source.pixelWidth * texture.source.pixelHeight * 4;
+    return { count: this.textures.size, megabytes: Math.round(bytes / 1e5) / 10 };
+  }
+
   destroy(): void {
     this.textures.forEach((texture) => texture.destroy(true));
     this.textures.clear();

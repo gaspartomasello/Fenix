@@ -373,6 +373,11 @@ export class GameRenderer {
     });
   }
 
+  /** Cuántas imágenes del mundo hay cargadas y cuánto ocupan (para `/memoria`). */
+  textureStats(): { count: number; megabytes: number } {
+    return this.textures.stats();
+  }
+
   /** Suelta las texturas que hace rato no se usan y que nada en pantalla muestra. */
   private sweepTextures(): void {
     const inUse = new Set<Texture>();
