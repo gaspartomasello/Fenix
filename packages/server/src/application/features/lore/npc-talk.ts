@@ -6,6 +6,7 @@ import type { Npc } from '../../../domain/npcs/npc';
 import type { Player } from '../../../domain/player';
 import type { World } from '../../../domain/world';
 import type { NpcDialogue } from '../../kernel/npc-dialogue';
+import { isGuardCall } from '@fenix/shared/social/guards';
 import { directions } from '@fenix/shared/world/compass';
 import {
   ADVICE,
@@ -142,6 +143,8 @@ export class NpcTalk {
     const player = this.world.get(playerId);
     if (!player || player.combat.isDead) return;
     const words = normalize(text);
+    // Llamar a la guardia no es charla: de eso se encarga la guardia.
+    if (isGuardCall(words)) return;
     const npc = this.listener(player, words);
     if (!npc) return;
     // Le hablaron: deja lo que hacía y mira a quien le habla.

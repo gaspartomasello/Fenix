@@ -9,11 +9,12 @@ import { WorldClock } from '../domain/world-clock';
 import { FakeClock, FixedRandom, RecordingNotifier, SequentialIds } from '../test-support/fakes';
 // <módulos>
 import { gameWith } from '../test-support/game';
+import { chatModule } from './features/chat/chat.module';
 import { combatModule } from './features/combat/combat.module';
 import { townLifeModule } from './features/town-life/town-life.module';
 // </módulos>
 
-const newGame = gameWith([combatModule, townLifeModule]);
+const newGame = gameWith([chatModule, combatModule, townLifeModule]);
 
 function createTown() {
   const map = new TileMap({
@@ -48,7 +49,7 @@ function createTown() {
       app.tick(clock.now());
     }
   };
-  return { world, join, run, notifier, clock };
+  return { world, join, run, notifier, clock, app };
 }
 
 describe('la vida en la ciudad', () => {
@@ -113,5 +114,38 @@ describe('la vida en la ciudad', () => {
     const ana = join('Ana');
     run(5000);
     expect(ana.combat.isDead).toBe(false);
+  });
+
+  it('etapa 110: "¡guardia!" hace venir al guardia más cercano aunque no haya visto nada', () => {
+    const { world, join, run, notifier, clock, app } = createTown();
+    // El guardia, lejos: no ve al criminal.
+    world.addNpc(new Npc('npc-2', 'guard', { x: 1, y: 1 }, 'guardia'));
+    const ana = join('Ana');
+    const beto = join('Beto');
+    ana.teleport({ x: 25, y: 25 });
+    beto.teleport({ x: 26, y: 25 });
+    beto.reputation.markCriminal(clock.now());
+    run(3000);
+    expect(beto.combat.isDead).toBe(false);
+    app.handle(ana.id, { type: 'chat', text: '¡Guardia!', channel: 'say' });
+    run(3000);
+    expect(beto.combat.isDead).toBe(true);
+    expect(
+      notifier
+        .ofType('system')
+        .some((m) => /ajustició a Beto/.test((m.message as { text: string }).text)),
+    ).toBe(true);
+  });
+
+  it('etapa 110: si no hay a quién buscar, la guardia no viene', () => {
+    const { world, join, notifier, app } = createTown();
+    world.addNpc(new Npc('npc-2', 'guard', { x: 1, y: 1 }, 'guardia'));
+    const ana = join('Ana');
+    app.handle(ana.id, { type: 'chat', text: 'guardias', channel: 'say' });
+    expect(
+      notifier
+        .ofType('system')
+        .some((m) => /no ven a ningún criminal/.test((m.message as { text: string }).text)),
+    ).toBe(true);
   });
 });

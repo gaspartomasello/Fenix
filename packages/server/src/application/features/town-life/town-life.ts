@@ -1,5 +1,6 @@
 import { directionBetween } from '@fenix/shared/geometry/direction';
 import { tileDistance, type Position } from '@fenix/shared/geometry/position';
+import { GUARD_CALL_RANGE } from '@fenix/shared/social/guards';
 import { MOVE_DURATION_MS } from '@fenix/shared/rules/movement';
 import { Creature } from '../../../domain/creatures/creature';
 import type { Mobile } from '../../../domain/mobile';
@@ -39,7 +40,38 @@ export class TownLife {
     private readonly combat: GameServices['combat'],
   ) {}
 
+  /**
+   * Llamaron a la guardia en `at`: si es un pueblo protegido y hay a quién
+   * ajusticiar alrededor, viene el guardia más cercano (grita y, enseguida,
+   * aparece al lado y golpea).
+   */
+  call(at: Position, now: number): 'coming' | 'nobody' | 'lawless' {
+    if (!this.world.map.safeZoneAt(at)) return 'lawless';
+    const target = this.world
+      .mobilesNear(at)
+      .filter((m) => tileDistance(m.position, at) <= GUARD_CALL_RANGE && this.wanted(m))
+      .sort((a, b) => tileDistance(a.position, at) - tileDistance(b.position, at))[0];
+    if (!target) return 'nobody';
+    // Si ya hay un guardia yendo por él, alcanza.
+    if ([...this.warned.values()].some((w) => w.targetId === target.id)) return 'coming';
+    const guard = this.world
+      .allNpcs()
+      .filter((n) => n.role === 'guard' && !this.warned.has(n.id))
+      .sort((a, b) => tileDistance(a.position, at) - tileDistance(b.position, at))[0];
+    if (!guard) return 'nobody';
+    this.warn(guard, target, now);
+    return 'coming';
+  }
+
   tick(now: number): void {
+    // Los guardias que van a ajusticiar a alguien (los llamaron o lo vieron), estén donde estén.
+    for (const [guardId, pending] of [...this.warned]) {
+      if (now < pending.strikeAt) continue;
+      this.warned.delete(guardId);
+      const guard = this.world.getNpc(guardId);
+      const target = this.world.getMobile(pending.targetId);
+      if (guard && target && this.wanted(target)) this.strike(guard, target, now);
+    }
     for (const npc of this.world.allNpcs()) {
       if (this.attending(npc, now)) continue;
       if (npc.wander === 0) continue;
@@ -84,27 +116,27 @@ export class TownLife {
     const pending = this.warned.get(guard.id);
     if (pending) {
       const target = this.world.getMobile(pending.targetId);
-      if (!target || !this.wanted(target)) {
-        this.warned.delete(guard.id);
-        return false;
-      }
-      if (now < pending.strikeAt) return true;
+      if (target && this.wanted(target)) return true;
       this.warned.delete(guard.id);
-      this.strike(guard, target, now);
-      return true;
+      return false;
     }
     const target = this.world
       .mobilesNear(guard.position, { except: guard.id })
       .find((m) => tileDistance(m.position, guard.position) <= GUARD_SIGHT && this.wanted(m));
     if (!target) return false;
+    this.warn(guard, target, now);
+    return true;
+  }
+
+  /** El guardia le grita al que va a ajusticiar (lo oyen los que lo ven a él o al buscado). */
+  private warn(guard: Npc, target: Mobile, now: number): void {
     this.warned.set(guard.id, { targetId: target.id, strikeAt: now + GUARD_WARNING_MS });
     const shout =
       target instanceof Player
         ? `${guard.name}: ¡Alto ahí, ${target.notoriety === 'murderer' ? 'asesino' : 'criminal'}!`
         : `${guard.name}: ¡Una fiera en la ciudad! ¡A ella!`;
-    for (const id of this.mobiles.watchers(guard))
+    for (const id of new Set([...this.mobiles.watchers(guard), ...this.mobiles.watchers(target)]))
       this.notifier.send(id, { type: 'system', text: shout });
-    return true;
   }
 
   /** ¿Lo busca la guardia? Criminales, asesinos y fieras dentro de la ciudad protegida. */

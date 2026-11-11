@@ -262,3 +262,11 @@ sirve para **fisgonearla** con la habilidad Fisgonear. Si sale bien, se abre una
 lleva; **tocar un objeto es intentar robarlo**. Si te descubren, quedás como criminal (si era
 inocente o un vecino) y te ven aunque estés escondido. En tu propia ventana, la mochila abre la
 tuya.
+
+## Llamar a la guardia
+
+Dentro de un pueblo protegido, decí **"¡guardia!"** (o _"guardias"_, _"¡auxilio!"_, _"¡socorro!"_): viene
+el guardia más cercano, aunque no haya visto nada, y ajusticia a los criminales, asesinos y fieras que
+haya a tu alrededor (unos 12 pasos). Si no hay nadie a quien buscar, no viene. Fuera de los pueblos y en
+el Refugio de los Bandidos nadie te escucha. Se puede llamar una vez cada 5 segundos. Los vecinos
+también la llaman: si pescan a alguien robándoles, gritan _"¡Guardia! ¡Ladrón!"_.
