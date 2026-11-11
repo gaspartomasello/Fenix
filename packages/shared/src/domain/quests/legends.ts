@@ -621,6 +621,7 @@ export const MASTERY_SCROLLS: Readonly<Partial<Record<ItemKind, SkillKey>>> = {
   'mastery-anatomy': 'anatomy',
   'mastery-tracking': 'tracking',
   'mastery-meditation': 'meditation',
+  'mastery-stealth': 'stealth',
 };
 
 export function isLegendId(value: unknown): value is LegendId {

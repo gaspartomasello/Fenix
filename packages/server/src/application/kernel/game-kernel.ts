@@ -12,6 +12,7 @@ import { Guards } from './guards';
 import { ItemNotifications } from './item-notifications';
 import { ItemUses } from './item-uses';
 import { MobileNotifications } from './mobile-notifications';
+import { NpcDialogue } from './npc-dialogue';
 import { ServiceRegistry } from './services';
 import { SkillUses } from './skill-uses';
 import { SocialNotifications } from './social-notifications';
@@ -65,6 +66,8 @@ export class GameKernel {
   /** Dónde se guardan las casas (si hay dónde). */
   readonly houseStore: HouseStore | undefined;
   readonly itemUses = new ItemUses();
+  /** Lo que los módulos les hacen decir a los vecinos cuando les hablan. */
+  readonly dialogue = new NpcDialogue();
   readonly skills = new SkillUses();
   private readonly testCharacters: readonly string[];
   private readonly admins: readonly string[];

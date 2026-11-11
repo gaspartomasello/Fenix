@@ -98,6 +98,8 @@ export interface SavedCharacter {
   readonly quests?: readonly QuestProgress[];
   /** Leyendas que conoce: paso en que va cada una. */
   readonly legends?: Readonly<Partial<Record<LegendId, number>>>;
+  /** Cómo está con los gremios y facciones (ver `Player.standing`). */
+  readonly standing?: Readonly<Record<string, number>>;
   /** Personajes de prueba: qué versión del kit de prueba ya se le aplicó. */
   readonly testKit?: number;
 }
@@ -174,6 +176,7 @@ export function captureCharacter(
       .concat(shipDeeds(world, player.name)),
     ...(player.quests.length > 0 ? { quests: player.quests } : {}),
     ...(player.legends.size > 0 ? { legends: Object.fromEntries(player.legends) } : {}),
+    ...(player.standing.size > 0 ? { standing: Object.fromEntries(player.standing) } : {}),
     ...(player.testKit > 0 ? { testKit: player.testKit } : {}),
     mount: player.mount
       ? { kind: player.mount, riding: true }
@@ -456,6 +459,17 @@ export function parseSavedCharacter(value: unknown): SavedCharacter | null {
           ),
         }
       : {}),
+    ...(isObject(value.standing)
+      ? {
+          standing: Object.fromEntries(
+            Object.entries(value.standing).flatMap(([key, n]) =>
+              key.length <= 40 && typeof n === 'number' && Number.isFinite(n) && n >= 0
+                ? [[key, n] as const]
+                : [],
+            ),
+          ),
+        }
+      : {}),
     ...(typeof value.testKit === 'number' && Number.isInteger(value.testKit)
       ? { testKit: value.testKit }
       : {}),
@@ -532,6 +546,7 @@ export function restoreCharacter(
       isLegendId(id) && step !== undefined ? [[id, step] as const] : [],
     ),
   );
+  player.standing = new Map(Object.entries(saved.standing ?? {}));
   if (saved.mount?.riding) player.mount = saved.mount.kind;
   else if (saved.mount)
     world.addCreature(

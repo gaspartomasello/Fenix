@@ -10,6 +10,7 @@ import { economyModule } from './features/economy/economy.module';
 import { housingModule } from './features/housing/housing.module';
 import { itemsModule } from './features/items/items.module';
 import { loreModule } from './features/lore/lore.module';
+import { assassinsModule } from './features/assassins/assassins.module';
 import { mountsModule } from './features/mounts/mounts.module';
 import { movementModule } from './features/movement/movement.module';
 import { portalsModule } from './features/portals/portals.module';
@@ -52,6 +53,7 @@ export const ALL_MODULES: readonly ModuleFactory[] = [
   shipsModule,
   housingModule,
   loreModule,
+  assassinsModule,
   trackingModule,
   thieveryModule,
   portalsModule,

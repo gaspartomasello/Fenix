@@ -26,6 +26,11 @@ export const CREATURE_KINDS = [
   'pirate',
   'corsair',
   'brigand',
+  // Gente de paz que anda por los caminos: nombre azul; atacarlos es un crimen.
+  'traveler',
+  'peddler',
+  'pilgrim',
+  'huntress',
   // Las tribus de la selva: guerreros con máscara y lanza, jinetes de lagarto y chamanes.
   'tribal-warrior',
   'tribal-rider',
@@ -87,6 +92,11 @@ export interface CreatureDefinition {
   readonly loot: readonly LootEntry[];
   /** Cuerpo con forma de persona: usa los gestos de los personajes (golpes, caminar). */
   readonly humanoid: boolean;
+  /**
+   * Inocente (nombre azul): gente de paz que no ataca a nadie. Se defiende si
+   * la atacan, y atacarla es un crimen (quien lo hace queda como criminal).
+   */
+  readonly innocent?: boolean;
   /** Solo aparece invocada con un hechizo (no hay salvajes). */
   readonly summoned: boolean;
   /** Comportamientos especiales (si no hay, pelea cuerpo a cuerpo). */
@@ -514,6 +524,118 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       { kind: 'gold', chance: 1, amount: [20, 50] },
       { kind: 'bread', chance: 0.3 },
       { kind: 'torch', chance: 0.2 },
+    ],
+  },
+  traveler: {
+    kind: 'traveler',
+    name: 'viajero',
+    article: 'un',
+    maxHits: 45,
+    strength: 45,
+    dexterity: 45,
+    armor: 4,
+    skill: 400,
+    weapon: { name: 'bastón', minDamage: 3, maxDamage: 8, swingMs: 2200, skill: 'wrestling' },
+    moveMs: 420,
+    aggroRange: 0,
+    humanoid: true,
+    summoned: false,
+    innocent: true,
+    abilities: { fleeAt: 0.3 },
+    outfit: {
+      torso: 'shirt',
+      cloak: 'cloak',
+      legs: 'trousers',
+      feet: 'boots',
+      head: 'straw-hat',
+      rightHand: 'quarterstaff',
+    },
+    loot: [
+      { kind: 'gold', chance: 1, amount: [15, 45] },
+      { kind: 'bread', chance: 0.5 },
+      { kind: 'apple', chance: 0.3, amount: [1, 3] },
+    ],
+  },
+  peddler: {
+    kind: 'peddler',
+    name: 'buhonera',
+    article: 'una',
+    maxHits: 40,
+    strength: 40,
+    dexterity: 50,
+    armor: 3,
+    skill: 350,
+    weapon: { name: 'daga', minDamage: 2, maxDamage: 7, swingMs: 1600, skill: 'fencing' },
+    moveMs: 440,
+    aggroRange: 0,
+    humanoid: true,
+    summoned: false,
+    innocent: true,
+    abilities: { fleeAt: 0.4 },
+    outfit: {
+      torso: 'dress',
+      feet: 'shoes',
+      head: 'feathered-hat',
+      rightHand: 'dagger',
+    },
+    loot: [
+      { kind: 'gold', chance: 1, amount: [30, 80] },
+      { kind: 'dyes', chance: 0.2 },
+      { kind: 'bandage', chance: 0.5, amount: [2, 6] },
+      { kind: 'lockpick', chance: 0.15, amount: [1, 3] },
+    ],
+  },
+  pilgrim: {
+    kind: 'pilgrim',
+    name: 'peregrino',
+    article: 'un',
+    maxHits: 40,
+    strength: 35,
+    dexterity: 40,
+    armor: 2,
+    skill: 300,
+    weapon: { name: 'bastón', minDamage: 2, maxDamage: 6, swingMs: 2400, skill: 'wrestling' },
+    moveMs: 460,
+    aggroRange: 0,
+    humanoid: true,
+    summoned: false,
+    innocent: true,
+    abilities: { fleeAt: 0.5 },
+    outfit: { torso: 'robe', feet: 'sandals', rightHand: 'quarterstaff' },
+    loot: [
+      { kind: 'gold', chance: 1, amount: [5, 20] },
+      { kind: 'healing-potion', chance: 0.2 },
+      { kind: 'book', chance: 0.15 },
+    ],
+  },
+  huntress: {
+    kind: 'huntress',
+    name: 'cazadora',
+    article: 'una',
+    maxHits: 55,
+    strength: 50,
+    dexterity: 65,
+    armor: 7,
+    skill: 550,
+    weapon: { name: 'lanza corta', minDamage: 4, maxDamage: 10, swingMs: 2000, skill: 'fencing' },
+    moveMs: 380,
+    aggroRange: 0,
+    humanoid: true,
+    summoned: false,
+    innocent: true,
+    abilities: { fleeAt: 0.2 },
+    outfit: {
+      torso: 'leather-armor',
+      legs: 'leather-leggings',
+      feet: 'boots',
+      head: 'leather-cap',
+      rightHand: 'short-spear',
+    },
+    loot: [
+      { kind: 'gold', chance: 1, amount: [10, 30] },
+      { kind: 'hides', chance: 0.6, amount: [2, 5] },
+      { kind: 'raw-ribs', chance: 0.4, amount: [1, 3] },
+      { kind: 'arrow', chance: 0.4, amount: [5, 15] },
     ],
   },
   'tribal-warrior': {

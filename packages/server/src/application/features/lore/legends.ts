@@ -22,7 +22,7 @@ import type { Player } from '../../../domain/player';
 import type { World } from '../../../domain/world';
 import type { ItemNotifications } from '../../kernel/item-notifications';
 import type { MobileNotifications } from '../../kernel/mobile-notifications';
-import { directions, regionCenter } from './directions';
+import { directions, regionCenter } from '@fenix/shared/world/compass';
 import { normalize } from './npc-talk';
 import type { Clock, IdGenerator, Notifier } from '../../ports';
 
@@ -325,10 +325,12 @@ export class Legends {
   }
 
   private freeNear(at: Position): Position | null {
+    const x0 = Math.floor(at.x);
+    const y0 = Math.floor(at.y);
     for (let r = 0; r <= 4; r++)
       for (let dy = -r; dy <= r; dy++)
         for (let dx = -r; dx <= r; dx++) {
-          const p = { x: at.x + dx, y: at.y + dy };
+          const p = { x: x0 + dx, y: y0 + dy };
           if (
             this.world.map.isWalkable(p) &&
             !this.world.mobilesNear(p).some((m) => m.position.x === p.x && m.position.y === p.y)

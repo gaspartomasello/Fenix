@@ -397,10 +397,8 @@ export class GameLoop {
       this.mobiles.broadcastHealth(hit.target);
       this.disrupt(hit.target);
       if (hit.target instanceof Player && hit.target !== player) this.practiceResist(hit.target);
-      if (hit.target instanceof Player) {
-        this.mobiles.sendVitals(hit.target);
-        commitAggression(player, hit.target, now, this.notifier, this.social);
-      }
+      if (hit.target instanceof Player) this.mobiles.sendVitals(hit.target);
+      commitAggression(player, hit.target, now, this.notifier, this.social);
       if (hit.killed) this.handleKill(player, hit.target, now);
     }
     this.mobiles.spellEffect(player, target, spellKey, amount, resisted);

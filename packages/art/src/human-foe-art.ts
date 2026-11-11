@@ -7,7 +7,7 @@ import { drawCharacterFrame, type CharacterFrame } from './character-art';
 import { spriteCanvas, type CanvasFactory } from './humanoid-rig';
 import type { PixelImage } from './pixel-art';
 
-/** Humanos hostiles: personas como los jugadores (su ropa y sus armas, en el catálogo). */
+/** Humanos (hostiles o de paz): personas como los jugadores (su ropa y sus armas, en el catálogo). */
 const HUMAN_FOES: Readonly<
   Partial<Record<CreatureKind, { appearance: Appearance; mount?: MountKind; hues?: EquipmentHues }>>
 > = {
@@ -52,6 +52,52 @@ const HUMAN_FOES: Readonly<
       hairHue: 0x6b4423,
       facialHair: 'mustache',
       clothHue: 0x2e7a3e,
+    },
+  },
+  // La gente de paz de los caminos (nombre azul).
+  traveler: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      skinTone: 0xe0ac69,
+      hairHue: 0x6b4423,
+      hairStyle: 'short',
+      facialHair: 'beard',
+      clothHue: 0x5a6a3a,
+    },
+    hues: { cloak: 0x6a5238 },
+  },
+  peddler: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      gender: 'female',
+      skinTone: 0xf1c27d,
+      hairHue: 0x8a4a22,
+      hairStyle: 'bun',
+      facialHair: 'none',
+      clothHue: 0x8a3a6a,
+    },
+    hues: { torso: 0x8a3a6a },
+  },
+  pilgrim: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      skinTone: 0xf1d6c0,
+      hairHue: 0x9a9a9a,
+      hairStyle: 'short',
+      facialHair: 'long-beard',
+      clothHue: 0x8a7a5a,
+    },
+    hues: { torso: 0x8a7a5a },
+  },
+  huntress: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      gender: 'female',
+      skinTone: 0xc68642,
+      hairHue: 0x2b1d0e,
+      hairStyle: 'ponytail',
+      facialHair: 'none',
+      clothHue: 0x4a5a2a,
     },
   },
   // Las tribus de la selva: piel curtida, el torso pintado al aire, taparrabos,

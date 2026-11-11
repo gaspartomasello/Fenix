@@ -54,8 +54,8 @@ export type StartCastResult =
   | {
       ok: true;
       itemChanges: ItemChanges;
-      /** El objetivo es otro jugador y el hechizo lo daña: cuenta como agresión. */
-      aggressionAgainst: Player | null;
+      /** El objetivo es otro jugador (o una criatura) y el hechizo lo daña: puede ser agresión. */
+      aggressionAgainst: Mobile | null;
     }
   | { ok: false; reason: string };
 
@@ -115,7 +115,7 @@ export function startCast(
   let targetId = player.id;
   let position: Position | undefined;
   let runeId: EntityId | undefined;
-  let aggressionAgainst: Player | null = null;
+  let aggressionAgainst: Mobile | null = null;
   switch (spell.target) {
     case 'self':
       break;
@@ -146,7 +146,7 @@ export function startCast(
         const refusal = pvpRefusal(player, target, world);
         if (refusal) return fail(refusal);
         aggressionAgainst = target;
-      }
+      } else if (target instanceof Creature && !target.isPet) aggressionAgainst = target;
       targetId = target.id;
       break;
     }

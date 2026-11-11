@@ -1,3 +1,4 @@
+import { CREATURES } from '@fenix/shared/creatures/creature-catalog';
 import { LEGENDS, LEGEND_IDS } from '@fenix/shared/quests/legends';
 import type { Position } from '@fenix/shared/geometry/position';
 import { DOORS, STATICS } from '@fenix/shared/world/statics';
@@ -188,6 +189,15 @@ describe('buildWorld: el continente', () => {
     const camp = world.places.find((p) => p.name === 'Campamento de los Colmillos');
     expect(camp?.creatures.filter((c) => c.kind === 'orc').length).toBeGreaterThanOrEqual(3);
     expect(map.statics.some((s) => s.kind === 'lighthouse')).toBe(true);
+  });
+
+  it('por los caminos anda gente de paz (nombre azul), lejos de los pueblos', () => {
+    const peaceful = world.wildlife.filter((c) => CREATURES[c.kind].innocent);
+    expect(peaceful.length).toBeGreaterThanOrEqual(2);
+    for (const c of peaceful) {
+      expect(map.isWalkable(c.home)).toBe(true);
+      expect(map.regionAt(c.home)).toBeUndefined();
+    }
   });
 
   it('están todos los lugares a los que mandan las leyendas (en un mapa mediano)', () => {

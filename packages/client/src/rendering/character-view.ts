@@ -1,3 +1,4 @@
+import { CREATURES } from '@fenix/shared/creatures/creature-catalog';
 import {
   CHARACTER_ART_HEIGHT,
   CHARACTER_ART_WIDTH,
@@ -374,7 +375,9 @@ export class CharacterView {
     const color = entity.npc
       ? NAME_COLOR_NPC
       : !entity.isPlayer
-        ? NAME_COLOR_CREATURE
+        ? entity.body !== 'human' && CREATURES[entity.body].innocent
+          ? NAME_COLOR_NOTORIETY.innocent
+          : NAME_COLOR_CREATURE
         : NAME_COLOR_NOTORIETY[entity.notoriety];
     const key = `${text}|${color}`;
     if (key === this.shownName) return;
