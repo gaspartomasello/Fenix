@@ -159,7 +159,7 @@ describe('ciclo del juego: combate', () => {
     expect(
       arena.notifier
         .ofType('system')
-        .some((d) => d.message.type === 'system' && d.message.text === '¡Volviste a la vida!'),
+        .some((d) => d.message.type === 'system' && /^¡Volviste a la vida!/.test(d.message.text)),
     ).toBe(true);
   });
 

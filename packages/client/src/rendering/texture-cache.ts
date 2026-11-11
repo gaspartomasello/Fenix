@@ -1,6 +1,7 @@
 import {
   drawCharacterFrame,
   drawCreatureCorpse,
+  drawPlayerCorpse,
   drawCreatureFrame,
   drawItem,
   itemVariant,
@@ -19,7 +20,7 @@ import type { Direction } from '@fenix/shared/geometry/direction';
 import { EQUIPMENT_SLOTS } from '@fenix/shared/items/equipment';
 import type { ItemKind } from '@fenix/shared/items/item-catalog';
 import type { MountKind } from '@fenix/shared/mounts/mount-catalog';
-import type { EquipmentHues, EquipmentLook } from '@fenix/shared/protocol/messages';
+import type { CorpseLook, EquipmentHues, EquipmentLook } from '@fenix/shared/protocol/messages';
 import type { StaticKind } from '@fenix/shared/world/statics';
 import type { Terrain } from '@fenix/shared/world/terrain';
 import { Texture } from 'pixi.js';
@@ -150,6 +151,14 @@ export class TextureCache {
   corpse(kind: CreatureKind, direction: Direction, fallen: number): Texture {
     return this.getOrCreate(`k:${kind}:${direction}:${fallen}`, () =>
       drawCreatureCorpse(kind, direction, fallen),
+    );
+  }
+
+  /** El cuerpo de un jugador: tirado, con su cara y lo que todavía tiene puesto. */
+  playerCorpse(look: CorpseLook): Texture {
+    const key = `pc:${JSON.stringify(look)}`;
+    return this.getOrCreate(key, () =>
+      drawPlayerCorpse(look.appearance, look.direction, look.equipment, look.hues),
     );
   }
 

@@ -43,6 +43,7 @@ export class Corpses {
   ) {
     items.watchCorpses((corpseId, actorId) => {
       this.looted(corpseId, actorId);
+      this.redress(corpseId);
       this.refresh(corpseId);
     });
   }
@@ -57,12 +58,18 @@ export class Corpses {
       type: 'ground',
       position: at,
     });
+    const changes = this.world.items.strip(player.id, corpse.id, at);
+    // El cuerpo se ve como era: su cara, su pelo y lo que llevaba puesto.
     corpse.corpse = {
       name: player.name,
       ownerId: player.id,
       innocent: player.reputation.notoriety === 'innocent',
+      look: {
+        appearance: player.appearance,
+        direction: player.direction,
+        ...this.world.items.wornInCorpse(corpse.id),
+      },
     };
-    const changes = this.world.items.strip(player.id, corpse.id, at);
     changes.groundAdded.push(corpse);
     this.items.publish(changes, player.id);
     this.playerCorpses.set(corpse.id, this.clock.now() + PLAYER_CORPSE_MS);
@@ -73,6 +80,20 @@ export class Corpses {
     const item = this.world.items.get(itemId);
     if (!item?.corpse || item.location.type !== 'ground') return;
     this.open(playerId, itemId);
+  }
+
+  /** Se le sacó algo al cuerpo de un jugador: deja de verse puesto. */
+  private redress(corpseId: EntityId): void {
+    const item = this.world.items.get(corpseId);
+    const look = item?.corpse?.look;
+    if (!item?.corpse || !look || item.location.type !== 'ground') return;
+    const worn = this.world.items.wornInCorpse(corpseId);
+    if (JSON.stringify(worn) === JSON.stringify({ equipment: look.equipment, hues: look.hues }))
+      return;
+    item.corpse = { ...item.corpse, look: { ...look, ...worn } };
+    const changes = emptyChanges();
+    changes.groundAdded.push(item);
+    this.items.publish(changes, item.corpse.ownerId);
   }
 
   /**
@@ -104,7 +125,12 @@ export class Corpses {
           type: 'ground',
           position: item.location.position,
         });
-        bones.corpse = item.corpse;
+        // Los huesos no tienen cara ni ropa.
+        bones.corpse = {
+          name: item.corpse.name,
+          ownerId: item.corpse.ownerId,
+          innocent: item.corpse.innocent,
+        };
         this.world.items.moveCorpse(id, bones.id);
         changes.groundAdded.push(bones);
         this.playerCorpses.set(bones.id, now + PLAYER_BONES_MS);
@@ -136,7 +162,12 @@ export class Corpses {
     const corpse = this.corpse(corpseId);
     if (!player || !corpse) return;
     if (player.combat.isDead) {
-      this.say(playerId, 'Los fantasmas no pueden revisar cuerpos.');
+      this.say(
+        playerId,
+        this.playerCorpse(corpseId)?.corpse?.ownerId === playerId
+          ? 'Es tu cuerpo, pero un fantasma no puede agarrar nada. Volvé a la vida en un santuario o con un sanador, y después recuperá tus cosas.'
+          : 'Los fantasmas no pueden revisar cuerpos.',
+      );
       return;
     }
     if (!withinReach(player.position, corpse.position)) {
@@ -147,15 +178,32 @@ export class Corpses {
     this.send(playerId, corpse);
   }
 
-  /** "Tomar todo": pasa a la mochila todo lo que entre (no en el cuerpo de un jugador). */
+  /**
+   * "Tomar todo": pasa a la mochila todo lo que entre. En el cuerpo de otro
+   * jugador no se puede (se saquea de a un objeto); en el propio, sí, y lo
+   * que uno llevaba puesto se lo vuelve a poner (como en UO).
+   */
   lootAll(playerId: EntityId, corpseId: EntityId): void {
     const player = this.world.get(playerId);
     const corpse = this.corpse(corpseId);
-    if (!player || !corpse || player.combat.isDead || this.playerCorpse(corpseId)) return;
+    const own = this.playerCorpse(corpseId)?.corpse?.ownerId === playerId;
+    if (!player || !corpse || player.combat.isDead) return;
+    if (this.playerCorpse(corpseId) && !own) return;
     const taken: string[] = [];
     for (const item of this.world.items.corpseOf(corpseId)) {
       const description = describeItem(item.kind, item.amount);
-      const result = this.world.items.move(player, item.id, { type: 'backpack' }, this.world.map);
+      const worn = own && item.location.type === 'corpse' ? item.location.worn : undefined;
+      const free =
+        worn !== undefined &&
+        !this.world.items
+          .equipmentOf(playerId)
+          .some((i) => i.location.type === 'equipment' && i.location.slot === worn);
+      const result = this.world.items.move(
+        player,
+        item.id,
+        free && worn ? { type: 'equipment', slot: worn } : { type: 'backpack' },
+        this.world.map,
+      );
       if (!result.ok) {
         this.say(playerId, result.reason);
         break;
@@ -237,7 +285,10 @@ export class Corpses {
       corpseId: corpse.id,
       name: corpse.name,
       items: this.world.items.corpseOf(corpse.id).flatMap((i) => i.toBackpackSnapshot() ?? []),
-      ...(this.playerCorpse(corpse.id) ? { noTakeAll: true as const } : {}),
+      // En el cuerpo de otro jugador se saquea de a un objeto; en el propio se recupera todo junto.
+      ...(this.playerCorpse(corpse.id) && this.playerCorpse(corpse.id)?.corpse?.ownerId !== playerId
+        ? { noTakeAll: true as const }
+        : {}),
     });
   }
 

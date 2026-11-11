@@ -212,7 +212,8 @@ export class Items {
     );
     const columns = Math.floor(CORPSE_AREA.width / ITEM_ICON_SIZE);
     taken.forEach((item, index) => {
-      if (item.location.type === 'equipment') changes.looks.add(ownerId);
+      const worn = item.location.type === 'equipment' ? item.location.slot : undefined;
+      if (worn) changes.looks.add(ownerId);
       item.location = {
         type: 'corpse',
         corpseId,
@@ -221,11 +222,24 @@ export class Items {
           x: (index % columns) * ITEM_ICON_SIZE,
           y: (Math.floor(index / columns) * ITEM_ICON_SIZE) % (CORPSE_AREA.height - ITEM_ICON_SIZE),
         },
+        ...(worn ? { worn } : {}),
       };
     });
     changes.inventories.add(ownerId);
     changes.corpses.add(corpseId);
     return changes;
+  }
+
+  /** Lo que todavía tiene puesto el cuerpo de un jugador (lo que se le sacó ya no se ve). */
+  wornInCorpse(corpseId: EntityId): { equipment: EquipmentLook; hues: EquipmentHues } {
+    const equipment: Partial<Record<EquipmentSlot, ItemKind>> = {};
+    const hues: Partial<Record<EquipmentSlot, number>> = {};
+    for (const item of this.corpseOf(corpseId)) {
+      if (item.location.type !== 'corpse' || !item.location.worn) continue;
+      equipment[item.location.worn] = item.kind;
+      if (item.hue !== null) hues[item.location.worn] = item.hue;
+    }
+    return { equipment, hues };
   }
 
   /** Lo de adentro de un cuerpo pasa a otro (el cuerpo de un jugador se vuelve huesos). */
