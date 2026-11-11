@@ -178,4 +178,48 @@ describe('etapa 103: charla más rica con los vecinos', () => {
     f.say('hola');
     expect(f.heard()).toMatch(/no quiero problemas/);
   });
+
+  it('etapa 109: insultos en criollo, cada vez más enojado, hasta llamar a la guardia', () => {
+    const f = createLand();
+    f.world.addNpc(new Npc('panadero', 'baker', { x: 5, y: 4 }, 'Dora'));
+    f.say('Dora, sos una pelotuda');
+    const first = f.heard();
+    f.say('Dora, forra');
+    const second = f.heard();
+    expect(second).not.toBe(first);
+    f.say('Dora, la concha de tu madre');
+    expect(f.heard()).toMatch(/Guardia/);
+    // "Boludo" solo, entre amigos, no ofende a nadie.
+    const g = createLand();
+    g.world.addNpc(new Npc('panadero', 'baker', { x: 5, y: 4 }, 'Dora'));
+    g.say('che boludo, ¿cómo te llamás?');
+    expect(g.heard()).toMatch(/Dora/);
+  });
+
+  it('etapa 109: pregunta cómo andás y entiende la respuesta; sabe la hora, chistes y consejos', () => {
+    const f = createLand();
+    f.world.addNpc(new Npc('herrero', 'blacksmith', { x: 5, y: 4 }, 'Rufino'));
+    f.say('¿cómo estás?');
+    expect(f.heard()).toMatch(/\?$/);
+    f.say('re bien, gracias');
+    expect(f.heard()).toMatch(/alegro|bueno|Eso/);
+    f.say('¿qué hora es?');
+    expect(f.heard()).toMatch(/^Son las \d+/);
+    f.say('contame un chiste');
+    expect(f.heard().length).toBeGreaterThan(20);
+    f.say('no sé qué hacer, ¿algún consejo?');
+    expect(f.heard().length).toBeGreaterThan(20);
+    f.say('¿qué pensás de mí?');
+    expect(f.heard()).toMatch(/Ana/);
+  });
+
+  it('etapa 109: opina de otro vecino y dice dónde comprar algo', () => {
+    const f = createLand();
+    f.world.addNpc(new Npc('herrero', 'blacksmith', { x: 5, y: 4 }, 'Rufino'));
+    f.world.addNpc(new Npc('panadero', 'baker', { x: 60, y: 4 }, 'Tadeo el panadero'));
+    f.say('Rufino, ¿conocés a Tadeo?');
+    expect(f.heard()).toMatch(/^¿Tadeo el panadero\?.*hacia el este/);
+    f.say('Rufino, ¿dónde compro pan?');
+    expect(f.heard()).toMatch(/Tadeo el panadero/);
+  });
 });

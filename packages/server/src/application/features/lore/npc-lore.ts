@@ -231,9 +231,208 @@ export const TOPICS: readonly Topic[] = [
   },
 ];
 
-/** Insultos: el vecino se ofende y por un rato no quiere saber nada. */
-export const INSULT =
-  /\b(idiota|tonto|tonta|estupido|estupida|imbecil|inutil|feo|fea|gil|bobo|boba|basura)\b/;
+/**
+ * Insultos (en criollo también): el vecino se ofende y por un rato no quiere
+ * saber nada. Si se insiste, se enoja más (y llama a la guardia). "Boludo"
+ * solo, entre amigos, no es insulto: lo es "sos un boludo".
+ */
+export const INSULT = new RegExp(
+  '\\b(' +
+    [
+      'idiota',
+      'tonto',
+      'tonta',
+      'estupido',
+      'estupida',
+      'imbecil',
+      'inutil',
+      'feo',
+      'fea',
+      'gil',
+      'gila',
+      'bobo',
+      'boba',
+      'basura',
+      'puta',
+      'puto',
+      'zorra',
+      'perra',
+      'pelotudo',
+      'pelotuda',
+      'forro',
+      'forra',
+      'conchudo',
+      'conchuda',
+      'hijo de puta',
+      'hija de puta',
+      'hdp',
+      'la concha de tu madre',
+      'la concha de tu hermana',
+      'la puta que te pario',
+      'andate a la mierda',
+      'mierda',
+      'sorete',
+      'garca',
+      'chanta',
+      'cagon',
+      'cagona',
+      'salame',
+      'tarado',
+      'tarada',
+      'otario',
+      'otaria',
+      'choto',
+      'cornudo',
+      'cornuda',
+      'rata',
+      'careta',
+      'mogolico',
+      'nabo',
+      'naba',
+      'cerdo',
+      'cerda',
+      'asqueroso',
+      'asquerosa',
+      'te odio',
+      'callate',
+      'sos un boludo',
+      'sos una boluda',
+      'sos boludo',
+      'sos boluda',
+      'muerto de hambre',
+    ].join('|') +
+    ')\\b',
+);
+
 /** Elogios: le gusta y lo recuerda. */
 export const PRAISE =
-  /\b(lindo|linda|hermoso|hermosa|genial|groso|grosa|crack|sabio|sabia|valiente|amable|te quiero)\b/;
+  /\b(lindo|linda|hermoso|hermosa|genial|groso|grosa|crack|sabio|sabia|valiente|amable|te quiero|capo|capa|idolo|idola|copado|copada|buena onda|sos un sol|sos lo mas|me caes bien)\b/;
+
+type TemperLines = Readonly<Record<'warm' | 'gruff' | 'mysterious' | 'chatty', readonly string[]>>;
+
+/** Cómo contesta un insulto: la primera vez, la segunda y de ahí en más (cada uno a su manera). */
+export const INSULT_REPLIES: TemperLines = {
+  warm: [
+    '¡Qué maleducado! No te pienso hablar más.',
+    '¿Otra vez? Me lastimás. Andate, por favor.',
+    '¡Guardia! ¡Este me está faltando el respeto!',
+  ],
+  gruff: [
+    '¿Qué dijiste? Más gil serás vos. Andate antes de que llame a la guardia.',
+    'Mirá, pibe, una más y te parto la cara.',
+    '¡Guardia! ¡Llévense a este desubicado!',
+  ],
+  mysterious: [
+    'Las palabras feas vuelven a quien las dice... cuidate.',
+    'Te maldigo hasta la tercera luna. No me hables.',
+    'Que la noche te encuentre solo. ¡Guardia!',
+  ],
+  chatty: [
+    '¡Ay, qué desubicado! ¡Esperá que se lo cuento a todo el pueblo!',
+    '¡Otra vez! ¡Andá a lavarte la boca con jabón, maleducado!',
+    '¡Guardiaaa! ¡Hay un loco insultando a la gente!',
+  ],
+};
+
+/** Cómo anda, según su carácter (cuando le preguntan "¿cómo estás?"); siempre pregunta de vuelta. */
+export const MOODS: TemperLines = {
+  warm: [
+    'Muy bien, gracias por preguntar. ¿Y vos, cómo andás?',
+    'Bien, tranquilo. Hoy es un buen día. ¿Y vos?',
+  ],
+  gruff: ['Tirando. Como siempre. ¿Y vos?', 'Mal no estoy. Podría estar mejor. ¿Vos?'],
+  mysterious: [
+    'Estoy como el viento: ni bien ni mal, de paso. ¿Y tu alma, viajero?',
+    'Las estrellas dicen que bien. ¿Y a vos qué te dicen?',
+  ],
+  chatty: [
+    '¡Bárbaro! Bueno, me duele un poco la espalda y mi vecina no me saluda, pero bárbaro. ¿Y vos?',
+    '¡Re bien! ¿Viste qué lindo día? ¿Y vos cómo estás?',
+  ],
+};
+
+/** Lo que contesta cuando uno le cuenta cómo está. */
+export const MOOD_ANSWERS = {
+  good: [
+    '¡Me alegro! Así da gusto.',
+    'Qué bueno. Que siga así.',
+    '¡Eso! Con buena cara se abren todas las puertas.',
+  ],
+  bad: [
+    'Uh, lo siento. Si necesitás algo, acá estoy.',
+    'Ya va a pasar. Una buena comida y una cama ayudan.',
+    'Ánimo. Hasta el invierno más largo termina.',
+  ],
+} as const;
+
+/** Chistes del pueblo. */
+export const JOKES: readonly string[] = [
+  '¿Sabés por qué el esqueleto no pelea? Porque no tiene agallas.',
+  'Un orco entra a la taberna y pide agua. El tabernero le dice: "¿Te sentís bien?".',
+  '¿Qué le dijo una espada a otra? "Nos vemos en la vaina".',
+  'Mi suegra es tan mala que el dragón del volcán se mudó para no ser su vecino.',
+  '¿Por qué los magos no juegan a las escondidas? Porque siempre los delata el olor a azufre.',
+  'Un liche fue al sanador y le dijo: "Me siento muerto". Y el sanador: "Es que lo está".',
+  '¿Cuál es el colmo de un herrero? Tener un hijo de hierro y que le salga oxidado.',
+];
+
+/** Consejos para el que no sabe qué hacer. */
+export const ADVICE: readonly string[] = [
+  'Si no sabés qué hacer, preguntale rumores a la gente: hay leyendas que pagan muy bien.',
+  'Los vecinos del pueblo siempre necesitan ayuda: tocalos dos veces y te cuentan.',
+  'Guardá el oro en el banco. Lo que llevás encima te lo pueden robar... o tus propios mercenarios.',
+  'Practicá: cada habilidad sube usándola. Y no pelees lejos del pueblo sin vendas.',
+  'Si querés compañía para pelear, en algunas tabernas hay capitanes que alquilan mercenarios.',
+  'De noche llevá una antorcha o una linterna. Lo que no ves, te ve.',
+  'Antes de entrar a una mazmorra, conseguí pociones de curación. Te lo digo por experiencia.',
+];
+
+/** Gustos (cada uno el suyo, según su nombre). */
+export const LIKES: readonly string[] = [
+  'Me gusta el pan recién hecho y una siesta larga.',
+  'Me encanta pescar, aunque nunca saco nada.',
+  'Me gusta mirar las estrellas desde el puerto.',
+  'Las empanadas de la taberna. No hay nada mejor.',
+  'Los días de lluvia, con un buen libro.',
+  'Bailar en las fiestas del pueblo, aunque bailo como un troll.',
+  'Escuchar historias de aventureros como vos.',
+  'Juntar piedras lindas. Tengo una colección enorme.',
+];
+
+/** Familia (cada uno la suya). */
+export const FAMILIES: readonly string[] = [
+  'Tengo una esposa que cocina como los dioses y tres chicos que no paran.',
+  'Vivo solo, con un gato que se llama Duque.',
+  'Mi pareja trabaja en las minas; la veo una vez por semana.',
+  'Tengo una hija que se fue a estudiar magia a la capital. La extraño.',
+  'Enviudé hace años. La extraño todos los días.',
+  'Somos ocho hermanos. En las fiestas no entramos en la casa.',
+  'Todavía no encontré a nadie. Pero no pierdo la esperanza.',
+];
+
+/** Lo que opinan de un vecino según su oficio (cuando les preguntan por otro). */
+export const OPINIONS: Readonly<Partial<Record<NpcRole, readonly string[]>>> = {
+  blacksmith: [
+    'Hace las mejores espadas de la zona.',
+    'Fuerte como un toro y terco como una mula.',
+  ],
+  mage: ['Sabe cosas que yo no quiero saber.', 'Una vez le vi los ojos brillar. Me dio miedo.'],
+  innkeeper: [
+    'Sirve la mejor cerveza. Y sabe todos los chismes.',
+    'Buena gente, aunque te cobra hasta el aire.',
+  ],
+  banker: ['Contaría las monedas hasta dormido.', 'Es de confianza. Seria, pero de confianza.'],
+  healer: ['Una santa. Me curó la pierna una vez.', 'Siempre tiene una palabra amable.'],
+  guard: ['Gracias a los guardias dormimos tranquilos.', 'Son buenos, pero no los hagas enojar.'],
+  beggar: [
+    'Pobre. Dicen que antes fue rico.',
+    'Sabe más de lo que parece. Siempre está escuchando.',
+  ],
+  farmer: ['Trabaja de sol a sol.', 'Las mejores manzanas son de su huerta.'],
+  fisherman: [
+    'Huele a pescado, pero es buena gente.',
+    'Cuenta historias del mar que no sé si creerle.',
+  ],
+  townsfolk: ['Es buena gente. Un poco chismosa, nomás.', 'La conozco de toda la vida.'],
+  mercenary: ['No me gusta: vende espadas como quien vende pan.', 'Mejor tenerlo de amigo.'],
+};

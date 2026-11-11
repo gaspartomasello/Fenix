@@ -19,6 +19,7 @@ export const loreModule: ModuleFactory = (kernel) => {
     kernel.notifier,
     kernel.random,
     () => kernel.clock.now(),
+    () => kernel.worldClock.timeAt(kernel.clock.now()).dayProgress * 24,
   );
   // Los vecinos cercanos escuchan y contestan.
   kernel.events.on('spoke', ({ player, text }) => npcTalk.hear(player.id, text));

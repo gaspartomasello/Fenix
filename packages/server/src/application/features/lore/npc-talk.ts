@@ -1,4 +1,5 @@
-import { NPC_CHATTER, isMerchant, type NpcRole } from '@fenix/shared/economy/vendors';
+import { NPC_CHATTER, VENDORS, isMerchant, type NpcRole } from '@fenix/shared/economy/vendors';
+import { ITEMS, ITEM_KINDS, type ItemKind } from '@fenix/shared/items/item-catalog';
 import { tileDistance, type Position } from '@fenix/shared/geometry/position';
 import type { EntityId } from '@fenix/shared/protocol/messages';
 import type { Npc } from '../../../domain/npcs/npc';
@@ -6,7 +7,20 @@ import type { Player } from '../../../domain/player';
 import type { World } from '../../../domain/world';
 import type { NpcDialogue } from '../../kernel/npc-dialogue';
 import { directions } from '@fenix/shared/world/compass';
-import { INSULT, PRAISE, STORIES, TOPICS } from './npc-lore';
+import {
+  ADVICE,
+  FAMILIES,
+  INSULT,
+  INSULT_REPLIES,
+  JOKES,
+  LIKES,
+  MOODS,
+  MOOD_ANSWERS,
+  OPINIONS,
+  PRAISE,
+  STORIES,
+  TOPICS,
+} from './npc-lore';
 import { rumorOf, type Legends } from './legends';
 import type { Notifier, RandomSource } from '../../ports';
 
@@ -107,6 +121,10 @@ export class NpcTalk {
   private readonly grudges = new Map<string, number>();
   /** A quién le cae bien cada vecino (lo elogiaron o lo ayudaron). */
   private readonly liked = new Set<string>();
+  /** Cuántas veces lo insultó cada uno (para enojarse cada vez más). */
+  private readonly insults = new Map<string, number>();
+  /** Lo último que el vecino le preguntó (para entender la respuesta). */
+  private readonly asked = new Map<string, 'mood'>();
 
   constructor(
     private readonly world: World,
@@ -115,6 +133,8 @@ export class NpcTalk {
     private readonly notifier: Notifier,
     private readonly random: RandomSource,
     private readonly now: () => number,
+    /** La hora del mundo (0 a 24). */
+    private readonly hour: () => number = () => 12,
   ) {}
 
   /** Un jugador dijo algo en voz alta: si hay un vecino cerca, contesta. */
@@ -140,9 +160,12 @@ export class NpcTalk {
         (a, b) =>
           tileDistance(a.position, player.position) - tileDistance(b.position, player.position),
       );
-    return (
-      near.find((n) => words.includes(normalize(n.name).split(' ')[0] ?? '~')) ?? near[0] ?? null
-    );
+    // El que nombró primero (si nombró a varios: "Rufino, ¿conocés a Tomás?").
+    const named = near
+      .map((n) => ({ n, at: mention(words, n) }))
+      .filter((m) => m.at >= 0)
+      .sort((a, b) => a.at - b.at)[0];
+    return named?.n ?? near[0] ?? null;
   }
 
   private answer(player: Player, npc: Npc, words: string): string | null {
@@ -160,6 +183,18 @@ export class NpcTalk {
     const other = this.dialogue.answer(player, npc, words);
     if (other) return other;
 
+    if (INSULT.test(words)) {
+      const count = (this.insults.get(key) ?? 0) + 1;
+      this.insults.set(key, count);
+      this.grudges.set(key, this.now() + GRUDGE_MS * count);
+      this.liked.delete(key);
+      if (npc.role === 'guard')
+        return count === 1
+          ? 'Cuidá esa lengua, que acá adentro mando yo.'
+          : 'Una más y te meto en el calabozo a pan y agua.';
+      const lines = INSULT_REPLIES[temper];
+      return lines[Math.min(count, lines.length) - 1] ?? lines[0] ?? '';
+    }
     // Enojado: hasta que se le pida perdón, no quiere saber nada.
     if ((this.grudges.get(key) ?? 0) > this.now()) {
       if (/\b(perdon|disculpa|disculpame|perdoname|lo siento)\b/.test(words)) {
@@ -171,15 +206,6 @@ export class NpcTalk {
       return temper === 'gruff'
         ? 'No te hablo. Andate.'
         : 'Después de lo que me dijiste, no tengo ganas de hablar con vos.';
-    }
-    if (INSULT.test(words)) {
-      this.grudges.set(key, this.now() + GRUDGE_MS);
-      this.liked.delete(key);
-      return npc.role === 'guard'
-        ? 'Cuidá esa lengua, que acá adentro mando yo.'
-        : temper === 'gruff'
-          ? '¿Qué dijiste? Andate antes de que llame a la guardia.'
-          : '¡Qué maleducado! No te pienso hablar más.';
     }
     if (PRAISE.test(words)) {
       this.liked.add(key);
@@ -196,6 +222,28 @@ export class NpcTalk {
         ? `¡Asesino! ${player.name}, entregate o te vamos a buscar.`
         : 'Yo... yo no quiero problemas. Por favor, andate.';
 
+    // Le había preguntado cómo andaba: entiende la respuesta.
+    if (this.asked.get(key) === 'mood') {
+      this.asked.delete(key);
+      if (
+        /\b(bien|joya|barbaro|genial|re bien|feliz|contento|contenta|de diez|10 puntos)\b/.test(
+          words,
+        )
+      )
+        return this.pick(MOOD_ANSWERS.good, words);
+      if (
+        /\b(mal|triste|cansado|cansada|mas o menos|maso|para atras|hecho bolsa|herido|herida)\b/.test(
+          words,
+        )
+      )
+        return this.pick(MOOD_ANSWERS.bad, words);
+    }
+    if (
+      /\b(como estas|como andas|como te va|como va|todo bien|como anda|como andamos)\b/.test(words)
+    ) {
+      this.asked.set(key, 'mood');
+      return this.pick(MOODS[temper], npc.name + this.hour().toFixed(0));
+    }
     if (/\b(hola|buen[oa]s?|saludos|que tal)\b/.test(words)) {
       const options = GREETING[temper];
       const line = options[Math.floor(this.random.next() * options.length)] ?? options[0] ?? '';
@@ -207,14 +255,16 @@ export class NpcTalk {
         ? `¡${player.name}! ${this.liked.has(key) ? 'Qué alegría verte de nuevo. ' : ''}${line}`
         : line;
     }
+    const more = this.smallTalk(player, npc, words, temper);
+    if (more) return more;
     if (
-      /\b(historia|tu vida|familia|de donde sos|de donde eres|contame de vos|tu pasado|como llegaste)\b/.test(
+      /\b(historia|tu vida|de donde sos|de donde eres|contame de vos|tu pasado|como llegaste)\b/.test(
         words,
       )
     )
       return this.story(npc);
     if (/\b(temas|de que hablas|de que sabes|que sabes|palabras|sobre que)\b/.test(words))
-      return `Podés preguntarme por mi nombre, mi trabajo, mi historia, el pueblo, los rumores o dónde queda algún lugar. Y de lo que se habla en las tabernas: los dragones, la magia, los guardias, los asesinos, el mar, los gremios...`;
+      return `Podés preguntarme cómo estoy, mi nombre, mi trabajo, mi historia, mi familia, qué me gusta, qué hora es, un chiste, un consejo, qué pienso de vos, por otro vecino, dónde se compra algo, el pueblo, los rumores o dónde queda un lugar. Y de lo que se habla en las tabernas: dragones, magia, guardias, asesinos, el mar, gremios, mercenarios...`;
     if (
       /\b(mision|misiones|necesitas algo|necesitas ayuda|te ayudo|puedo ayudar|trabajo para mi)\b/.test(
         words,
@@ -250,6 +300,134 @@ export class NpcTalk {
     if (chatter && this.random.next() < 0.3)
       return chatter[Math.floor(this.random.next() * chatter.length)] ?? CONFUSED[temper];
     return CONFUSED[temper];
+  }
+
+  /** La charla suelta: la hora, chistes, consejos, otros vecinos, dónde comprar, su vida. */
+  private smallTalk(player: Player, npc: Npc, words: string, temper: Temper): string | null {
+    if (/\b(que hora|hora es|que horas)\b/.test(words)) return this.time(temper);
+    if (/\b(chiste|chistes|algo gracioso|hacerme reir)\b/.test(words))
+      return this.pick(JOKES, npc.name + words + this.now().toString());
+    if (/\b(jaja|jajaja|jeje|jiji|jajajaja)\b/.test(words))
+      return temper === 'gruff' ? '¿De qué te reís?' : '¡Jaja! Me alegraste el día.';
+    if (
+      /\b(consejo|que hago|que puedo hacer|aburrido|aburrida|no se que hacer|recomendas)\b/.test(
+        words,
+      )
+    )
+      return this.pick(ADVICE, npc.name + this.now().toString());
+    if (/\b(que pensas de mi|que opinas de mi|quien soy|me conoces|sabes quien soy)\b/.test(words))
+      return this.opinionOf(player, npc);
+    if (
+      /\b(te amo|te quiero mucho|casate conmigo|salir conmigo|un beso|me gustas|sos hermosa|sos hermoso)\b/.test(
+        words,
+      )
+    )
+      return temper === 'gruff'
+        ? 'Dejate de pavadas.'
+        : temper === 'chatty'
+          ? '¡Ay, me hacés poner colorada! Pero no, gracias. ¿Me invitás una cerveza, por lo menos?'
+          : 'Qué lindo lo que decís... pero mi corazón ya tiene dueño.';
+    if (/\b(edad|cuantos anos|que edad|sos viejo|sos vieja)\b/.test(words))
+      return `Tengo ${20 + (hash(npc.name + 'edad') % 50)} años. ${temper === 'gruff' ? 'Y no te importa.' : 'Bien llevados, ¿no?'}`;
+    if (/\b(familia|hijos|casado|casada|pareja|esposa|esposo|marido|mujer)\b/.test(words))
+      return this.pick(FAMILIES, npc.name + 'familia');
+    if (/\b(que te gusta|te gusta|favorito|favorita|hobby|pasatiempo)\b/.test(words))
+      return this.pick(LIKES, npc.name + 'gustos');
+    const other = this.otherNpc(npc, words);
+    if (other) return other;
+    return this.whereToBuy(npc, words);
+  }
+
+  /** "Son las tres de la tarde." */
+  private time(temper: Temper): string {
+    const hour = Math.floor(this.hour()) % 24;
+    const part =
+      hour < 6
+        ? 'de la madrugada'
+        : hour < 12
+          ? 'de la mañana'
+          : hour < 20
+            ? 'de la tarde'
+            : 'de la noche';
+    const twelve = hour % 12 === 0 ? 12 : hour % 12;
+    const line = `Son las ${twelve} ${part}.`;
+    if (hour >= 21 || hour < 5)
+      return `${line} ${temper === 'mysterious' ? 'La hora de los muertos...' : 'Ya es tarde: no andes solo por los caminos.'}`;
+    return line;
+  }
+
+  /** Qué piensa del jugador: según su fama, su karma y lo que hizo. */
+  private opinionOf(player: Player, npc: Npc): string {
+    const { fame, karma, notoriety } = player.reputation;
+    const legends = [...player.legends.values()].filter((v) => v > 0).length;
+    if (notoriety === 'murderer') return `Sos ${player.name}, el asesino. Todos saben quién sos.`;
+    if (notoriety === 'criminal')
+      return `Sos ${player.name}, y algo hiciste: los guardias te miran feo.`;
+    if (fame >= 5000)
+      return `¡Sos ${player.name}! Las historias que cuentan de vos llegan hasta acá.`;
+    if (karma <= -2000) return `Sos ${player.name}. No me gusta lo que dicen de vos.`;
+    if (legends > 0)
+      return `Sos ${player.name}. Me dijeron que andás detrás de cosas raras... leyendas, dicen.`;
+    if (this.met.has(`${npc.id}>${player.id}`))
+      return `Sos ${player.name}, nos conocemos. Todavía no hiciste nada que se cuente, pero ya vas a hacer.`;
+    return 'No te conozco. Pero tenés cara de aventurero.';
+  }
+
+  /** Le preguntan por otro vecino que nombró: qué opina y dónde encontrarlo. */
+  private otherNpc(npc: Npc, words: string): string | null {
+    const other = this.world
+      .allNpcs()
+      .filter((n) => n !== npc && tileDistance(n.position, npc.position) <= 80)
+      .find((n) => mention(words, n) >= 0);
+    if (!other) return null;
+    const opinion = this.pick(
+      OPINIONS[other.role] ?? OPINIONS.townsfolk ?? [''],
+      npc.name + other.name,
+    );
+    const close = tileDistance(other.position, npc.position) < 12;
+    const where = close
+      ? 'Anda por acá cerca: mirá alrededor.'
+      : directions(npc.position, { name: other.name, center: other.position }).replace(
+          ' queda hacia',
+          ' anda hacia',
+        );
+    return `¿${other.name}? ${opinion} ${where}`;
+  }
+
+  /** "¿Dónde compro flechas?": quién las vende y dónde está. */
+  private whereToBuy(npc: Npc, words: string): string | null {
+    if (
+      !/\b(donde compro|quien vende|donde consigo|necesito|busco|donde venden|donde hay|vendes)\b/.test(
+        words,
+      )
+    )
+      return null;
+    const kind = itemIn(words);
+    if (!kind) return null;
+    const item = ITEMS[kind];
+    const sells = (role: NpcRole): boolean => VENDORS[role].sells.some((o) => o.kind === kind);
+    if (sells(npc.role)) return `¡Yo vendo ${item.plural}! Tocame y te muestro.`;
+    const seller = this.world
+      .allNpcs()
+      .filter((n) => sells(n.role))
+      .sort(
+        (a, b) => tileDistance(a.position, npc.position) - tileDistance(b.position, npc.position),
+      )[0];
+    if (!seller) return `¿${item.plural}? Eso no lo vende nadie: hay que salir a buscarlo.`;
+    if (tileDistance(seller.position, npc.position) > 120)
+      return `${capitalize(item.plural)} vende ${VENDORS[seller.role].name}, pero acá cerca no hay.`;
+    const where =
+      tileDistance(seller.position, npc.position) < 12
+        ? 'Está acá nomás, mirá alrededor.'
+        : directions(npc.position, { name: seller.name, center: seller.position }).replace(
+            ' queda hacia',
+            ' anda hacia',
+          );
+    return `${capitalize(item.plural)} te vende ${seller.name}. ${where}`;
+  }
+
+  private pick(lines: readonly string[], seed: string): string {
+    return lines[hash(seed) % Math.max(1, lines.length)] ?? lines[0] ?? '';
   }
 
   /** Su historia: cada vecino tiene la suya (sale de su nombre) y la cuenta igual cada vez. */
@@ -314,4 +492,30 @@ function hash(text: string): number {
   let h = 11;
   for (const c of text) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return h;
+}
+
+/** Dónde nombra a ese vecino lo dicho (-1 si no lo nombra): por su primer nombre. */
+function mention(words: string, npc: Npc): number {
+  const first = normalize(npc.name).split(' ')[0] ?? '';
+  if (first.length < 3) return -1;
+  const match = new RegExp(`\\b${first}\\b`).exec(words);
+  return match ? match.index : -1;
+}
+
+/** El objeto que se nombra en lo dicho (por su nombre o su plural). */
+function itemIn(words: string): ItemKind | null {
+  let best: { kind: ItemKind; length: number } | null = null;
+  for (const kind of ITEM_KINDS) {
+    const item = ITEMS[kind];
+    for (const name of [item.name, item.plural]) {
+      const plain = normalize(name);
+      if (plain.length < 3 || !words.includes(plain)) continue;
+      if (!best || plain.length > best.length) best = { kind, length: plain.length };
+    }
+  }
+  return best?.kind ?? null;
+}
+
+function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
