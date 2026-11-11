@@ -7,6 +7,8 @@ import type { EquipmentHues, EquipmentLook } from '@fenix/shared/protocol/messag
 import { GOLD, STEEL, drawHumanHead, drawMempo, drawSkullHead } from './humanoid-head';
 import {
   BUILDS,
+  PORTRAIT_BUILDS,
+  PORTRAIT_HEAD,
   CHARACTER_ART_HEIGHT,
   CHARACTER_ART_WIDTH,
   cameraFor,
@@ -317,7 +319,7 @@ function drawFigure(
     rig: humanoidRig(
       frame,
       equipment.rightHand !== undefined && !leftWeapon,
-      BUILDS[female ? 'female' : 'male'],
+      (canvas.portrait ? PORTRAIT_BUILDS : BUILDS)[female ? 'female' : 'male'],
       ride?.seat,
     ),
     palette: paletteFor(appearance, equipment),
@@ -341,12 +343,39 @@ function drawFigure(
     barefoot: role === null && !equipment.feet,
   };
 
+  // En la figura grande, el cuerpo se funde en una sola superficie; la cara y
+  // lo que lleva en las manos quedan nítidos. La cabeza va más chica.
+  canvas.softness = 1;
   drawLegs(canvas, figure);
   drawTorso(canvas, figure);
   drawArms(canvas, figure);
+  canvas.softness = 0.4;
   if (equipment.neck && equipment.neck !== 'samurai-mempo')
     drawGorget(canvas, figure.rig, equipment.neck);
   const headgear = equipment.head;
+  const headScale = canvas.portrait ? PORTRAIT_HEAD : 1;
+  canvas.scaled(figure.rig.neck, headScale, () => drawHead(canvas, figure, appearance, headgear));
+  canvas.softness = 0.8;
+  if (equipment.cloak)
+    drawCloak(canvas, figure.rig, ramp(wornColor(equipment.cloak) ?? [120, 30, 40]));
+  canvas.softness = 0.3;
+  if (equipment.leftHand) drawShield(canvas, figure.rig, equipment.leftHand);
+  if (equipment.rightHand) {
+    if (leftWeapon) drawBow(canvas, figure.rig);
+    else drawWeapon(canvas, figure.rig, equipment.rightHand);
+  }
+  ride?.tack(canvas, figure.rig);
+  return canvas.toImage(OUTLINE);
+}
+
+/** La cabeza con lo que lleva puesto (sombrero, casco, máscara). */
+function drawHead(
+  canvas: VolumeCanvas,
+  figure: Figure,
+  appearance: Appearance,
+  headgear: ItemKind | undefined,
+): void {
+  const { equipment, outfit, female } = figure;
   drawHumanHead(canvas, figure.rig.head, figure.rig.neck, {
     skin: figure.palette.skin,
     hair: figure.palette.hair,
@@ -383,15 +412,6 @@ function drawFigure(
   });
   if (equipment.neck === 'samurai-mempo')
     drawMempo(canvas, figure.rig.head, ramp(wornColor(equipment.neck) ?? [154, 38, 32]));
-  if (equipment.cloak)
-    drawCloak(canvas, figure.rig, ramp(wornColor(equipment.cloak) ?? [120, 30, 40]));
-  if (equipment.leftHand) drawShield(canvas, figure.rig, equipment.leftHand);
-  if (equipment.rightHand) {
-    if (leftWeapon) drawBow(canvas, figure.rig);
-    else drawWeapon(canvas, figure.rig, equipment.rightHand);
-  }
-  ride?.tack(canvas, figure.rig);
-  return canvas.toImage(OUTLINE);
 }
 
 function drawLegs(
@@ -474,8 +494,25 @@ function drawLegs(
       if (leather && Math.round(s.p[1]) % 5 === 0) return tone(p.pants, s.light, -1);
       return tone(skirt ? p.skin : p.pants, s.light, skirt ? -1 : 0);
     };
-    canvas.limb(leg.hip, leg.knee, 3.3 * thick, 2.7 * thick, legMaterial);
-    canvas.limb(leg.knee, leg.ankle, 2.7 * thick, 2.2 * thick, legMaterial);
+    if (canvas.portrait) {
+      // De cerca: el muslo lleno que se afina hacia la rodilla, y la pantorrilla
+      // con su curva antes del tobillo fino.
+      canvas.shapedLimb(
+        leg.hip,
+        leg.knee,
+        female ? [3.7, 3.65, 3.2, 2.65, 2.2] : [3.5, 3.5, 3.1, 2.65, 2.3],
+        legMaterial,
+      );
+      canvas.shapedLimb(
+        leg.knee,
+        leg.ankle,
+        female ? [2.15, 2.45, 2.35, 1.9, 1.5, 1.35] : [2.25, 2.7, 2.6, 2.05, 1.65, 1.5],
+        legMaterial,
+      );
+    } else {
+      canvas.limb(leg.hip, leg.knee, 3.3 * thick, 2.7 * thick, legMaterial);
+      canvas.limb(leg.knee, leg.ankle, 2.7 * thick, 2.2 * thick, legMaterial);
+    }
     if (plate) {
       // Rodillera de placas con su ala y el empeine de la greba.
       const forward = normalize(sub(leg.toe, leg.ankle));
@@ -817,35 +854,57 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
   // Cadera, cintura y pecho; en las mujeres, cadera más ancha, cintura fina y busto.
   // De cerca, la luz no cambia de golpe entre una parte y otra (el torso se ve de una pieza).
   const smooth = canvas.detail > 1 ? 0.7 : 0;
-  canvas.ellipsoid(
-    pelvis.at([0, 0.5, 0]),
-    pelvis.axes,
-    female ? [5.8, 4, 3.8] : [5.3, 3.8, 3.5],
-    material,
-    smooth,
-  );
-  canvas.ellipsoid(
-    lerp(pelvis.at([0, 4.5, 0.1]), chest.at([0, -5, 0]), 0.3),
-    chest.axes,
-    female ? [4, 3.4, 2.9] : [4.9, 3.6, 3.2],
-    material,
-    smooth,
-  );
-  // Caja torácica amplia y, arriba, el pecho que se ensancha hacia los hombros.
-  canvas.ellipsoid(
-    chest.at([0, 0.4, 0]),
-    chest.axes,
-    female ? [5.3, 6.2, 3.6] : [6.2, 6.7, 4.1],
-    material,
-    smooth,
-  );
-  canvas.ellipsoid(
-    chest.at([0, 2.9, 0.4]),
-    chest.axes,
-    female ? [5.6, 3, 3.4] : [6.6, 3.3, 3.9],
-    material,
-    smooth,
-  );
+  if (canvas.portrait) {
+    // De cerca, el torso con su forma: en el hombre, espalda ancha que baja a una
+    // cintura más angosta, con los pectorales; en la mujer, hombros angostos,
+    // cintura fina y cadera ancha.
+    const part = (center: Vec3, axes: readonly [Vec3, Vec3, Vec3], radii: Vec3): void =>
+      canvas.ellipsoid(center, axes, radii, material, 0.6);
+    const waist = lerp(pelvis.at([0, 4.5, 0.1]), chest.at([0, -5, 0]), 0.35);
+    if (female) {
+      part(pelvis.at([0, 0.2, 0]), pelvis.axes, [5.7, 4.2, 3.9]);
+      part(waist, chest.axes, [3.75, 3.7, 2.85]);
+      part(chest.at([0, 0.2, 0]), chest.axes, [4.6, 6, 3.3]);
+      part(chest.at([0, 3, 0.2]), chest.axes, [4.9, 2.8, 3.05]);
+    } else {
+      part(pelvis.at([0, 0.5, 0]), pelvis.axes, [5, 3.9, 3.5]);
+      part(waist, chest.axes, [4.5, 3.8, 3.1]);
+      part(chest.at([0, 0.3, 0]), chest.axes, [5.6, 6.6, 3.85]);
+      part(chest.at([0, 3, 0.3]), chest.axes, [6.25, 3.2, 3.7]);
+      for (const side of [1, -1] as const)
+        part(chest.at([side * 2.8, 2.1, 1.2]), chest.axes, [3.3, 2.6, 2.5]);
+    }
+  } else {
+    canvas.ellipsoid(
+      pelvis.at([0, 0.5, 0]),
+      pelvis.axes,
+      female ? [5.8, 4, 3.8] : [5.3, 3.8, 3.5],
+      material,
+      smooth,
+    );
+    canvas.ellipsoid(
+      lerp(pelvis.at([0, 4.5, 0.1]), chest.at([0, -5, 0]), 0.3),
+      chest.axes,
+      female ? [4, 3.4, 2.9] : [4.9, 3.6, 3.2],
+      material,
+      smooth,
+    );
+    // Caja torácica amplia y, arriba, el pecho que se ensancha hacia los hombros.
+    canvas.ellipsoid(
+      chest.at([0, 0.4, 0]),
+      chest.axes,
+      female ? [5.3, 6.2, 3.6] : [6.2, 6.7, 4.1],
+      material,
+      smooth,
+    );
+    canvas.ellipsoid(
+      chest.at([0, 2.9, 0.4]),
+      chest.axes,
+      female ? [5.6, 3, 3.4] : [6.6, 3.3, 3.9],
+      material,
+      smooth,
+    );
+  }
   // Trapecios: la pendiente del cuello a cada hombro, sobre las clavículas.
   const shoulderSpan = Math.abs(rig.arms[1].shoulder[0] - rig.arms[-1].shoulder[0]) / 2;
   for (const side of [1, -1] as const) {
@@ -860,8 +919,15 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
   // El peto de mujer tiene el busto forjado en la placa.
   if ((female && !metalTorso) || equipment.torso === 'female-plate') {
     if (canvas.detail > 1)
-      // De cerca, una sola forma ancha y suave sobre el pecho, sin marcar nada.
-      canvas.ellipsoid(chest.at([0, 0.7, 1.6]), chest.axes, [4.3, 2.3, 2.1], material, 0.5);
+      // De cerca, dos formas suaves que se funden con el torso.
+      for (const side of [1, -1] as const)
+        canvas.ellipsoid(
+          chest.at([side * 1.9, 0.9, 1.25]),
+          chest.axes,
+          [2.3, 2.2, 2.45],
+          material,
+          0.3,
+        );
     else
       for (const side of [1, -1] as const)
         canvas.sphere(chest.at([side * 2.1, 0.8, 2.4]), 2.2, material);
@@ -1016,8 +1082,31 @@ function drawArms(canvas: VolumeCanvas, figure: Figure): void {
         : sleeveStuff || sleeves === 'samurai-sode'
           ? 1.05
           : 1;
-    canvas.limb(arm.shoulder, arm.elbow, 2.75 * thin * bulk, 2.1 * thin * bulk, upper);
-    canvas.limb(arm.elbow, arm.hand, 2.1 * thin * bulk, 1.8 * thin * bulk, lower);
+    if (canvas.portrait) {
+      // De cerca: el hombro redondo, el brazo con su músculo y el antebrazo que
+      // se ensancha bajo el codo y se afina hacia la muñeca.
+      const by = (profile: readonly number[]): number[] => profile.map((r) => r * bulk);
+      canvas.sphere(
+        add(arm.shoulder, rig.chest.dir([side * 0.2, -0.3, 0])),
+        (female ? 2.2 : 2.9) * bulk,
+        upper,
+      );
+      canvas.shapedLimb(
+        arm.shoulder,
+        arm.elbow,
+        by(female ? [2.3, 2.2, 2, 1.75] : [2.8, 2.8, 2.5, 2.05]),
+        upper,
+      );
+      canvas.shapedLimb(
+        arm.elbow,
+        arm.hand,
+        by(female ? [1.75, 1.85, 1.6, 1.35, 1.2] : [2.05, 2.3, 1.95, 1.6, 1.4]),
+        lower,
+      );
+    } else {
+      canvas.limb(arm.shoulder, arm.elbow, 2.75 * thin * bulk, 2.1 * thin * bulk, upper);
+      canvas.limb(arm.elbow, arm.hand, 2.1 * thin * bulk, 1.8 * thin * bulk, lower);
+    }
     const back = normalize(sub(arm.elbow, arm.hand));
     if (sleeveStuff === 'plate') {
       // Codera abombada con su ala y la canillera del antebrazo con borde.
