@@ -14,6 +14,8 @@ import type { Notifier, RandomSource } from '../../ports';
 const LISTEN_RANGE = 4;
 /** Con quién se recuerda haber hablado (por un rato largo). */
 const MEMORY_MS = 60 * 60 * 1000;
+/** Cuánto se queda quieto y atento un vecino al que le hablaron. */
+const ATTENTION_MS = 30 * 1000;
 /** Cuánto le dura el enojo a un vecino insultado. */
 const GRUDGE_MS = 5 * 60 * 1000;
 
@@ -122,6 +124,9 @@ export class NpcTalk {
     const words = normalize(text);
     const npc = this.listener(player, words);
     if (!npc) return;
+    // Le hablaron: deja lo que hacía y mira a quien le habla.
+    npc.attention = { playerId: player.id, until: this.now() + ATTENTION_MS };
+    npc.goal = null;
     const reply = this.answer(player, npc, words);
     if (reply) this.speak(player, npc, reply);
   }
