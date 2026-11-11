@@ -12,7 +12,7 @@ import {
   leavesCorpse,
   type CharacterFrame,
 } from '@fenix/art';
-import { Container, Graphics, Sprite, Text } from 'pixi.js';
+import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 import type { Direction } from '@fenix/shared/geometry/direction';
 import type { Position } from '@fenix/shared/geometry/position';
 import type { Notoriety } from '@fenix/shared/social/reputation';
@@ -276,20 +276,47 @@ export class CharacterView {
         : this.entity.direction;
     this.syncLayout();
     // Un fantasma no va montado (al morir se cae de la montura).
-    this.sprite.texture =
-      lying && this.entity.body !== 'human'
-        ? this.textures.corpse(this.entity.body, this.entity.direction, this.fallen(now))
-        : this.entity.body === 'human'
-          ? this.textures.character(
+    if (lying && this.entity.body !== 'human')
+      this.sprite.texture = this.textures.corpse(
+        this.entity.body,
+        this.entity.direction,
+        this.fallen(now),
+      );
+    else {
+      const mount = this.entity.dead ? null : this.entity.mount;
+      // Si el cuadro todavía no está dibujado, se sigue un instante con el que
+      // había (se dibuja entre cuadro y cuadro): con mucha gente en el pueblo
+      // girando a la vez, dibujarlos en el momento trababa el juego. Solo se
+      // dibuja ya si no hay ninguno que mostrar (recién aparece) o si uno mismo.
+      const ready =
+        this.entity.body === 'human'
+          ? this.textures.characterIfReady(
               this.entity.appearance,
               direction,
               frame,
               this.entity.equipment,
               this.entity.npc,
-              this.entity.dead ? null : this.entity.mount,
+              mount,
               this.entity.hues,
             )
-          : this.textures.creature(this.entity.body, this.entity.direction, frame);
+          : this.textures.creatureIfReady(this.entity.body, this.entity.direction, frame);
+      const current = this.sprite.texture;
+      const keep = !this.isSelf && current !== Texture.EMPTY && !current.destroyed;
+      if (ready) this.sprite.texture = ready;
+      else if (!keep)
+        this.sprite.texture =
+          this.entity.body === 'human'
+            ? this.textures.character(
+                this.entity.appearance,
+                direction,
+                frame,
+                this.entity.equipment,
+                this.entity.npc,
+                mount,
+                this.entity.hues,
+              )
+            : this.textures.creature(this.entity.body, this.entity.direction, frame);
+    }
     this.applyDeathLook();
     if (state.hidden && !this.entity.dead) this.sprite.alpha = 0.4;
     this.prepareCycle();

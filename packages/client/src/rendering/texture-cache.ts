@@ -108,6 +108,40 @@ export class TextureCache {
     );
   }
 
+  /**
+   * El cuadro de una persona si ya está dibujado; si no, lo pide (se dibuja
+   * entre cuadro y cuadro) y devuelve null. Así una persona que gira o
+   * cambia de paso no frena el cuadro: sigue un instante con el que tenía.
+   */
+  characterIfReady(
+    appearance: Appearance,
+    direction: Direction,
+    frame: CharacterFrame,
+    equipment: EquipmentLook,
+    role: NpcRole | null = null,
+    mount: MountKind | null = null,
+    hues: EquipmentHues = {},
+  ): Texture | null {
+    return this.ready(
+      this.characterEntry(appearance, direction, frame, equipment, role, mount, hues),
+    );
+  }
+
+  /** Lo mismo para una criatura. */
+  creatureIfReady(kind: CreatureKind, direction: Direction, frame: CharacterFrame): Texture | null {
+    return this.ready(this.creatureEntry(kind, direction, frame));
+  }
+
+  private ready(entry: Entry): Texture | null {
+    const texture = this.textures.get(entry.key);
+    if (texture) {
+      this.lastUsed.set(entry.key, performance.now());
+      return texture;
+    }
+    this.prepare(entry);
+    return null;
+  }
+
   creature(kind: CreatureKind, direction: Direction, frame: CharacterFrame): Texture {
     return this.fromEntry(this.creatureEntry(kind, direction, frame));
   }
