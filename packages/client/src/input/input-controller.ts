@@ -70,7 +70,26 @@ export class InputController {
         e.preventDefault();
         this.steering = true;
         this.pointer = point;
-        surface.setPointerCapture(e.pointerId);
+        // Con el dedo se captura (el dedo sigue al personaje aunque salga del mundo).
+        // Con el mouse no: capturarlo mandaría al mundo también el clic izquierdo
+        // sobre la barra de atajos, y no se podría vendar o usar algo caminando.
+        if (e.pointerType !== 'mouse') surface.setPointerCapture(e.pointerId);
+      },
+      { signal },
+    );
+    // Caminando con el mouse: se lo sigue y se suelta el botón derecho en cualquier lado
+    // (sobre la barra de atajos o una ventana, también).
+    window.addEventListener(
+      'pointermove',
+      (e) => {
+        if (e.pointerType === 'mouse' && this.steering) this.pointer = this.localPoint(e);
+      },
+      { signal },
+    );
+    window.addEventListener(
+      'pointerup',
+      (e) => {
+        if (e.pointerType === 'mouse' && e.button === 2) this.steering = false;
       },
       { signal },
     );

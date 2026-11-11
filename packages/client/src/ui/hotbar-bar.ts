@@ -16,7 +16,7 @@ import {
   slotLabel,
   type HotbarSlot,
 } from '../core/hotbar';
-import { el } from './dom';
+import { el, onPress } from './dom';
 import { GameWindow } from './game-window';
 import { itemIconUrl } from './item-icons';
 
@@ -104,14 +104,15 @@ export class HotbarBar {
       button.addEventListener('pointerup', cancel, { signal });
       button.addEventListener('pointerleave', cancel, { signal });
       button.addEventListener('pointercancel', cancel, { signal });
-      button.addEventListener(
-        'click',
+      // Al tocar (también con el otro dedo en el joystick, caminando) o con clic.
+      onPress(
+        button,
         () => {
           if (longPressed) return;
           if (this.slots[index]) this.callbacks.onUse(index);
           else this.edit(index);
         },
-        { signal },
+        signal,
       );
       button.addEventListener(
         'contextmenu',

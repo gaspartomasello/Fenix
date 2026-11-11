@@ -1,4 +1,4 @@
-import { el } from './dom';
+import { el, onPress } from './dom';
 import type { HudButton } from './hud-buttons';
 
 export interface TouchHudOptions {
@@ -43,19 +43,19 @@ export class TouchHud {
       text: 'Atacar',
       attrs: { type: 'button', 'aria-label': 'Atacar a la criatura más cercana' },
     });
-    attack.addEventListener('click', () => options.attack(), { signal });
+    onPress(attack, () => options.attack(), signal);
     this.stop = el('button', {
       className: 'touch-small',
       text: '✕',
       attrs: { type: 'button', 'aria-label': 'Dejar de atacar' },
     });
-    this.stop.addEventListener('click', () => options.stopAttack(), { signal });
+    onPress(this.stop, () => options.stopAttack(), signal);
     const next = el('button', {
       className: 'touch-small',
       text: '⟳',
       attrs: { type: 'button', 'aria-label': 'Atacar a la siguiente criatura' },
     });
-    next.addEventListener('click', () => options.nextTarget(), { signal });
+    onPress(next, () => options.nextTarget(), signal);
     this.side = el('div', { className: 'touch-side' }, [next, this.stop]);
     // Atacar abajo a la derecha y sus atajos en arco alrededor, al alcance del pulgar.
     const area = el('div', { className: 'touch-attack-area' }, [
@@ -180,13 +180,14 @@ export class TouchHud {
 
   private button(button: Omit<HudButton, 'key'>, className: string): HTMLButtonElement {
     const node = el('button', { className, text: button.label, attrs: { type: 'button' } });
-    node.addEventListener(
-      'click',
+    // La mochila y el mapa también se abren caminando (con el otro dedo en el joystick).
+    onPress(
+      node,
       () => {
         button.onPress();
         this.refresh();
       },
-      { signal: this.abort.signal },
+      this.abort.signal,
     );
     if (button.pressed) this.toggles.push({ node, pressed: button.pressed });
     return node;
