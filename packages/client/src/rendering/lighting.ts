@@ -53,12 +53,22 @@ export class Lighting {
   private readonly ambient = new Graphics();
   private readonly pool: Sprite[] = [];
   private target: RenderTexture;
+  /** El tamaño de pantalla para el que está armado el mapa de luz. */
+  private size = { width: 0, height: 0 };
 
   constructor(
     private readonly textures: TextureCache,
     private readonly ground: Ground,
   ) {
-    this.target = RenderTexture.create({ width: 1, height: 1, resolution: LIGHT_MAP_RESOLUTION });
+    // Dinámica: cambia de tamaño con la ventana (al girar el celular, al acercar o
+    // alejar, al agrandar el navegador). Sin esto, la capa que la pinta se queda
+    // del tamaño viejo y parte de la pantalla queda de día y parte de noche.
+    this.target = RenderTexture.create({
+      width: 1,
+      height: 1,
+      resolution: LIGHT_MAP_RESOLUTION,
+      dynamic: true,
+    });
     this.overlay = new Sprite(this.target);
     this.overlay.blendMode = 'multiply';
     this.overlay.visible = false;
@@ -110,11 +120,13 @@ export class Lighting {
   }
 
   private resize(width: number, height: number): void {
-    if (this.target.width === width && this.target.height === height) return;
+    if (this.size.width === width && this.size.height === height) return;
+    this.size = { width, height };
     this.target.resize(width, height);
     this.overlay.texture = this.target;
-    this.overlay.width = width;
-    this.overlay.height = height;
+    // La capa cubre siempre la pantalla entera, mida lo que mida la textura.
+    this.overlay.position.set(0, 0);
+    this.overlay.setSize(width, height);
   }
 
   /** Una luz sobre el suelo: un círculo que se desvanece hacia afuera. */
