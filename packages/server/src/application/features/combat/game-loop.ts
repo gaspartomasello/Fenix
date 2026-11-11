@@ -396,6 +396,7 @@ export class GameLoop {
       this.mobiles.spellEffect(player, hit.target, spellKey, hit.amount, hit.resisted);
       this.mobiles.broadcastHealth(hit.target);
       this.disrupt(hit.target);
+      if (hit.target instanceof Player && hit.target !== player) this.practiceResist(hit.target);
       if (hit.target instanceof Player) {
         this.mobiles.sendVitals(hit.target);
         commitAggression(player, hit.target, now, this.notifier, this.social);
@@ -418,8 +419,7 @@ export class GameLoop {
             type: 'system',
             text: 'Tu Resistencia mágica aguantó parte del hechizo.',
           });
-        if (target.skills.tryGain('magic-resist', this.roll))
-          this.mobiles.skillGains([{ player: target, skill: 'magic-resist' }]);
+        this.practiceResist(target);
       }
     }
     if (killed) this.handleKill(player, target, now);
@@ -515,6 +515,9 @@ export class GameLoop {
     const cast = resolveCreatureCast(creature, this.world, now, this.roll);
     if (cast) {
       this.mobiles.spellEffect(creature, cast.target, cast.spell, cast.amount, cast.resisted);
+      // Los hechizos de las criaturas también entrenan la Resistencia mágica.
+      if (cast.target instanceof Player && SPELLS[cast.spell].target === 'harmful')
+        this.practiceResist(cast.target);
       this.afterHarm(creature, cast.target, cast.amount, cast.killed, cast.effectsChanged, now);
     }
     if (!target || creature.fleeing) return;
@@ -529,6 +532,7 @@ export class GameLoop {
         : null;
     for (const hit of hits ?? []) {
       this.mobiles.spellEffect(creature, hit.target, 'flamestrike', hit.amount, false);
+      if (hit.target instanceof Player) this.practiceResist(hit.target);
       this.afterHarm(creature, hit.target, hit.amount, hit.killed, false, now);
     }
   }
@@ -547,7 +551,19 @@ export class GameLoop {
             : 'Quedaste helado: no te podés mover.';
       this.notifier.send(target.id, { type: 'system', text });
     }
+    if (target instanceof Player) this.practiceResist(target);
     this.afterHarm(caster ?? target, target, hit.damage, killed, true, now);
+  }
+
+  /**
+   * Recibir magia dañina (un hechizo de quien sea, el aliento de un dragón, un
+   * campo) entrena la Resistencia mágica. Antes solo subía con hechizos de
+   * otros jugadores: contra criaturas no subía nunca.
+   */
+  private practiceResist(target: Player): void {
+    if (target.combat.isDead) return;
+    if (target.skills.tryGain('magic-resist', this.roll))
+      this.mobiles.skillGains([{ player: target, skill: 'magic-resist' }]);
   }
 
   /** Daña directo (una trampa que estalla), con los avisos y la muerte de siempre. */
