@@ -16,6 +16,8 @@ export const GUARD_SIGHT = 14;
 export const GUARD_WARNING_MS = 2500;
 /** Lejos de todo jugador la gente del pueblo no camina (nadie la ve). */
 const AWAKE_RANGE = 24;
+/** Con un jugador a esta distancia, el vecino no se va (puede querer hablarle). */
+const CHAT_RANGE = 3;
 
 /**
  * La vida de las ciudades: los vecinos caminan por las calles cerca de su
@@ -39,11 +41,42 @@ export class TownLife {
 
   tick(now: number): void {
     for (const npc of this.world.allNpcs()) {
+      if (this.attending(npc, now)) continue;
       if (npc.wander === 0) continue;
       if (!this.world.anyPlayerNear(npc.position, AWAKE_RANGE)) continue;
       if (npc.role === 'guard' && this.guard(npc, now)) continue;
+      // Con alguien al lado no se va: puede querer hablarle.
+      if (
+        this.world
+          .playersNear(npc.position)
+          .some((p) => tileDistance(p.position, npc.position) <= CHAT_RANGE)
+      )
+        continue;
       if (now >= npc.nextMoveAt) this.stroll(npc, now);
     }
+  }
+
+  /** Le están hablando: quieto, mirando a quien le habla (true mientras dura). */
+  private attending(npc: Npc, now: number): boolean {
+    const attention = npc.attention;
+    if (!attention) return false;
+    const player = this.world.get(attention.playerId);
+    if (
+      now >= attention.until ||
+      !player ||
+      tileDistance(player.position, npc.position) > CHAT_RANGE * 3
+    ) {
+      npc.attention = null;
+      npc.nextMoveAt = now + 4000;
+      return false;
+    }
+    const facing = directionBetween(npc.position, player.position);
+    if (facing !== null && facing !== npc.direction) {
+      const before = this.mobiles.watchers(npc);
+      npc.direction = facing;
+      this.mobiles.moved(npc, before);
+    }
+    return true;
   }
 
   /** Devuelve true si el guardia está ocupado con alguien (no pasea). */
@@ -111,8 +144,8 @@ export class TownLife {
     }
     if (!npc.goal || (npc.goal.x === npc.position.x && npc.goal.y === npc.position.y)) {
       npc.goal = this.pickGoal(npc);
-      // Una pausa antes de seguir: se queda mirando, charla, descansa.
-      npc.nextMoveAt = now + 1500 + this.random() * 5000;
+      // Una pausa larga antes de seguir: se queda mirando, charla, descansa.
+      npc.nextMoveAt = now + 6000 + this.random() * 10000;
       return;
     }
     const next = this.stepToward(npc.position, npc.goal, npc);
@@ -122,7 +155,8 @@ export class TownLife {
       return;
     }
     this.moveTo(npc, next);
-    npc.nextMoveAt = now + MOVE_DURATION_MS.walk * (npc.role === 'guard' ? 1.4 : 1.2);
+    // Pasos tranquilos, de paseo.
+    npc.nextMoveAt = now + MOVE_DURATION_MS.walk * (npc.role === 'guard' ? 2 : 2.4);
   }
 
   private pickGoal(npc: Npc): Position | null {

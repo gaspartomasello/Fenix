@@ -147,6 +147,8 @@ describe('etapa 103: charla más rica con los vecinos', () => {
     const f = createLand();
     f.world.addNpc(new Npc('herrero', 'blacksmith', { x: 5, y: 4 }, 'Rufino'));
     f.say('contame tu historia');
+    // Le hablaron: presta atención (se queda quieto mirándola).
+    expect(f.world.allNpcs().find((n) => n.name === 'Rufino')?.attention?.playerId).toBe(f.ana);
     const story = f.heard();
     expect(story.length).toBeGreaterThan(20);
     f.say('contame tu historia de nuevo');

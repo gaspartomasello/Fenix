@@ -324,10 +324,10 @@ const TOWNSFOLK: readonly { appearance: Appearance; equipment: EquipmentLook }[]
 
 /** Hasta dónde se aleja de su lugar al caminar (los que no comercian). */
 const WANDER: Readonly<Partial<Record<NpcRole, number>>> = {
-  townsfolk: 7,
-  guard: 3,
-  farmer: 4,
-  beggar: 5,
+  townsfolk: 3,
+  guard: 2,
+  farmer: 2,
+  beggar: 2,
 };
 
 /**
@@ -352,6 +352,8 @@ export class Npc implements Mobile {
   nextMoveAt = 0;
   /** A dónde va caminando. */
   goal: Position | null = null;
+  /** Le están hablando: se queda quieto mirando a quien le habla, hasta `until`. */
+  attention: { playerId: EntityId; until: number } | null = null;
   private _position: Position;
 
   constructor(

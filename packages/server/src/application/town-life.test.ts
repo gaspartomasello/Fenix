@@ -1,4 +1,5 @@
 import { DEFAULT_APPEARANCE } from '@fenix/shared/character/appearance';
+import { Direction } from '@fenix/shared/geometry/direction';
 import { Terrain } from '@fenix/shared/world/terrain';
 import { TileMap } from '@fenix/shared/world/tile-map';
 import { describe, expect, it } from 'vitest';
@@ -62,9 +63,31 @@ describe('la vida en la ciudad', () => {
       visited.add(`${vecina.position.x},${vecina.position.y}`);
       expect(
         Math.max(Math.abs(vecina.position.x - 10), Math.abs(vecina.position.y - 10)),
-      ).toBeLessThanOrEqual(7);
+      ).toBeLessThanOrEqual(3);
     }
     expect(visited.size).toBeGreaterThan(1);
+  });
+
+  it('con alguien al lado, el vecino no se va', () => {
+    const { world, join, run } = createTown();
+    const ana = join('Ana');
+    const vecina = new Npc('npc-1', 'townsfolk', { x: 10, y: 10 }, 'Marta');
+    world.addNpc(vecina);
+    ana.teleport({ x: 11, y: 10 });
+    run(60_000);
+    expect(vecina.position).toEqual({ x: 10, y: 10 });
+  });
+
+  it('al que le hablan se queda quieto y mira a quien le habla', () => {
+    const { world, join, run, clock } = createTown();
+    const ana = join('Ana');
+    const vecina = new Npc('npc-1', 'townsfolk', { x: 10, y: 10 }, 'Marta');
+    world.addNpc(vecina);
+    ana.teleport({ x: 10, y: 14 });
+    vecina.attention = { playerId: ana.id, until: clock.now() + 20_000 };
+    run(15_000);
+    expect(vecina.position).toEqual({ x: 10, y: 10 });
+    expect(vecina.direction).toBe(Direction.South);
   });
 
   it('un guardia le grita a un criminal en la ciudad y lo ajusticia', () => {
