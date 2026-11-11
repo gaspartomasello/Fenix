@@ -46,7 +46,8 @@ export function mapPicture(map: TileMap): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   canvas.width = map.width;
   canvas.height = map.height;
-  const ctx = canvas.getContext('2d');
+  // En memoria común (no en la placa de video): así no se borra si la placa se llena.
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (ctx) {
     const image = ctx.createImageData(map.width, map.height);
     for (let y = 0; y < map.height; y++) {

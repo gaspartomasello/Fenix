@@ -23,8 +23,7 @@ import type { MountKind } from '@fenix/shared/mounts/mount-catalog';
 import type { CorpseLook, EquipmentHues, EquipmentLook } from '@fenix/shared/protocol/messages';
 import type { StaticKind } from '@fenix/shared/world/statics';
 import type { Terrain } from '@fenix/shared/world/terrain';
-import { Texture } from 'pixi.js';
-import { toCanvas } from '../platform/canvas';
+import { BufferImageSource, Texture } from 'pixi.js';
 import rawFishSprite from '../assets/raw-fish-72.png?inline';
 
 /**
@@ -298,11 +297,30 @@ export class TextureCache {
     this.lastUsed.set(key, performance.now());
     let texture = this.textures.get(key);
     if (!texture) {
-      texture = Texture.from(toCanvas(draw()));
+      texture = fromPixels(draw());
       texture.source.scaleMode = scaleMode;
       this.textures.set(key, texture);
       this.onCreate?.(texture);
     }
     return texture;
   }
+}
+
+/**
+ * Una textura directo desde los pixeles, sin pasar por un lienzo (canvas) del
+ * navegador. Con miles de lienzos, Chrome y Edge los ponen en la placa de
+ * video y, cuando se llena, los vacían: el terreno y el minimapa desaparecían
+ * mientras los personajes seguían moviéndose. Así ocupan además menos memoria.
+ */
+function fromPixels(image: PixelImage): Texture {
+  return new Texture({
+    source: new BufferImageSource({
+      // Una copia propia: el arte puede volver a usar su memoria para el próximo dibujo.
+      resource: new Uint8Array(image.data),
+      width: image.width,
+      height: image.height,
+      format: 'rgba8unorm',
+      alphaMode: 'premultiply-alpha-on-upload',
+    }),
+  });
 }
