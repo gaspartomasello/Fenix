@@ -25,6 +25,13 @@ export const ACCOUNT_CHARACTERS = 5;
 export const CREATION_ATTRIBUTE_TOTAL = 120;
 export const CREATION_ATTRIBUTE_MIN = 10;
 export const CREATION_ATTRIBUTE_MAX = 80;
+/** La Fuerza arranca en 60 como mínimo: así el equipo inicial entra con aire. */
+export const CREATION_STRENGTH_MIN = 60;
+
+/** Lo mínimo de cada atributo al crear (la Fuerza pide más). */
+export function creationMinimum(attribute: 'strength' | 'dexterity' | 'intelligence'): number {
+  return attribute === 'strength' ? CREATION_STRENGTH_MIN : CREATION_ATTRIBUTE_MIN;
+}
 
 /** Las cuatro habilidades elegidas empiezan en 60, 60, 50 y 50 (en décimas). */
 export const CREATION_SKILL_VALUES = [600, 600, 500, 500] as const;
@@ -68,6 +75,11 @@ export function validateCreation(value: unknown): CreationValidation {
       reason: `Cada atributo va de ${CREATION_ATTRIBUTE_MIN} a ${CREATION_ATTRIBUTE_MAX}.`,
     };
   const [strength, dexterity, intelligence] = values as [number, number, number];
+  if (strength < CREATION_STRENGTH_MIN)
+    return {
+      ok: false,
+      reason: `La Fuerza va de ${CREATION_STRENGTH_MIN} a ${CREATION_ATTRIBUTE_MAX}.`,
+    };
   if (strength + dexterity + intelligence !== CREATION_ATTRIBUTE_TOTAL)
     return {
       ok: false,
@@ -176,7 +188,7 @@ export const SKILL_KITS: Readonly<Record<SkillKey, readonly KitEntry[]>> = {
   ],
   bowcraft: [
     { kind: 'fletching-kit', amount: 1 },
-    { kind: 'logs', amount: 20 },
+    { kind: 'logs', amount: 10 },
   ],
   alchemy: [
     { kind: 'mortar-pestle', amount: 1 },

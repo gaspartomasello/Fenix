@@ -67,7 +67,7 @@ const creation = (
 ): CharacterCreation => ({
   name,
   appearance: DEFAULT_APPEARANCE,
-  attributes: { strength: 40, dexterity: 30, intelligence: 50 },
+  attributes: { strength: 60, dexterity: 20, intelligence: 40 },
   skills,
 });
 
@@ -101,7 +101,7 @@ describe('cuentas', () => {
     const shirt = world.items.equipmentOf(player.id).find((i) => i.kind === 'shirt');
     expect(shirt?.hue).toBe(DEFAULT_APPEARANCE.clothHue);
     expect(world.items.lookOf(player.id).legs).toBe('trousers');
-    expect(player.combat.baseAttributes).toEqual({ strength: 40, dexterity: 30, intelligence: 50 });
+    expect(player.combat.baseAttributes).toEqual({ strength: 60, dexterity: 20, intelligence: 40 });
     expect(world.items.countInBackpack(player.id, 'black-pearl')).toBe(150);
     // Los reactivos empiezan en su bolsa, como en UO.
     const bag = world.items.backpackOf(player.id).find((i) => i.kind === 'bag');

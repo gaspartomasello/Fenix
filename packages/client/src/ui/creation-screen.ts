@@ -1,6 +1,6 @@
 import {
   CREATION_ATTRIBUTE_MAX,
-  CREATION_ATTRIBUTE_MIN,
+  creationMinimum,
   CREATION_ATTRIBUTE_TOTAL,
   CREATION_SKILL_VALUES,
   STARTING_BANK_GOLD,
@@ -38,27 +38,27 @@ const TEMPLATES: readonly {
 }[] = [
   {
     name: 'Guerrero',
-    attributes: { strength: 60, dexterity: 40, intelligence: 20 },
+    attributes: { strength: 70, dexterity: 35, intelligence: 15 },
     skills: ['swordsmanship', 'tactics', 'healing', 'parrying'],
   },
   {
     name: 'Mago',
-    attributes: { strength: 25, dexterity: 20, intelligence: 75 },
+    attributes: { strength: 60, dexterity: 10, intelligence: 50 },
     skills: ['magery', 'meditation', 'evaluating-intelligence', 'magic-resist'],
   },
   {
     name: 'Arquero',
-    attributes: { strength: 45, dexterity: 55, intelligence: 20 },
+    attributes: { strength: 60, dexterity: 45, intelligence: 15 },
     skills: ['archery', 'tactics', 'healing', 'anatomy'],
   },
   {
     name: 'Herrero',
-    attributes: { strength: 60, dexterity: 40, intelligence: 20 },
+    attributes: { strength: 70, dexterity: 35, intelligence: 15 },
     skills: ['blacksmithy', 'mining', 'tactics', 'tailoring'],
   },
   {
     name: 'Sigiloso',
-    attributes: { strength: 35, dexterity: 65, intelligence: 20 },
+    attributes: { strength: 60, dexterity: 50, intelligence: 10 },
     skills: ['fencing', 'hiding', 'stealth', 'lockpicking'],
   },
 ];
@@ -71,7 +71,7 @@ export class CreationScreen {
   private readonly errorText: HTMLElement;
   private readonly kitText: HTMLElement;
   private readonly createButton: HTMLButtonElement;
-  private attributes: Attributes = { strength: 40, dexterity: 40, intelligence: 40 };
+  private attributes: Attributes = { strength: 60, dexterity: 30, intelligence: 30 };
   private skills: ChosenSkills = ['swordsmanship', 'tactics', 'healing', 'parrying'];
   private readonly sliders = new Map<
     AttributeKey,
@@ -177,7 +177,7 @@ export class CreationScreen {
       className: 'creation-slider',
       attrs: {
         type: 'range',
-        min: String(CREATION_ATTRIBUTE_MIN),
+        min: String(creationMinimum(key)),
         max: String(CREATION_ATTRIBUTE_MAX),
         step: '1',
         'aria-label': ATTRIBUTE_NAMES[key],
@@ -258,15 +258,20 @@ export class CreationScreen {
  * proporción), para que siempre sumen lo mismo.
  */
 export function rebalance(current: Attributes, key: AttributeKey, wanted: number): Attributes {
-  const value = Math.min(CREATION_ATTRIBUTE_MAX, Math.max(CREATION_ATTRIBUTE_MIN, wanted));
   const [a, b] = (['strength', 'dexterity', 'intelligence'] as const).filter((k) => k !== key) as [
     AttributeKey,
     AttributeKey,
   ];
+  // Lo que se puede poner sin dejar a los otros dos por debajo de su mínimo.
+  const top = Math.min(
+    CREATION_ATTRIBUTE_MAX,
+    CREATION_ATTRIBUTE_TOTAL - creationMinimum(a) - creationMinimum(b),
+  );
+  const value = Math.min(top, Math.max(creationMinimum(key), wanted));
   const rest = CREATION_ATTRIBUTE_TOTAL - value;
   const share = current[a] + current[b] > 0 ? current[a] / (current[a] + current[b]) : 0.5;
-  const low = Math.max(CREATION_ATTRIBUTE_MIN, rest - CREATION_ATTRIBUTE_MAX);
-  const high = Math.min(CREATION_ATTRIBUTE_MAX, rest - CREATION_ATTRIBUTE_MIN);
+  const low = Math.max(creationMinimum(a), rest - CREATION_ATTRIBUTE_MAX);
+  const high = Math.min(CREATION_ATTRIBUTE_MAX, rest - creationMinimum(b));
   const first = Math.min(high, Math.max(low, Math.round(rest * share)));
   return { ...current, [key]: value, [a]: first, [b]: rest - first } as Attributes;
 }
