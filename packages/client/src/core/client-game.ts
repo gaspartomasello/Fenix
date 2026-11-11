@@ -157,6 +157,8 @@ export interface ClientGameEvents extends Record<string, unknown> {
   deletePickRequested: null;
   /** `/rastrear` (o la habilidad Rastrear): abrir la ventana para elegir qué buscar. */
   trackingRequested: null;
+  /** `/memoria`: mostrar cuántas imágenes hay cargadas. */
+  memoryRequested: null;
   /** Lo que encontró al Rastrear. */
   trackingFound: { category: TrackingCategory; found: readonly TrackSighting[] };
   /** Dónde está el rastro que sigue (o que lo perdió). */
@@ -544,6 +546,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         return;
       case 'tracking':
         this.emit('trackingRequested', null);
+        return;
+      case 'memory':
+        this.emit('memoryRequested', null);
         return;
       case 'gmTarget': {
         const targetId = this.targetId;

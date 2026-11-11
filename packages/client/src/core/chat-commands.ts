@@ -23,6 +23,8 @@ export type ChatInput =
   | { readonly kind: 'releasePet' }
   /** `/esconderse`, `/mirar`: usar esas habilidades. */
   | { readonly kind: 'useSkill'; readonly skill: ActiveSkill }
+  /** `/memoria`: cuántas imágenes tiene cargadas el juego (para reportar problemas). */
+  | { readonly kind: 'memory' }
   /** `home` (o `/home`): de fantasma, volver al santuario que es tu hogar. */
   | { readonly kind: 'home' }
   /** `/hora 22`: mover la hora del mundo (solo personajes de prueba). */
@@ -61,6 +63,7 @@ export const CHAT_HELP = [
   '/esconderse — esconderte (habilidad Esconderse)',
   '/mirar — buscar a los escondidos cerca (habilidad Mirar)',
   '/rastrear — buscar rastros de animales, monstruos, personas o vecinos (habilidad Rastrear)',
+  '/memoria — cuántas imágenes tiene cargadas el juego (para avisar si algo anda mal)',
   'home — de fantasma, volver al santuario que es tu hogar (para resucitar)',
   '/hora 22 — cambiar la hora del mundo (solo personajes de prueba)',
   '/cueva o /cueva fondo — ir a la mazmorra (solo personajes de prueba)',
@@ -130,6 +133,8 @@ export function parseChatInput(raw: string): ChatInput {
       return { kind: 'useSkill', skill: 'detect-hidden' };
     case 'rastrear':
       return { kind: 'tracking' };
+    case 'memoria':
+      return { kind: 'memory' };
     case 'hora': {
       const hour = Number(args.replace(',', '.'));
       return args && Number.isFinite(hour) && hour >= 0 && hour < 24
