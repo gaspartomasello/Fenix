@@ -15,6 +15,7 @@ export const assassinsModule: ModuleFactory = (kernel) => {
     kernel.ids,
     kernel.random,
     kernel.items,
+    kernel.mobiles,
     kernel.notifier,
     kernel.services.lazy('combat'),
     () => kernel.clock.now(),

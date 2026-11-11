@@ -210,3 +210,42 @@ Silvana por tu _rango_ cuando quieras.
 **Las víctimas** (cada una con su historia): Don Ernesto el prestamista, Clarisa la buhonera,
 Hermano Tadeo, Brígida la cazadora, Fausto el recaudador, Leonor la contrabandista, Maese
 Gervasio, Sor Inés y Rodrigo el heredero.
+
+## Mercenarios
+
+Al lado de la taberna de algunos pueblos hay un **capitán de mercenarios**: Capitana Remedios
+(Puerto Ceniza), Capitán Anselmo Garra (Roca Alta), Tuerto Salcedo (Refugio de los Bandidos) y
+Capitán Iturbide (Puerto Esmeralda). Decile _"mercenarios"_ y te presenta a su gente; decile el
+nombre de quien quieras para contratarlo. Se pueden tener **dos a la vez**.
+
+| Mercenario           | Clase           | Dónde                   | Sueldo (cada 10 min) | Codicia   |
+| -------------------- | --------------- | ----------------------- | -------------------- | --------- |
+| Bruno el Leal        | espadachín      | Puerto Ceniza           | 80                   | muy poca  |
+| Ofelia de las Llamas | maga de batalla | Puerto Ceniza           | 120                  | algo      |
+| Gorka el Hachero     | hachero         | Roca Alta               | 90                   | algo      |
+| Leandro Mano Firme   | espadachín      | Roca Alta               | 70                   | poca      |
+| Rata Mondragón       | espadachín      | Refugio de los Bandidos | 40                   | muchísima |
+| Vera la Cuervo       | maga de batalla | Refugio de los Bandidos | 60                   | mucha     |
+| Bastián Rompecráneos | hachero         | Refugio de los Bandidos | 55                   | bastante  |
+| Itzel la Jaguar      | espadachín      | Puerto Esmeralda        | 85                   | poca      |
+| Tobías el Sereno     | maga de batalla | Puerto Esmeralda        | 110                  | muy poca  |
+
+**Cómo funcionan:**
+
+- Cobran el primer sueldo **por adelantado** y después **solos, cada 10 minutos**, del oro de tu
+  mochila. Te siguen y pelean contra lo que ataques y contra quien te ataque.
+- Hablales por su nombre: _"propina"_ (les das un sueldo de regalo: +10 de lealtad), _"paga"_
+  (cuánto les queda pagado), _"¿cómo estás?"_ (cuán leales están), _"historia"_ y
+  _"despedido"_. Con _"mercenarios"_ o _"todos"_ le hablás a todos juntos.
+- **La lealtad** (0 a 100) sube **+4 cada sueldo cobrado a tiempo**, **+10 con cada propina** y
+  **+1 por cada criatura que matan juntos**. Se recuerda: si lo volvés a contratar, sigue donde
+  estaba.
+- **Si no hay oro para el sueldo**, avisan: _"¿y mi paga?"_. Si a los **2 minutos** sigue sin
+  haber, pierden 25 de lealtad y se van... o, si son codiciosos y poco leales, **se dan vuelta y
+  te atacan** para cobrarse solos.
+- **Si llevás mucho oro encima** (unas 30 pagas suyas), uno codicioso y poco leal **se te nota**:
+  _"mira tu bolsa de oro con demasiado interés..."_. Si en un minuto nada cambia (guardar el oro en
+  el banco, darle una propina, despedirlo), puede **traicionarte**. Cuanto más oro, más codicia y
+  menos lealtad, más probable.
+- **Con lealtad 70 o más no traicionan nunca.** Un traidor no vuelve a trabajar para vos.
+- Cuando salís del juego, vuelven con su capitán.

@@ -100,6 +100,39 @@ const HUMAN_FOES: Readonly<
       clothHue: 0x4a5a2a,
     },
   },
+  // Mercenarios: soldados de fortuna, curtidos y bien armados.
+  sellsword: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      skinTone: 0xe0ac69,
+      hairHue: 0x3a2a1a,
+      hairStyle: 'short',
+      facialHair: 'mustache',
+      clothHue: 0x7a2a2a,
+    },
+  },
+  axeman: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      skinTone: 0xf1c27d,
+      hairHue: 0xb05a2a,
+      hairStyle: 'long',
+      facialHair: 'beard',
+      clothHue: 0x4a3a2a,
+    },
+  },
+  'battle-mage': {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      gender: 'female',
+      skinTone: 0xc68642,
+      hairHue: 0x14100c,
+      hairStyle: 'long',
+      facialHair: 'none',
+      clothHue: 0x3a2a6a,
+    },
+    hues: { torso: 0x3a2a6a, head: 0x3a2a6a },
+  },
   // Las tribus de la selva: piel curtida, el torso pintado al aire, taparrabos,
   // máscara de madera con penacho y lanza.
   'tribal-warrior': {

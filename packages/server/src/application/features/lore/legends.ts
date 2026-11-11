@@ -297,6 +297,7 @@ export class Legends {
     const spot = this.freeNear(regionCenter(region)) ?? seeker.position;
     const npc = new Npc(this.ids.next(), step.person.role, spot, step.person.name);
     this.world.addNpc(npc);
+    this.mobiles.appear(npc);
     this.people.set(legend.id, npc);
     this.say(seeker, 'Entre las sombras se mueve alguien que se esconde de vos.');
   }
@@ -314,12 +315,14 @@ export class Legends {
     boss.name = step.boss.name;
     boss.temporary = true;
     this.world.addCreature(boss);
+    this.mobiles.appear(boss);
     this.bosses.set(legend.id, boss);
     for (const kind of step.escort) {
       const at = this.freeNear(spot) ?? spot;
       const guard = new Creature(this.ids.next(), kind, at);
       guard.temporary = true;
       this.world.addCreature(guard);
+      this.mobiles.appear(guard);
     }
     this.say(seeker, `Se te eriza la piel: ${step.boss.name} está acá.`);
   }

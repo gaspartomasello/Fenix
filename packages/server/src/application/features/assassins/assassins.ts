@@ -18,6 +18,7 @@ import type { Player } from '../../../domain/player';
 import type { World } from '../../../domain/world';
 import type { GameServices } from '../../kernel/services';
 import type { ItemNotifications } from '../../kernel/item-notifications';
+import type { MobileNotifications } from '../../kernel/mobile-notifications';
 import type { IdGenerator, Notifier, RandomSource } from '../../ports';
 
 /** Un encargo en curso: a quién, dónde, hasta cuándo, y si ya está hecho. */
@@ -49,6 +50,7 @@ export class Assassins {
     private readonly ids: IdGenerator,
     private readonly random: RandomSource,
     private readonly items: ItemNotifications,
+    private readonly mobiles: MobileNotifications,
     private readonly notifier: Notifier,
     private readonly combat: GameServices['combat'],
     private readonly now: () => number,
@@ -211,6 +213,7 @@ export class Assassins {
     if (name) creature.name = name;
     creature.temporary = true;
     this.world.addCreature(creature);
+    this.mobiles.appear(creature);
     return creature;
   }
 

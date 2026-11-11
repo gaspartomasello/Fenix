@@ -229,6 +229,23 @@ const LOOKS: Readonly<Record<NpcRole, { appearance: Appearance; equipment: Equip
   },
   // Los vecinos cambian de aspecto (ver TOWNSFOLK); este es el de base.
   townsfolk: { appearance: DEFAULT_APPEARANCE, equipment: { legs: 'trousers' } },
+  mercenary: {
+    appearance: {
+      ...DEFAULT_APPEARANCE,
+      skinTone: 0xc68642,
+      hairHue: 0x2b1d0e,
+      hairStyle: 'short',
+      facialHair: 'beard',
+      clothHue: 0x5a2a2a,
+    },
+    equipment: {
+      torso: 'studded-leather',
+      legs: 'leather-leggings',
+      feet: 'thigh-boots',
+      cloak: 'cloak',
+      rightHand: 'broadsword',
+    },
+  },
   guard: {
     appearance: { ...DEFAULT_APPEARANCE, facialHair: 'mustache', hairStyle: 'short' },
     equipment: {
