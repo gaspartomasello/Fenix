@@ -8,7 +8,7 @@ export const BANDAGE_RANGE = 2;
 
 /** Vendarse uno mismo tarda más que vendar a otro; la destreza lo acelera. */
 export function bandageDelayMs(dexterity: number, self: boolean): number {
-  const base = self ? 9_000 : 4_000;
+  const base = self ? 7_000 : 4_000;
   return Math.max(2_000, base - dexterity * 40);
 }
 
