@@ -248,6 +248,13 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       }
       break;
     }
+    case 'setHome': {
+      const position = asPosition(data.position);
+      if (position) return { ok: true, message: { type: 'setHome', position } };
+      break;
+    }
+    case 'goHome':
+      return { ok: true, message: { type: 'goHome' } };
     case 'stealItem':
       if (isId(data.targetId) && isItemKind(data.kind))
         return {

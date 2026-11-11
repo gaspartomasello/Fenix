@@ -98,6 +98,8 @@ export interface SavedCharacter {
   readonly quests?: readonly QuestProgress[];
   /** Leyendas que conoce: paso en que va cada una. */
   readonly legends?: Readonly<Partial<Record<LegendId, number>>>;
+  /** El santuario que eligió como hogar. */
+  readonly home?: Position;
   /** Cómo está con los gremios y facciones (ver `Player.standing`). */
   readonly standing?: Readonly<Record<string, number>>;
   /** Personajes de prueba: qué versión del kit de prueba ya se le aplicó. */
@@ -177,6 +179,7 @@ export function captureCharacter(
     ...(player.quests.length > 0 ? { quests: player.quests } : {}),
     ...(player.legends.size > 0 ? { legends: Object.fromEntries(player.legends) } : {}),
     ...(player.standing.size > 0 ? { standing: Object.fromEntries(player.standing) } : {}),
+    ...(player.home ? { home: player.home } : {}),
     ...(player.testKit > 0 ? { testKit: player.testKit } : {}),
     mount: player.mount
       ? { kind: player.mount, riding: true }
@@ -459,6 +462,9 @@ export function parseSavedCharacter(value: unknown): SavedCharacter | null {
           ),
         }
       : {}),
+    ...(isObject(value.home) && Number.isInteger(value.home.x) && Number.isInteger(value.home.y)
+      ? { home: { x: value.home.x as number, y: value.home.y as number } }
+      : {}),
     ...(isObject(value.standing)
       ? {
           standing: Object.fromEntries(
@@ -547,6 +553,7 @@ export function restoreCharacter(
     ),
   );
   player.standing = new Map(Object.entries(saved.standing ?? {}));
+  player.home = saved.home ?? null;
   if (saved.mount?.riding) player.mount = saved.mount.kind;
   else if (saved.mount)
     world.addCreature(

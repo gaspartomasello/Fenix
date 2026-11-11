@@ -200,6 +200,19 @@ describe('buildWorld: el continente', () => {
     }
   });
 
+  it('a unos pasos de cada entrada a una mazmorra hay una cruz de la resurrección', () => {
+    const world = big();
+    const entrances = world.map.statics.filter(
+      (s) => s.kind === 'cave-entrance' || s.kind === 'stairs-stone',
+    );
+    const ankhs = world.map.statics.filter((s) => s.kind === 'ankh');
+    expect(ankhs.length).toBeGreaterThanOrEqual(1);
+    for (const ankh of ankhs)
+      expect(
+        entrances.some((e) => Math.max(Math.abs(e.x - ankh.x), Math.abs(e.y - ankh.y)) <= 6),
+      ).toBe(true);
+  }, 20_000);
+
   it('están todos los lugares a los que mandan las leyendas (en un mapa mediano)', () => {
     const names = new Set(big().places.map((p) => p.name));
     for (const id of LEGEND_IDS)

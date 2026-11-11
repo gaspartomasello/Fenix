@@ -57,6 +57,8 @@ export const STATIC_KINDS = [
   'lamp',
   'sign',
   'shrine',
+  // Cruz de la resurrección (un ankh), a la entrada de las mazmorras.
+  'ankh',
   'forge',
   'anvil',
   'cave-wall',
@@ -463,6 +465,7 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   lamp: define('lamp', 'farol', true, 5),
   sign: define('sign', 'cartel', false),
   shrine: define('shrine', 'santuario', true, 4),
+  ankh: define('ankh', 'cruz de la resurrección', true, 3),
   forge: define('forge', 'forja', true, 3),
   anvil: define('anvil', 'yunque', true),
   'cave-wall': define('cave-wall', 'pared de roca', true),

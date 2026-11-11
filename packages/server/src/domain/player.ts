@@ -94,6 +94,8 @@ export class Player implements Mobile {
    * elige cada módulo.
    */
   standing = new Map<string, number>();
+  /** El santuario que eligió como hogar: ahí lo lleva `home` cuando es fantasma (null: el de la capital). */
+  home: Position | null = null;
   private usesSinceStatGain = 0;
   /** Cuándo puede volver a recolectar o fabricar. */
   nextActionAt = 0;

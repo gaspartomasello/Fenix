@@ -479,6 +479,17 @@ export interface PickLockRequest {
   readonly position: Position;
 }
 
+/** Que el santuario de esa posición sea el hogar del jugador. */
+export interface SetHomeRequest {
+  readonly type: 'setHome';
+  readonly position: Position;
+}
+
+/** De fantasma: volver al santuario que es el hogar (ahí se resucita). */
+export interface GoHomeRequest {
+  readonly type: 'goHome';
+}
+
 /** Robar algo elegido de la mochila de alguien (después de fisgonearla). */
 export interface StealItemRequest {
   readonly type: 'stealItem';
@@ -578,6 +589,8 @@ export type ClientMessage =
   | UseOnRequest
   | PickLockRequest
   | StealItemRequest
+  | SetHomeRequest
+  | GoHomeRequest
   | GatherRequest
   | DigRequest
   | ShipOrderRequest

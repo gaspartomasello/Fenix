@@ -427,6 +427,26 @@ const shrine: Model = (c) => {
   }
 };
 
+/** La cruz de la resurrección: un ankh de oro sobre una base de piedra, que brilla un poco. */
+const ankh: Model = (c) => {
+  const stone = ramp([140, 136, 150]);
+  c.box([0, 2, 0], UP, [11, 2, 11], rocky(stone, 2));
+  c.box([0, 6, 0], UP, [7, 2, 7], rocky(stone, 3));
+  const gold = glowing(ramp([236, 196, 92]));
+  // De frente a la cámara: el travesaño y el lazo van a lo ancho de la pantalla.
+  const side: Vec3 = [Math.SQRT1_2, 0, -Math.SQRT1_2];
+  const at = (across: number, up: number): Vec3 => [side[0] * across, up, side[2] * across];
+  c.limb(at(0, 8), at(0, 34), 2, 1.7, gold);
+  c.limb(at(-9, 34), at(9, 34), 1.8, 1.8, gold);
+  // El lazo de arriba: un óvalo.
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * Math.PI * 2;
+    const b = ((i + 1) / 14) * Math.PI * 2;
+    const loop = (t: number): Vec3 => at(Math.sin(t) * 5, 42.5 + Math.cos(t) * 7.5);
+    c.limb(loop(a), loop(b), 1.6, 1.6, gold);
+  }
+};
+
 const forge: Model = (c) => {
   const bricks: Material = (s) => {
     const course = Math.floor(s.p[1] / 3);
@@ -3325,6 +3345,7 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   lamp: { model: lamp, shadow: [6, 3] },
   sign: { model: sign, shadow: [9, 4] },
   shrine: { model: shrine, shadow: [18, 8] },
+  ankh: { model: ankh, shadow: [12, 6] },
   forge: { model: forge, shadow: [20, 8] },
   anvil: { model: anvil, shadow: [14, 6] },
   'cave-wall': { model: caveWall },
