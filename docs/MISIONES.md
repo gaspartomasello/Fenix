@@ -249,3 +249,11 @@ nombre de quien quieras para contratarlo. Se pueden tener **dos a la vez**.
   menos lealtad, más probable.
 - **Con lealtad 70 o más no traicionan nunca.** Un traidor no vuelve a trabajar para vos.
 - Cuando salís del juego, vuelven con su capitán.
+
+## Fisgonear y robar
+
+En la ventana de personaje de otro (doble clic sobre él), la **mochila** al costado de la figura
+sirve para **fisgonearla** con la habilidad Fisgonear. Si sale bien, se abre una ventana con lo que
+lleva; **tocar un objeto es intentar robarlo**. Si te descubren, quedás como criminal (si era
+inocente o un vecino) y te ven aunque estés escondido. En tu propia ventana, la mochila abre la
+tuya.

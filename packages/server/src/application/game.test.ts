@@ -24,6 +24,7 @@ const EVERY_MESSAGE: Record<
   track: true,
   followTrack: true,
   pickLock: true,
+  stealItem: true,
   setWarMode: true,
   gather: true,
   buy: true,

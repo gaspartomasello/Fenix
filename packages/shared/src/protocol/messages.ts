@@ -469,6 +469,13 @@ export interface PickLockRequest {
   readonly position: Position;
 }
 
+/** Robar algo elegido de la mochila de alguien (después de fisgonearla). */
+export interface StealItemRequest {
+  readonly type: 'stealItem';
+  readonly targetId: EntityId;
+  readonly kind: ItemKind;
+}
+
 /** Revisar el cuerpo de una criatura muerta (doble clic). */
 export interface OpenCorpseRequest {
   readonly type: 'openCorpse';
@@ -560,6 +567,7 @@ export type ClientMessage =
   | CastSpellRequest
   | UseOnRequest
   | PickLockRequest
+  | StealItemRequest
   | GatherRequest
   | DigRequest
   | ShipOrderRequest
@@ -1011,6 +1019,14 @@ export interface QuestsMessage {
   readonly quests: readonly QuestProgress[];
 }
 
+/** Lo que se vio al fisgonear la mochila de alguien (para elegir qué robar). */
+export interface SnoopedMessage {
+  readonly type: 'snooped';
+  readonly targetId: EntityId;
+  readonly name: string;
+  readonly items: readonly { readonly kind: ItemKind; readonly amount: number }[];
+}
+
 /** Las leyendas que el jugador conoce y en qué paso va (se reenvía cuando cambia). */
 export interface LegendsMessage {
   readonly type: 'legends';
@@ -1099,6 +1115,7 @@ export type ServerMessage =
   | MoveRejectedMessage
   | ChatMessage
   | LegendsMessage
+  | SnoopedMessage
   | GroundItemsMessage
   | InventoryMessage
   | PlayerEquipmentMessage

@@ -6,7 +6,7 @@ import { describeItem, type ItemKind } from '@fenix/shared/items/item-catalog';
 import type { EquipmentLook } from '@fenix/shared/protocol/messages';
 import { NOTORIETY_NAMES, type Notoriety } from '@fenix/shared/social/reputation';
 import { toCanvas } from '../platform/canvas';
-import { el } from './dom';
+import { el, onPress } from './dom';
 import { itemIconUrl } from './item-icons';
 
 /**
@@ -77,6 +77,12 @@ export interface PaperdollLook {
   readonly hues?: Readonly<Partial<Record<EquipmentSlot, number>>>;
 }
 
+/** La mochila al costado del personaje: abrir la propia, o fisgonear la de otro. */
+export interface PaperdollBackpack {
+  readonly label: string;
+  readonly onPress: () => void;
+}
+
 /** Cómo se interactúa con los casilleros y el dibujo (solo en la ventana propia). */
 export interface PaperdollInteraction {
   /** Empezar a arrastrar el objeto puesto en un lugar del cuerpo. */
@@ -103,6 +109,7 @@ export class PaperdollView {
   constructor(
     private readonly interaction: PaperdollInteraction | null,
     buttons: readonly PaperdollButton[] = [],
+    backpack: PaperdollBackpack | null = null,
   ) {
     this.figure = el('canvas', {
       className: 'paperdoll-figure',
@@ -135,7 +142,21 @@ export class PaperdollView {
       }),
     );
 
-    const columns = [slotColumn, el('div', { className: 'paperdoll-sheet' }, [this.figure])];
+    const sheet = el('div', { className: 'paperdoll-sheet' }, [this.figure]);
+    // Como en UO: la mochila colgada al costado del personaje.
+    if (backpack) {
+      const bag = el(
+        'button',
+        {
+          className: 'paperdoll-backpack',
+          attrs: { type: 'button', title: backpack.label, 'aria-label': backpack.label },
+        },
+        [el('img', { attrs: { src: itemIconUrl('bag'), alt: '', draggable: 'false' } })],
+      );
+      onPress(bag, backpack.onPress);
+      sheet.append(bag);
+    }
+    const columns = [slotColumn, sheet];
     if (buttons.length > 0) {
       columns.push(
         el(

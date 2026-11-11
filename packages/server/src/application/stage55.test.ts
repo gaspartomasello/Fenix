@@ -60,7 +60,7 @@ function createRuins(roll: number) {
   };
   const texts = (): string[] =>
     notifier.ofType('system').map((d) => (d.message.type === 'system' ? d.message.text : ''));
-  return { world, app, join, give, texts, chest: { x: chestX, y: 3 } };
+  return { world, app, join, give, texts, notifier, chest: { x: chestX, y: 3 } };
 }
 
 describe('etapa 55: el oficio del ladrón', () => {
@@ -119,5 +119,26 @@ describe('etapa 55: el oficio del ladrón', () => {
     caught.app.handle(ana2, { type: 'useSkill', skill: 'stealing', targetId: beto2 });
     expect(caught.texts().some((t) => /te descubrió robando/.test(t))).toBe(true);
     expect(caught.world.get(ana2)?.reputation.notoriety).toBe('criminal');
+  });
+
+  it('etapa 106: al fisgonear se ve la mochila ajena, y se roba justo lo que se elige', () => {
+    const f = createRuins(0.1);
+    const ana = f.join('Ana');
+    const beto = f.join('Beto');
+    const thief = f.world.get(ana);
+    thief?.skills.set('snooping', 1000);
+    thief?.skills.set('stealing', 1000);
+    f.give(beto, 'ruby');
+    f.give(beto, 'apple', 3);
+    const apples = f.world.items.countInBackpack(beto, 'apple');
+    f.app.handle(ana, { type: 'useSkill', skill: 'snooping', targetId: beto });
+    const seen = f.notifier.ofType('snooped').at(-1)?.message;
+    expect(seen?.type === 'snooped' && seen.items.map((i) => i.kind)).toEqual(
+      expect.arrayContaining(['ruby', 'apple']),
+    );
+    f.app.handle(ana, { type: 'stealItem', targetId: beto, kind: 'ruby' });
+    expect(f.world.items.countInBackpack(ana, 'ruby')).toBe(1);
+    expect(f.world.items.countInBackpack(beto, 'ruby')).toBe(0);
+    expect(f.world.items.countInBackpack(beto, 'apple')).toBe(apples);
   });
 });

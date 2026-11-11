@@ -106,7 +106,15 @@ export class Thievery {
       return;
     }
     this.snooped.set(this.key(player.id, victim.id), this.clock.now());
-    const seen = this.pocketOf(victim).map((p) => this.describe(p.kind, p.amount));
+    const pocket = this.pocketOf(victim);
+    // La ventana con lo que lleva: de ahí se elige qué robar.
+    this.notifier.send(player.id, {
+      type: 'snooped',
+      targetId: victim.id,
+      name: victim.name,
+      items: pocket.map((p) => ({ kind: p.kind, amount: p.amount })),
+    });
+    const seen = pocket.map((p) => this.describe(p.kind, p.amount));
     this.say(
       player,
       seen.length > 0
@@ -115,8 +123,8 @@ export class Thievery {
     );
   }
 
-  /** Robarle algo chico a alguien que está al lado. */
-  steal(playerId: EntityId, targetId: EntityId): void {
+  /** Robarle algo chico a alguien que está al lado (algo al azar, o lo elegido al fisgonear). */
+  steal(playerId: EntityId, targetId: EntityId, kind?: ItemKind): void {
     const player = this.world.get(playerId);
     const victim = this.victim(player, targetId);
     if (!player || !victim) return;
@@ -134,7 +142,7 @@ export class Thievery {
         this.notifier.send(victim.id, { type: 'system', text: `¡${player.name} intentó robarte!` });
       return;
     }
-    const loot = this.take(player, victim);
+    const loot = this.take(player, victim, kind);
     if (!loot) return this.say(player, `No encontraste nada que llevarte de ${victim.name}.`);
     this.say(player, `Le robaste ${this.describe(loot.kind, loot.amount)} a ${victim.name}.`);
   }
@@ -179,8 +187,12 @@ export class Thievery {
   }
 
   /** Pasa a la mochila del ladrón algo al azar de lo que lleva la víctima. */
-  private take(player: Player, victim: Player | Npc): { kind: ItemKind; amount: number } | null {
-    const pocket = this.pocketOf(victim);
+  private take(
+    player: Player,
+    victim: Player | Npc,
+    kind?: ItemKind,
+  ): { kind: ItemKind; amount: number } | null {
+    const pocket = this.pocketOf(victim).filter((p) => !kind || p.kind === kind);
     const pick = pocket[Math.floor(this.roll() * pocket.length)];
     if (!pick) return null;
     const amount = ITEMS[pick.kind].stackable

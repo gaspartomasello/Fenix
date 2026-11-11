@@ -248,6 +248,13 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       }
       break;
     }
+    case 'stealItem':
+      if (isId(data.targetId) && isItemKind(data.kind))
+        return {
+          ok: true,
+          message: { type: 'stealItem', targetId: data.targetId, kind: data.kind },
+        };
+      break;
     case 'pickLock': {
       const position = asPosition(data.position);
       if (isId(data.toolId) && position)
@@ -498,6 +505,7 @@ const SERVER_TYPE_FLAGS: Readonly<Record<ServerMessageType, true>> = {
   questOffer: true,
   quests: true,
   legends: true,
+  snooped: true,
   joinRejected: true,
   account: true,
   mobileAppeared: true,
