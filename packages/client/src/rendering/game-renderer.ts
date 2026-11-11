@@ -24,6 +24,8 @@ import { StaticLayer } from './static-layer';
 import { TerrainLayer } from './terrain-layer';
 import { TextureCache } from './texture-cache';
 
+/** Cuánto se muestra el aviso de que se perdió la imagen antes de recargar. */
+const CONTEXT_RELOAD_MS = 2500;
 /** Niveles de zoom; el primero (más lejos) solo en el celular, donde la pantalla es chica. */
 const ZOOM_LEVELS = [0.75, 1, 1.5, 2] as const;
 /** El nivel con que se empieza (tamaño normal). */
@@ -349,6 +351,28 @@ export class GameRenderer {
     }
   }
 
+  /**
+   * Si la placa de video se reinicia (pasa con poca memoria, al cambiar de
+   * pestaña o en algunas placas integradas), el navegador pierde la imagen del
+   * juego y la pantalla queda en blanco. Se avisa y se recarga la página (es la
+   * forma segura de recuperarla).
+   */
+  private watchContext(host: HTMLElement): void {
+    const notice = document.createElement('div');
+    notice.className = 'context-lost';
+    notice.textContent =
+      'Se perdió la imagen del juego (la placa de video se reinició). Volviendo a cargar…';
+    notice.hidden = true;
+    host.appendChild(notice);
+    this.app.canvas.addEventListener('webglcontextlost', (e) => {
+      e.preventDefault();
+      if (!notice.hidden) return;
+      notice.hidden = false;
+      // Aunque la placa vuelva, las imágenes ya cargadas se perdieron: recargar es lo seguro.
+      window.setTimeout(() => window.location.reload(), CONTEXT_RELOAD_MS);
+    });
+  }
+
   /** Suelta las texturas que hace rato no se usan y que nada en pantalla muestra. */
   private sweepTextures(): void {
     const inUse = new Set<Texture>();
@@ -408,6 +432,7 @@ export class GameRenderer {
     this.textures.onCreate = (texture) => this.app.renderer.texture.initSource(texture.source);
     await this.textures.prepareRawFish();
     host.appendChild(this.app.canvas);
+    this.watchContext(host);
     // Pixi se mide de nuevo con el aviso de cambio de tamaño de la ventana, pero
     // dentro de un marco (la app de Claude, por ejemplo) al girar el celular ese
     // aviso puede llegar antes de que cambie el tamaño, o no llegar: el juego

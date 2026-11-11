@@ -403,7 +403,18 @@ export class GameSession {
     this.game.on('log', (entry) => chat.append(entry));
     chat.append({ kind: 'system', text: 'Bienvenido a Fenix.' });
 
+    // Un error en un cuadro no puede cortar el juego: se anota y el próximo cuadro sigue.
+    let frameErrors = 0;
     const frame = (): void => {
+      requestAnimationFrame(frame);
+      try {
+        drawFrame();
+      } catch (error) {
+        frameErrors++;
+        if (frameErrors <= 5) console.error('Error al dibujar un cuadro:', error);
+      }
+    };
+    const drawFrame = (): void => {
       const intent = input.movementIntent();
       if (intent) this.game.requestStep(intent.direction, intent.mode, intent.lean);
       this.game.update();
@@ -427,7 +438,6 @@ export class GameSession {
           visible: this.game.visibleCount,
         });
       }
-      requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
   }
