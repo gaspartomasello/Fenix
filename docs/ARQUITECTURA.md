@@ -1524,6 +1524,18 @@ ningún monumento real):
   nombre en un lugar del campo; paga según el rango (encargos cumplidos en `standing`).
 - Las direcciones ("queda hacia el este de…") pasaron a `shared/world/compass.ts`.
 
+## Mercenarios con paga, lealtad y codicia (etapa 105)
+
+- Datos en `shared/guilds/mercenaries.ts` (capitanes, mercenarios con sueldo, codicia y lealtad
+  inicial); oficio nuevo `mercenary` para los capitanes; clases nuevas de criatura (espadachín,
+  hachero, maga de batalla).
+- `features/mercenaries`: los capitanes se ubican al lado de la taberna de su pueblo y contratan
+  por diálogo (`kernel.dialogue`). Contratado, el mercenario es una criatura del jugador sin
+  vencimiento (la sigue y pelea como una invocación). Cobra solo cada 10 minutos; si no cobra,
+  avisa y después se va o se da vuelta; si el patrón carga mucho oro y es codicioso y poco leal,
+  avisa sin querer y puede traicionar (se cambia por una criatura suelta que ataca al patrón).
+- La lealtad se guarda en `Player.standing` (`merc:<nombre>`; -1 = traidor).
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

@@ -104,6 +104,10 @@ export const STORIES: Readonly<Partial<Record<NpcRole, readonly string[]>>> = {
     'Perdí a mi capitán en una emboscada de orcos. Desde entonces no le doy la espalda al bosque.',
     'Me ofrecieron oro por mirar para otro lado. Dije que no. Todavía me lo reprocho cuando no llego a fin de mes.',
   ],
+  mercenary: [
+    'Peleé en tres guerras, para tres reyes distintos. Ninguno me pagó a tiempo; por eso ahora cobro por adelantado.',
+    'Tengo gente leal y gente codiciosa. Aprendé a distinguirlas antes de que lo aprendas por las malas.',
+  ],
   beggar: [
     'Fui mercader, ¿sabés? Tenía tres barcos. Una tormenta y un mal socio, y acá me ves.',
     'Nadie mira a un mendigo. Por eso veo todo lo que pasa en este pueblo.',

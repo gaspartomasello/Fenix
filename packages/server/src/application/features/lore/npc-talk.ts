@@ -47,6 +47,8 @@ const TRADE: Readonly<Record<NpcRole, string>> = {
   townsfolk: 'Vivo acá, nomás. Trabajo en lo que salga.',
   guard: 'Cuido la paz de la ciudad. Los criminales no pasan.',
   beggar: 'Pido. Y escucho. Nadie le presta atención a un mendigo.',
+  mercenary:
+    'Alquilo espadas. Mi gente pelea por vos mientras le pagues. Decime «mercenarios» y te los presento.',
 };
 
 /** Charla de relleno para cuando no se le entiende, según el carácter. */

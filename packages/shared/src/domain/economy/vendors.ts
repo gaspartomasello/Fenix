@@ -28,6 +28,8 @@ export const NPC_ROLES = [
   'townsfolk',
   'guard',
   'beggar',
+  // Capitán de mercenarios: los contrata y los cobra (no vende nada).
+  'mercenary',
 ] as const;
 export type NpcRole = (typeof NPC_ROLES)[number];
 
@@ -621,6 +623,13 @@ export const VENDORS: Readonly<Record<NpcRole, VendorDefinition>> = {
     role: 'beggar',
     name: 'mendigo',
     greeting: 'Una moneda, por piedad...',
+    sells: [],
+    buys: [],
+  },
+  mercenary: {
+    role: 'mercenary',
+    name: 'capitán de mercenarios',
+    greeting: 'Espadas a sueldo. Decime «mercenarios» y te muestro a mi gente.',
     sells: [],
     buys: [],
   },
