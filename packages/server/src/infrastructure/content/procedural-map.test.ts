@@ -1,3 +1,4 @@
+import { LEGENDS, LEGEND_IDS } from '@fenix/shared/quests/legends';
 import type { Position } from '@fenix/shared/geometry/position';
 import { DOORS, STATICS } from '@fenix/shared/world/statics';
 import { Terrain } from '@fenix/shared/world/terrain';
@@ -189,6 +190,13 @@ describe('buildWorld: el continente', () => {
     expect(map.statics.some((s) => s.kind === 'lighthouse')).toBe(true);
   });
 
+  it('están todos los lugares a los que mandan las leyendas (en un mapa mediano)', () => {
+    const names = new Set(big().places.map((p) => p.name));
+    for (const id of LEGEND_IDS)
+      for (const step of LEGENDS[id].steps)
+        if ('place' in step) expect(names, `${id}: ${step.place}`).toContain(step.place);
+  }, 20_000);
+
   it('afuera hay granjas con su granjero, y casas abandonadas y en ruinas', () => {
     const names = world.places.map((p) => p.name);
     for (const name of ['Granja de los Olmos', 'Casa del Ermitaño', 'Granja Quemada'])
@@ -204,6 +212,13 @@ describe('buildWorld: el continente', () => {
     expect(ruined?.creatures.some((c) => c.kind === 'ghoul')).toBe(true);
   });
 });
+
+/** Un mapa mediano: entran todos los lugares (se arma una sola vez). */
+let bigWorld: ReturnType<typeof buildWorld> | null = null;
+function big(): ReturnType<typeof buildWorld> {
+  bigWorld ??= buildWorld({ size: 480, seed: 1997 });
+  return bigWorld;
+}
 
 describe('createWorld', () => {
   it('puebla el continente con criaturas, ninguna dentro de un pueblo', () => {

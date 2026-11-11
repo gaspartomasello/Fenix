@@ -1493,6 +1493,21 @@ ningún monumento real):
 - El panel de cantidad es un cartelito chico: el objeto y su pila, una barra deslizable (con − y +
   para afinar), el número, "Todo" y "Aceptar". En la computadora se escribe el número y Enter acepta.
 
+## Leyendas con pasos y vecinos que conversan (etapa 103)
+
+- Una leyenda (`shared/quests/legends.ts`) es una lista de pasos: `ask` (preguntarle a un oficio
+  por alguna palabra), `visit` (llegar a un lugar y encontrar un rastro), `meet` (aparece alguien
+  escondido y hay que hablarle), `slay` (vencer al jefe, que deja la reliquia) y `return`
+  (devolverla a un oficio o a la persona encontrada). El avance del jugador es el número del paso
+  que le toca; terminada cuando llega a la cantidad de pasos (las cuatro primeras conservan los
+  números de antes, así los personajes guardados siguen donde estaban).
+- Cada paso deja anotada la pista del siguiente. El servidor (`lore/legends.ts`) le suma hacia
+  dónde queda el lugar desde el pueblo más cercano (`lore/directions.ts`) y manda en el mensaje
+  `legends` el lugar a marcar (`place`), que el mapa del mundo dibuja con una cruz roja.
+- La charla (`lore/npc-talk.ts`) suma historias propias y temas de taberna (`lore/npc-lore.ts`),
+  enojo por insultos (hasta que se pide perdón), simpatía por elogios y miedo a los asesinos.
+- Guía completa de las leyendas: `docs/MISIONES.md`.
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

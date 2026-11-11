@@ -142,6 +142,29 @@ export class WorldMap {
       ctx.fillStyle = region.wild ? '#f2d9a6' : '#ffffff';
       ctx.fillText(region.name, x, y);
     }
+    // Los lugares a los que mandan las leyendas: una cruz roja con borde dorado, como en un mapa de tesoro.
+    for (const name of this.game.legendPlaces) {
+      const region = map.regions.find((r) => r.name === name && r.x < area.width);
+      if (!region) continue;
+      const x = (region.x + region.width / 2) * k;
+      const y = (region.y + region.height / 2) * k - 14 * small * ratio;
+      const arm = 5 * small * ratio;
+      ctx.lineCap = 'round';
+      for (const [color, width] of [
+        ['#2a1608', 5],
+        ['#e8b84a', 3.4],
+        ['#c0261a', 2],
+      ] as const) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width * ratio;
+        ctx.beginPath();
+        ctx.moveTo(x - arm, y - arm);
+        ctx.lineTo(x + arm, y + arm);
+        ctx.moveTo(x + arm, y - arm);
+        ctx.lineTo(x - arm, y + arm);
+        ctx.stroke();
+      }
+    }
     // La rosa de los vientos, chica, en la esquina que tiene solo mar.
     const cssSide = Math.min(this.canvas.width, this.canvas.height) / ratio;
     const r = Math.max(14, Math.min(26, cssSide * 0.045)) * ratio;

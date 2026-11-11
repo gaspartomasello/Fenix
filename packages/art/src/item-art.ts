@@ -830,6 +830,76 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     c.limb([-2, 0.8, 0.8], [4.2, 0.8, -2], 0.45, 0.45, iron);
     c.box([3.6, 0.8, -1], lying(0.4), [0.5, 0.4, 1], iron);
   },
+  'blue-ribbon'(c) {
+    // Una cinta de pelo azul, con un moño y las dos puntas sueltas.
+    const blue = ramp([60, 90, 200]);
+    c.ellipsoid([-1.4, 0.8, 0], lying(0.9), [1.8, 0.6, 1.1], solid(blue));
+    c.ellipsoid([1.4, 0.8, 0], lying(-0.9), [1.8, 0.6, 1.1], solid(blue));
+    c.sphere([0, 1, 0], 0.7, solid(blue, -1));
+    c.limb([0, 0.6, 0.4], [-2.4, 0.4, 4.4], 0.45, 0.35, solid(blue));
+    c.limb([0, 0.6, 0.4], [2, 0.4, 4.6], 0.45, 0.35, solid(blue));
+  },
+  'marta-locket'(c) {
+    // Un relicario ovalado de plata, abierto, con su cadenita.
+    c.ellipsoid([0, 0.9, 0], lying(0.3), [2.6, 0.7, 3.2], (s) =>
+      Math.hypot(s.p[0] * 1.2, s.p[2]) < 2.2 && s.n[1] > 0.6
+        ? tone(ramp([170, 120, 90]), s.light)
+        : metal(STEEL)(s),
+    );
+    for (let i = 0; i < 6; i++)
+      c.sphere([Math.sin(i * 0.6) * 3.4, 0.5, -3.2 - i * 0.5], 0.35, metal(STEEL));
+  },
+  'keeper-log'(c) {
+    // Un cuaderno de tapas azul gastado, manchado de sal.
+    tome(c, ramp([54, 70, 104]), ramp([200, 200, 196]));
+  },
+  'ulises-spyglass'(c) {
+    // Un catalejo de bronce con dos tramos y la lente brillando.
+    c.limb([-4.6, 1.2, 1.6], [0.4, 1.2, -0.2], 1.1, 1.1, metal(GOLD));
+    c.limb([0.4, 1.2, -0.2], [4.6, 1.2, -1.8], 0.8, 0.8, metal(ramp([150, 110, 60])));
+    c.sphere([4.7, 1.2, -1.8], 0.7, solid(ramp([170, 210, 230]), 1));
+  },
+  'poison-vial': potion([40, 120, 40]),
+  'ramiro-banner'(c) {
+    // La capa roja del capitán, rota y doblada, con el escudo bordado en oro.
+    c.box([0, 0.7, 0], lying(0.4), [4.6, 0.5, 4], (s) =>
+      Math.hypot(s.p[0], s.p[2]) < 1.3 && s.n[1] > 0.6
+        ? metal(GOLD)(s)
+        : tone(ramp([150, 36, 36]), s.light, (s.x + s.y) % 4 ? 0 : -1),
+    );
+  },
+  'map-notebook'(c) {
+    // Un cuaderno de cuero con una brújula atada en la tapa.
+    tome(c, ramp([120, 82, 50]), GOLD);
+  },
+  'fire-heart'(c) {
+    // Una piedra roja que brilla por dentro, con vetas negras.
+    c.sphere([0, 2.6, 0], 2.6, (s) =>
+      (s.x * 3 + s.y * 5) % 7 === 0
+        ? tone(ramp([40, 20, 16]), s.light)
+        : s.light > 0.8
+          ? [255, 220, 120]
+          : tone(ramp([230, 80, 30]), s.light, 1),
+    );
+  },
+  'mastery-swordsmanship'(c) {
+    scroll(c, ramp([180, 180, 190]));
+  },
+  'mastery-fishing'(c) {
+    scroll(c, ramp([50, 120, 200]));
+  },
+  'mastery-alchemy'(c) {
+    scroll(c, ramp([200, 180, 50]));
+  },
+  'mastery-anatomy'(c) {
+    scroll(c, ramp([200, 120, 120]));
+  },
+  'mastery-tracking'(c) {
+    scroll(c, ramp([120, 90, 50]));
+  },
+  'mastery-meditation'(c) {
+    scroll(c, ramp([90, 200, 210]));
+  },
   'mastery-magery'(c) {
     scroll(c, ramp([120, 70, 200]));
   },
