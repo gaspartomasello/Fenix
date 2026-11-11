@@ -162,11 +162,16 @@ Los vecinos escuchan lo que decís cerca de ellos (o nombrándolos). Entienden:
 - **Temas de taberna:** _guardias, asesinos, ladrones, dragones, magia, oro, clima, noche,
   comida, cerveza, mar, barcos, gremios, el rey, el cementerio, amor, mercenarios_.
 - **Temas:** decí _"temas"_ y te dicen de qué se puede hablar.
+- **Charla suelta:** _¿cómo estás?_ (te preguntan de vuelta y entienden si decís _bien_ o _mal_),
+  _¿qué hora es?_, _contame un chiste_, _un consejo_, _¿qué pensás de mí?_, _edad_, _familia_,
+  _¿qué te gusta?_.
+- **Otros vecinos:** _"Rufino, ¿conocés a Tadeo?"_ — opinan de él y dicen hacia dónde anda.
+- **Dónde comprar:** _"¿dónde compro pan?"_ — te dicen quién lo vende y dónde está.
 - **Trabajo:** _misión, ¿necesitás algo?_ — los vecinos del pueblo dan misiones cortas con dos
   toques (o doble clic).
 
 Tienen su carácter (cálido, gruñón, misterioso o charlatán) y **reaccionan**: si los insultás se
-ofenden y no te hablan hasta que les pidas perdón; si los elogiás, les caés bien. A los
+ofenden y no te hablan hasta que les pidas perdón (también entienden los insultos en criollo; si insistís, se enojan cada vez más y terminan llamando a la guardia); si los elogiás, les caés bien. A los
 **asesinos** los atienden con miedo, a los **criminales** con desconfianza, y a los **famosos**
 los reconocen.
 
