@@ -50,12 +50,17 @@ export interface GameServices {
   };
   /** El banco (estar cerca de la banquera). */
   banking: { nearBanker(player: Player): boolean };
+  /**
+   * La guardia de los pueblos: llamarla a un lugar. Viene el guardia más
+   * cercano si hay a quién ajusticiar alrededor. `lawless`: ahí no hay guardias.
+   */
+  guards: { call(at: Position, now: number): 'coming' | 'nobody' | 'lawless' };
 }
 
 export type ServiceName = keyof GameServices;
 
 /** Los servicios sin los que el juego anda igual (con menos cosas). */
-type OptionalService = 'stealth' | 'portals' | 'corpses' | 'mounts';
+type OptionalService = 'stealth' | 'portals' | 'corpses' | 'mounts' | 'guards';
 
 /** Qué pasa sin el módulo que da cada servicio opcional: nada. */
 const WITHOUT: { readonly [K in OptionalService]: GameServices[K] } = {
@@ -63,6 +68,7 @@ const WITHOUT: { readonly [K in OptionalService]: GameServices[K] } = {
   portals: { open: () => {}, destinationFrom: () => null },
   corpses: { fill: () => false, remove: () => {} },
   mounts: { grant: () => false, dismountOnDeath: () => {} },
+  guards: { call: () => 'lawless' },
 };
 
 /**

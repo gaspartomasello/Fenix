@@ -10,6 +10,7 @@ export const thieveryModule: ModuleFactory = (kernel) => {
     kernel.random,
     kernel.services.lazy('containers'),
     kernel.services.optional('stealth'),
+    kernel.services.optional('guards'),
     kernel.items,
     kernel.mobiles,
     kernel.social,

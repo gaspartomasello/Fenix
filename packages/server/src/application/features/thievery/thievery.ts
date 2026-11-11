@@ -50,6 +50,7 @@ export class Thievery {
     private readonly containers: GameServices['containers'],
     /** Descubrir al ladrón escondido. */
     private readonly stealth: GameServices['stealth'],
+    private readonly guards: GameServices['guards'],
     private readonly items: ItemNotifications,
     private readonly mobiles: MobileNotifications,
     private readonly social: SocialNotifications,
@@ -224,6 +225,18 @@ export class Thievery {
     if (innocent && player.reputation.markCriminal(this.clock.now())) {
       this.say(player, 'Ahora sos criminal: los guardias te buscan y atacarte no es delito.');
       this.social.statusChanged(player);
+    }
+    // El vecino al que quisieron robarle grita y llama a la guardia.
+    if (victim instanceof Npc && victim.role !== 'guard') {
+      const listeners = this.world.playersNear(victim.position).map((p) => p.id);
+      this.notifier.sendMany(listeners, {
+        type: 'chat',
+        id: victim.id,
+        name: victim.name,
+        text: '¡Guardia! ¡Ladrón!',
+        channel: 'say',
+      });
+      this.guards.call(victim.position, this.clock.now());
     }
   }
 
