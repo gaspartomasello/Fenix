@@ -60,11 +60,18 @@ export class TerrainLayer {
    * cuadro: primero se dibujan sus texturas entre cuadro y cuadro y después
    * se arma el bloque, así al caminar no hay tirones cuando entra uno nuevo.
    */
-  cull(view: Rectangle, near: Rectangle = view): void {
+  cull(view: Rectangle, near: Rectangle = view, far: Rectangle = near): void {
     let next: Chunk | null = null;
     for (const chunk of this.chunks) {
       const visible = chunk.bounds.intersects(view);
       if (visible && !chunk.container) chunk.container = this.buildChunk(chunk.cx, chunk.cy);
+      // Lejos (fuera de `far`) el bloque se destruye: si no, al recorrer el mundo
+      // se juntan miles y el celular se queda sin memoria (el iPhone cierra la página).
+      if (chunk.container && !visible && !chunk.bounds.intersects(far)) {
+        chunk.container.destroy({ children: true });
+        chunk.container = null;
+        continue;
+      }
       if (chunk.container) chunk.container.visible = visible;
       else if (!next && chunk.bounds.intersects(near)) next = chunk;
     }

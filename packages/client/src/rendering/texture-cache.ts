@@ -38,6 +38,8 @@ interface Entry {
 
 export class TextureCache {
   private readonly textures = new Map<string, Texture>();
+  /** Cuándo se pidió por última vez cada textura (para soltar las que nadie usa). */
+  private readonly lastUsed = new Map<string, number>();
   /** Cuadros pedidos de antemano, que se dibujan de a poco entre un cuadro y otro. */
   private readonly upcoming = new Map<string, Entry>();
 
@@ -213,6 +215,28 @@ export class TextureCache {
   destroy(): void {
     this.textures.forEach((texture) => texture.destroy(true));
     this.textures.clear();
+    this.lastUsed.clear();
+  }
+
+  /**
+   * Suelta las texturas que no se pidieron en `idleMs` y que nada en pantalla
+   * usa (`inUse`): su imagen en memoria y su copia en la placa de video. Se
+   * vuelven a dibujar si hacen falta. Sin esto, recorrer el mundo junta miles
+   * (cada tile del terreno según sus vecinos, cada cuadro de cada persona) y el
+   * iPhone, que da poca memoria a las páginas, cierra el juego.
+   */
+  sweep(inUse: ReadonlySet<Texture>, now: number, idleMs: number): number {
+    let freed = 0;
+    for (const [key, texture] of this.textures) {
+      if (inUse.has(texture) || now - (this.lastUsed.get(key) ?? 0) < idleMs) continue;
+      // Lo que no se dibuja (el pescado de archivo, el halo de luz) se queda.
+      if (key.startsWith('x:') || key === 'i:raw-fish:0') continue;
+      this.textures.delete(key);
+      this.lastUsed.delete(key);
+      texture.destroy(true);
+      freed++;
+    }
+    return freed;
   }
 
   private getOrCreate(
@@ -220,6 +244,7 @@ export class TextureCache {
     draw: () => PixelImage,
     scaleMode: 'nearest' | 'linear' = 'nearest',
   ): Texture {
+    this.lastUsed.set(key, performance.now());
     let texture = this.textures.get(key);
     if (!texture) {
       texture = Texture.from(toCanvas(draw()));

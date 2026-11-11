@@ -5,7 +5,7 @@ import { ITEMS } from '@fenix/shared/items/item-catalog';
 import type { EntityId, GroundItemSnapshot, ShipSnapshot } from '@fenix/shared/protocol/messages';
 import { STATIC_CONTAINERS } from '@fenix/shared/world/statics';
 import type { TileMap } from '@fenix/shared/world/tile-map';
-import { Application, Container, Rectangle } from 'pixi.js';
+import { Application, Container, Rectangle, Texture } from 'pixi.js';
 // Evita `eval` en Pixi: necesario en páginas con Content Security Policy estricta.
 import 'pixi.js/unsafe-eval';
 import type { ClientGame } from '../core/client-game';
@@ -43,6 +43,9 @@ const VIEW_MARGIN = 96;
 const PREPARE_MARGIN = 512;
 /** Los objetos fijos se destruyen recién a esta distancia de la pantalla. */
 const DISCARD_MARGIN = 768;
+/** Cada cuánto se sueltan las texturas sin uso, y cuánto tienen que estar sin pedirse. */
+const SWEEP_EVERY_MS = 15_000;
+const TEXTURE_IDLE_MS = 45_000;
 /** Margen para armar los pisos altos antes de que entren en pantalla (pixeles). */
 const TILE_MARGIN = 256;
 
@@ -53,6 +56,7 @@ const TILE_MARGIN = 256;
 export class GameRenderer {
   private readonly app = new Application();
   private readonly textures = new TextureCache();
+  private lastSweep = 0;
   private readonly world = new Container();
   /** Hechizos y flechas: van sobre la luz (brillan de noche) con la misma cámara que el mundo. */
   private readonly glowing = new Container();
@@ -277,7 +281,7 @@ export class GameRenderer {
     this.ground.setHiddenFloors(this.ground.floorsAbove(focus));
     const view = this.updateCamera(focus);
     const near = grown(view, PREPARE_MARGIN);
-    this.terrain?.cull(view, near);
+    this.terrain?.cull(view, near, grown(view, DISCARD_MARGIN));
     this.floors?.update(grown(view, TILE_MARGIN));
     this.groundItems.refreshHidden();
     // Lo que tapa a uno mismo o a quien esté cerca (por ejemplo, un orco que
@@ -326,6 +330,22 @@ export class GameRenderer {
     // personajes, criaturas, terreno y objetos que están por entrar.
     this.textures.pump(PREPARE_BUDGET_MS);
     this.app.render();
+    if (performance.now() - this.lastSweep > SWEEP_EVERY_MS) {
+      this.lastSweep = performance.now();
+      this.sweepTextures();
+    }
+  }
+
+  /** Suelta las texturas que hace rato no se usan y que nada en pantalla muestra. */
+  private sweepTextures(): void {
+    const inUse = new Set<Texture>();
+    const visit = (node: Container): void => {
+      const texture = (node as { texture?: unknown }).texture;
+      if (texture instanceof Texture) inUse.add(texture);
+      for (const child of node.children) visit(child);
+    };
+    visit(this.app.stage);
+    this.textures.sweep(inUse, performance.now(), TEXTURE_IDLE_MS);
   }
 
   /** Quienes llevan una antorcha o un farol en la mano: alumbran a su alrededor. */
