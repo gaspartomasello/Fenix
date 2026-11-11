@@ -11,9 +11,18 @@ import { ITEMS, type ItemKind } from './item-catalog';
 /** Peso de algunos objetos sueltos (en piedras por unidad). */
 const WEIGHTS: Partial<Record<ItemKind, number>> = {
   gold: 0.01,
-  arrow: 0.1,
-  bolt: 0.1,
-  bandage: 0.1,
+  // Munición, vendas y reactivos se llevan de a cientos: pesan poco cada uno.
+  arrow: 0.05,
+  bolt: 0.05,
+  bandage: 0.05,
+  'black-pearl': 0.02,
+  'blood-moss': 0.02,
+  garlic: 0.02,
+  ginseng: 0.02,
+  'mandrake-root': 0.02,
+  nightshade: 0.02,
+  'spiders-silk': 0.02,
+  'sulfurous-ash': 0.02,
   'blank-scroll': 0.1,
   'iron-ore': 1,
   'iron-ingot': 0.5,
