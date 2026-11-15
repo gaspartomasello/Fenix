@@ -1555,6 +1555,14 @@ ningún monumento real):
   lugar está libre). De fantasma no se puede: hay que resucitar (santuario o sanador del pueblo).
 - De fantasma no hay oscuridad (como con visión nocturna).
 
+## Portales lunares (etapa 116)
+
+- Al planear el mundo, `placeMoongates` (contenido) pone un portal (`moongate`, objeto fijo del
+  suelo) en un claro de las afueras de cada ciudad de `MOONGATE_TOWNS`.
+- El movimiento avisa `stepped` (núcleo) en cada paso que no teletransporta. El módulo
+  `moongates` reconoce los portales del mundo al arrancar y, al pisar uno, manda `moongateMenu`;
+  `moongateTravel` lleva al lado del portal elegido (no encima, para no reabrir el menú).
+
 ## Convenciones
 
 - TypeScript estricto en todo el repo; `import type` para tipos.

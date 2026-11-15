@@ -16,6 +16,7 @@ import { EquipmentWindow } from '../ui/equipment-window';
 import { PaperdollViewer } from '../ui/paperdoll-viewer';
 import { SnoopWindow } from '../ui/snoop-window';
 import { ConfirmDialog } from '../ui/confirm-dialog';
+import { MoongateWindow } from '../ui/moongate-window';
 import { WorldShrines } from './world-shrines';
 import { WorldPaperdolls } from './world-paperdolls';
 import { HudButtons, type HudButton } from '../ui/hud-buttons';
@@ -288,6 +289,9 @@ export class GameSession {
     const worldContainers = new WorldContainers(this.game, renderer, tooltip);
     const confirmDialog = new ConfirmDialog();
     this.hosts.ui.append(confirmDialog.element);
+    const moongate = new MoongateWindow((destination) => this.game.moongateTravel(destination));
+    this.hosts.ui.append(moongate.element);
+    this.game.on('moongateMenu', (m) => moongate.show(m.here, m.destinations));
     const worldShrines = new WorldShrines(this.game, renderer, tooltip, confirmDialog);
     const worldMounts = new WorldMounts(this.game, renderer, tooltip);
     new WorldSigns(renderer, tooltip);

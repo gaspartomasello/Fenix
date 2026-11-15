@@ -282,3 +282,10 @@ también la llaman: si pescan a alguien robándoles, gritan _"¡Guardia! ¡Ladr�
 - **Cambiar el hogar**: doble clic (o un toque) sobre el santuario de otra ciudad; aparece un cartel
   para confirmar.
 - Después, volvé a tu cuerpo: con "Tomar todo" recuperás todo y te volvés a poner lo que tenías.
+
+## Portales lunares
+
+En las afueras de cada ciudad importante (Puerto Ceniza, Roca Alta, Junco Verde, Puerto Brasa,
+Altamar y Puerto Esmeralda) hay un **portal lunar** azul, siempre abierto, a unos 15 o 20 pasos de
+la muralla. Al pisarlo aparece un cartel con las demás ciudades: elegís una y aparecés al lado
+del portal de esa ciudad, aunque esté en otro continente.

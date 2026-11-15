@@ -27,6 +27,7 @@ const EVERY_MESSAGE: Record<
   stealItem: true,
   setHome: true,
   goHome: true,
+  moongateTravel: true,
   setWarMode: true,
   gather: true,
   buy: true,

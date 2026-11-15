@@ -128,6 +128,8 @@ export interface ClientGameEvents extends Record<string, unknown> {
   questsChanged: readonly QuestProgress[];
   /** Las leyendas que conoce y la pista de cada una. */
   legendsChanged: Extract<ServerMessage, { type: 'legends' }>['legends'];
+  /** Pisó un portal lunar: a dónde puede ir. */
+  moongateMenu: Extract<ServerMessage, { type: 'moongateMenu' }>;
   /** Se vio la mochila de alguien al fisgonear. */
   snooped: Extract<ServerMessage, { type: 'snooped' }>;
   /** Se abrió un libro (respuesta al doble clic). */
@@ -333,6 +335,11 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   }
 
   /** Usar una habilidad a propósito (Esconderse, Mirar). */
+  /** Viajar por el portal lunar en el que está parado. */
+  moongateTravel(destination: string): void {
+    this.gateway.send({ type: 'moongateTravel', destination });
+  }
+
   /** Que este santuario sea el hogar (a donde lleva `home` al morir). */
   setHome(position: Position): void {
     this.gateway.send({ type: 'setHome', position });
@@ -1047,6 +1054,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
         break;
       case 'quests':
         this.emit('questsChanged', message.quests);
+        break;
+      case 'moongateMenu':
+        this.emit('moongateMenu', message);
         break;
       case 'snooped':
         this.emit('snooped', message);

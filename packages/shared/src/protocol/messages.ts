@@ -479,6 +479,12 @@ export interface PickLockRequest {
   readonly position: Position;
 }
 
+/** Viajar por el portal lunar en el que está parado a la ciudad elegida. */
+export interface MoongateTravelRequest {
+  readonly type: 'moongateTravel';
+  readonly destination: string;
+}
+
 /** Que el santuario de esa posición sea el hogar del jugador. */
 export interface SetHomeRequest {
   readonly type: 'setHome';
@@ -590,6 +596,7 @@ export type ClientMessage =
   | PickLockRequest
   | StealItemRequest
   | SetHomeRequest
+  | MoongateTravelRequest
   | GoHomeRequest
   | GatherRequest
   | DigRequest
@@ -1042,6 +1049,13 @@ export interface QuestsMessage {
   readonly quests: readonly QuestProgress[];
 }
 
+/** Pisó un portal lunar: a qué ciudades puede ir (la de ese portal no está). */
+export interface MoongateMenuMessage {
+  readonly type: 'moongateMenu';
+  readonly here: string;
+  readonly destinations: readonly string[];
+}
+
 /** Lo que se vio al fisgonear la mochila de alguien (para elegir qué robar). */
 export interface SnoopedMessage {
   readonly type: 'snooped';
@@ -1139,6 +1153,7 @@ export type ServerMessage =
   | ChatMessage
   | LegendsMessage
   | SnoopedMessage
+  | MoongateMenuMessage
   | GroundItemsMessage
   | InventoryMessage
   | PlayerEquipmentMessage

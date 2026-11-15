@@ -253,6 +253,10 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       if (position) return { ok: true, message: { type: 'setHome', position } };
       break;
     }
+    case 'moongateTravel':
+      if (typeof data.destination === 'string' && data.destination.length <= 60)
+        return { ok: true, message: { type: 'moongateTravel', destination: data.destination } };
+      break;
     case 'goHome':
       return { ok: true, message: { type: 'goHome' } };
     case 'stealItem':
@@ -513,6 +517,7 @@ const SERVER_TYPE_FLAGS: Readonly<Record<ServerMessageType, true>> = {
   quests: true,
   legends: true,
   snooped: true,
+  moongateMenu: true,
   joinRejected: true,
   account: true,
   mobileAppeared: true,

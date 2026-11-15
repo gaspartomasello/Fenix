@@ -5424,3 +5424,11 @@ html:not(.touch-ui) .info-strip .info-chip-icon {
 .context-lost[hidden] {
   display: none;
 }
+
+/* Las ciudades del portal lunar: placas grabadas, justas a su nombre. */
+.moongate-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
