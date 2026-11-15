@@ -12,6 +12,8 @@ import type { Player } from '../../domain/player';
 export interface GameEvents {
   /** Alguien habló en voz alta (no por el grupo ni el gremio). */
   spoke: { readonly player: Player; readonly text: string };
+  /** Un jugador dio un paso y quedó parado en un casillero (no al teletransportarse). */
+  stepped: { readonly player: Player };
   /** Un jugador eligió a quién atacar. */
   attacked: { readonly attacker: Player; readonly targetId: EntityId };
   /** Un jugador empezó a lanzar un hechizo. */

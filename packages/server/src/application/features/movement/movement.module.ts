@@ -14,6 +14,7 @@ export const movementModule: ModuleFactory = (kernel) => {
     // Sin portales ni sigilo se camina igual.
     services.optional('portals'),
     services.optional('stealth'),
+    (player) => kernel.events.emit('stepped', { player }),
   );
   services.provide('movement', { teleport: (player, to) => movePlayer.teleport(player, to) });
   return {

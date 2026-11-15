@@ -40,6 +40,8 @@ export class MovePlayer {
     private readonly portals?: Pick<GameServices['portals'], 'destinationFrom'>,
     /** Escondido: cada paso gasta Sigilo (o lo descubre). */
     private readonly stealth?: Pick<GameServices['stealth'], 'step'>,
+    /** Avisa que dio un paso (para lo que pasa al pisar algo: los portales lunares). */
+    private readonly stepped?: (player: Player) => void,
   ) {}
 
   execute({ playerId, direction, mode, seq }: MovePlayerInput): void {
@@ -113,6 +115,7 @@ export class MovePlayer {
     const destination =
       this.world.map.teleportAt(player.position) ?? this.portals?.destinationFrom(player.position);
     if (destination) this.teleport(player, destination);
+    else this.stepped?.(player);
   }
 
   /** Mueve al jugador al instante (teletransporte) y avisa a todos, incluido él. */

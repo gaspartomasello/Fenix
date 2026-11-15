@@ -1,3 +1,5 @@
+import { MOONGATE_TOWNS } from '@fenix/shared/travel/moongates';
+import { placeMoongates } from './moongates';
 import { CREATURES } from '@fenix/shared/creatures/creature-catalog';
 import { LEGENDS, LEGEND_IDS } from '@fenix/shared/quests/legends';
 import type { Position } from '@fenix/shared/geometry/position';
@@ -211,6 +213,19 @@ describe('buildWorld: el continente', () => {
       expect(
         entrances.some((e) => Math.max(Math.abs(e.x - ankh.x), Math.abs(e.y - ankh.y)) <= 6),
       ).toBe(true);
+  }, 20_000);
+
+  it('cada ciudad importante tiene su portal lunar en las afueras', () => {
+    const world = big();
+    const gates = placeMoongates(world.map);
+    const towns = MOONGATE_TOWNS.filter((name) =>
+      world.map.regions.some((r) => r.name === name && !r.wild && !r.floor),
+    );
+    expect(gates.length).toBe(towns.length);
+    for (const gate of gates) {
+      expect(world.map.regionAt(gate)).toBeUndefined();
+      expect(world.map.isWalkable(gate)).toBe(true);
+    }
   }, 20_000);
 
   it('están todos los lugares a los que mandan las leyendas (en un mapa mediano)', () => {
