@@ -30,6 +30,8 @@ export const DEFAULT_MAP_LABELS: MapLabelFlags = {
 export interface MapLabel {
   readonly name: string;
   readonly kind: MapLabelKind;
+  /** Ciudad sin guardias (se pinta de otro color). */
+  readonly unsafe?: boolean;
   /** Dónde va el nombre (el centro de la zona, o la boca de la mazmorra). */
   readonly at: Position;
   /** La zona (para saber si se pasó cerca); las mazmorras, solo su boca. */
@@ -51,10 +53,12 @@ export function mapLabels(map: TileMap): MapLabel[] {
   const labels: MapLabel[] = [];
   for (const r of map.regions) {
     if (r.dungeon || r.floor) continue;
-    const kind: MapLabelKind = !r.wild ? 'town' : CROSSROAD.test(r.name) ? 'crossroad' : 'place';
+    const kind: MapLabelKind =
+      !r.wild || r.town ? 'town' : CROSSROAD.test(r.name) ? 'crossroad' : 'place';
     labels.push({
       name: r.name,
       kind,
+      ...(r.wild && r.town ? { unsafe: true } : {}),
       at: { x: r.x + r.width / 2, y: r.y + r.height / 2 },
       area: { x: r.x, y: r.y, width: r.width, height: r.height },
     });

@@ -1025,7 +1025,8 @@ export function buildCity(spec: CitySpec): City {
     y: inner.y0 - 1,
     width: port ? port.right - inner.x0 + 2 : innerW + 3,
     height: port ? port.bottom - inner.y0 + 2 : innerH + 3,
-    ...(style.lawless ? { wild: true } : {}),
+    // Sin ley: no protege (como el campo), pero es una ciudad.
+    ...(style.lawless ? { wild: true, town: true } : {}),
   });
   // La capital tiene alcantarillas: se baja por una reja en una calle del suroeste.
   if (spec.size === 'large' && !style.lawless) {
