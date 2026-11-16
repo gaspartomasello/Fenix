@@ -668,6 +668,15 @@ const FOREARM = 8;
 /** Ángulo extra con el que la mano sostiene el arma respecto del antebrazo. */
 const GRIP = 0.15;
 
+/** El brazo del arma en la ventana de personaje: el antebrazo hacia adelante. */
+const DISPLAY_ARMED_ARM: ArmPose = { raise: 0.22, spread: 0.3, bend: 1.05 };
+/** Hacia dónde apunta el arma en la ventana de personaje: arriba y un poco afuera y adelante. */
+const DISPLAY_WEAPON: Vec3 = normalize([0.42, 0.86, 0.3]);
+
+function displayGrip<T extends { weaponDir: Vec3 }>(arm: T, chest: Basis): T {
+  return { ...arm, weaponDir: chest.dir(DISPLAY_WEAPON) };
+}
+
 /** Dirección de un hueso: colgando, levantado hacia adelante `raise` y abierto `spread` hacia afuera. */
 function boneDir(raise: number, spread: number, side: 1 | -1): Vec3 {
   const c = Math.cos(spread);
@@ -789,7 +798,12 @@ export function humanoidRig(
     return { shoulder, elbow, hand, weaponDir };
   };
   const arms = {
-    1: armFor(1, pose.rightArm ?? defaultArm(1)),
+    // En la ventana de personaje, con un arma: el antebrazo adelante y el arma
+    // en alto, en diagonal hacia afuera (como en UO), para que se vea entera.
+    1:
+      frame === 'display' && armed
+        ? displayGrip(armFor(1, DISPLAY_ARMED_ARM), chest)
+        : armFor(1, pose.rightArm ?? defaultArm(1)),
     [-1]: armFor(-1, pose.leftArm ?? defaultArm(-1)),
   } as Rig['arms'];
 

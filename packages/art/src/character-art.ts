@@ -1345,9 +1345,46 @@ function drawCloak(canvas: VolumeCanvas, rig: Rig, cloak: Ramp): void {
  * Escudo en la mano izquierda. Los grandes (como los de justa) cubren del
  * pecho a la rodilla: se dibujan al costado, por delante del cuerpo.
  */
+/**
+ * El libro de hechizos en la mano izquierda: tapas de cuero rojo oscuro con
+ * esquinas y cierre de oro, el canto de las hojas a la vista y una runa
+ * dorada en la tapa, que mira al frente.
+ */
+function drawHeldBook(canvas: VolumeCanvas, rig: Rig): void {
+  const hand = rig.arms[-1].hand;
+  const facing = normalize(rig.chest.dir([-0.35, 0.1, 0.93]));
+  const axes = axesAlong(facing);
+  const [across, up] = axes;
+  const middle = add(hand, rig.chest.dir([-0.6, 2.6, 1.6]));
+  const leather = ramp([112, 30, 34]);
+  // Las tapas (con el lomo un poco redondeado) y las hojas en el medio.
+  canvas.box(middle, axes, [3.1, 4.1, 1.15], (q) => {
+    const local = sub(q.p, middle);
+    const w = local[0] * across[0] + local[1] * across[1] + local[2] * across[2];
+    const h = local[0] * up[0] + local[1] * up[1] + local[2] * up[2];
+    const depth = local[0] * facing[0] + local[1] * facing[1] + local[2] * facing[2];
+    // El canto de las hojas, en los bordes.
+    if (Math.abs(depth) < 0.75 && (Math.abs(w) > 2.7 || Math.abs(h) > 3.7))
+      return tone(ramp([226, 214, 178]), q.light);
+    // Esquinas de oro.
+    if (Math.abs(w) > 2.2 && Math.abs(h) > 3.2) return metal(GOLD)(q);
+    // La runa de la tapa: un rombo dorado con un punto.
+    if (
+      depth > 0.9 &&
+      Math.abs(w) + Math.abs(h) * 0.75 < 1.6 &&
+      Math.abs(w) + Math.abs(h) * 0.75 > 1.0
+    )
+      return tone(GOLD, q.light);
+    return tone(leather, q.light);
+  });
+  // El cierre: una tira de oro que cruza el canto.
+  canvas.box(add(middle, scale(across, 3.1)), axes, [0.35, 0.8, 1.3], metal(GOLD));
+}
+
 function drawShield(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
   const hand = rig.arms[-1].hand;
   if (kind === 'torch' || kind === 'lantern') return drawLight(canvas, rig, kind);
+  if (kind === 'spellbook') return drawHeldBook(canvas, rig);
   // Los grandes miran casi al frente, como en la ventana de personaje de UO.
   const facing = normalize(rig.chest.dir(kind === 'buckler' ? [-0.8, 0, 0.6] : [-0.4, 0, 0.92]));
   const axes = axesAlong(facing);

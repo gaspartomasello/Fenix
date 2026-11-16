@@ -90,8 +90,11 @@ export function startCast(
       scroll.location.ownerId !== player.id
     )
       return fail('Ese pergamino no está en tu mochila.');
-  } else if (items.countInBackpack(player.id, 'spellbook') === 0) {
-    return fail('Necesitás un libro de hechizos en la mochila.');
+  } else if (
+    items.countInBackpack(player.id, 'spellbook') === 0 &&
+    !items.equipmentOf(player.id).some((i) => i.kind === 'spellbook')
+  ) {
+    return fail('Necesitás un libro de hechizos en la mochila o en la mano.');
   }
   if (player.skills.get('magery') < spell.minSkill)
     return fail(`Tu Magia no alcanza para ${spell.name}.`);

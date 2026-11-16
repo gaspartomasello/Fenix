@@ -149,4 +149,27 @@ describe('etapa 45: muros, campos, hechizos de área y trampas', () => {
     expect(f.player(ana).combat.effect('protection')).toBeDefined();
     expect(f.player(bruno).combat.effect('protection')).toBeDefined();
   });
+
+  it('etapa 131: el libro de hechizos se lleva en la mano izquierda y con él se lanzan hechizos', () => {
+    const f = createField();
+    const ana = f.mage('Ana');
+    const books = f.world.items.carried(ana).filter((item) => item.kind === 'spellbook');
+    const book = books[0];
+    if (!book) throw new Error('sin libro');
+    // Uno solo: el que se va a llevar en la mano.
+    for (const other of books.slice(1)) f.world.items.remove(other.id);
+    const moved = f.world.items.move(
+      f.player(ana),
+      book.id,
+      { type: 'equipment', slot: 'leftHand' },
+      f.map,
+    );
+    expect(moved.ok).toBe(true);
+    expect(f.world.items.countInBackpack(ana, 'spellbook')).toBe(0);
+    const before = f.player(ana).combat.current.mana;
+    f.app.handle(ana, { type: 'castSpell', spell: 'heal' });
+    f.run(3000);
+    expect(f.player(ana).combat.current.mana).toBeLessThan(before);
+    expect(f.texts(ana).some((t) => /libro de hechizos/.test(t))).toBe(false);
+  });
 });

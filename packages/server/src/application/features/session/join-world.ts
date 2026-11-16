@@ -120,7 +120,8 @@ export class JoinWorld {
     // Se pone lo que se viste y se empuña (armas, armadura, escudo, capa), como en UO.
     for (const item of this.world.items.backpackOf(player.id)) {
       const slot = ITEMS[item.kind].slot;
-      if (!slot || ITEMS[item.kind].light) continue;
+      // La luz y el libro de hechizos empiezan en la mochila (cada uno se los pone si quiere).
+      if (!slot || ITEMS[item.kind].light || ITEMS[item.kind].use === 'spellbook') continue;
       const taken = this.world.items
         .equipmentOf(player.id)
         .some((i) => i.location.type === 'equipment' && i.location.slot === slot);
