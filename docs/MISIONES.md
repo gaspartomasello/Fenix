@@ -289,3 +289,37 @@ En las afueras de cada ciudad importante (Puerto Ceniza, Roca Alta, Junco Verde,
 Altamar y Puerto Esmeralda) hay un **portal lunar** azul, siempre abierto, a unos 15 o 20 pasos de
 la muralla, en un claro de tierra rodeado por un círculo de ocho piedras paradas. Al pisarlo aparece un cartel con las demás ciudades: elegís una y aparecés al lado
 del portal de esa ciudad, aunque esté en otro continente.
+
+## Relatos de los lugares y encuentros en los caminos (etapa 124)
+
+**Relatos de los lugares** (`@fenix/shared/quests/tales`, módulo `tales`): en las granjas, los
+caseríos, los campamentos de camino, las posadas y algunas rarezas vive alguien con un problema
+propio. Al saludarlo, insinúa que necesita algo; al pedirle «ayuda» (o «trabajo», «problema»…) lo
+cuenta, y lo que lo molesta aparece a un trecho del lugar, con su cabecilla con nombre. Al terminar
+con eso, se vuelve a cobrar: oro, un regalo del lugar y algo de fama y karma. Después de un rato, el
+lugar puede volver a tener el mismo problema.
+
+| Lugar                     | Quién     | El problema                            |
+| ------------------------- | --------- | -------------------------------------- |
+| Granjas sueltas           | granjero  | lobos que le comen los animales        |
+| Caseríos                  | fondero   | salteadores que robaron la cerveza     |
+| Campamentos de leñadores  | leñador   | una araña gigante («la Viuda»)         |
+| Campamentos de tramperos  | arquero   | un troll que espanta la caza           |
+| Postas de caravanas       | proveedor | orcos que saquearon una carreta        |
+| Campamentos de peregrinos | sanadora  | muertos que se levantaron              |
+| Posadas de camino         | posadero  | un espectro que asusta a los huéspedes |
+| Círculo de los Druidas    | druida    | esqueletos que profanan las piedras    |
+| Torre del Mago Chiflado   | mago      | un elemental de hielo que se le escapó |
+| Oasis                     | mercader  | bandidos que cobran peaje por el agua  |
+
+**Encuentros en los caminos** (módulo `encounters`): al andar por un camino de tierra o el
+empedrado viejo, fuera de los pueblos, cada tanto pasa algo (a lo sumo uno cada seis minutos):
+
+- una **emboscada** de tres salteadores, con cabecilla que grita;
+- una **buhonera en apuros**: si se mata a los dos salteadores que la acosan y ella sigue viva,
+  paga con oro y vendas;
+- de noche, **lobos**;
+- un **caminante** que cuenta un rumor: hacia dónde queda el lugar escondido más cercano (de los
+  que no figuran en el mapa).
+
+Los que aparecen se van a los cinco minutos.
