@@ -472,9 +472,8 @@ export function buildRoadNetwork(input: NetworkInput): Network {
   return { regions, signs, tiles, deadEnds, linked };
 }
 
-/** El suelo del camino: tierra apisonada (en la nieve y la arena, el mismo suelo). */
-function pathGround(ground: Terrain | undefined): Terrain {
-  if (ground === Terrain.Snow || ground === Terrain.Sand) return ground;
+/** El camino de piedra y tierra se distingue incluso sobre nieve o arena. */
+function pathGround(_ground: Terrain | undefined): Terrain {
   return Terrain.Path;
 }
 

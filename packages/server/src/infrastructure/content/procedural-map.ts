@@ -1091,10 +1091,8 @@ function terrainOf(biome: Biome): Terrain {
   }
 }
 
-/** El suelo de un camino según por dónde pasa. */
-function roadGround(biome: Biome | undefined): Terrain {
-  if (biome === 'snow') return Terrain.Snow;
-  if (biome === 'desert' || biome === 'beach') return Terrain.Sand;
+/** El mismo camino se distingue también cuando cruza nieve o arena. */
+function roadGround(_biome: Biome | undefined): Terrain {
   return Terrain.Path;
 }
 
