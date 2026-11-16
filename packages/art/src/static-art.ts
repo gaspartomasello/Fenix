@@ -427,6 +427,23 @@ const shrine: Model = (c) => {
   }
 };
 
+/** Piedra parada (las del círculo de los portales lunares): alta, tosca, un poco ladeada y con musgo. */
+const menhir: Model = (c, variant) => {
+  // Una sola roca alta y tosca, ladeada distinto en cada piedra, con un saliente de costado
+  // para que no sea pareja, y musgo al pie.
+  const stone = rocky(ramp([128, 120, 110]), variant * 11 + 7);
+  const moss = ramp([82, 112, 58]);
+  const look: Material = (s) =>
+    s.p[1] < 5 && noise(Math.floor(s.p[0] / 2), Math.floor(s.p[2] / 2)) > 0.35
+      ? tone(moss, s.light)
+      : stone(s);
+  const tilt = ((variant % 5) - 2) * 0.1;
+  const along = axesAlong([1, tilt, 0.45]);
+  c.ellipsoid([tilt * 5, 17, 0], along, [10, 18, 8], look);
+  c.ellipsoid([5 + tilt * 3, 11, 3], axesAlong([0.8, tilt, 1]), [6, 11, 5.5], look);
+  c.ellipsoid([-2, 2.5, -1], axesAlong([1, 0, 0.6]), [11, 3, 9], look);
+};
+
 /** La cruz de la resurrección: un ankh de oro sobre una base de piedra, que brilla un poco. */
 const ankh: Model = (c) => {
   const stone = ramp([140, 136, 150]);
@@ -3346,6 +3363,7 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   sign: { model: sign, shadow: [9, 4] },
   shrine: { model: shrine, shadow: [18, 8] },
   ankh: { model: ankh, shadow: [12, 6] },
+  menhir: { model: menhir, shadow: [20, 9] },
   forge: { model: forge, shadow: [20, 8] },
   anvil: { model: anvil, shadow: [14, 6] },
   'cave-wall': { model: caveWall },

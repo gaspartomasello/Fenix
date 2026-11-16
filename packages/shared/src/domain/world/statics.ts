@@ -59,6 +59,8 @@ export const STATIC_KINDS = [
   'shrine',
   // Cruz de la resurrección (un ankh), a la entrada de las mazmorras.
   'ankh',
+  // Piedras paradas del círculo que rodea a cada portal lunar.
+  'menhir',
   'forge',
   'anvil',
   'cave-wall',
@@ -466,6 +468,7 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   sign: define('sign', 'cartel', false),
   shrine: define('shrine', 'santuario', true, 4),
   ankh: define('ankh', 'cruz de la resurrección', true, 3),
+  menhir: define('menhir', 'piedra parada', true),
   forge: define('forge', 'forja', true, 3),
   anvil: define('anvil', 'yunque', true),
   'cave-wall': define('cave-wall', 'pared de roca', true),

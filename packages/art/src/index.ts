@@ -10,5 +10,6 @@ export * from './mount-art';
 export * from './coffin-art';
 export * from './container-art';
 export * from './corpse-art';
+export * from './moongate-art';
 export * from './ship-art';
 export * from './paperdoll-art';

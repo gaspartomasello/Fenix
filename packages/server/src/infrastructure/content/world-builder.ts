@@ -1,4 +1,4 @@
-import { placeMoongates } from './moongates';
+import { placeMoongates, withMoongateSites } from './moongates';
 import type { CreatureKind } from '@fenix/shared/creatures/creature-catalog';
 import { HOUSE_SLOT } from '@fenix/shared/housing/structure';
 import type { Position } from '@fenix/shared/geometry/position';
@@ -699,18 +699,15 @@ export function worldId(options: WorldBuildOptions, width: number, height: numbe
 /** Genera el mundo y lo deja como plano (la parte lenta). */
 export function planWorld(options: WorldBuildOptions): WorldBlueprint {
   const { map, spawnPoint, items, npcs, lairs, wildlife, houseSlots } = buildWorld(options);
+  // Los portales lunares, uno en las afueras de cada ciudad importante, en su círculo de piedras.
+  const moongates = placeMoongates(map);
   return {
     mapId: worldId(options, map.width, map.height),
-    map: map.toData(),
+    map: withMoongateSites(map.toData(), moongates),
     spawnPoint,
-    // Los portales lunares, uno en las afueras de cada ciudad importante.
     items: [
       ...items,
-      ...placeMoongates(map).map((position) => ({
-        kind: 'moongate' as const,
-        amount: 1,
-        position,
-      })),
+      ...moongates.map(({ gate }) => ({ kind: 'moongate' as const, amount: 1, position: gate })),
     ],
     npcs,
     creatures: options.creatures === false ? [] : [...wildlife, ...lairs],
