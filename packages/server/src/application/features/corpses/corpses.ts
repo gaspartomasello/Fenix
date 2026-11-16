@@ -102,7 +102,7 @@ export class Corpses {
    */
   private looted(corpseId: EntityId, actorId: EntityId): void {
     const corpse = this.world.items.get(corpseId)?.corpse;
-    if (!corpse || !corpse.innocent || actorId === corpse.ownerId) return;
+    if (!corpse || !corpse.innocent || this.isOwn(corpseId, actorId)) return;
     const looter = this.world.get(actorId);
     if (!looter || !looter.reputation.markCriminal(this.clock.now())) return;
     this.say(
@@ -164,7 +164,7 @@ export class Corpses {
     if (player.combat.isDead) {
       this.say(
         playerId,
-        this.playerCorpse(corpseId)?.corpse?.ownerId === playerId
+        this.isOwn(corpseId, playerId)
           ? 'Es tu cuerpo, pero un fantasma no puede agarrar nada. Volvé a la vida en un santuario o con un sanador, y después recuperá tus cosas.'
           : 'Los fantasmas no pueden revisar cuerpos.',
       );
@@ -186,7 +186,7 @@ export class Corpses {
   lootAll(playerId: EntityId, corpseId: EntityId): void {
     const player = this.world.get(playerId);
     const corpse = this.corpse(corpseId);
-    const own = this.playerCorpse(corpseId)?.corpse?.ownerId === playerId;
+    const own = this.isOwn(corpseId, playerId);
     if (!player || !corpse || player.combat.isDead) return;
     if (this.playerCorpse(corpseId) && !own) return;
     const taken: string[] = [];
@@ -274,6 +274,19 @@ export class Corpses {
     return mobile instanceof Creature && mobile.combat.isDead && !mobile.gone ? mobile : undefined;
   }
 
+  /**
+   * ¿Es el cuerpo de este jugador? Por el nombre del personaje (único en el
+   * mundo), no por el id de la sesión: si salió y volvió a entrar después de
+   * morir, su cuerpo sigue siendo suyo.
+   */
+  private isOwn(corpseId: EntityId, playerId: EntityId): boolean {
+    const corpse = this.playerCorpse(corpseId)?.corpse;
+    if (!corpse) return false;
+    if (corpse.ownerId === playerId) return true;
+    const player = this.world.get(playerId);
+    return !!player && player.name.toLowerCase() === corpse.name.toLowerCase();
+  }
+
   private playerCorpse(corpseId: EntityId): Item | undefined {
     const item = this.world.items.get(corpseId);
     return item?.corpse ? item : undefined;
@@ -286,7 +299,7 @@ export class Corpses {
       name: corpse.name,
       items: this.world.items.corpseOf(corpse.id).flatMap((i) => i.toBackpackSnapshot() ?? []),
       // En el cuerpo de otro jugador se saquea de a un objeto; en el propio se recupera todo junto.
-      ...(this.playerCorpse(corpse.id) && this.playerCorpse(corpse.id)?.corpse?.ownerId !== playerId
+      ...(this.playerCorpse(corpse.id) && !this.isOwn(corpse.id, playerId)
         ? { noTakeAll: true as const }
         : {}),
     });
