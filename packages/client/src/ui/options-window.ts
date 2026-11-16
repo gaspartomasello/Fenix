@@ -1,3 +1,4 @@
+import { MAP_LABEL_KINDS } from '../core/map-labels';
 import { ITEMS, ITEM_KINDS } from '@fenix/shared/items/item-catalog';
 import { SPELLS, SPELL_KEYS } from '@fenix/shared/magic/spell-catalog';
 import { SKILL_NAMES } from '@fenix/shared/skills/skill-catalog';
@@ -175,6 +176,23 @@ export class OptionsWindow {
       attrs: { type: 'button' },
     });
     reset.addEventListener('click', () => this.change(defaultOptions()));
+    const mapList = el(
+      'ul',
+      { className: 'options-list' },
+      MAP_LABEL_KINDS.map(({ key, label }) => {
+        const check = el('input', { attrs: { type: 'checkbox' } });
+        check.checked = this.options.mapLabels[key];
+        check.addEventListener('change', () =>
+          this.change({
+            ...this.options,
+            mapLabels: { ...this.options.mapLabels, [key]: check.checked },
+          }),
+        );
+        return el('li', { className: 'options-row' }, [
+          el('label', { className: 'options-check' }, [check, document.createTextNode(label)]),
+        ]);
+      }),
+    );
     this.page.replaceChildren(
       el(
         'ul',
@@ -190,6 +208,12 @@ export class OptionsWindow {
           ]);
         }),
       ),
+      el('h3', { className: 'options-subtitle', text: 'Nombres en el mapa' }),
+      el('p', {
+        className: 'window-hint',
+        text: 'Las ciudades se conocen desde el principio; lo demás aparece en el mapa a medida que lo descubrís.',
+      }),
+      mapList,
       reset,
     );
   }

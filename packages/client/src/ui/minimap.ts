@@ -1,4 +1,6 @@
 import type { ClientGame } from '../core/client-game';
+import type { TileMap } from '@fenix/shared/world/tile-map';
+import { mapLabels, type MapLabel } from '../core/map-labels';
 import { el } from './dom';
 import { makeDraggable, type Draggable } from './draggable';
 import { mapPicture } from './map-picture';
@@ -37,6 +39,8 @@ export class Minimap {
     private readonly game: ClientGame,
     /** Se llama al abrirse o cerrarse (para el botón que queda presionado). */
     private readonly onToggle: () => void = () => undefined,
+    /** Los nombres a dibujar (los descubiertos, de las categorías elegidas). */
+    private readonly labels: (map: TileMap) => readonly MapLabel[] = mapLabels,
   ) {
     this.canvas = el('canvas', { className: 'minimap-canvas' }) as HTMLCanvasElement;
     this.element = el(
@@ -191,17 +195,15 @@ export class Minimap {
     // Nombres de pueblos y lugares.
     ctx.font = '600 10px Georgia, serif';
     ctx.textAlign = 'center';
-    for (const region of map.regions) {
-      // Los pisos altos se ven encima de su edificio, no con su nombre aparte.
-      if (region.floor) continue;
-      if (region.dungeon) continue;
-      const [x, y] = project(region.x + region.width / 2, region.y + region.height / 2);
+    for (const label of this.labels(map)) {
+      const [x, y] = project(label.at.x, label.at.y);
       if (x < 10 || y < 8 || x > size - 10 || y > size - 4) continue;
       ctx.lineWidth = 3;
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
-      ctx.strokeText(region.name, x, y);
-      ctx.fillStyle = region.wild ? '#f2d9a6' : '#ffffff';
-      ctx.fillText(region.name, x, y);
+      ctx.strokeText(label.name, x, y);
+      ctx.fillStyle =
+        label.kind === 'town' ? '#ffffff' : label.kind === 'dungeon' ? '#ff9f86' : '#f2d9a6';
+      ctx.fillText(label.name, x, y);
     }
     // Uno mismo, en el centro.
     ctx.fillStyle = '#ffffff';
