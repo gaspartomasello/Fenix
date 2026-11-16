@@ -10,7 +10,10 @@ export const MELEE_CHASE_PACE = 1.2;
  * Cuánto se acorta la espera entre hechizo y hechizo de los que hacen magia:
  * con esto pelean como magos y no como guerreros que a veces tiran algo.
  */
-export const SPELL_COOLDOWN_FACTOR = 0.65;
+export const SPELL_COOLDOWN_FACTOR = 0.9;
+
+/** Cuánto pegan los hechizos de las criaturas, comparado con los de un jugador de igual magia. */
+export const CREATURE_SPELL_POWER = 0.85;
 
 /** Cada individuo camina distinto: hasta este tanto más rápido o más lento que su especie. */
 export const STRIDE_VARIATION = 0.12;
@@ -36,9 +39,17 @@ export function creatureStepMs(
   return Math.round(definition.moveMs * stride * pace);
 }
 
-/** La espera de un mago entre hechizo y hechizo. */
-export function spellCooldownMs(cooldownMs: number): number {
-  return Math.round(cooldownMs * SPELL_COOLDOWN_FACTOR);
+/**
+ * La espera de un mago entre hechizo y hechizo. `jitter` (0 a 1) la estira o
+ * la acorta un poco: así varios magos juntos no tiran todos a la vez.
+ */
+export function spellCooldownMs(cooldownMs: number, jitter = 0.5): number {
+  return Math.round(cooldownMs * SPELL_COOLDOWN_FACTOR * (0.85 + jitter * 0.4));
+}
+
+/** Lo que espera un mago antes de su primer hechizo (cada uno distinto). */
+export function firstSpellDelayMs(jitter: number): number {
+  return Math.round(800 + jitter * 2400);
 }
 
 /** Un número entre 0 y 1 propio de cada criatura, siempre el mismo. */
