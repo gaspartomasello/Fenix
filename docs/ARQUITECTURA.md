@@ -1667,3 +1667,15 @@ La regla nueva: **un árbol nunca queda pegado a otro**, ni de costado ni en dia
 descarta parte de los árboles que salen, la densidad de bosque y selva sube (`FOREST_TREES`,
 `JUNGLE_TREES`) para llegar a la cantidad pedida. Los árboles que plantan los pueblos y los
 lugares en sus plazas siguen a su gusto.
+
+## El libro de hechizos en la mano y armas a la vista (etapa 131)
+
+- **El libro de hechizos no se cae nunca al morir** (`KEPT_ON_DEATH` en `items.ts`), sea o no del
+  equipo inicial; si estaba en una bolsa, sale a la mochila y la bolsa va al cuerpo.
+- **Se equipa en la mano izquierda** (`slot: 'leftHand'`, como el escudo o la antorcha) y se ve en la
+  ventana de personaje y en el mundo (`drawHeldBook`): tapas de cuero rojo, esquinas y cierre de oro y
+  una runa en la tapa. Con el libro en la mano también se lanzan hechizos; el doble clic lo sigue
+  abriendo.
+- **Armas a la vista en la ventana de personaje**: en esa pose el arma colgaba hacia la cámara y casi
+  no se veía (la katana, el puñal). Ahora el antebrazo va adelante y el arma en alto, en diagonal
+  hacia afuera (`DISPLAY_ARMED_ARM`, `DISPLAY_WEAPON` en `humanoid-rig.ts`), como en UO.

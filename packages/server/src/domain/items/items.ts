@@ -24,6 +24,10 @@ import { Item, type ItemLocation } from './item';
 /** Quién actúa sobre un objeto. */
 
 /** Algo que queda dentro de un cuerpo; una bolsa puede traer cosas adentro. */
+
+/** Lo que no se cae nunca al morir, sea o no del equipo inicial (como el libro de hechizos en UO). */
+const KEPT_ON_DEATH: ReadonlySet<ItemKind> = new Set<ItemKind>(['spellbook']);
+
 export interface CorpseDrop {
   readonly kind: ItemKind;
   readonly amount: number;
@@ -207,8 +211,12 @@ export class Items {
    */
   strip(ownerId: EntityId, corpseId: EntityId, at: Position): ItemChanges {
     const changes = emptyChanges();
+    // El libro de hechizos no se pierde nunca: si estaba en una bolsa, sale a la mochila.
+    for (const book of this.carried(ownerId))
+      if (KEPT_ON_DEATH.has(book.kind) && book.location.type === 'container')
+        book.location = { type: 'backpack', ownerId, position: this.freeSpot(ownerId) };
     const taken = [...this.equipmentOf(ownerId), ...this.backpackOf(ownerId)].filter(
-      (item) => !item.newbie,
+      (item) => !item.newbie && !KEPT_ON_DEATH.has(item.kind),
     );
     const columns = Math.floor(CORPSE_AREA.width / ITEM_ICON_SIZE);
     taken.forEach((item, index) => {

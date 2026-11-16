@@ -196,4 +196,23 @@ describe('el cuerpo de un jugador', () => {
     expect(arena.world.items.countInBackpack(again, 'gold')).toBe(before + inCorpse);
     expect(arena.world.get(again)?.reputation.notoriety).toBe('innocent');
   });
+
+  it('etapa 131: el libro de hechizos no se cae nunca al morir, aunque esté en una bolsa', () => {
+    const arena = createArena();
+    const beto = arena.join('Beto');
+    const bag = arena.world.items.add('bolsa', 'bag', 1, {
+      type: 'backpack',
+      ownerId: beto,
+      position: { x: 0, y: 0 },
+    });
+    const book = arena.world.items.add('libro', 'spellbook', 1, {
+      type: 'container',
+      containerId: bag.id,
+      position: { x: 0, y: 0 },
+    });
+    expect(book.newbie).toBeFalsy();
+    const corpseId = arena.killBeto(beto);
+    expect(arena.world.items.corpseOf(corpseId).some((i) => i.kind === 'spellbook')).toBe(false);
+    expect(arena.world.items.get('libro')?.location).toMatchObject({ type: 'backpack' });
+  });
 });

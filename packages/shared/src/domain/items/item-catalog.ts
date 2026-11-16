@@ -809,6 +809,8 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
     plural: 'libros de hechizos',
     article: 'un',
     use: 'spellbook',
+    // Se puede llevar en la mano izquierda (se ve en la ventana de personaje).
+    slot: 'leftHand',
   },
   book: { name: 'libro', plural: 'libros', article: 'un', use: 'book' },
   // Carta de una misión: se lee como un libro y se entrega a quien va dirigida.
