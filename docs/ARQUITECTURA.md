@@ -1647,3 +1647,13 @@ Las criaturas que quedaban donde después se plantan las piedras de un portal lu
   (el norte, arriba a la derecha) y adónde lleva. `readSign` (`core/signs.ts`) separa los renglones.
 - **Minimapa**: un toque sigue cambiando el acercamiento; **dos toques seguidos** (o doble clic)
   agrandan o achican el círculo. Se recuerda el tamaño.
+
+## El mundo del modo solo, ya armado (etapa 128)
+
+Generar el mundo en el navegador tarda ~25 s en una computadora y bastante más en un celular. Ahora
+se genera **al compilar** (`npm run build:solo` corre `scripts/world-solo.ts`) y se publica al lado
+de la página como `mundo.bin`: un binario chico (`world-file.ts`, ~1,2 MB con gzip) con el terreno,
+las alturas como diferencia con el vecino y los objetos fijos ordenados por posición. Al entrar, el
+cliente lo baja (`platform/world-download.ts`, descomprime con `DecompressionStream`) y, si su
+clave coincide con la del mundo del juego, lo usa: entrar tarda unos segundos. Si no está (la
+página abierta como archivo suelto, sin conexión), se genera como antes y se guarda en el navegador.

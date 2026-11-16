@@ -12,6 +12,7 @@ import {
 import { packBlueprint, unpackBlueprint } from './infrastructure/persistence/blueprint-codec';
 
 export { packBlueprint, unpackBlueprint, type WorldBlueprint };
+export { decodeWorldFile, encodeWorldFile } from './infrastructure/persistence/world-file';
 import {
   KeyValueCharacterStore,
   type KeyValueStorage,

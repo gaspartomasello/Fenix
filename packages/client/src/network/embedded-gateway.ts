@@ -2,6 +2,7 @@ import type { EmbeddedConnection, KeyValueStorage } from '@fenix/server/embedded
 import { decodeServerMessage } from '@fenix/shared/protocol/codec';
 import type { ClientMessage } from '@fenix/shared/protocol/messages';
 import { loadWorld, saveWorld } from '../platform/world-cache';
+import { downloadWorld } from '../platform/world-download';
 import type { GameGateway, GatewayHandlers } from './game-gateway';
 
 /**
@@ -17,13 +18,23 @@ export class EmbeddedGateway implements GameGateway {
   async connect(): Promise<void> {
     this.handlers.onStatus('connecting');
     // Carga diferida: el código del servidor solo se descarga en modo solo.
-    const { createEmbeddedServer, planSoloWorld, soloWorldKey, packBlueprint, unpackBlueprint } =
-      await import('@fenix/server/embedded');
-    // El mundo se genera una sola vez y queda guardado en el navegador; las
-    // siguientes veces se lee de ahí (mucho más rápido).
-    const key = `${soloWorldKey()}|${__FENIX_BUILD__}`;
+    const {
+      createEmbeddedServer,
+      planSoloWorld,
+      soloWorldKey,
+      packBlueprint,
+      unpackBlueprint,
+      decodeWorldFile,
+    } = await import('@fenix/server/embedded');
+    // Primero, el mundo ya armado que se publica con el juego (lo más rápido).
     this.handlers.onProgress?.('Cargando el mundo…');
-    let blueprint = unpackBlueprint(await loadWorld(key));
+    const file = await downloadWorld();
+    const read = file ? decodeWorldFile(file) : null;
+    let blueprint = read?.key === soloWorldKey() ? unpackBlueprint(read.packed) : null;
+    // Si no está, se genera una sola vez y queda guardado en el navegador; las
+    // siguientes veces se lee de ahí.
+    const key = `${soloWorldKey()}|${__FENIX_BUILD__}`;
+    blueprint ??= unpackBlueprint(await loadWorld(key));
     if (!blueprint) {
       this.handlers.onProgress?.('Creando el mundo por primera vez: puede tardar un poco…');
       // Un respiro para que el aviso se vea antes del trabajo pesado.
