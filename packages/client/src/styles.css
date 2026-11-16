@@ -212,6 +212,15 @@ body {
   font-size: 0.9rem;
 }
 
+/* El texto (nombre, lugar, hora) se achica con puntos suspensivos antes que bajar los botones de renglón. */
+.status-bar .status-text {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Los botones (Mochila, Personaje, Mapa…) van dentro de la barra de arriba, ajustados a la palabra. */
 .status-bar .hud-buttons {
   position: static;

@@ -121,7 +121,7 @@ export class WorldMap {
     const small = this.canvas.width / ratio < 360 ? 0.85 : 1;
     const taken: { x0: number; y0: number; x1: number; y1: number }[] = [];
     const regions = map.regions
-      .filter((r) => !r.dungeon && r.x < area.width)
+      .filter((r) => !r.dungeon && !r.hidden && r.x < area.width)
       .sort((a, b) => Number(!!a.wild) - Number(!!b.wild));
     for (const region of regions) {
       const size = (region.wild ? 11 : 13) * small * ratio;

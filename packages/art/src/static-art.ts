@@ -1443,6 +1443,61 @@ const plankPost: Model = (c) => {
   c.box([-H + 3, 24, -H + 3], UP, [3, 24, 3], solid(ramp([90, 64, 42])));
 };
 
+/**
+ * Carpa de campaña (para entrar, del tamaño de una persona): faldones de lona
+ * que se inclinan hacia adentro, con costuras, manchas de barro abajo, una
+ * cenefa a rayas arriba y estacas con cuerda al pie.
+ */
+const CANVAS = ramp([196, 178, 140]);
+const CANVAS_STRIPE = ramp([150, 58, 44]);
+const canvasWall: WallFace = (c, along) => {
+  const cloth: Material = (s) => {
+    const t = s.p[along] + 100;
+    if (t % 9 < 0.6) return tone(CANVAS, s.light, -1);
+    const stain = s.p[1] < 6 + noise(Math.floor(t / 3), 1) * 4;
+    const patch = noise(Math.floor(t / 7), Math.floor(s.p[1] / 8)) > 0.82;
+    return tone(CANVAS, s.light * (stain ? 0.78 : 1), patch ? -1 : 0);
+  };
+  // La lona, casi derecha, con una franja a rayas arriba de borde festoneado.
+  const striped: Material = (s) => {
+    const t = s.p[along] + 100;
+    const scallop = 25 + 2.4 * Math.abs(Math.sin((t * Math.PI) / 7));
+    if (s.p[1] > scallop)
+      return Math.floor(t / 3.5) % 2 ? tone(CANVAS_STRIPE, s.light) : tone(CANVAS, s.light, 1);
+    return cloth(s);
+  };
+  c.polygon(
+    [
+      edge(along, -H, 0, 2),
+      edge(along, H, 0, 2),
+      edge(along, H, 34, 4.5),
+      edge(along, -H, 34, 4.5),
+    ],
+    striped,
+  );
+  const pole = solid(ramp([96, 70, 44]));
+  c.limb(edge(along, -H, 34.5, 4.5), edge(along, H, 34.5, 4.5), 0.9, 0.9, pole);
+  // Estacas y vientos al pie.
+  const rope = solid(ramp([170, 150, 112]));
+  for (const t of [-H * 0.5, H * 0.5]) {
+    c.limb(edge(along, t, 0, -3), edge(along, t, 4, -3.4), 0.6, 0.5, pole);
+    c.limb(edge(along, t, 3.6, -3.2), edge(along, t, 30, 4.2), 0.25, 0.25, rope);
+  }
+};
+const canvasPost: Model = (c) => {
+  const pole = solid(ramp([96, 70, 44]));
+  c.limb([-H + 4, 0, -H + 4], [-H + 4, 48, -H + 4], 1.4, 1.1, pole);
+  // Un banderín en la punta.
+  c.polygon(
+    [
+      [-H + 4, 48, -H + 4],
+      [-H + 4, 42, -H + 4],
+      [-H + 12, 45.5, -H + 6],
+    ],
+    solid(CANVAS_STRIPE),
+  );
+};
+
 /** Piedra negra con juntas rojizas (la ciudad del volcán). */
 const BASALT = ramp([66, 62, 66]);
 const BASALT_MORTAR = ramp([128, 62, 44]);
@@ -2528,6 +2583,7 @@ function doorSpecs(): Record<string, StaticSpec> {
 
 const LOG_WALL = wallSet(logWall, logPost);
 const PLANK_WALL = wallSet(plankWall, plankPost);
+const CANVAS_WALL = wallSet(canvasWall, canvasPost);
 const BASALT_WALL = wallSet(basaltWall, basaltPost);
 const SANDSTONE_WALL = wallSet(sandstoneWall, sandstonePost);
 const RAMPART_WALL = wallSet(rampart, rampartPost);
@@ -3484,6 +3540,17 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   'plank-wall-y': { model: PLANK_WALL.y },
   'plank-wall-corner': { model: PLANK_WALL.corner },
   'plank-wall-post': { model: PLANK_WALL.post },
+  'canvas-wall-x': { model: CANVAS_WALL.x },
+  'canvas-wall-y': { model: CANVAS_WALL.y },
+  'canvas-wall-corner': { model: CANVAS_WALL.corner },
+  'canvas-wall-post': { model: CANVAS_WALL.post },
+  'palisade-corner': {
+    model: (c, v) => {
+      palisade(c, 0);
+      palisade(c, 2);
+      palisadePost(c, v);
+    },
+  },
   'basalt-wall-x': { model: BASALT_WALL.x },
   'basalt-wall-y': { model: BASALT_WALL.y },
   'basalt-wall-corner': { model: BASALT_WALL.corner },
