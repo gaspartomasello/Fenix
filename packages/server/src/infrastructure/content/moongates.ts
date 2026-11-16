@@ -28,9 +28,12 @@ const STONES: readonly (readonly [number, number])[] = [
 /** La tierra pisada del centro, hasta dónde se aplana y empareja el pasto, y hasta dónde se despeja. */
 const TRODDEN = 2.6;
 const LAWN = 8.5;
-const CLEARING = 10;
+/** Lo que tiene que estar libre de construcciones y con suelo firme (el círculo y un poco más). */
+const FIT = 10;
+/** Hasta dónde se sacan árboles y matas, para que el claro se vea de lejos y en el mapa. */
+const CLEARING = 15;
 /** Lo que mira alrededor (en casilleros) para no salirse del círculo. */
-const REACH = 11;
+const REACH = 16;
 
 /** Lo natural que se puede sacar para hacer el claro (nunca carteles, casas ni faroles). */
 const NATURAL: ReadonlySet<StaticKind> = new Set<StaticKind>([
@@ -87,7 +90,7 @@ export function placeMoongates(map: TileMap): MoongateSite[] {
     const base = heightAt({ x, y });
     for (let dy = -REACH; dy <= REACH; dy++)
       for (let dx = -REACH; dx <= REACH; dx++) {
-        if (screen(dx, dy) > CLEARING) continue;
+        if (screen(dx, dy) > FIT) continue;
         const p = { x: x + dx, y: y + dy };
         const t = map.terrainAt(p);
         if (t === undefined || isWater(t) || map.regionAt(p)) return false;
@@ -159,7 +162,8 @@ export function withMoongateSites(data: TileMapData, sites: readonly MoongateSit
     terrain,
     ...(heights ? { heights } : {}),
     statics: [
-      ...data.statics.filter((s) => !cleared.has(index(s))),
+      // Solo lo natural (árboles, matas, piedras sueltas): lo construido queda.
+      ...data.statics.filter((s) => !cleared.has(index(s)) || !NATURAL.has(s.kind)),
       ...sites.flatMap((site) =>
         site.stones.map((p) => ({ kind: 'menhir' as const, x: p.x, y: p.y })),
       ),
