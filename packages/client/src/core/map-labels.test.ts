@@ -10,6 +10,15 @@ const map = new TileMap({
   regions: [
     { name: 'Puerto Ceniza', x: 0, y: 0, width: 30, height: 30 },
     { name: 'Cruce del Lobo', x: 60, y: 10, width: 9, height: 9, wild: true },
+    {
+      name: 'Refugio de los Bandidos',
+      x: 40,
+      y: 40,
+      width: 15,
+      height: 15,
+      wild: true,
+      town: true,
+    },
     { name: 'Chacra del Ombú', x: 100, y: 10, width: 19, height: 19, wild: true, hidden: true },
     { name: 'Cueva del Lamento', x: 160, y: 0, width: 40, height: 60, dungeon: true },
   ],
@@ -22,6 +31,7 @@ describe('los nombres del mapa', () => {
     expect(labels.map((l) => [l.name, l.kind])).toEqual([
       ['Puerto Ceniza', 'town'],
       ['Cruce del Lobo', 'crossroad'],
+      ['Refugio de los Bandidos', 'town'],
       ['Chacra del Ombú', 'place'],
       ['Cueva del Lamento', 'dungeon'],
     ]);
@@ -31,8 +41,10 @@ describe('los nombres del mapa', () => {
   it('las ciudades se ven siempre; lo demás, recién al descubrirlo', () => {
     const labels = mapLabels(map);
     const known = new Set<string>();
+    // El Refugio de los Bandidos es una ciudad (sin ley): se conoce desde el principio.
     expect(visibleLabels(labels, known, DEFAULT_MAP_LABELS).map((l) => l.name)).toEqual([
       'Puerto Ceniza',
+      'Refugio de los Bandidos',
     ]);
     // Pasando cerca de la chacra (no de la cueva).
     const found = discover(labels, known, { x: 95, y: 20 });
@@ -40,6 +52,7 @@ describe('los nombres del mapa', () => {
     for (const name of found) known.add(name);
     expect(visibleLabels(labels, known, DEFAULT_MAP_LABELS).map((l) => l.name)).toEqual([
       'Puerto Ceniza',
+      'Refugio de los Bandidos',
       'Chacra del Ombú',
     ]);
   });
@@ -49,6 +62,7 @@ describe('los nombres del mapa', () => {
     const known = new Set(['Cruce del Lobo', 'Cueva del Lamento']);
     expect(visibleLabels(labels, known, DEFAULT_MAP_LABELS).map((l) => l.name)).toEqual([
       'Puerto Ceniza',
+      'Refugio de los Bandidos',
       'Cueva del Lamento',
     ]);
     const all = { town: false, dungeon: true, crossroad: true, place: true };

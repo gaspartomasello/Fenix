@@ -28,6 +28,8 @@ export interface RegionData {
    * se ve el nombre, pero no protege como un pueblo.
    */
   readonly wild?: boolean;
+  /** Es un pueblo aunque sea `wild` (sin guardias ni ley, como el Refugio de los Bandidos). */
+  readonly town?: boolean;
   /** No figura en el mapa del mundo (se descubre al pasar): campamentos, granjas sueltas. */
   readonly hidden?: boolean;
   /**

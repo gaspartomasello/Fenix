@@ -201,8 +201,13 @@ export class Minimap {
       ctx.lineWidth = 3;
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
       ctx.strokeText(label.name, x, y);
-      ctx.fillStyle =
-        label.kind === 'town' ? '#ffffff' : label.kind === 'dungeon' ? '#ff9f86' : '#f2d9a6';
+      ctx.fillStyle = label.unsafe
+        ? '#ffc4a3'
+        : label.kind === 'town'
+          ? '#ffffff'
+          : label.kind === 'dungeon'
+            ? '#ff9f86'
+            : '#f2d9a6';
       ctx.fillText(label.name, x, y);
     }
     // Uno mismo, en el centro.
