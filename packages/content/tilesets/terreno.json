@@ -3,10 +3,10 @@
   "name": "terreno",
   "tilewidth": 44,
   "tileheight": 44,
-  "tilecount": 39,
-  "columns": 39,
+  "tilecount": 40,
+  "columns": 40,
   "image": "terreno.png",
-  "imagewidth": 1716,
+  "imagewidth": 1760,
   "imageheight": 44,
   "tiles": [
     {
@@ -396,6 +396,16 @@
           "name": "terrain",
           "type": "string",
           "value": "sewer-water"
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "properties": [
+        {
+          "name": "terrain",
+          "type": "string",
+          "value": "path"
         }
       ]
     }

@@ -14,10 +14,12 @@ export function cheapestPath(
   to: Position,
   cost: (x: number, y: number) => number,
   turn = 0,
+  margin = 160,
+  /** Si no hay camino en la ventana, ¿se busca en el mapa entero? */
+  wide = true,
 ): Position[] | null {
   // En un mapa grande se busca primero en una ventana alrededor de los dos
   // extremos (mucha menos memoria); si no hay camino ahí, en el mapa entero.
-  const margin = 160;
   const x0 = Math.max(0, Math.min(from.x, to.x) - margin);
   const y0 = Math.max(0, Math.min(from.y, to.y) - margin);
   const x1 = Math.min(width - 1, Math.max(from.x, to.x) + margin);
@@ -35,6 +37,7 @@ export function cheapestPath(
       turn,
     );
     if (path) return path.map((p) => ({ x: p.x + x0, y: p.y + y0 }));
+    if (!wide) return null;
   }
   return search(width, height, from, to, cost, turn);
 }

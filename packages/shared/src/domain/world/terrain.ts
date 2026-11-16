@@ -39,6 +39,7 @@ export const Terrain = {
   Mountain: 36,
   Cobblestone: 37,
   SewerWater: 38,
+  Path: 39,
 } as const;
 
 export type Terrain = (typeof Terrain)[keyof typeof Terrain];
@@ -197,6 +198,13 @@ export const TERRAINS: Readonly<Record<Terrain, TerrainDefinition>> = {
     name: 'lajas',
     walkable: true,
     blendPriority: -1,
+  },
+  [Terrain.Path]: {
+    id: Terrain.Path,
+    key: 'path',
+    name: 'camino',
+    walkable: true,
+    blendPriority: 1.5,
   },
   [Terrain.OldRoad]: {
     id: Terrain.OldRoad,

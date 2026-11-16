@@ -128,6 +128,9 @@ export function shapeMountains(world: MountainWorld): void {
 
   function digMines(): void {
     let made = 0;
+    // Solo bocas a las que se llega a pie desde la capital (no en un rincón encerrado).
+    const { label } = zones();
+    const home = label[spawn.y * width + spawn.x] ?? -1;
     for (const group of massifs()) {
       if (made >= MAX_MINES || group.length < MINE_MIN_SIZE) break;
       // Bocas posibles: un tile del borde con tierra firme afuera, lejos de pueblos y lugares.
@@ -135,7 +138,8 @@ export function shapeMountains(world: MountainWorld): void {
       for (const i of group) {
         if (depth[i] !== 1) continue;
         for (const o of neighbors(i))
-          if (!isMountain(o) && walkable(o) && !insideRegion(o)) mouths.push({ from: o, into: i });
+          if (!isMountain(o) && walkable(o) && label[o] === home && !insideRegion(o))
+            mouths.push({ from: o, into: i });
       }
       // De unas cuantas bocas, la que lleva más hondo.
       let best: { from: number; path: number[] } | null = null;

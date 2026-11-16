@@ -418,6 +418,22 @@ const STYLES: Readonly<Record<Terrain, TerrainStyle>> = {
       return mix(base, shade(base, 1.08), fbm(u, v, seed, 6, 2));
     },
   },
+  [Terrain.Path]: {
+    varies: true,
+    base: [184, 146, 96],
+    paint(u, v, seed) {
+      // Tierra apisonada de camino: más clara y lisa que la del monte, con
+      // marcas de ruedas y cascotes de grava; algún yuyo en los bordes.
+      const tone = fbm(u, v, seed, 3, 2);
+      let color = mix([158, 122, 80], [196, 160, 110], tone);
+      const rut = Math.abs(Math.sin((u - v) * Math.PI * 3 + fbm(u, v, seed + 9, 2, 2) * 0.8));
+      if (rut < 0.12) color = shade(color, 0.84);
+      const gravel = periodicNoise(u, v, 14, seed + 5);
+      if (gravel > 0.88) color = mix(color, [206, 196, 176], 0.6);
+      else if (gravel > 0.85) color = shade(color, 0.8);
+      return color;
+    },
+  },
   [Terrain.OldRoad]: {
     varies: true,
     base: [128, 124, 106],
