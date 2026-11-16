@@ -118,6 +118,46 @@ describe('buildWorld: el continente', () => {
       expect(kinds.has(kind), kind).toBe(true);
   });
 
+  it('en los bosques y la selva nunca hay dos árboles pegados: siempre se pasa entre ellos', () => {
+    const TREES = new Set([
+      'oak',
+      'pine',
+      'maple',
+      'birch',
+      'dead-tree',
+      'willow',
+      'ceibo',
+      'gomero',
+      'poplar',
+      'jungle-tree',
+      'palm',
+      'bamboo',
+      'snow-pine',
+      'acacia',
+      'baobab',
+      'cypress',
+    ]);
+    // Los de los pueblos (sus plazas y alrededores) los planta cada pueblo a su gusto.
+    const towns = map.regions.filter((r) => !r.wild && !r.dungeon && !r.floor);
+    const nearTown = (p: { x: number; y: number }): boolean =>
+      towns.some(
+        (t) =>
+          p.x > t.x - 20 && p.y > t.y - 20 && p.x < t.x + t.width + 20 && p.y < t.y + t.height + 20,
+      );
+    const trees = map.statics.filter((s) => TREES.has(s.kind) && !map.regionAt(s) && !nearTown(s));
+    expect(trees.length).toBeGreaterThan(500);
+    const at = new Set(trees.map((t) => `${t.x},${t.y}`));
+    const stuck = trees.filter((t) =>
+      [
+        [1, 0],
+        [0, 1],
+        [1, 1],
+        [-1, 1],
+      ].some(([dx = 0, dy = 0]) => at.has(`${t.x + dx},${t.y + dy}`)),
+    );
+    expect(stuck.map((t) => `${t.kind}@${t.x},${t.y}`)).toEqual([]);
+  });
+
   it('hay llanuras abiertas de pasto, sin árboles, para construir', () => {
     // Una zona de 9×9 de pasto o prado sin nada que bloquee, fuera de pueblos y caminos.
     const blocked = new Set(
