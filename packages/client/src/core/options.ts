@@ -5,6 +5,7 @@ import type { Vitals } from '@fenix/shared/combat/vitals';
 import type { BackpackItemSnapshot } from '@fenix/shared/protocol/messages';
 import { SKILL_NAMES } from '@fenix/shared/skills/skill-catalog';
 import { isActiveSkill, type ActiveSkill } from '@fenix/shared/skills/stealth';
+import { DEFAULT_MAP_LABELS, type MapLabelFlags } from './map-labels';
 
 /**
  * Las opciones del jugador, como las de un asistente de UO: qué se ve en la
@@ -313,6 +314,8 @@ export interface GameOptions {
   readonly minimap: boolean;
   /** La barra de atajos de abajo. */
   readonly hotbar: boolean;
+  /** Qué nombres se ven en los mapas, por categoría (ciudades, mazmorras…). */
+  readonly mapLabels: MapLabelFlags;
   readonly hotkeys: readonly Hotkey[];
 }
 
@@ -325,6 +328,7 @@ export function defaultOptions(): GameOptions {
     numbers: true,
     minimap: true,
     hotbar: true,
+    mapLabels: DEFAULT_MAP_LABELS,
     hotkeys: [
       { combo: 'F1', action: { type: 'spell', spell: 'heal' } },
       { combo: 'F2', action: { type: 'spell', spell: 'greater-heal' } },
@@ -368,7 +372,21 @@ export function parseOptions(raw: string | null): GameOptions {
     numbers: flag('numbers', defaults.numbers),
     minimap: flag('minimap', defaults.minimap),
     hotbar: flag('hotbar', defaults.hotbar),
+    mapLabels: parseMapLabels(o.mapLabels),
     hotkeys,
+  };
+}
+
+function parseMapLabels(value: unknown): MapLabelFlags {
+  if (typeof value !== 'object' || value === null) return DEFAULT_MAP_LABELS;
+  const v = value as Record<string, unknown>;
+  const pick = (key: keyof MapLabelFlags): boolean =>
+    typeof v[key] === 'boolean' ? (v[key] as boolean) : DEFAULT_MAP_LABELS[key];
+  return {
+    town: pick('town'),
+    dungeon: pick('dungeon'),
+    crossroad: pick('crossroad'),
+    place: pick('place'),
   };
 }
 

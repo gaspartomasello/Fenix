@@ -1684,3 +1684,13 @@ lugares en sus plazas siguen a su gusto.
 bastón) y las hachas largas de dos manos se muestran **paradas al costado**, del suelo hasta arriba
 de la cabeza, como en UO (`POLEARMS` y `rig.display` en `character-art.ts`); las hojas de hacha se
 ven de frente. Las demás armas siguen en alto, en diagonal.
+
+## El mapa se descubre al recorrerlo (etapa 133)
+
+Los nombres del mapa del mundo y del minimapa (`core/map-labels.ts`) se separan en cuatro
+categorías: **Ciudades**, **Mazmorras** (en su boca, la de los portales de la superficie que llevan
+adentro), **Encrucijadas** y **Lugares** (campamentos, ruinas, granjas y el resto de las zonas
+salvajes). Las ciudades se conocen desde el principio; lo demás aparece recién al pasar a menos de
+14 tiles (`DISCOVER_RANGE`). Lo descubierto se guarda en el navegador por personaje
+(`app/map-memory.ts`). En **Opciones → General → Nombres en el mapa** se muestra u oculta cada
+categoría (las encrucijadas, ocultas de entrada: son muchas).

@@ -1,7 +1,16 @@
 import { isWater } from '@fenix/shared/world/terrain';
 import type { TileMap } from '@fenix/shared/world/tile-map';
 import type { ClientGame } from '../core/client-game';
+import { mapLabels, type MapLabel } from '../core/map-labels';
 import { el } from './dom';
+
+/** El color de cada clase de nombre en el mapa. */
+const LABEL_COLORS: Readonly<Record<MapLabel['kind'], string>> = {
+  town: '#ffffff',
+  dungeon: '#ff9f86',
+  place: '#f2d9a6',
+  crossroad: '#d9c9a0',
+};
 import { mapPicture } from './map-picture';
 
 /** Ancho máximo del mapa, como fracción de la ventana. */
@@ -26,6 +35,8 @@ export class WorldMap {
     private readonly game: ClientGame,
     /** Se llama al cerrarse con un clic (para el botón que queda presionado). */
     private readonly onClose: () => void = () => undefined,
+    /** Los nombres a dibujar (los descubiertos, de las categorías elegidas). */
+    private readonly labels: (map: TileMap) => readonly MapLabel[] = mapLabels,
   ) {
     this.canvas = el('canvas', { className: 'world-map-canvas' }) as HTMLCanvasElement;
     this.element = el(
@@ -120,15 +131,18 @@ export class WorldMap {
     ctx.lineJoin = 'round';
     const small = this.canvas.width / ratio < 360 ? 0.85 : 1;
     const taken: { x0: number; y0: number; x1: number; y1: number }[] = [];
-    const regions = map.regions
-      .filter((r) => !r.dungeon && !r.hidden && r.x < area.width)
-      .sort((a, b) => Number(!!a.wild) - Number(!!b.wild));
-    for (const region of regions) {
-      const size = (region.wild ? 11 : 13) * small * ratio;
-      ctx.font = `${region.wild ? 'italic 600' : '700'} ${size}px Georgia, serif`;
-      const half = ctx.measureText(region.name).width / 2 + 2 * ratio;
-      const x = (region.x + region.width / 2) * k;
-      const y0 = (region.y + region.height / 2) * k;
+    // Primero las ciudades, después las mazmorras y lo demás.
+    const order: Record<MapLabel['kind'], number> = { town: 0, dungeon: 1, place: 2, crossroad: 3 };
+    const labels = this.labels(map)
+      .filter((l) => l.at.x < area.width)
+      .sort((a, b) => order[a.kind] - order[b.kind]);
+    for (const label of labels) {
+      const town = label.kind === 'town';
+      const size = (town ? 13 : label.kind === 'crossroad' ? 9.5 : 11) * small * ratio;
+      ctx.font = `${town ? '700' : 'italic 600'} ${size}px Georgia, serif`;
+      const half = ctx.measureText(label.name).width / 2 + 2 * ratio;
+      const x = label.at.x * k;
+      const y0 = label.at.y * k;
       const y = [y0, y0 + size * 1.1, y0 - size * 1.1].find((cy) =>
         taken.every(
           (t) => x + half < t.x0 || x - half > t.x1 || cy + size / 2 < t.y0 || cy - size / 2 > t.y1,
@@ -138,9 +152,9 @@ export class WorldMap {
       taken.push({ x0: x - half, y0: y - size / 2, x1: x + half, y1: y + size / 2 });
       ctx.lineWidth = 3 * ratio;
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-      ctx.strokeText(region.name, x, y);
-      ctx.fillStyle = region.wild ? '#f2d9a6' : '#ffffff';
-      ctx.fillText(region.name, x, y);
+      ctx.strokeText(label.name, x, y);
+      ctx.fillStyle = LABEL_COLORS[label.kind];
+      ctx.fillText(label.name, x, y);
     }
     // Los lugares a los que mandan las leyendas: una cruz roja con borde dorado, como en un mapa de tesoro.
     for (const name of this.game.legendPlaces) {

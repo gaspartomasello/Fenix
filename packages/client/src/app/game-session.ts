@@ -23,6 +23,7 @@ import { HudButtons, type HudButton } from '../ui/hud-buttons';
 import { SocialWindow } from '../ui/social-window';
 import { WorldTooltip } from '../ui/world-tooltip';
 import { WorldSigns } from './world-signs';
+import { MapMemory } from './map-memory';
 import { SignWindow } from '../ui/sign-window';
 import { Minimap } from '../ui/minimap';
 import { WorldMap } from '../ui/world-map';
@@ -140,6 +141,8 @@ const clock = (): number => performance.now();
 export class GameSession {
   private readonly game: ClientGame;
   private readonly gateway: GameGateway;
+  /** Lo descubierto del mapa y qué nombres se muestran. */
+  private readonly mapMemory: MapMemory;
   private readonly login: LoginScreen;
   private readonly characterList: CharacterListScreen;
   /** La pantalla de creación (se arma de nuevo cada vez). */
@@ -170,6 +173,7 @@ export class GameSession {
       onProgress: (text) => this.login.showProgress(text),
     });
     this.game = new ClientGame(this.gateway, clock);
+    this.mapMemory = new MapMemory(this.game, readStorage, writeStorage);
     // En ninguna parte del juego aparece el menú del navegador con el clic
     // derecho (en el mundo, el clic derecho mueve al personaje). Solo en los
     // campos de texto, para poder copiar y pegar.
@@ -351,6 +355,7 @@ export class GameSession {
       write: writeStorage,
       useSlot: () => this.useSlot,
       buttons: () => this.menu,
+      mapLabels: (shown) => this.mapMemory.setShown(shown),
     });
     this.hudExtras.push(options.button);
     const chat = new ChatPanel((text) => this.game.say(text));
@@ -887,8 +892,16 @@ export class GameSession {
       () => backpack.window.toggle(),
     );
     this.game.on('logoutRequested', () => this.logout());
-    const minimap = new Minimap(this.game, () => buttons.refresh());
-    const worldMap = new WorldMap(this.game, () => buttons.refresh());
+    const minimap = new Minimap(
+      this.game,
+      () => buttons.refresh(),
+      (map) => this.mapMemory.visible(map),
+    );
+    const worldMap = new WorldMap(
+      this.game,
+      () => buttons.refresh(),
+      (map) => this.mapMemory.visible(map),
+    );
     const hudList: HudButton[] = [
       { label: 'Mochila', key: 'b', onPress: () => backpack.window.toggle() },
       { label: 'Personaje', key: 'c', onPress: () => equipment.window.toggle() },

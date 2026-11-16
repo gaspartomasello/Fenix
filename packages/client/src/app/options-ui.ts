@@ -8,6 +8,7 @@ import {
   type GameOptions,
   type HotkeyAction,
 } from '../core/options';
+import type { MapLabelFlags } from '../core/map-labels';
 import type { GameRenderer } from '../rendering/game-renderer';
 import type { HudButton } from '../ui/hud-buttons';
 import { InfoBar } from '../ui/info-bar';
@@ -36,6 +37,8 @@ export interface OptionsUiDeps {
   readonly useSlot: () => ((slot: HotbarSlot) => void) | null;
   /** Los botones de pantalla (Mochila, Mapa…), para los comandos de los atajos. */
   readonly buttons: () => readonly HudButton[];
+  /** Qué nombres mostrar en los mapas. */
+  readonly mapLabels?: (shown: MapLabelFlags) => void;
 }
 
 /**
@@ -86,6 +89,7 @@ export class OptionsUi {
     const root = document.documentElement.classList;
     root.toggle('hide-minimap', !minimap);
     root.toggle('hide-hotbar', !hotbar);
+    this.deps.mapLabels?.(this.options.mapLabels);
     this.renderInfo();
   }
 

@@ -5378,6 +5378,16 @@ html:not(.touch-ui) .info-strip .info-chip-icon {
   margin: 0 0.55rem 0 0;
 }
 
+/* Subtítulo dentro de una pestaña de Opciones (por ejemplo, «Nombres en el mapa»). */
+.options-subtitle {
+  margin: 0.8rem 0 0.2rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  text-shadow: 0 0 6px var(--ember);
+}
+
 /* Cartel para confirmar (por ejemplo, elegir un santuario como hogar): cuero y bronce. */
 .confirm-dialog {
   position: fixed;
