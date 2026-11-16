@@ -1,4 +1,5 @@
 import {
+  CRIME_KARMA,
   CRIMINAL_MS,
   FAME_MAX,
   KARMA_MAX,
@@ -34,10 +35,20 @@ export class Reputation {
     return true;
   }
 
-  /** Atacar a un inocente marca como criminal por un rato. */
+  /**
+   * Un crimen (lastimar a un inocente, robar, saquear su cuerpo): criminal por
+   * un rato y el karma baja. Seguir pegándole mientras ya es criminal solo
+   * estira la marca (no le baja el karma en cada golpe).
+   */
   markCriminal(now: number): boolean {
+    if (this.criminalUntil <= now) this.loseKarma(CRIME_KARMA);
     this.criminalUntil = now + CRIMINAL_MS;
     return this.refresh(now);
+  }
+
+  /** Un acto criminal que no deja marca (robar sin que te vean, fisgonear): solo baja el karma. */
+  loseKarma(amount: number): void {
+    this.karma = clamp(this.karma - amount, KARMA_MAX);
   }
 
   /** Matar a un inocente suma una muerte, que se olvida con el tiempo. */

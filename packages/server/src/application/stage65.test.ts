@@ -98,6 +98,8 @@ describe('etapa 65: los hechizos de UO que faltaban', () => {
     const f = createField();
     const ana = f.mage('Ana');
     const bruno = f.join('Bruno');
+    f.player(ana).safety = false;
+    f.player(bruno).safety = false;
     f.player(ana).teleport({ x: 2, y: 2 });
     f.player(bruno).teleport({ x: 3, y: 2 });
     f.app.handle(ana, { type: 'castSpell', spell: 'reactive-armor' });
@@ -115,6 +117,8 @@ describe('etapa 65: los hechizos de UO que faltaban', () => {
     const f = createField();
     const ana = f.mage('Ana');
     const bruno = f.mage('Bruno');
+    f.player(ana).safety = false;
+    f.player(bruno).safety = false;
     f.player(bruno).teleport({ x: 5, y: 2 });
     f.app.handle(ana, { type: 'castSpell', spell: 'magic-reflection' });
     f.run(2000);

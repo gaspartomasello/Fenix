@@ -98,6 +98,8 @@ describe('modo guerra y defensa propia', () => {
     const anaPlayer = f.world.get(ana);
     const betoPlayer = f.world.get(beto);
     if (!anaPlayer || !betoPlayer) throw new Error('faltan jugadores');
+    anaPlayer.safety = false;
+    betoPlayer.safety = false;
     betoPlayer.teleport({ x: anaPlayer.position.x + 1, y: anaPlayer.position.y });
     f.app.handle(beto, { type: 'attack', targetId: ana });
     expect(betoPlayer.warMode).toBe(true);

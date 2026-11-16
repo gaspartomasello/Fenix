@@ -376,9 +376,16 @@ describe('ClientGame', () => {
       game.attack('bruno');
       expect(sent).toEqual([]);
       game.toggleWarMode();
+      // Bruno es inocente: con el seguro puesto, primero el cartel de advertencia.
+      const prompts: (() => void)[] = [];
+      game.on('safetyPrompt', (p) => prompts.push(p.accept));
       game.attack('bruno');
+      expect(sent).toEqual([{ type: 'setWarMode', war: true }]);
+      expect(prompts).toHaveLength(1);
+      prompts[0]?.();
       expect(sent).toEqual([
         { type: 'setWarMode', war: true },
+        { type: 'setSafety', on: false },
         { type: 'attack', targetId: 'bruno' },
       ]);
     });

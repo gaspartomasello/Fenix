@@ -1,6 +1,6 @@
 /**
  * Reputación, como en UO: inocentes (azul), criminales (gris, por atacar
- * a un inocente) y asesinos (rojo, con 5 muertes de inocentes o más). Los
+ * a un inocente) y asesinos (rojo, con más de dos muertes de inocentes). Los
  * invulnerables (amarillo) son como los administradores del juego: no se los
  * puede lastimar.
  */
@@ -13,10 +13,12 @@ export const NOTORIETY_NAMES: Readonly<Record<Notoriety, string>> = {
   invulnerable: 'Invulnerable',
 };
 
+/** Karma que se pierde por cada crimen (atacar a un inocente, robar, saquear su cuerpo…). */
+export const CRIME_KARMA = 100;
 /** Cuánto dura la marca de criminal después de atacar a un inocente. */
 export const CRIMINAL_MS = 2 * 60 * 1000;
 /** Muertes de inocentes para ser asesino, y cada cuánto se olvida una. */
-export const MURDERER_KILLS = 5;
+export const MURDERER_KILLS = 3;
 export const MURDER_DECAY_MS = 30 * 60 * 1000;
 
 export const FAME_MAX = 10_000;

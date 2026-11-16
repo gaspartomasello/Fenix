@@ -107,6 +107,11 @@ export class Player implements Mobile {
    * Invisibilidad (null si se escondió solo).
    */
   hidden: { steps: number; until: number | null } | null = null;
+  /**
+   * El seguro, como en Sphere: puesto, no deja lastimar a un inocente (ni con
+   * armas ni con hechizos). Se saca aceptando la advertencia; entra puesto.
+   */
+  safety = true;
   /** Modo guerra: se dibuja en guardia y se defiende solo (no se guarda: entra en paz). */
   warMode = false;
   /** Cuánto pesa lo que lleva (lo actualiza cada aviso de inventario). */

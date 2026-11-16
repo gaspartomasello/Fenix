@@ -411,6 +411,8 @@ export class GameLoop {
     if (outcome.itemChanges) this.items.publish(outcome.itemChanges, player.id);
     if (message) this.notifier.send(player.id, { type: 'system', text: message });
     if (spell.target === 'harmful') {
+      // El hechizo que llega a un inocente (no el que se empieza) es el crimen.
+      if (target !== player) commitAggression(player, target, now, this.notifier, this.social);
       if (spell.effect.kind === 'damage' && amount > 0) this.disrupt(target);
       if (target instanceof Player) {
         if (resisted)
@@ -629,6 +631,15 @@ export class GameLoop {
     if (target instanceof Creature && !target.ownerId && target.combat.targetId === null)
       target.combat.targetId = attacker.id;
     if (target instanceof Creature && target.isPet) this.warnPetOwner(target, attacker, now);
+    // El crimen es lastimar a un inocente (golpe o flecha que entra), no elegirlo de blanco.
+    // Lastimar la montura de alguien es como lastimarlo a él.
+    if (attacker instanceof Player && result.hit && !result.blocked) {
+      const owner =
+        target instanceof Creature && target.isPet && target.ownerId
+          ? this.world.get(target.ownerId)
+          : undefined;
+      commitAggression(attacker, owner ?? target, now, this.notifier, this.social);
+    }
     this.mobiles.swing(result);
     // Algunas criaturas envenenan al morder.
     const venom = attacker instanceof Creature ? attacker.definition.abilities?.poison : undefined;
@@ -710,9 +721,20 @@ export class GameLoop {
         // Si otra criatura le sigue pegando, sigue con esa.
         this.warMode.nextAttacker(killer);
       }
-      const fame = CREATURE_FAME[creature.body] ?? 0;
-      killer.reputation.award(fame, fame);
-      this.social.sendSocial(killer);
+      if (creature.definition.innocent && !creature.ownerId) {
+        // Gente de paz: matarla es un asesinato (con más de dos, nombre rojo).
+        const changed = killer.reputation.addMurder(now);
+        this.notifier.send(killer.id, {
+          type: 'system',
+          text: `Asesinaste a ${creature.name}, que era inocente. Llevás ${killer.reputation.murders} muertes de inocentes.`,
+        });
+        if (changed) this.social.statusChanged(killer);
+        else this.social.sendSocial(killer);
+      } else {
+        const fame = CREATURE_FAME[creature.body] ?? 0;
+        killer.reputation.award(fame, fame);
+        this.social.sendSocial(killer);
+      }
       if (!creature.temporary && !creature.ownerId)
         this.events.emit('creatureKilled', { killer, creature });
       if (!creature.ownerId) this.events.emit('creatureSlain', { killer, creature });

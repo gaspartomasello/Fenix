@@ -8,7 +8,7 @@ import type { MobileNotifications } from '../../kernel/mobile-notifications';
 import type { Clock, Notifier } from '../../ports';
 import type { SocialNotifications } from '../../kernel/social-notifications';
 import type { WarMode } from './war-mode';
-import { commitAggression } from '../../kernel/aggression';
+import { safetyRefusal } from '../../kernel/aggression';
 
 /** Elegir a quién atacar (el golpe lo da el ciclo del juego cuando está al alcance). */
 export class Attack {
@@ -38,18 +38,19 @@ export class Attack {
     if (owner) {
       if (this.world.map.safeZoneAt(player.position) || this.world.map.safeZoneAt(target.position))
         return refuse('Dentro del pueblo no se puede atacar la montura de otro jugador.');
-      const reason = pvpRefusal(player, owner, this.world);
+      const reason = pvpRefusal(player, owner, this.world) ?? safetyRefusal(player, owner);
       if (reason) return refuse(reason);
-      commitAggression(player, owner, this.clock.now(), this.notifier, this.social);
     }
     if (target instanceof Player) {
       const reason = pvpRefusal(player, target, this.world);
       if (reason) return refuse(reason);
-      commitAggression(player, target, this.clock.now(), this.notifier, this.social);
     }
-    // La gente de paz de los caminos: atacarla también es un crimen.
-    if (target instanceof Creature && !target.isPet)
-      commitAggression(player, target, this.clock.now(), this.notifier, this.social);
+    // Con el seguro puesto no se ataca a un inocente (persona o gente de paz de los caminos).
+    const unsafe = safetyRefusal(player, target);
+    if (unsafe) return refuse(unsafe);
+    // Elegirlo no es un crimen (lo es lastimarlo), pero el otro se entera.
+    if (target instanceof Player)
+      this.notifier.send(target.id, { type: 'system', text: `¡${player.name} te está atacando!` });
 
     // Atacar pone en modo guerra, como en UO.
     this.warMode.set(player, true);

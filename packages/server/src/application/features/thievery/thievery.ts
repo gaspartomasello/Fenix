@@ -36,6 +36,10 @@ const SNOOP_MEMORY_MS = 2 * 60 * 1000;
  *   del pueblo se encargan. Fisgonear antes o estar escondido ayuda.
  * Las probabilidades están en `@fenix/shared` (thievery).
  */
+/** Karma que se pierde por robar con éxito y por fisgonear (aunque nadie lo vea). */
+const STEAL_KARMA = 50;
+const SNOOP_KARMA = 15;
+
 export class Thievery {
   /** Quién fisgoneó a quién, y cuándo. */
   private readonly snooped = new Map<string, number>();
@@ -107,6 +111,8 @@ export class Thievery {
       return;
     }
     this.snooped.set(this.key(player.id, victim.id), this.clock.now());
+    // Mirar sin permiso es feo aunque no te vean: el karma baja un poco.
+    player.reputation.loseKarma(SNOOP_KARMA);
     const pocket = this.pocketOf(victim);
     // La ventana con lo que lleva: de ahí se elige qué robar.
     this.notifier.send(player.id, {
@@ -145,6 +151,9 @@ export class Thievery {
     }
     const loot = this.take(player, victim, kind);
     if (!loot) return this.say(player, `No encontraste nada que llevarte de ${victim.name}.`);
+    // Robar ensucia el karma aunque nadie lo vea.
+    player.reputation.loseKarma(STEAL_KARMA);
+    this.social.sendSocial(player);
     this.say(player, `Le robaste ${this.describe(loot.kind, loot.amount)} a ${victim.name}.`);
   }
 

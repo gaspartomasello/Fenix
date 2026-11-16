@@ -159,6 +159,8 @@ export interface ClientGameEvents extends Record<string, unknown> {
   deletePickRequested: null;
   /** `/rastrear` (o la habilidad Rastrear): abrir la ventana para elegir qué buscar. */
   trackingRequested: null;
+  /** Con el seguro puesto, se quiso lastimar a un inocente: hay que confirmar. */
+  safetyPrompt: { readonly name: string; readonly accept: () => void };
   /** `/memoria`: mostrar cuántas imágenes hay cargadas. */
   memoryRequested: null;
   /** Lo que encontró al Rastrear. */
@@ -263,6 +265,8 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   private _corpse: CorpseContents | null = null;
   private readonly _containers = new Map<string, ContainerContents>();
   private _legendPlaces: readonly string[] = [];
+  /** El seguro: entra puesto (como en el servidor). */
+  private _safety = true;
   /** Los barcos que se ven. */
   private readonly _ships = new Map<EntityId, ShipSnapshot>();
   /** Todas las casas de los jugadores (también están armadas en el mapa). */
@@ -557,6 +561,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       case 'memory':
         this.emit('memoryRequested', null);
         return;
+      case 'safety':
+        this.setSafety(!this._safety);
+        return;
       case 'gmTarget': {
         const targetId = this.targetId;
         if (input.action === 'slay') {
@@ -632,12 +639,57 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
       this.notify('Activá el modo guerra (Tab) para atacar a otras personas.');
       return;
     }
+    // Con el seguro puesto, antes de atacar a un inocente se pregunta.
+    if (this.guarded(targetId, () => this.attack(targetId))) return;
     this.gateway.send({ type: 'attack', targetId });
+  }
+
+  /** El seguro (puesto: no deja lastimar a un inocente). */
+  get safety(): boolean {
+    return this._safety;
+  }
+
+  /** Poner o sacar el seguro (también le avisa al servidor). */
+  setSafety(on: boolean): void {
+    this._safety = on;
+    this.gateway.send({ type: 'setSafety', on });
+  }
+
+  /** ¿Es un inocente (persona de nombre azul o gente de paz de los caminos)? */
+  isInnocent(id: EntityId): boolean {
+    const entity = this.entities.get(id);
+    if (!entity || entity.npc !== null) return false;
+    if (entity.isPlayer) return entity.notoriety === 'innocent';
+    return entity.body !== 'human' && CREATURES[entity.body].innocent === true;
+  }
+
+  /**
+   * Con el seguro puesto y un inocente de blanco: pide confirmación (y, si se
+   * acepta, saca el seguro y sigue con `proceed`). Devuelve true si frenó.
+   */
+  private guarded(targetId: EntityId, proceed: () => void): boolean {
+    if (!this._safety || !this.isInnocent(targetId)) return false;
+    const name = this.entities.get(targetId)?.name ?? 'esa persona';
+    this.emit('safetyPrompt', {
+      name,
+      accept: () => {
+        this.setSafety(false);
+        proceed();
+      },
+    });
+    return true;
   }
 
   /** Lanzar un hechizo: a alguien (`targetId`), a un lugar (`position`) o desde un pergamino. */
   castSpell(spell: SpellKey, target: CastTarget = {}): void {
     if (!this.self) return;
+    const victim = target.targetId;
+    if (
+      victim &&
+      SPELLS[spell].target === 'harmful' &&
+      this.guarded(victim, () => this.castSpell(spell, target))
+    )
+      return;
     this.gateway.send({
       type: 'castSpell',
       spell,
