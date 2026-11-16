@@ -1224,7 +1224,7 @@ function vegetation(
       if (roll < 0.085) return 'dry-shrub';
       if (roll < 0.09) return choose(['boulder', 'rock']);
       return null;
-    case 'jungle':
+    case 'jungle': {
       // Selva: árboles altos, palmeras, helechos y plantas de hojas grandes. Los árboles nunca
       // quedan pegados uno al otro (ver `spaceTrees`), así se puede pasar entre ellos.
       if (wet && roll < 0.072 * JUNGLE_TREES) return 'bamboo';
@@ -1235,6 +1235,7 @@ function vegetation(
       if (roll < trees + 0.2) return 'mushrooms';
       if (roll < trees + 0.21) return 'mossy-rock';
       return null;
+    }
     case 'swamp':
       if (roll < 0.07) return 'reeds';
       if (roll < 0.09) return pick < 0.7 ? 'willow' : 'cypress';
