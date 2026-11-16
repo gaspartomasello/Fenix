@@ -1631,3 +1631,19 @@ cercano (`connect`, una búsqueda a lo ancho de hasta 90 pasos).
   mesas, posadero y palenque.
 
 Las criaturas que quedaban donde después se plantan las piedras de un portal lunar se descartan.
+
+## Caminos en diagonal, menos detalle, carteles y minimapa grande (etapa 125)
+
+- **Caminos en cualquier dirección**: después del A* (que traza en escuadra), `straighten`
+  (`roads.ts`) salta de cada punto al más lejano al que se llega en línea recta sin pisar agua honda
+  ni montaña, y `curvePath` suaviza: los caminos van en diagonal y en curva, no solo en líneas
+  ortogonales. Vale para los caminos entre pueblos, la red del campo y los senderos.
+- **Menos detalle**: los detalles chicos del suelo (flores, hongos, yuyos, helechos, piedritas,
+  arbustos) son un 30 % menos (`SMALL_DETAILS`). La red de caminos guarda lo que cuesta cada tile y
+  no lo recalcula: el mundo se arma en ~22 s en vez de ~26 s.
+- **Carteles**: arte nuevo (poste con capuchón, dos tablas en flecha con letras talladas, clavos y
+  piedras al pie). Al pasar el puntero dice que es un cartel; con **doble clic** (o dos toques) se abre
+  la tabla del cartel (`SignWindow`): un renglón por rama con una flecha girada como la pantalla
+  (el norte, arriba a la derecha) y adónde lleva. `readSign` (`core/signs.ts`) separa los renglones.
+- **Minimapa**: un toque sigue cambiando el acercamiento; **dos toques seguidos** (o doble clic)
+  agrandan o achican el círculo. Se recuerda el tamaño.

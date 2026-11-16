@@ -3,8 +3,12 @@ import { el } from './dom';
 import { makeDraggable, type Draggable } from './draggable';
 import { mapPicture } from './map-picture';
 
-/** Lado del minimapa en pantalla (pixeles CSS). */
+/** Lado del minimapa en pantalla (pixeles CSS); agrandado con doble clic. */
 const SIZE = 196;
+const BIG_SIZE = 300;
+/** Dos toques en menos de esto (milisegundos) agrandan o achican el minimapa. */
+const DOUBLE_TAP_MS = 320;
+const BIG_KEY = 'fenix.minimapa.grande';
 /** Acercamientos posibles: pixeles por tile. */
 const ZOOMS = [1.2, 2, 3.2] as const;
 const STORAGE_KEY = 'fenix.minimapa';
@@ -24,6 +28,9 @@ export class Minimap {
   private readonly canvas: HTMLCanvasElement;
   private zoom = 1;
   private timer: number | null = null;
+  private big = readFlag(BIG_KEY);
+  /** El toque que espera a ver si viene otro (doble toque) antes de cambiar el acercamiento. */
+  private pendingTap: number | null = null;
   private readonly drag: Draggable;
 
   constructor(
@@ -32,9 +39,6 @@ export class Minimap {
     private readonly onToggle: () => void = () => undefined,
   ) {
     this.canvas = el('canvas', { className: 'minimap-canvas' }) as HTMLCanvasElement;
-    const ratio = Math.max(1, Math.ceil(window.devicePixelRatio || 1));
-    this.canvas.width = SIZE * ratio;
-    this.canvas.height = SIZE * ratio;
     this.element = el(
       'div',
       {
@@ -42,7 +46,8 @@ export class Minimap {
         attrs: {
           role: 'img',
           'aria-label': 'Minimapa',
-          title: 'Tocalo para acercar o alejar; arrastralo para moverlo.',
+          title:
+            'Tocalo para acercar o alejar; dos veces seguidas para agrandarlo o achicarlo; arrastralo para moverlo.',
         },
       },
       [
@@ -68,12 +73,23 @@ export class Minimap {
       },
       { passive: false },
     );
-    // Tocar el minimapa cambia el acercamiento (en el celular no hay rueda).
+    // Tocar el minimapa cambia el acercamiento (en el celular no hay rueda);
+    // dos toques seguidos lo agrandan o lo achican, como en los juegos de antes.
     this.canvas.addEventListener('click', () => {
       if (this.drag.consumeDrag()) return;
-      this.zoom = (this.zoom + 1) % ZOOMS.length;
-      this.draw();
+      if (this.pendingTap !== null) {
+        window.clearTimeout(this.pendingTap);
+        this.pendingTap = null;
+        this.setBig(!this.big);
+        return;
+      }
+      this.pendingTap = window.setTimeout(() => {
+        this.pendingTap = null;
+        this.zoom = (this.zoom + 1) % ZOOMS.length;
+        this.draw();
+      }, DOUBLE_TAP_MS);
     });
+    this.setBig(this.big);
     // Como las ventanas: el clic derecho lo cierra.
     this.element.addEventListener('contextmenu', (e) => {
       e.preventDefault();
@@ -83,6 +99,25 @@ export class Minimap {
     });
     this.setOpen(readOpen());
     this.drag = makeDraggable(this.element, PLACE_KEY);
+  }
+
+  /** Agranda o achica el círculo (lo recuerda para la próxima vez). */
+  private setBig(big: boolean): void {
+    this.big = big;
+    this.element.classList.toggle('minimap--big', big);
+    const ratio = Math.max(1, Math.ceil(window.devicePixelRatio || 1));
+    this.canvas.width = this.size * ratio;
+    this.canvas.height = this.size * ratio;
+    try {
+      localStorage.setItem(BIG_KEY, big ? '1' : '0');
+    } catch {
+      // Sin almacenamiento: igual funciona.
+    }
+    this.draw();
+  }
+
+  private get size(): number {
+    return this.big ? BIG_SIZE : SIZE;
   }
 
   get open(): boolean {
@@ -101,6 +136,7 @@ export class Minimap {
   destroy(): void {
     this.drag.destroy();
     if (this.timer !== null) window.clearInterval(this.timer);
+    if (this.pendingTap !== null) window.clearTimeout(this.pendingTap);
     this.element.remove();
   }
 
@@ -125,17 +161,18 @@ export class Minimap {
     const self = this.game.self;
     const ctx = this.canvas.getContext('2d');
     if (!map || !self || !ctx) return;
-    const ratio = this.canvas.width / SIZE;
+    const size = this.size;
+    const ratio = this.canvas.width / size;
     const k = (ZOOMS[this.zoom] ?? 2) / Math.SQRT2;
     const center = this.game.selfSeenAt() ?? self.position;
     // De tile a pantalla del minimapa: girado 45°, como la vista del juego.
     const project = (x: number, y: number): [number, number] => [
-      SIZE / 2 + (x - center.x - (y - center.y)) * k,
-      SIZE / 2 + (x - center.x + (y - center.y)) * k,
+      size / 2 + (x - center.x - (y - center.y)) * k,
+      size / 2 + (x - center.x + (y - center.y)) * k,
     ];
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.fillStyle = '#10202c';
-    ctx.fillRect(0, 0, SIZE, SIZE);
+    ctx.fillRect(0, 0, size, size);
     ctx.save();
     ctx.imageSmoothingEnabled = false;
     const [ox, oy] = project(0, 0);
@@ -147,7 +184,7 @@ export class Minimap {
     for (const entity of this.game.allEntities()) {
       if (entity.id === self.id || entity.dead) continue;
       const [x, y] = project(entity.position.x, entity.position.y);
-      if (x < 0 || y < 0 || x > SIZE || y > SIZE) continue;
+      if (x < 0 || y < 0 || x > size || y > size) continue;
       ctx.fillStyle = entity.npc ? '#ffd84a' : entity.isPlayer ? '#6fc8ff' : '#e5484d';
       ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
     }
@@ -159,7 +196,7 @@ export class Minimap {
       if (region.floor) continue;
       if (region.dungeon) continue;
       const [x, y] = project(region.x + region.width / 2, region.y + region.height / 2);
-      if (x < 10 || y < 8 || x > SIZE - 10 || y > SIZE - 4) continue;
+      if (x < 10 || y < 8 || x > size - 10 || y > size - 4) continue;
       ctx.lineWidth = 3;
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
       ctx.strokeText(region.name, x, y);
@@ -171,9 +208,17 @@ export class Minimap {
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.arc(SIZE / 2, SIZE / 2, 3, 0, Math.PI * 2);
+    ctx.arc(size / 2, size / 2, 3, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
+  }
+}
+
+function readFlag(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === '1';
+  } catch {
+    return false;
   }
 }
 

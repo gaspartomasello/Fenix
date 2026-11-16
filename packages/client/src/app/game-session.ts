@@ -23,6 +23,7 @@ import { HudButtons, type HudButton } from '../ui/hud-buttons';
 import { SocialWindow } from '../ui/social-window';
 import { WorldTooltip } from '../ui/world-tooltip';
 import { WorldSigns } from './world-signs';
+import { SignWindow } from '../ui/sign-window';
 import { Minimap } from '../ui/minimap';
 import { WorldMap } from '../ui/world-map';
 import { GhostBanner } from '../ui/ghost-banner';
@@ -303,7 +304,9 @@ export class GameSession {
     this.game.on('moongateMenu', (m) => moongate.show(m.here, m.destinations));
     const worldShrines = new WorldShrines(this.game, renderer, tooltip, confirmDialog);
     const worldMounts = new WorldMounts(this.game, renderer, tooltip);
-    new WorldSigns(renderer, tooltip);
+    const signWindow = new SignWindow();
+    this.hosts.ui.append(signWindow.element);
+    new WorldSigns(renderer, tooltip, signWindow);
     new WorldShips(this.game, renderer, tooltip);
     const worldItems = new WorldItems(this.game, renderer, drag, tooltip);
     // Con el dedo: joystick para caminar y los controles táctiles (ver setUpTouch).

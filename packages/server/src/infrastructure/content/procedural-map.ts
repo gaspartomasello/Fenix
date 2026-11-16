@@ -4,7 +4,7 @@ import type { Position } from '@fenix/shared/geometry/position';
 import type { StaticKind, StaticPlacement } from '@fenix/shared/world/statics';
 import { isWater, Terrain } from '@fenix/shared/world/terrain';
 import { TileMap, type RegionData, type SignData } from '@fenix/shared/world/tile-map';
-import { cheapestPath, curvePath } from './roads';
+import { cheapestPath, curvePath, straighten } from './roads';
 import type { Descent, MapRegion, PlacedItem } from './tiled-map-loader';
 import type { Ascent } from './upper-floors';
 
@@ -583,8 +583,12 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
   const place = (x: number, y: number, kind: StaticKind): void => {
     statics.set(index(x, y), { kind, x, y });
   };
-  const nearWater = (x: number, y: number): boolean =>
-    neighbors8(x, y).some(([nx, ny]) => isWater(terrain[index(nx, ny)]));
+  const nearWater = (x: number, y: number): boolean => {
+    for (let dy = -1; dy <= 1; dy++)
+      for (let dx = -1; dx <= 1; dx++)
+        if ((dx || dy) && isWater(terrain[index(x + dx, y + dy)])) return true;
+    return false;
+  };
   for (let y = 1; y < height - 1; y++) {
     for (let x = 1; x < width - 1; x++) {
       const i = index(x, y);
@@ -607,7 +611,8 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
         conifers.at(x, y),
         nearWater(x, y),
       );
-      if (kind) place(x, y, kind);
+      // Los detalles chicos del suelo (flores, hongos, yuyos), un 30 % menos.
+      if (kind && !(SMALL_DETAILS.has(kind) && hash(seed + 23, x, y) < 0.3)) place(x, y, kind);
     }
   }
 
@@ -828,7 +833,9 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
     const end = gate(to, from);
     const straight = cheapestPath(width, height, start, end, roadCost, elongated ? 2 : ROAD_TURN);
     if (!straight) continue;
-    const path = elongated ? curvePath(straight, roadCost, seed + a * 31 + b) : straight;
+    const path = elongated
+      ? curvePath(straighten(straight, roadCost), roadCost, seed + a * 31 + b)
+      : straight;
     for (const p of path) carveRoad(p.x, p.y);
     posts.push([start, path, to.name], [end, [...path].reverse(), from.name]);
   }
@@ -1095,6 +1102,20 @@ const CLEARING: Partial<Record<Biome, number>> = {
   tundra: 0.62,
   forest: 0.7,
 };
+
+/** Detalles chicos del suelo, que se ralean para que el campo no quede tan cargado. */
+const SMALL_DETAILS: ReadonlySet<StaticKind> = new Set<StaticKind>([
+  'flowers',
+  'wildflowers',
+  'mushrooms',
+  'tall-grass',
+  'weeds',
+  'fern',
+  'pebbles',
+  'dry-shrub',
+  'bush',
+  'peyote',
+]);
 
 /**
  * Qué crece en un tile según el bioma. `roll` decide si hay algo y `pick`

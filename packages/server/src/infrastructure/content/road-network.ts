@@ -5,7 +5,7 @@ import { Terrain, isWater } from '@fenix/shared/world/terrain';
 import type { RegionData, SignData } from '@fenix/shared/world/tile-map';
 import type { SeededRandom } from '../system/seeded-random';
 import { type Biome, wanderField } from './procedural-map';
-import { cheapestPath, curvePath } from './roads';
+import { cheapestPath, curvePath, straighten } from './roads';
 
 /**
  * La red de caminos del campo: además de los caminos entre pueblos, caminos
@@ -182,6 +182,8 @@ export function buildRoadNetwork(input: NetworkInput): Network {
 
   const land = landmasses(width, height, biomes);
   const meander = wanderField(input.seed + 3, Math.min(width, height));
+  // Lo que cuesta cada tile, calculado una vez (y vuelto a poner al cavar un camino).
+  const costs = new Float32Array(width * height).fill(-1);
 
   // ── Los nodos: pueblos, destinos y encrucijadas ──
   const nodes: Node[] = [];
@@ -259,7 +261,7 @@ export function buildRoadNetwork(input: NetworkInput): Network {
     const to = endpoint(nb, na);
     const straight = cheapestPath(width, height, from, to, cost, 0.6, WINDOW, false);
     if (!straight) continue;
-    const path = curvePath(straight, cost, input.seed + a * 131 + b * 7, 16, 6);
+    const path = curvePath(straighten(straight, cost), cost, input.seed + a * 131 + b * 7, 16, 6);
     // Que el camino no sea casi todo un camino que ya existe.
     const fresh = path.filter((p) => !roads.has(index(p.x, p.y))).length;
     if (fresh < 6) continue;
@@ -283,6 +285,14 @@ export function buildRoadNetwork(input: NetworkInput): Network {
 
   function cost(x: number, y: number): number {
     const i = index(x, y);
+    const known = costs[i] ?? -1;
+    if (known >= 0) return known;
+    const value = tileCost(x, y, i);
+    costs[i] = value;
+    return value;
+  }
+
+  function tileCost(x: number, y: number, i: number): number {
     if (townMask[i]) return Infinity;
     if (roads.has(i)) return 0.5;
     const biome = biomes[i];
@@ -361,6 +371,7 @@ export function buildRoadNetwork(input: NetworkInput): Network {
     });
     for (const j of fresh) {
       roads.add(j);
+      costs[j] = 0.5;
       tiles.push(j);
     }
   }

@@ -595,6 +595,12 @@ body {
   cursor: zoom-in;
 }
 
+/* Agrandado con doble clic (o dos toques). */
+.minimap--big .minimap-canvas {
+  width: 300px;
+  height: 300px;
+}
+
 /* Mapa del mundo: el continente entero sobre el juego (segunda vez que se aprieta M). */
 .world-map {
   position: absolute;
@@ -722,6 +728,11 @@ body {
   .minimap-canvas {
     width: 132px;
     height: 132px;
+  }
+
+  .minimap--big .minimap-canvas {
+    width: 210px;
+    height: 210px;
   }
 }
 
@@ -2111,6 +2122,11 @@ body {
 .touch-ui .minimap-canvas {
   width: 112px;
   height: 112px;
+}
+
+.touch-ui .minimap--big .minimap-canvas {
+  width: 190px;
+  height: 190px;
 }
 
 /* Joystick para el pulgar izquierdo. */
@@ -5417,6 +5433,70 @@ html:not(.touch-ui) .info-strip .info-chip-icon {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+/* La tabla de un cartel de camino: madera tallada sobre el cuero, una flecha por rama. */
+.sign-panel {
+  width: min(340px, calc(100vw - 24px));
+}
+
+.sign-lines {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sign-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 10px 5px 6px;
+  /* Una tabla clavada: vetas de madera, borde oscuro y clavos en las puntas. */
+  background:
+    radial-gradient(circle at 7px 50%, #2b2420 1.6px, transparent 2.2px),
+    radial-gradient(circle at calc(100% - 7px) 50%, #2b2420 1.6px, transparent 2.2px),
+    repeating-linear-gradient(178deg, rgba(0, 0, 0, 0.08) 0 2px, transparent 2px 6px),
+    linear-gradient(180deg, #8a6440, #6e4e30);
+  border: 1px solid #3a2616;
+  border-radius: 3px 14px 14px 3px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 220, 160, 0.25),
+    0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+.sign-arrow {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  font-size: 1rem;
+  color: var(--color-accent);
+  text-shadow: 0 0 6px var(--ember);
+  background: radial-gradient(circle at 35% 30%, #b98a4a, #6b4a24 70%);
+  border: 1px solid #2e1f10;
+  border-radius: 50%;
+  box-shadow: inset 0 1px 1px rgba(255, 230, 170, 0.4);
+}
+
+.sign-place {
+  display: grid;
+  line-height: 1.15;
+  font-family: Georgia, serif;
+  font-weight: 700;
+  color: #2a1a0c;
+  /* Letras talladas: hundidas, con luz abajo. */
+  text-shadow: 0 1px 0 rgba(255, 220, 160, 0.35);
+}
+
+.sign-heading {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #3c2612;
 }
 
 /* Aviso de que se perdió la imagen del juego (la placa de video se reinició). */
