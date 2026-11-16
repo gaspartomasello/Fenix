@@ -1565,17 +1565,20 @@ function building(
   if (!lot) return null;
   plan.claim(lot);
   if (style.lawless) {
-    // En el refugio, carpas alrededor de una fogata.
+    // En el refugio, una carpa grande de lona (se entra por el sur, sin puerta).
     const c = center(lot);
-    plan.put(c.x, c.y, 'campfire');
-    for (const [dx, dy] of [
-      [-2, -2],
-      [2, -2],
-      [-2, 2],
-    ] as const)
-      plan.put(c.x + dx, c.y + dy, 'tent');
-    plan.put(c.x + 2, c.y + 2, 'crate');
-    plan.put(c.x - 1, c.y + 1, 'stool');
+    const x0 = c.x - 2;
+    const y0 = c.y - 2;
+    const x1 = c.x + 1;
+    const y1 = c.y + 1;
+    plan.put(x0, y0, 'canvas-wall-corner');
+    for (let x = x0 + 1; x <= x1; x++) plan.put(x, y0, 'canvas-wall-x');
+    for (let y = y0 + 1; y <= y1; y++) plan.put(x0, y, 'canvas-wall-y');
+    for (let y = y0; y <= y1; y++) plan.put(x1 + 1, y, 'canvas-wall-y');
+    for (let x = x0; x <= x1; x++) if (x !== c.x) plan.put(x, y1 + 1, 'canvas-wall-x');
+    plan.put(x1 + 1, y1 + 1, 'canvas-wall-post');
+    plan.put(c.x + 1, c.y - 1, 'crate');
+    plan.put(c.x - 1, c.y - 1, 'stool');
     return {
       kit: style.walls,
       floor: style.floor,

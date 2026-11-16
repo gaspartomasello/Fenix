@@ -135,7 +135,7 @@ describe('buildCity', () => {
       mountain: 'log-wall-x',
       swamp: 'plank-wall-x',
       volcanic: 'basalt-wall-x',
-      bandit: 'tent',
+      bandit: 'canvas-wall-x',
       jungle: 'log-wall-x',
       imperial: 'wall-x',
     };

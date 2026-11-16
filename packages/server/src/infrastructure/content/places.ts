@@ -96,29 +96,20 @@ const PLACES: readonly PlaceSpec[] = [
       const { x, y } = site.center;
       disk(site, 5, Terrain.Dirt);
       site.put(x, y, 'campfire');
+      // Empalizada con el portón al sur, y adentro las carpas de los orcos.
+      stockade(site, 6);
       for (const [dx, dy] of [
-        [-3, -3],
-        [3, -3],
-        [-3, 3],
-        [3, 3],
+        [-4, -4],
+        [2, -4],
+        [-4, 2],
+        [2, 2],
       ] as const)
-        site.put(x + dx, y + dy, 'tent');
-      // Empalizada con dos entradas.
-      for (let d = -5; d <= 5; d++) {
-        if (Math.abs(d) > 1) {
-          site.put(x + d, y - 6, 'fence-x');
-          site.put(x + d, y + 6, 'fence-x');
-        }
-        if (Math.abs(d) > 1 || d === 0) {
-          site.put(x - 6, y + d, 'fence-y');
-          site.put(x + 6, y + d, 'fence-y');
-        }
-      }
+        tentAt(site, x + dx, y + dy, ['bones', 'crate']);
       for (const [dx, dy, kind] of [
-        [1, -4, 'crate'],
+        [0, -4, 'crate'],
         [-1, 4, 'barrel'],
-        [4, 0, 'bones'],
-        [-4, 0, 'crate'],
+        [5, 0, 'bones'],
+        [-5, 0, 'crate'],
       ] as const)
         site.put(x + dx, y + dy, kind);
     },
@@ -203,8 +194,6 @@ const PLACES: readonly PlaceSpec[] = [
       for (let dy = -2; dy <= 2; dy++)
         for (let dx = -2; dx <= 2; dx++) site.ground(x + dx, y + dy, Terrain.Dirt);
       site.put(x, y, 'campfire');
-      site.put(x - 2, y - 1, 'tent');
-      site.put(x + 1, y - 2, 'tent');
       site.put(x + 2, y + 1, 'crate');
       site.put(x - 1, y + 2, 'bones');
       for (const [dx, dy] of [
@@ -214,6 +203,8 @@ const PLACES: readonly PlaceSpec[] = [
         [3, 4],
       ] as const)
         site.put(x + dx, y + dy, 'snow-pine');
+      tentAt(site, x - 4, y - 3, ['bed', 'chest']);
+      tentAt(site, x + 1, y - 4, ['bed', 'barrel']);
     },
   },
   {
@@ -459,8 +450,8 @@ const PLACES: readonly PlaceSpec[] = [
       disk(site, 5, Terrain.Sand);
       harbor(site, 'pirate-ship');
       site.put(x, y, 'campfire');
-      site.put(x - 3, y - 2, 'tent');
-      site.put(x + 2, y - 3, 'tent');
+      tentAt(site, x - 4, y - 4, ['bed', 'keg']);
+      tentAt(site, x + 2, y - 5, ['bed', 'chest']);
       site.put(x - 2, y + 3, 'chest');
       site.put(x + 3, y + 2, 'keg');
       site.put(x + 4, y + 1, 'barrel');
@@ -479,23 +470,18 @@ const PLACES: readonly PlaceSpec[] = [
       const { x, y } = site.center;
       disk(site, 5, Terrain.Dirt);
       site.put(x, y, 'campfire');
+      // Empalizada de troncos con el portón al sur.
+      stockade(site, 6);
       for (const [dx, dy] of [
-        [-3, -2],
-        [2, -3],
-        [3, 2],
-        [-2, 3],
+        [-4, -4],
+        [2, -4],
+        [2, 2],
+        [-4, 2],
       ] as const)
-        site.put(x + dx, y + dy, 'tent');
-      // Empalizada de troncos con una entrada al sur.
-      for (let d = -5; d <= 5; d++) {
-        site.put(x + d, y - 6, 'palisade-x');
-        if (Math.abs(d) > 1) site.put(x + d, y + 6, 'palisade-x');
-        site.put(x - 6, y + d, 'palisade-y');
-        site.put(x + 6, y + d, 'palisade-y');
-      }
+        tentAt(site, x + dx, y + dy, ['bed', 'weapon-rack']);
       site.put(x - 1, y - 1, 'bones');
-      site.put(x + 4, y - 4, 'log-pile');
-      site.put(x - 4, y + 4, 'stump-axe');
+      site.put(x + 5, y, 'log-pile');
+      site.put(x - 5, y, 'stump-axe');
     },
   },
   {
@@ -509,8 +495,6 @@ const PLACES: readonly PlaceSpec[] = [
       const { x, y } = site.center;
       disk(site, 4, Terrain.Dirt);
       site.put(x, y, 'campfire');
-      site.put(x - 2, y - 2, 'tent');
-      site.put(x + 2, y - 2, 'tent');
       site.put(x + 3, y + 2, 'chest');
       site.put(x - 3, y + 2, 'crate');
       site.put(x, y + 3, 'barrel');
@@ -521,6 +505,8 @@ const PLACES: readonly PlaceSpec[] = [
         [5, 4],
       ] as const)
         site.put(x + dx, y + dy, 'oak');
+      tentAt(site, x - 3, y - 4, ['bed', 'chest']);
+      tentAt(site, x + 1, y - 4, ['bed', 'keg']);
     },
   },
 ];
@@ -603,6 +589,55 @@ const STONE_KIT: CabinKit = {
   windowY: 'wall-window-y',
 };
 
+const CANVAS_KIT: CabinKit = {
+  x: 'canvas-wall-x',
+  y: 'canvas-wall-y',
+  corner: 'canvas-wall-corner',
+  post: 'canvas-wall-post',
+  windowX: 'canvas-wall-x',
+  windowY: 'canvas-wall-y',
+};
+const PALISADE_KIT: CabinKit = {
+  x: 'palisade-x',
+  y: 'palisade-y',
+  corner: 'palisade-corner',
+  post: 'palisade-post',
+  windowX: 'palisade-x',
+  windowY: 'palisade-y',
+};
+
+interface CabinOptions {
+  /** El piso de adentro (madera si no se dice; `null` deja el suelo como está). */
+  readonly floor?: Terrain | null;
+  /** Qué va en la entrada (una puerta si no se dice; `null` la deja abierta). */
+  readonly door?: StaticKind | null;
+  /** Ancho de la abertura a cada lado de la entrada (un portón). */
+  readonly gate?: number;
+}
+
+/**
+ * Una carpa de campaña en la que se entra: lona alrededor de dos por dos
+ * tiles de tierra, con la entrada abierta al sur. (x, y) es el rincón de
+ * adentro del fondo; adentro van las cosas de `inside` (un catre, un cofre).
+ */
+function tentAt(site: Site, x: number, y: number, inside: readonly StaticKind[]): void {
+  const room = cabin(site, { x0: x - 1, y0: y - 1, x1: x + 1, y1: y + 1 }, CANVAS_KIT, 0, {
+    floor: Terrain.Dirt,
+    door: null,
+  });
+  inside.slice(0, 2).forEach((kind, i) => site.put(room.x0 + i, room.y0, kind));
+}
+
+/** Empalizada cuadrada alrededor del centro del lugar, con un portón de tres al sur. */
+function stockade(site: Site, half: number): void {
+  const { x, y } = site.center;
+  cabin(site, { x0: x - half, y0: y - half, x1: x + half - 1, y1: y + half - 1 }, PALISADE_KIT, 0, {
+    floor: null,
+    door: null,
+    gate: 1,
+  });
+}
+
 /**
  * Una casa de un lugar: piso de madera, paredes con ventanas y la puerta en
  * la pared del sur (el lado que se ve). Con `broken` > 0, ese tanto de las
@@ -614,12 +649,16 @@ function cabin(
   r: { x0: number; y0: number; x1: number; y1: number },
   kit: CabinKit,
   broken = 0,
+  options: CabinOptions = {},
 ): { x0: number; y0: number; x1: number; y1: number; door: Position } {
-  for (let y = r.y0; y <= r.y1 + 1; y++)
-    for (let x = r.x0; x <= r.x1 + 1; x++) site.ground(x, y, Terrain.Wood);
+  const floor = options.floor === undefined ? Terrain.Wood : options.floor;
+  if (floor !== null)
+    for (let y = r.y0; y <= r.y1 + 1; y++)
+      for (let x = r.x0; x <= r.x1 + 1; x++) site.ground(x, y, floor);
   const door = { x: Math.floor((r.x0 + r.x1) / 2) + 1, y: r.y1 + 1 };
+  const gate = options.gate ?? 0;
   const wall = (x: number, y: number, kind: StaticKind, window?: StaticKind): void => {
-    if (x === door.x && y === door.y) return;
+    if (y === door.y && Math.abs(x - door.x) <= gate) return;
     if (broken > 0 && site.random.next() < broken) {
       if (site.random.next() < 0.6) site.put(x, y, 'rubble');
       return;
@@ -632,7 +671,8 @@ function cabin(
   for (let y = r.y0; y <= r.y1; y++) wall(r.x1 + 1, y, kit.y, kit.windowY);
   for (let x = r.x0; x <= r.x1; x++) wall(x, r.y1 + 1, kit.x, kit.windowX);
   wall(r.x1 + 1, r.y1 + 1, kit.post);
-  site.put(door.x, door.y, 'door-x');
+  const doorKind = options.door === undefined ? 'door-x' : options.door;
+  if (doorKind) site.put(door.x, door.y, doorKind);
   return { x0: r.x0 + 1, y0: r.y0 + 1, x1: r.x1, y1: r.y1, door };
 }
 
@@ -708,8 +748,8 @@ const JUNGLE_PLACES: readonly PlaceSpec[] = [
       const { x, y } = site.center;
       disk(site, 4, Terrain.Dirt);
       site.put(x, y, 'campfire');
-      site.put(x - 3, y - 2, 'tent');
-      site.put(x + 3, y - 2, 'tent');
+      tentAt(site, x - 4, y - 4, ['bed', 'bookshelf-x']);
+      tentAt(site, x + 1, y - 4, ['bed', 'chest']);
       site.put(x + 2, y + 3, 'crate');
       site.put(x + 3, y + 3, 'crate');
       site.put(x - 3, y + 3, 'barrel');
@@ -1121,6 +1161,134 @@ function corrupt(site: Site, radius: number): void {
     }
 }
 
+/** Un campamento de camino: sus nombres posibles, quién vive y cómo se arma. */
+interface RoadCamp {
+  readonly names: readonly string[];
+  readonly lands: readonly ('main' | 'jungle')[];
+  readonly creatures: readonly (readonly [CreatureKind, number])[];
+  readonly build: (site: Site, n: number) => void;
+}
+
+const pick = <T>(list: readonly T[], n: number): T => list[n % list.length] as T;
+
+/**
+ * Los campamentos que aparecen al costado de los caminos: gente que trabaja o
+ * viaja (con quien se puede comerciar o hablar) y, de vez en cuando,
+ * salteadores detrás de una empalizada.
+ */
+const ROAD_CAMPS: readonly RoadCamp[] = [
+  {
+    names: ['Campamento de los Hacheros', 'Obraje del Quebracho', 'Campamento del Hacha Mellada'],
+    lands: ['main', 'jungle'],
+    creatures: [],
+    build(site, n) {
+      const { x, y } = site.center;
+      disk(site, 5, Terrain.Dirt);
+      tentAt(site, x - 4, y - 4, ['bed', 'chest']);
+      tentAt(site, x + 1, y - 4, ['bed', 'barrel']);
+      site.put(x, y + 1, 'campfire');
+      site.put(x + 3, y + 1, 'log-pile');
+      site.put(x + 4, y + 2, 'log-pile');
+      site.put(x - 3, y + 2, 'stump-axe');
+      site.put(x - 4, y, 'sawhorse');
+      site.put(x + 2, y + 4, 'plank-stack');
+      site.npc(
+        x,
+        y + 3,
+        'woodcutter',
+        pick(['Braulio el leñador', 'Ceferino el hachero', 'Dominga la leñadora'], n),
+      );
+    },
+  },
+  {
+    names: ['Campamento de los Tramperos', 'Rancho de los Cazadores', 'Apostadero del Ciervo'],
+    lands: ['main', 'jungle'],
+    creatures: [],
+    build(site, n) {
+      const { x, y } = site.center;
+      disk(site, 4, Terrain.Dirt);
+      tentAt(site, x - 4, y - 4, ['bed', 'chest']);
+      tentAt(site, x + 1, y - 4, ['bed', 'weapon-rack']);
+      site.put(x, y + 1, 'campfire');
+      site.put(x + 3, y + 2, 'bones');
+      site.put(x - 3, y + 1, 'weapon-rack');
+      site.put(x + 4, y, 'barrel');
+      site.npc(
+        x - 1,
+        y + 3,
+        'bowyer',
+        pick(['Ramona la trampera', 'Evaristo el cazador', 'Pancha la arquera'], n),
+      );
+    },
+  },
+  {
+    names: ['Posta de las Caravanas', 'Posta del Arriero Tuerto', 'Parada de los Carreteros'],
+    lands: ['main'],
+    creatures: [],
+    build(site, n) {
+      const { x, y } = site.center;
+      disk(site, 5, Terrain.Dirt);
+      tentAt(site, x - 5, y - 4, ['bed', 'chest']);
+      tentAt(site, x - 1, y - 5, ['crate', 'crate']);
+      tentAt(site, x + 3, y - 4, ['bed', 'keg']);
+      site.put(x, y + 1, 'campfire');
+      site.put(x - 4, y + 2, 'crate');
+      site.put(x - 3, y + 2, 'crate');
+      site.put(x + 4, y + 1, 'barrel');
+      site.put(x + 3, y + 2, 'keg');
+      site.put(x + 5, y + 3, 'hitching-post');
+      site.put(x - 5, y + 3, 'water-trough');
+      site.put(x + 5, y - 1, 'hay-pile');
+      site.npc(
+        x,
+        y + 3,
+        'provisioner',
+        pick(['Anacleto el caravanero', 'Rufina la arriera', 'Saturnino el carretero'], n),
+      );
+    },
+  },
+  {
+    names: ['Campamento de los Peregrinos', 'Refugio de la Hermandad', 'Alto de los Romeros'],
+    lands: ['main', 'jungle'],
+    creatures: [],
+    build(site, n) {
+      const { x, y } = site.center;
+      disk(site, 4, Terrain.Dirt);
+      tentAt(site, x - 4, y - 4, ['bed', 'bed']);
+      tentAt(site, x + 1, y - 4, ['bed', 'chest']);
+      site.put(x, y + 1, 'campfire');
+      site.put(x + 4, y + 1, 'shrine');
+      site.put(x - 4, y + 1, 'bench-x');
+      site.npc(
+        x - 1,
+        y + 3,
+        'healer',
+        pick(['Hermana Clara', 'Hermano Benigno', 'Madre Socorro'], n),
+      );
+    },
+  },
+  {
+    names: [
+      'Campamento de los Salteadores',
+      'Madriguera de los Cuchilleros',
+      'Campamento del Degüello',
+    ],
+    lands: ['main', 'jungle'],
+    creatures: [['brigand', 4]],
+    build(site) {
+      const { x, y } = site.center;
+      disk(site, 5, Terrain.Dirt);
+      stockade(site, 6);
+      tentAt(site, x - 4, y - 4, ['bed', 'chest']);
+      tentAt(site, x + 2, y - 4, ['bed', 'keg']);
+      site.put(x, y, 'campfire');
+      site.put(x + 4, y + 2, 'chest');
+      site.put(x - 4, y + 2, 'crate');
+      site.put(x - 2, y + 4, 'bones');
+    },
+  },
+];
+
 function disk(site: Site, radius: number, terrain: Terrain): void {
   const { x, y } = site.center;
   for (let dy = -radius; dy <= radius; dy++)
@@ -1314,38 +1482,7 @@ export function populateContinent(
     const center = findSite(spec, origin) ?? (origin !== capital ? findSite(spec, capital) : null);
     if (!center) continue;
     taken.push({ ...center, r: spec.radius + 6 });
-    const site: Site = {
-      center,
-      radius: spec.radius,
-      random,
-      ground(x, y, t) {
-        if (!free(x, y)) return;
-        terrain[index(x, y)] = t;
-        statics.delete(index(x, y));
-      },
-      put(x, y, kind) {
-        if (!free(x, y)) return;
-        if (isWater(terrain[index(x, y)])) terrain[index(x, y)] = Terrain.Dirt;
-        statics.set(index(x, y), { kind, x, y });
-      },
-      ocean(x, y) {
-        return free(x, y) && continent.biomes[index(x, y)] === 'ocean';
-      },
-      moor(x, y, kind) {
-        if (free(x, y)) statics.set(index(x, y), { kind, x, y });
-      },
-      npc(x, y, role, name) {
-        if (!free(x, y)) return;
-        statics.delete(index(x, y));
-        placeNpcs.push({ role, position: { x, y }, ...(name ? { name } : {}) });
-      },
-      raise(x, y, levels) {
-        if (free(x, y)) lifts.set(index(x, y), levels);
-      },
-      has(x, y) {
-        return statics.has(index(x, y));
-      },
-    };
+    const site = siteAt(center, spec.radius);
     // Se despeja el lugar antes de construir.
     for (let dy = -spec.radius - 1; dy <= spec.radius + 1; dy++)
       for (let dx = -spec.radius - 1; dx <= spec.radius + 1; dx++)
@@ -1680,6 +1817,129 @@ export function populateContinent(
     }
     // En la selva, los senderos siguientes se unen a este.
     if (land === 'jungle') for (const j of carved) roads.add(j);
+  }
+
+  // Campamentos al costado de los caminos de la red: no figuran en el mapa,
+  // se descubren al pasar.
+  const camps: Position[] = [];
+  {
+    const candidates = [...network.tiles];
+    for (let i = candidates.length - 1; i > 0; i--) {
+      const j = Math.floor(random.next() * (i + 1));
+      [candidates[i], candidates[j]] = [candidates[j] ?? 0, candidates[i] ?? 0];
+    }
+    const wanted = Math.min(land === 'jungle' ? 6 : 16, Math.round(candidates.length / 500));
+    const order = shuffled(ROAD_CAMPS.filter((c) => c.lands.includes(land)));
+    const used = new Set<string>();
+    for (const tile of candidates) {
+      if (camps.length >= wanted) break;
+      const px = tile % width;
+      const py = (tile - px) / width;
+      if (camps.some((c) => Math.hypot(c.x - px, c.y - py) < 110)) continue;
+      if (places.some((pl) => Math.hypot(pl.center.x - px, pl.center.y - py) < 30)) continue;
+      const nearTown = continent.towns.some(
+        (t) =>
+          Math.max(t.x - px, 0, px - (t.x + t.width)) < 35 &&
+          Math.max(t.y - py, 0, py - (t.y + t.height)) < 35,
+      );
+      if (nearTown) continue;
+      // El campamento queda al norte del camino, mirando hacia él (las carpas abren al sur).
+      const center = [0, -6, 6].map((dx) => ({ x: px + dx, y: py - 11 })).find((c) => campFits(c));
+      if (!center) continue;
+      const spec = order[camps.length % order.length];
+      const name = spec?.names.find((n) => !used.has(n));
+      if (!spec || !name) continue;
+      used.add(name);
+      camps.push(center);
+      for (let dy = -7; dy <= 7; dy++)
+        for (let dx = -7; dx <= 7; dx++) statics.delete(index(center.x + dx, center.y + dy));
+      const site = siteAt(center, 6);
+      spec.build(site, camps.length);
+      regions.push({
+        name,
+        x: center.x - 7,
+        y: center.y - 7,
+        width: 15,
+        height: 15,
+        wild: true,
+        hidden: true,
+      });
+      for (const [kind, count] of spec.creatures)
+        for (let k = 0; k < count; k++) homes.push({ kind, home: spotNear(center, 5) });
+      // Un sendero corto del portón al camino.
+      for (let y = center.y + 7; y < height - 2; y++) {
+        const i = index(center.x, y);
+        if (roads.has(i)) break;
+        for (const dx of [0, 1]) {
+          const j = index(center.x + dx, y);
+          terrain[j] = isWater(terrain[j]) ? Terrain.Wood : trailGround(terrain[j]);
+          statics.delete(j);
+        }
+      }
+    }
+  }
+
+  function shuffled<T>(list: readonly T[]): T[] {
+    const out = [...list];
+    for (let i = out.length - 1; i > 0; i--) {
+      const j = Math.floor(random.next() * (i + 1));
+      [out[i], out[j]] = [out[j] as T, out[i] as T];
+    }
+    return out;
+  }
+
+  /** ¿Entra un campamento acá? Tierra firme, sin agua, caminos, montañas ni otros lugares. */
+  function campFits(c: Position): boolean {
+    if (c.x < 10 || c.y < 10 || c.x >= width - 10 || c.y >= height - 10) return false;
+    for (let dy = -7; dy <= 7; dy++)
+      for (let dx = -7; dx <= 7; dx++) {
+        const i = index(c.x + dx, c.y + dy);
+        const biome = continent.biomes[i];
+        if (biome === 'ocean' || biome === 'mountain' || biome === 'wasteland') return false;
+        if (isWater(terrain[i]) || roads.has(i)) return false;
+        if (statics.get(i)?.kind === 'mountain') return false;
+      }
+    const x0 = c.x - 9;
+    const y0 = c.y - 9;
+    return !regions.some(
+      (r) => r.x < x0 + 19 && r.x + r.width > x0 && r.y < y0 + 19 && r.y + r.height > y0,
+    );
+  }
+
+  /** Las herramientas para construir un lugar alrededor de `center`. */
+  function siteAt(center: Position, radius: number): Site {
+    return {
+      center,
+      radius,
+      random,
+      ground(x, y, t) {
+        if (!free(x, y)) return;
+        terrain[index(x, y)] = t;
+        statics.delete(index(x, y));
+      },
+      put(x, y, kind) {
+        if (!free(x, y)) return;
+        if (isWater(terrain[index(x, y)])) terrain[index(x, y)] = Terrain.Dirt;
+        statics.set(index(x, y), { kind, x, y });
+      },
+      ocean(x, y) {
+        return free(x, y) && continent.biomes[index(x, y)] === 'ocean';
+      },
+      moor(x, y, kind) {
+        if (free(x, y)) statics.set(index(x, y), { kind, x, y });
+      },
+      npc(x, y, role, name) {
+        if (!free(x, y)) return;
+        statics.delete(index(x, y));
+        placeNpcs.push({ role, position: { x, y }, ...(name ? { name } : {}) });
+      },
+      raise(x, y, levels) {
+        if (free(x, y)) lifts.set(index(x, y), levels);
+      },
+      has(x, y) {
+        return statics.has(index(x, y));
+      },
+    };
   }
 
   // Los senderos y lugares recortan montañas: no quedan picos sueltos.

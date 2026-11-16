@@ -28,6 +28,8 @@ export interface RegionData {
    * se ve el nombre, pero no protege como un pueblo.
    */
   readonly wild?: boolean;
+  /** No figura en el mapa del mundo (se descubre al pasar): campamentos, granjas sueltas. */
+  readonly hidden?: boolean;
   /**
    * Piso alto de un edificio (1 = primer piso): queda en otro lugar del mapa y
    * se llega por la escalera. Desde un piso no se apunta a otro.

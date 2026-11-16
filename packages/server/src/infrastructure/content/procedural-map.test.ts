@@ -479,6 +479,27 @@ describe('buildWorld: el continente alargado (más alto que ancho)', () => {
     expect(path).toBeGreaterThan(1500);
   });
 
+  it('al costado de los caminos hay campamentos que no figuran en el mapa, con carpas en las que se entra', () => {
+    const camps = map.regions.filter((r) => r.hidden);
+    expect(camps.length).toBeGreaterThanOrEqual(2);
+    const walkable = reachable(map, spawnPoint);
+    let entered = 0;
+    for (const camp of camps) {
+      const corners = map.statics.filter(
+        (s) =>
+          s.kind === 'canvas-wall-corner' &&
+          s.x >= camp.x &&
+          s.y >= camp.y &&
+          s.x < camp.x + camp.width &&
+          s.y < camp.y + camp.height,
+      );
+      expect(corners.length, camp.name).toBeGreaterThanOrEqual(2);
+      // Adentro de cada carpa hay lugar para pararse, y se llega caminando desde la capital.
+      for (const c of corners) if (walkable.has(`${c.x + 1},${c.y + 2}`)) entered++;
+    }
+    expect(entered).toBeGreaterThanOrEqual(camps.length);
+  });
+
   it('desde la capital se llega caminando a los otros pueblos', () => {
     const walkable = reachable(map, spawnPoint);
     for (const name of ['Roca Alta', 'Junco Verde']) {

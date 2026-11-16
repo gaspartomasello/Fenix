@@ -1597,3 +1597,19 @@ se traza con A* (con algo de ruido para que serpentee) y se suaviza con `curvePa
   cartel marca el **desvío**. El cartel se lee al pasar el puntero o al tocarlo.
 - Los lugares del camino antiguo del imperio siguen con su sendero empedrado; los demás lugares
   que quedaron en la red ya no necesitan sendero propio.
+
+## Carpas, empalizadas y campamentos de camino (etapa 122)
+
+- **Carpas en las que se entra**: paredes de lona (`canvas-wall-*`, con una franja a rayas arriba)
+  armadas con la misma regla que las casas de los lugares (`cabin` en `places.ts`, ahora con
+  opciones de piso, puerta y portón). `tentAt` arma una carpa de dos por dos tiles con la entrada
+  abierta al sur y un catre o un cofre adentro. Todos los campamentos (orcos, bárbaros, piratas,
+  bandoleros, exploradores, el refugio helado) usan estas carpas en vez de la carpa decorativa, y en
+  el Refugio de los Bandidos cada lote es una carpa grande.
+- **Empalizadas con portón**: `stockade` levanta un cuadrado de troncos afilados con un portón de
+  tres al sur (orcos, bárbaros, salteadores).
+- **Campamentos de camino**: al costado de los caminos de la red, mirando al camino y unidos por un
+  sendero corto, aparecen campamentos de leñadores (con leñador que comercia), tramperos (arquero),
+  postas de caravanas (proveedor), peregrinos (sanadora) y, de vez en cuando, salteadores detrás de
+  una empalizada. Son zonas `hidden`: tienen nombre al pasar, pero **no figuran en el mapa**; se
+  descubren recorriendo el mundo.
