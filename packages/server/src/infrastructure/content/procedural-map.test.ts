@@ -1,5 +1,5 @@
 import { MOONGATE_TOWNS } from '@fenix/shared/travel/moongates';
-import { placeMoongates } from './moongates';
+import { placeMoongates, withMoongateSites } from './moongates';
 import { CREATURES } from '@fenix/shared/creatures/creature-catalog';
 import { LEGENDS, LEGEND_IDS } from '@fenix/shared/quests/legends';
 import type { Position } from '@fenix/shared/geometry/position';
@@ -217,7 +217,17 @@ describe('buildWorld: el continente', () => {
 
   it('cada ciudad importante tiene su portal lunar en las afueras', () => {
     const world = big();
-    const gates = placeMoongates(world.map);
+    const sites = placeMoongates(world.map);
+    const gates = sites.map((site) => site.gate);
+    // Cada uno en su claro, rodeado por ocho piedras paradas.
+    const data = withMoongateSites(world.map.toData(), sites);
+    for (const site of sites) {
+      expect(site.stones).toHaveLength(8);
+      for (const stone of site.stones)
+        expect(
+          data.statics.some((s) => s.kind === 'menhir' && s.x === stone.x && s.y === stone.y),
+        ).toBe(true);
+    }
     const towns = MOONGATE_TOWNS.filter((name) =>
       world.map.regions.some((r) => r.name === name && !r.wild && !r.floor),
     );

@@ -1,4 +1,4 @@
-import { ITEM_ART_SIZE, PLAYER_CORPSE_LAYOUT } from '@fenix/art';
+import { ITEM_ART_SIZE, MOONGATE_ART, PLAYER_CORPSE_LAYOUT, drawMoongate } from '@fenix/art';
 import type { EntityId, GroundItemSnapshot } from '@fenix/shared/protocol/messages';
 import { Sprite, type Container } from 'pixi.js';
 import { characterDepth, groundItemDepth } from './depth';
@@ -30,7 +30,11 @@ export class ItemLayer {
       if (drawnAsField(item.kind)) continue;
       const dressed = item.kind === 'player-corpse' ? item.corpseLook : undefined;
       const sprite = new Sprite(
-        dressed ? this.textures.playerCorpse(dressed) : this.textures.item(item.kind, item.amount),
+        dressed
+          ? this.textures.playerCorpse(dressed)
+          : item.kind === 'moongate'
+            ? this.textures.custom('moongate', drawMoongate)
+            : this.textures.item(item.kind, item.amount),
       );
       const screen = this.ground.toScreen(item.position);
       sprite.anchor.set(0.5);
@@ -50,12 +54,12 @@ export class ItemLayer {
       } else if (item.kind === 'player-corpse' || item.kind === 'player-bones')
         sprite.scale.set(CHARACTER_SCALE * 2.2);
       if (item.kind === 'moongate') {
-        // El portal está parado y es alto como una persona: se apoya en el piso y brilla.
-        sprite.anchor.set(0.5, 0.92);
-        sprite.scale.set(CHARACTER_SCALE * 1.8);
-        sprite.position.set(screen.x, screen.y + 6);
+        // El portal está parado, un poco más alto que una persona: se apoya en el piso y brilla.
+        sprite.anchor.set(0.5, MOONGATE_ART.groundY / MOONGATE_ART.height);
+        sprite.scale.set(CHARACTER_SCALE);
+        sprite.position.set(screen.x, screen.y);
         sprite.zIndex = characterDepth(item.position) - 1;
-        sprite.alpha = 0.88;
+        sprite.alpha = 0.92;
       }
       this.target.addChild(sprite);
       this.sprites.set(item.id, { sprite, item });

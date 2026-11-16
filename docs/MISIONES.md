@@ -287,5 +287,5 @@ también la llaman: si pescan a alguien robándoles, gritan _"¡Guardia! ¡Ladr�
 
 En las afueras de cada ciudad importante (Puerto Ceniza, Roca Alta, Junco Verde, Puerto Brasa,
 Altamar y Puerto Esmeralda) hay un **portal lunar** azul, siempre abierto, a unos 15 o 20 pasos de
-la muralla. Al pisarlo aparece un cartel con las demás ciudades: elegís una y aparecés al lado
+la muralla, en un claro de tierra rodeado por un círculo de ocho piedras paradas. Al pisarlo aparece un cartel con las demás ciudades: elegís una y aparecés al lado
 del portal de esa ciudad, aunque esté en otro continente.
