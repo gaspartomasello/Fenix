@@ -4,10 +4,33 @@ import type { StaticKind } from '@fenix/shared/world/statics';
 import { Terrain, isWater } from '@fenix/shared/world/terrain';
 import type { TileMap, TileMapData } from '@fenix/shared/world/tile-map';
 
-/** Radio del círculo de piedras alrededor del portal (en casilleros). */
-const RING = 4;
-/** Hasta dónde se despeja el monte alrededor (el anillo y un paso más). */
-const CLEARING = RING + 1;
+/**
+ * Distancia al portal en casilleros: con la vista del juego, un círculo
+ * medido así se ve redondo en la pantalla.
+ */
+function screen(dx: number, dy: number): number {
+  return Math.hypot(dx, dy);
+}
+/**
+ * Las ocho piedras, en un círculo de radio 7: los cuatro puntos cardinales y
+ * las diagonales en (5, 5), a 7,07 del centro (parejo a la vista).
+ */
+const STONES: readonly (readonly [number, number])[] = [
+  [7, 0],
+  [5, 5],
+  [0, 7],
+  [-5, 5],
+  [-7, 0],
+  [-5, -5],
+  [0, -7],
+  [5, -5],
+];
+/** La tierra pisada del centro, hasta dónde se aplana y empareja el pasto, y hasta dónde se despeja. */
+const TRODDEN = 2.6;
+const LAWN = 8.5;
+const CLEARING = 10;
+/** Lo que mira alrededor (en casilleros) para no salirse del círculo. */
+const REACH = 11;
 
 /** Lo natural que se puede sacar para hacer el claro (nunca carteles, casas ni faroles). */
 const NATURAL: ReadonlySet<StaticKind> = new Set<StaticKind>([
@@ -44,6 +67,8 @@ export interface MoongateSite {
   readonly gate: Position;
   readonly stones: readonly Position[];
   readonly trodden: readonly Position[];
+  /** Adentro del círculo: pasto parejo, sin manchones. */
+  readonly lawn: readonly Position[];
   readonly cleared: readonly Position[];
 }
 
@@ -60,9 +85,9 @@ export function placeMoongates(map: TileMap): MoongateSite[] {
   const heightAt = (p: Position): number => heights?.[p.y * map.width + p.x] ?? 0;
   const fits = (x: number, y: number, slope: number): boolean => {
     const base = heightAt({ x, y });
-    for (let dy = -CLEARING; dy <= CLEARING; dy++)
-      for (let dx = -CLEARING; dx <= CLEARING; dx++) {
-        if (Math.hypot(dx, dy) > CLEARING + 0.5) continue;
+    for (let dy = -REACH; dy <= REACH; dy++)
+      for (let dx = -REACH; dx <= REACH; dx++) {
+        if (screen(dx, dy) > CLEARING) continue;
         const p = { x: x + dx, y: y + dy };
         const t = map.terrainAt(p);
         if (t === undefined || isWater(t) || map.regionAt(p)) return false;
@@ -98,27 +123,20 @@ export function placeMoongates(map: TileMap): MoongateSite[] {
 }
 
 function siteAround(gate: Position): MoongateSite {
-  const stones: Position[] = [];
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
-    stones.push({
-      x: gate.x + Math.round(Math.cos(a) * RING),
-      y: gate.y + Math.round(Math.sin(a) * RING),
-    });
-  }
+  const stones = STONES.map(([dx, dy]) => ({ x: gate.x + dx, y: gate.y + dy }));
   const trodden: Position[] = [];
+  const lawn: Position[] = [];
   const cleared: Position[] = [];
-  for (let dy = -CLEARING; dy <= CLEARING; dy++)
-    for (let dx = -CLEARING; dx <= CLEARING; dx++) {
-      const d = Math.hypot(dx, dy);
-      if (d > CLEARING + 0.5) continue;
+  for (let dy = -REACH; dy <= REACH; dy++)
+    for (let dx = -REACH; dx <= REACH; dx++) {
+      const d = screen(dx, dy);
+      if (d > CLEARING) continue;
       const p = { x: gate.x + dx, y: gate.y + dy };
       cleared.push(p);
-      // La tierra pisada, con el borde desparejo (como un claro gastado).
-      const wobble = ((p.x * 73856093) ^ (p.y * 19349663)) % 7 === 0 ? 0.7 : 0;
-      if (d <= 2.4 + wobble) trodden.push(p);
+      if (d <= TRODDEN) trodden.push(p);
+      else if (d <= LAWN) lawn.push(p);
     }
-  return { gate, stones, trodden, cleared };
+  return { gate, stones, trodden, lawn, cleared };
 }
 
 /** Lleva los lugares de los portales al mapa: saca el monte del claro, pisa la tierra y para las piedras. */
@@ -126,10 +144,20 @@ export function withMoongateSites(data: TileMapData, sites: readonly MoongateSit
   const index = (p: Position): number => p.y * data.width + p.x;
   const cleared = new Set(sites.flatMap((s) => s.cleared.map(index)));
   const terrain = [...data.terrain];
-  for (const site of sites) for (const p of site.trodden) terrain[index(p)] = Terrain.Dirt;
+  const heights = data.heights ? [...data.heights] : undefined;
+  for (const site of sites) {
+    for (const p of site.lawn) terrain[index(p)] = Terrain.Grass;
+    for (const p of site.trodden) terrain[index(p)] = Terrain.Dirt;
+    // Todo el círculo a la altura del portal: un llano parejo.
+    if (heights) {
+      const base = heights[index(site.gate)] ?? 0;
+      for (const p of [...site.lawn, ...site.trodden]) heights[index(p)] = base;
+    }
+  }
   return {
     ...data,
     terrain,
+    ...(heights ? { heights } : {}),
     statics: [
       ...data.statics.filter((s) => !cleared.has(index(s))),
       ...sites.flatMap((site) =>
