@@ -1159,13 +1159,14 @@ function vegetation(
       if (roll < 0.09) return choose(['boulder', 'rock']);
       return null;
     case 'jungle':
-      // Selva cerrada: árboles altos, palmeras, helechos y plantas de hojas grandes.
-      if (wet && roll < 0.12) return 'bamboo';
-      if (roll < 0.16) return pick < 0.6 ? 'jungle-tree' : pick < 0.9 ? 'palm' : 'bamboo';
-      if (roll < 0.26) return 'jungle-plant';
-      if (roll < 0.34) return 'fern';
-      if (roll < 0.36) return 'mushrooms';
-      if (roll < 0.37) return 'mossy-rock';
+      // Selva: árboles altos, palmeras, helechos y plantas de hojas grandes. Con un 40 % menos
+      // de lo que no deja pasar (árboles, palmeras y bambú) que antes: era intransitable.
+      if (wet && roll < 0.072) return 'bamboo';
+      if (roll < 0.096) return pick < 0.6 ? 'jungle-tree' : pick < 0.9 ? 'palm' : 'bamboo';
+      if (roll < 0.196) return 'jungle-plant';
+      if (roll < 0.276) return 'fern';
+      if (roll < 0.296) return 'mushrooms';
+      if (roll < 0.306) return 'mossy-rock';
       return null;
     case 'swamp':
       if (roll < 0.07) return 'reeds';
@@ -1202,8 +1203,9 @@ function vegetation(
       if (wet)
         return roll < 0.05 ? (pick < 0.55 ? 'willow' : 'ceibo') : roll < 0.09 ? 'reeds' : null;
       if (biome === 'forest') {
-        // Bosque abierto: árboles con espacio entre ellos para pasar.
-        if (roll < 0.2)
+        // Bosque abierto: árboles con espacio entre ellos para pasar (un 40 % menos que antes,
+        // que se hacía difícil de cruzar).
+        if (roll < 0.12)
           return conifer > 0.55
             ? 'pine'
             : conifer < 0.24
@@ -1215,11 +1217,11 @@ function vegetation(
                 : pick < 0.14
                   ? 'birch'
                   : 'oak';
-        if (roll < 0.23) return 'bush';
-        if (roll < 0.26) return 'fern';
-        if (roll < 0.275) return 'mushrooms';
-        if (roll < 0.285) return 'mossy-rock';
-        if (roll < 0.3) return 'weeds';
+        if (roll < 0.15) return 'bush';
+        if (roll < 0.18) return 'fern';
+        if (roll < 0.195) return 'mushrooms';
+        if (roll < 0.205) return 'mossy-rock';
+        if (roll < 0.22) return 'weeds';
         return null;
       }
       if (roll < 0.014) return conifer > 0.55 ? 'pine' : loneTree(pick);
