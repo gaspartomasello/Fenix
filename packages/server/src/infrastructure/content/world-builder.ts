@@ -701,16 +701,22 @@ export function planWorld(options: WorldBuildOptions): WorldBlueprint {
   const { map, spawnPoint, items, npcs, lairs, wildlife, houseSlots } = buildWorld(options);
   // Los portales lunares, uno en las afueras de cada ciudad importante, en su círculo de piedras.
   const moongates = placeMoongates(map);
+  const data = withMoongateSites(map.toData(), moongates);
+  // Las piedras de los círculos se ponen después: quien vivía ahí, se va.
+  const stones = new Set(
+    (data.statics ?? []).filter((s) => s.kind === 'menhir').map((s) => `${s.x},${s.y}`),
+  );
+  const free = ({ home }: { home: Position }): boolean => !stones.has(`${home.x},${home.y}`);
   return {
     mapId: worldId(options, map.width, map.height),
-    map: withMoongateSites(map.toData(), moongates),
+    map: data,
     spawnPoint,
     items: [
       ...items,
       ...moongates.map(({ gate }) => ({ kind: 'moongate' as const, amount: 1, position: gate })),
     ],
     npcs,
-    creatures: options.creatures === false ? [] : [...wildlife, ...lairs],
+    creatures: options.creatures === false ? [] : [...wildlife, ...lairs].filter(free),
     houseSlots,
   };
 }

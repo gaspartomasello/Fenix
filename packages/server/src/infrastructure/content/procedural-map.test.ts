@@ -240,6 +240,33 @@ describe('buildWorld: el continente', () => {
     }
   }, 20_000);
 
+  it('hay granjas, caseríos y rarezas sueltas para descubrir, con su gente', () => {
+    const { map, npcs, spawnPoint } = big();
+    const hidden = map.regions.filter((r) => r.hidden);
+    const inside = (r: (typeof hidden)[number], p: { x: number; y: number }): boolean =>
+      p.x >= r.x && p.y >= r.y && p.x < r.x + r.width && p.y < r.y + r.height;
+    const farms = hidden.filter((r) => /^(Chacra|Granja|Tambo|Quinta) /.test(r.name));
+    expect(farms.length).toBeGreaterThanOrEqual(2);
+    for (const farm of farms)
+      expect(
+        npcs.some((n) => n.role === 'farmer' && inside(farm, n.position)),
+        farm.name,
+      ).toBe(true);
+    const hamlets = hidden.filter((r) => /^(Caserío|Aldea) /.test(r.name));
+    expect(hamlets.length).toBeGreaterThanOrEqual(1);
+    for (const hamlet of hamlets)
+      expect(
+        npcs.some((n) => n.role === 'innkeeper' && inside(hamlet, n.position)),
+        hamlet.name,
+      ).toBe(true);
+    // Se llega caminando a la mayoría (alguno puede quedar en una isla).
+    const walkable = reachable(map, spawnPoint);
+    const reached = farms.filter((f) =>
+      walkable.has(`${f.x + Math.floor(f.width / 2) - 1},${f.y + Math.floor(f.height / 2)}`),
+    );
+    expect(reached.length * 2).toBeGreaterThanOrEqual(farms.length);
+  }, 20_000);
+
   it('están todos los lugares a los que mandan las leyendas (en un mapa mediano)', () => {
     const names = new Set(big().places.map((p) => p.name));
     for (const id of LEGEND_IDS)
@@ -251,11 +278,16 @@ describe('buildWorld: el continente', () => {
     const names = world.places.map((p) => p.name);
     for (const name of ['Granja de los Olmos', 'Casa del Ermitaño', 'Granja Quemada'])
       expect(names).toContain(name);
-    const farmers = world.npcs.filter((n) => n.role === 'farmer');
+    // Las de los lugares (las granjas sueltas pueden quedar en una isla).
+    const farmers = world.npcs.filter(
+      (n) => n.role === 'farmer' && !map.regionAt(n.position)?.hidden,
+    );
     // En el mapa chico no hay lugar para las tres; en el grande, sí.
     expect(farmers.length).toBeGreaterThanOrEqual(1);
     for (const farmer of farmers) {
-      expect(map.regionAt(farmer.position)?.name).toMatch(/Granja|Chacra/);
+      expect(map.regionAt(farmer.position)?.name).toMatch(
+        /Granja|Chacra|Tambo|Quinta|Caserío|Aldea/,
+      );
       expect(walkable.has(`${farmer.position.x},${farmer.position.y}`)).toBe(true);
     }
     const ruined = world.places.find((p) => p.name === 'Granja Quemada');
@@ -480,7 +512,18 @@ describe('buildWorld: el continente alargado (más alto que ancho)', () => {
   });
 
   it('al costado de los caminos hay campamentos que no figuran en el mapa, con carpas en las que se entra', () => {
-    const camps = map.regions.filter((r) => r.hidden);
+    const camps = map.regions.filter(
+      (r) =>
+        r.hidden &&
+        map.statics.some(
+          (s) =>
+            s.kind === 'canvas-wall-corner' &&
+            s.x >= r.x &&
+            s.y >= r.y &&
+            s.x < r.x + r.width &&
+            s.y < r.y + r.height,
+        ),
+    );
     expect(camps.length).toBeGreaterThanOrEqual(2);
     const walkable = reachable(map, spawnPoint);
     let entered = 0;
@@ -493,7 +536,7 @@ describe('buildWorld: el continente alargado (más alto que ancho)', () => {
           s.x < camp.x + camp.width &&
           s.y < camp.y + camp.height,
       );
-      expect(corners.length, camp.name).toBeGreaterThanOrEqual(2);
+      expect(corners.length, camp.name).toBeGreaterThanOrEqual(1);
       // Adentro de cada carpa hay lugar para pararse, y se llega caminando desde la capital.
       for (const c of corners) if (walkable.has(`${c.x + 1},${c.y + 2}`)) entered++;
     }

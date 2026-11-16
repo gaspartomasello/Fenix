@@ -1613,3 +1613,21 @@ se traza con A* (con algo de ruido para que serpentee) y se suaviza con `curvePa
   postas de caravanas (proveedor), peregrinos (sanadora) y, de vez en cuando, salteadores detrás de
   una empalizada. Son zonas `hidden`: tienen nombre al pasar, pero **no figuran en el mapa**; se
   descubren recorriendo el mundo.
+
+## Granjas, caseríos y rarezas para descubrir (etapa 123)
+
+`SCATTERED` (en `places.ts`) reparte por el campo lugares sueltos que **no figuran en el mapa**
+(zonas `hidden`): se descubren recorriendo el mundo, y un sendero corto los une al camino más
+cercano (`connect`, una búsqueda a lo ancho de hasta 90 pasos).
+
+- **Granjas** sin marcar (chacras, tambos, quintas), cada una con su granjero y su familia.
+- **Caseríos** de cuatro casas de troncos o tablas alrededor de una placita con aljibe: una es la
+  fonda (con fondero), y vive un granjero y algunos vecinos.
+- **Rarezas**: el Anillo de las Hadas (hongos en ronda), el Círculo de los Druidas (menhires y una
+  druida que cura), oasis con mercader en el desierto, campos de batalla viejos con esqueletos,
+  nidos de arañas, la Torre del Mago Chiflado (casa de piedra con un mago), el Árbol del Ahorcado
+  (con un espectro) y la Laguna de los Ahogados (con zombis).
+- Las **posadas de camino** se suman a los campamentos de camino: una casa grande con camas,
+  mesas, posadero y palenque.
+
+Las criaturas que quedaban donde después se plantan las piedras de un portal lunar se descartan.
