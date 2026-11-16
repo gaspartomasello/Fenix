@@ -16,8 +16,9 @@ import { Creature, LEASH_RANGE, WANDER_RANGE } from './creature';
 
 /**
  * Decide el objetivo de una criatura: sigue al actual mientras esté vivo y
- * no se haya alejado demasiado de su lugar; si no, busca al jugador (o la
- * montura suelta de alguien) más cercano dentro de su rango de agresión.
+ * no se haya alejado demasiado de su lugar; si no, busca al jugador (o lo
+ * que es de alguien: su mercenario, su invocación, su montura suelta) más
+ * cercano dentro de su rango de agresión.
  */
 export function updateTarget(creature: Creature, world: World): Mobile | null {
   // Invocaciones y monturas pelean para su dueño: lo defienden y atacan a quien él ataque.
@@ -37,7 +38,9 @@ export function updateTarget(creature: Creature, world: World): Mobile | null {
 
   let best: Mobile | null = null;
   for (const mobile of world.mobilesNear(creature.position)) {
-    const prey = mobile instanceof Player || (mobile instanceof Creature && mobile.isPet);
+    // Las personas y lo que es de alguien (mercenarios, invocaciones, monturas sueltas).
+    const prey =
+      mobile instanceof Player || (mobile instanceof Creature && mobile.ownerId !== null);
     if (!prey || mobile.combat.isDead || world.isHidden(mobile)) continue;
     const distance = tileDistance(mobile.position, creature.position);
     if (distance > creature.definition.aggroRange) continue;
