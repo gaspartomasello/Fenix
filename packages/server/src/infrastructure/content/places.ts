@@ -2612,8 +2612,7 @@ export function populateContinent(
   }
 }
 
-/** El suelo de un sendero: tierra pisada (en la nieve y la arena, el mismo suelo). */
-function trailGround(ground: Terrain | undefined): Terrain {
-  if (ground === Terrain.Snow || ground === Terrain.Sand) return ground;
+/** Los senderos conservan la misma textura visible sobre nieve o arena. */
+function trailGround(_ground: Terrain | undefined): Terrain {
   return Terrain.Path;
 }

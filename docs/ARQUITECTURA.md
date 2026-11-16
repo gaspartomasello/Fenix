@@ -1587,9 +1587,9 @@ tierras vacías (una cada ~110 tiles, lejos de pueblos y lugares). Los puntos se
 de vecinos relativos, así quedan cruces de tres y cuatro ramas sin atajos que se pisen; cada tramo
 se traza con A* (con algo de ruido para que serpentee) y se suaviza con `curvePath`.
 
-- El suelo de los caminos es **`Terrain.Path`** (tierra apisonada con huellas de ruedas y grava):
-  se distingue de la tierra del monte en el juego y en el mapa. Los caminos entre pueblos también
-  lo usan (cerca de los pueblos siguen empedrados).
+- El suelo de los caminos es **`Terrain.Path`** (tierra oscura con piedras pequeñas e irregulares):
+  se distingue del suelo natural en el juego y en el mapa, incluso donde atraviesa nieve o arena.
+  Los caminos entre pueblos también lo usan (cerca de los pueblos siguen empedrados).
 - Las encrucijadas de tres ramas o más tienen **nombre** («Cruce del Lobo», «Encrucijada de las
   Ánimas»; en la selva, nombres propios de allá) y son una zona chica con nombre en el mapa.
 - Cada encrucijada tiene un **cartel** con un renglón por rama: el rumbo y el primer lugar con

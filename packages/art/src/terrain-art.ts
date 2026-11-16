@@ -420,18 +420,31 @@ const STYLES: Readonly<Record<Terrain, TerrainStyle>> = {
   },
   [Terrain.Path]: {
     varies: true,
-    base: [184, 146, 96],
+    base: [89, 77, 64],
     paint(u, v, seed) {
-      // Tierra apisonada de camino: más clara y lisa que la del monte, con
-      // marcas de ruedas y cascotes de grava; algún yuyo en los bordes.
-      const tone = fbm(u, v, seed, 3, 2);
-      let color = mix([158, 122, 80], [196, 160, 110], tone);
-      const rut = Math.abs(Math.sin((u - v) * Math.PI * 3 + fbm(u, v, seed + 9, 2, 2) * 0.8));
-      if (rut < 0.12) color = shade(color, 0.84);
-      const gravel = periodicNoise(u, v, 14, seed + 5);
-      if (gravel > 0.88) color = mix(color, [206, 196, 176], 0.6);
-      else if (gravel > 0.85) color = shade(color, 0.8);
-      return color;
+      // Tierra oscura con piedras sueltas pequeñas. Las celdas se repiten en
+      // los bordes del rombo; las variantes solo cambian su interior.
+      const ground = mix([65, 54, 45], [112, 89, 68], fbm(u, v, seed, 3, 3));
+      const cells = 8;
+      const cu = u * cells;
+      const cv = v * cells;
+      const x = Math.floor(cu);
+      const y = Math.floor(cv);
+      const fx = cu - x;
+      const fy = cv - y;
+      const centerX = 0.3 + hash(x, y, seed + 11) * 0.4;
+      const centerY = 0.3 + hash(x, y, seed + 17) * 0.4;
+      const dx = fx - centerX;
+      const dy = fy - centerY;
+      const radius = 0.26 + hash(x, y, seed + 23) * 0.18;
+      const distance = Math.hypot(dx * 1.1, dy);
+      if (hash(x, y, seed + 29) < 0.78 && distance < radius) {
+        const stone = mix([78, 75, 68], [142, 134, 115], hash(x, y, seed + 31));
+        const light = 1.07 - (dx + dy) * 0.22 - (distance / radius) * 0.11;
+        return shade(stone, light);
+      }
+      if (distance < radius + 0.07) return shade(ground, 0.87);
+      return ground;
     },
   },
   [Terrain.OldRoad]: {
