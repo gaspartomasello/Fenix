@@ -1576,11 +1576,17 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     }
   },
   'sulfurous-ash'(c) {
-    c.ellipsoid([0, 0.6, 0], lying(0), [4.6, 1.6, 4], (s) =>
-      noise(s.x, s.y) > 0.8
-        ? tone(ramp([214, 190, 70]), s.light)
-        : tone(ramp([128, 124, 118]), s.light),
+    // Montículo gris oscuro de ceniza con granos de azufre amarillo encima.
+    const ash = ramp([94, 90, 82]);
+    c.ellipsoid([0, 0.65, 0], lying(0), [4.7, 1.4, 3.7], (s) =>
+      tone(ash, s.light, noise(Math.floor(s.p[0] * 2), Math.floor(s.p[2] * 2)) > 0.72 ? 1 : 0),
     );
+    for (const [x, z, size] of [
+      [-1.7, -0.7, 0.75],
+      [1.3, -1.1, 0.65],
+      [0.6, 1.5, 0.55],
+    ] as const)
+      c.sphere([x, 1.7, z], size, solid(ramp([220, 184, 58])));
   },
   pickaxe(c) {
     c.limb([-5.6, 0.7, 3.4], [4.6, 0.7, -2.2], 0.7, 0.7, solid(WOOD));
@@ -1814,25 +1820,42 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     }
   },
   cloth(c) {
-    const fabric = ramp([196, 184, 160]);
-    c.limb([-4, 2, 1], [4, 2, -1], 2.2, 2.2, (s) =>
-      tone(fabric, s.light, Math.sin(Math.atan2(s.p[1] - 2, s.p[2]) * 6) > 0.7 ? -1 : 0),
+    // Rollo de tela con un tramo suelto: el borde curvo evita que parezca una tabla.
+    const fabric = ramp([201, 184, 151]);
+    c.polygon(
+      [
+        [-4.2, 0.4, 0],
+        [3.8, 0.4, 0],
+        [4.5, 0.4, 4.3],
+        [-3.5, 0.4, 4.8],
+      ],
+      (s) => tone(fabric, s.light, Math.sin(s.p[2] * 2.6 + s.p[0] * 0.3) > 0.72 ? -1 : 0),
+    );
+    c.limb([-4, 1.55, -0.3], [4, 1.55, -0.3], 1.55, 1.55, solid(fabric));
+    c.ellipsoid([4, 1.55, -0.3], axesAlong([1, 0, 0]), [1.55, 1.55, 0.22], (s) =>
+      tone(fabric, s.light, Math.sin(Math.hypot(s.p[1] - 1.55, s.p[2] + 0.3) * 6) > 0.2 ? -1 : 1),
     );
   },
   hides(c) {
-    const hide = ramp([138, 96, 60]);
-    c.polygon(
-      [
-        [-5, 0.6, -1],
-        [-2.4, 0.6, -4],
-        [2.6, 0.6, -3.6],
-        [5.2, 0.6, -0.4],
-        [3, 0.6, 3.6],
-        [-2.8, 0.6, 3.4],
-      ],
-      (s) =>
-        tone(hide, s.light + 0.15, noise(Math.floor(s.p[0]), Math.floor(s.p[2])) > 0.75 ? -1 : 0),
-    );
+    // Piel extendida: cuerpo oval y cuatro extremos cortos de las patas.
+    const leather = ramp([146, 98, 61]);
+    const edge = solid(ramp([104, 67, 44]));
+    for (const side of [-1, 1])
+      for (const end of [-1, 1])
+        c.polygon(
+          [
+            [side * 2.3, 0.55, end * 2],
+            [side * 4.5, 0.55, end * 3.8],
+            [side * 3.5, 0.55, end * 4.1],
+            [side * 1.7, 0.55, end * 3.2],
+          ],
+          edge,
+        );
+    c.ellipsoid([0, 0.58, 0], lying(0), [4.1, 0.28, 3.7], (s) => {
+      const mottled = noise(Math.floor(s.p[0] * 1.4), Math.floor(s.p[2] * 1.4));
+      const rim = Math.hypot(s.p[0] / 4.1, s.p[2] / 3.7) > 0.8;
+      return tone(leather, s.light + 0.15, rim || mottled > 0.75 ? -1 : 0);
+    });
   },
   logs(c) {
     const bark = ramp([104, 72, 44]);
