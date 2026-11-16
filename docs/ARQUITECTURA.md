@@ -314,8 +314,16 @@ de reputación (`notorietyOf`) está en `@fenix/shared`. `SocialActions` atiende
 (`social`), `SendChat` reparte por canal y `SocialNotifications` envía el estado social propio
 (`social`) y los cambios de nombre visibles (`mobileStatus`). `pvpRefusal` decide si un jugador
 puede atacar a otro: nunca dentro de un pueblo ni a alguien del propio grupo o gremio. Atacar a
-un inocente marca como criminal por dos minutos; matarlo suma una muerte (con cinco se es
-asesino), y cada muerte se olvida a la media hora.
+un inocente marca como criminal por dos minutos y baja el karma; matarlo suma una muerte (con más
+de dos, o sea tres, se es asesino), y cada muerte se olvida a la media hora. Robar y fisgonear con
+éxito también bajan el karma.
+
+**El seguro** (como en Sphere): cada jugador entra con el seguro puesto (`Player.safety`, no se
+guarda). Con el seguro puesto, el servidor rechaza atacar o tirarle un hechizo dañino a un inocente
+(`safetyRefusal` en el núcleo). El cliente, antes de pedirlo, muestra un cartel de advertencia: si
+se acepta, se saca el seguro (`setSafety`) y sigue el ataque; si se cancela, queda puesto. También
+se pone y se saca con `/seguro`. Elegir a alguien de blanco no es un crimen: lo es **lastimarlo**
+(golpe que entra, flecha o hechizo dañino), y ahí recién se llama a `commitAggression`.
 
 El nombre de cada persona (uno mismo también) se pinta según su reputación: azul inocente, gris
 criminal, rojo asesino y **amarillo invulnerable**. `Combatant.invulnerable` hace que nada le haga
@@ -1513,8 +1521,9 @@ ningún monumento real):
 - Criaturas humanas **inocentes** (`innocent` en el catálogo: viajero, buhonera, peregrino,
   cazadora): no atacan, se defienden y huyen; el cliente pinta su nombre de azul. Se reparten por
   los caminos fuera de los pueblos (`roadTravelers` en `places.ts`).
-- `commitAggression` (núcleo) acepta cualquier objetivo: atacar a un inocente, jugador o criatura,
-  deja criminal. Lo llaman el ataque, los hechizos y los golpes de área.
+- `commitAggression` (núcleo) acepta cualquier objetivo: lastimar a un inocente, jugador o
+  criatura, deja criminal. Lo llaman el golpe que entra, el hechizo dañino y los golpes de área.
+  Matar a una criatura inocente cuenta como una muerte de inocente.
 - **Diálogos de los módulos** (`kernel/npc-dialogue.ts`): un módulo suma lo que le hace decir a un
   vecino; la charla de siempre (`lore`) los consulta antes de contestar.
 - **`Player.standing`**: cómo está el jugador con gremios y facciones (la clave la elige cada

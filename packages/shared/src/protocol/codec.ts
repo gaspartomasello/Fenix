@@ -253,6 +253,10 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
       if (position) return { ok: true, message: { type: 'setHome', position } };
       break;
     }
+    case 'setSafety':
+      if (typeof data.on === 'boolean')
+        return { ok: true, message: { type: 'setSafety', on: data.on } };
+      break;
     case 'moongateTravel':
       if (typeof data.destination === 'string' && data.destination.length <= 60)
         return { ok: true, message: { type: 'moongateTravel', destination: data.destination } };

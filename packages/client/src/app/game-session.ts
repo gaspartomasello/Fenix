@@ -289,6 +289,15 @@ export class GameSession {
     const worldContainers = new WorldContainers(this.game, renderer, tooltip);
     const confirmDialog = new ConfirmDialog();
     this.hosts.ui.append(confirmDialog.element);
+    // El seguro: antes de lastimar a un inocente, la advertencia.
+    this.game.on('safetyPrompt', ({ name, accept }) =>
+      confirmDialog.ask(
+        '¡Cuidado!',
+        `${name} es inocente. Si lo lastimás vas a quedar como criminal, y si lo matás, como asesino. ¿Sacás el seguro?`,
+        'Sacar el seguro',
+        accept,
+      ),
+    );
     const moongate = new MoongateWindow((destination) => this.game.moongateTravel(destination));
     this.hosts.ui.append(moongate.element);
     this.game.on('moongateMenu', (m) => moongate.show(m.here, m.destinations));

@@ -31,9 +31,6 @@ interface Contract {
   done: boolean;
 }
 
-/** Cuánto baja el karma matar a alguien de paz (con encargo o sin él). */
-const INNOCENT_KARMA = -250;
-
 /**
  * El gremio de asesinos (ver `@fenix/shared/guilds/assassins`). Su jefa vive
  * en el Refugio de los Bandidos haciéndose pasar por mendiga: con quien no
@@ -101,12 +98,8 @@ export class Assassins {
     return `Hola, ${rank.title}. ¿Venís por un encargo, o a contarme tu rango?`;
   }
 
-  /** Murió una criatura: si era una víctima, el encargo queda hecho; si era gente de paz, baja el karma. */
+  /** Murió una criatura: si era una víctima, el encargo queda hecho (el asesinato lo cuenta el combate). */
   slain(killer: Player, creature: Creature): void {
-    if (creature.definition.innocent && !creature.ownerId) {
-      killer.reputation.award(0, INNOCENT_KARMA);
-      this.say(killer, 'Mataste a alguien de paz. Tu karma se ensucia.');
-    }
     for (const [playerId, contract] of this.contracts) {
       if (contract.target !== creature || contract.done) continue;
       if (playerId !== killer.id) {

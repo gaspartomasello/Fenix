@@ -42,7 +42,7 @@ de programarla.
 
 Los asesinos son temibles, pero tienen precio.
 
-1. **Contador**: el de muertes que ya existe (`MURDERER_KILLS`, nombre rojo a las 5). La
+1. **Contador**: el de muertes que ya existe (`MURDERER_KILLS`, nombre rojo a las 3). La
    recompensa crece con cada víctima; mientras más suma el contador, más vale la cabeza
    (**pendiente**: la curva exacta, p. ej. 500 de oro por víctima o creciente).
 2. **Descuartizar**: sobre el cuerpo de un jugador, con cuchillo, hacha o espada, se saca el

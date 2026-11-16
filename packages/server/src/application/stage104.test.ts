@@ -85,11 +85,17 @@ describe('etapa 104: la gente de paz de los caminos', () => {
     // No ataca a nadie por su cuenta.
     f.run(3000);
     expect(f.player.combat.health).toBe(1);
+    // Con el seguro puesto no se lo puede atacar; sin seguro, elegirlo no es crimen.
     f.app.handle(f.ana, { type: 'attack', targetId: traveler.id });
-    expect(f.player.reputation.notoriety).toBe('criminal');
+    expect(f.player.combat.targetId).toBeNull();
+    f.app.handle(f.ana, { type: 'setSafety', on: false });
+    f.app.handle(f.ana, { type: 'attack', targetId: traveler.id });
+    expect(f.player.reputation.notoriety).toBe('innocent');
+    // Al lastimarlo, sí: criminal, y el karma baja.
     const karma = f.player.reputation.karma;
-    traveler.combat.takeDamage(10_000);
-    f.app.kernel.events.emit('creatureSlain', { killer: f.player, creature: traveler });
+    for (let t = 0; t < 20_000 && f.player.reputation.notoriety === 'innocent'; t += 200)
+      f.run(200);
+    expect(f.player.reputation.notoriety).toBe('criminal');
     expect(f.player.reputation.karma).toBeLessThan(karma);
   });
 });

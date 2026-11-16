@@ -28,6 +28,7 @@ const EVERY_MESSAGE: Record<
   setHome: true,
   goHome: true,
   moongateTravel: true,
+  setSafety: true,
   setWarMode: true,
   gather: true,
   buy: true,

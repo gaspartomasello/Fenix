@@ -75,8 +75,23 @@ describe('combate entre jugadores', () => {
     const bruno = arena.join('Bruno');
     arena.notifier.clear();
 
+    // Con el seguro puesto no se ataca a un inocente.
     arena.app.handle(ana, { type: 'attack', targetId: bruno });
+    expect(arena.world.get(ana)?.combat.targetId).toBeNull();
+    expect(arena.texts(ana).at(-1)).toMatch(/seguro puesto/);
+    // Sin seguro, elegirlo no es un crimen: lo es lastimarlo.
+    arena.app.handle(ana, { type: 'setSafety', on: false });
+    arena.app.handle(ana, { type: 'attack', targetId: bruno });
+    expect(arena.world.get(ana)?.reputation.notoriety).toBe('innocent');
+    const karma = arena.world.get(ana)?.reputation.karma ?? 0;
+    for (
+      let t = 0;
+      t < 20_000 && arena.world.get(ana)?.reputation.notoriety === 'innocent';
+      t += 200
+    )
+      arena.run(200);
     expect(arena.world.get(ana)?.reputation.notoriety).toBe('criminal');
+    expect(arena.world.get(ana)?.reputation.karma).toBeLessThan(karma);
     expect(arena.notifier.ofType('mobileStatus').map((d) => d.message)).toContainEqual({
       type: 'mobileStatus',
       id: ana,
@@ -99,6 +114,7 @@ describe('combate entre jugadores', () => {
     const arena = createArena();
     const ana = arena.join('Ana');
     const bruno = arena.join('Bruno');
+    arena.app.handle(ana, { type: 'setSafety', on: false });
     // Bruno llega muy herido: se defiende solo (defensa propia), pero no le alcanza.
     arena.world.get(bruno)?.combat.takeDamage(60);
     arena.app.handle(ana, { type: 'attack', targetId: bruno });

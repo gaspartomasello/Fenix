@@ -36,3 +36,12 @@ export function isInnocent(target: Mobile): boolean {
     target instanceof Creature && target.definition.innocent === true && target.ownerId === null
   );
 }
+
+/**
+ * Con el seguro puesto no se lastima a un inocente (como en Sphere): el
+ * cliente pregunta antes y, si se acepta, lo saca. Devuelve por qué no.
+ */
+export function safetyRefusal(attacker: Player, target: Mobile): string | null {
+  if (!attacker.safety || target === attacker || !isInnocent(target)) return null;
+  return `Tenés el seguro puesto: ${target instanceof Player ? target.name : 'esa persona'} es inocente. Si querés atacarla igual, aceptá la advertencia (o escribí /seguro).`;
+}

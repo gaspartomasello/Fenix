@@ -136,10 +136,15 @@ describe('monturas', () => {
     f.app.handle(f.ana, { type: 'buyMount', vendorId: 'bautista', mount: 'horse-gray' });
     const pet = f.world.petOf(f.ana);
     const bruno = f.join('Bruno');
+    // Con el seguro puesto no se puede: la montura es de una inocente.
+    f.app.handle(bruno, { type: 'attack', targetId: pet?.id ?? '' });
+    expect(f.world.get(bruno)?.combat.targetId).not.toBe(pet?.id);
+    const brunoPlayer = f.world.get(bruno);
+    if (brunoPlayer) brunoPlayer.safety = false;
     f.app.handle(bruno, { type: 'attack', targetId: pet?.id ?? '' });
     expect(f.world.get(bruno)?.combat.targetId).toBe(pet?.id);
-    expect(f.world.get(bruno)?.reputation.notoriety).toBe('criminal');
-    expect(f.texts()).toContain('¡Bruno te está atacando!');
+    // Elegirla de blanco no es un crimen: lastimarla, sí (lo marca el golpe).
+    expect(f.world.get(bruno)?.reputation.notoriety).toBe('innocent');
   });
 
   it('/liberar deja ir a la montura, suelta o montada', () => {

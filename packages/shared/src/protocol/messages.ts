@@ -479,6 +479,12 @@ export interface PickLockRequest {
   readonly position: Position;
 }
 
+/** Poner o sacar el seguro (sin seguro se puede lastimar a un inocente y volverse criminal). */
+export interface SetSafetyRequest {
+  readonly type: 'setSafety';
+  readonly on: boolean;
+}
+
 /** Viajar por el portal lunar en el que está parado a la ciudad elegida. */
 export interface MoongateTravelRequest {
   readonly type: 'moongateTravel';
@@ -597,6 +603,7 @@ export type ClientMessage =
   | StealItemRequest
   | SetHomeRequest
   | MoongateTravelRequest
+  | SetSafetyRequest
   | GoHomeRequest
   | GatherRequest
   | DigRequest

@@ -62,6 +62,18 @@ export const combatModule: ModuleFactory = (kernel) => {
       },
       stopAttack: (playerId) => attack.stop(playerId),
       setWarMode: (playerId, m) => attack.setWarMode(playerId, m.war),
+      // El seguro: puesto, no deja lastimar a un inocente.
+      setSafety: (playerId, m) => {
+        const player = world.get(playerId);
+        if (!player || player.safety === m.on) return;
+        player.safety = m.on;
+        kernel.notifier.send(playerId, {
+          type: 'system',
+          text: m.on
+            ? 'Seguro puesto: no vas a lastimar a ningún inocente.'
+            : 'Sacaste el seguro: si lastimás a un inocente, vas a quedar como criminal. (Para ponerlo de nuevo: /seguro)',
+        });
+      },
       castSpell: (playerId, m) => {
         castSpell.execute(playerId, {
           spell: m.spell,

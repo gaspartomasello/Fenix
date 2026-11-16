@@ -255,6 +255,7 @@ describe('etapa 10: hechizos, efectos, vendas y oficios', () => {
       const f = createField();
       const ana = archmage(f, 'Ana');
       const bruno = f.join('Bruno');
+      f.player(ana).safety = false;
       const mana = f.player(ana).combat.current.mana;
       const hits = f.player(bruno).combat.current.hits;
       f.app.handle(ana, { type: 'castSpell', spell: 'explosion', targetId: bruno });
@@ -285,6 +286,7 @@ describe('etapa 10: hechizos, efectos, vendas y oficios', () => {
         const ana = archmage(f, 'Ana');
         f.player(ana).skills.set('evaluating-intelligence', evalInt);
         const bruno = f.join('Bruno');
+        f.player(ana).safety = false;
         const hits = f.player(bruno).combat.current.hits;
         f.app.handle(ana, { type: 'castSpell', spell: 'energy-bolt', targetId: bruno });
         f.run(SPELLS['energy-bolt'].castMs + 100);
