@@ -1525,8 +1525,25 @@ const HEAVY_AXES: Partial<
   'large-battle-axe': { haft: 17, reach: 4.8, height: 4, double: true },
 };
 
+/** Las armas de asta, que en la ventana de personaje se muestran paradas al costado (como en UO). */
+const POLEARMS: ReadonlySet<ItemKind> = new Set<ItemKind>([
+  'halberd',
+  'spear',
+  'short-spear',
+  'war-fork',
+  'bardiche',
+  'quarterstaff',
+]);
+
 function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
-  const { hand, weaponDir: dir } = rig.arms[1];
+  const { hand } = rig.arms[1];
+  // En la ventana de personaje, las de asta y las hachas largas de dos manos, paradas.
+  const upright =
+    rig.display === true && (POLEARMS.has(kind) || (HEAVY_AXES[kind]?.haft ?? 0) > 14);
+  const dir = upright ? normalize(rig.chest.dir([0.07, 1, 0.05])) : rig.arms[1].weaponDir;
+  // Parada, el asta llega hasta el suelo (la base apoyada junto al pie).
+  if (upright)
+    canvas.limb(add(hand, scale(dir, -6)), add(hand, scale(dir, -24)), 0.6, 0.6, solid(WOOD));
   const across = cross(dir, [0, 1, 0]);
   const side = Math.hypot(...across) < 0.2 ? rig.chest.dir([1, 0, 0]) : normalize(across);
   const along = (k: number): Vec3 => add(hand, scale(dir, k));
@@ -1537,7 +1554,8 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     // Hachas de guerra: mango (largo en las de dos manos) y una o dos hojas.
     const { haft, reach, height, double } = heavyAxe;
     canvas.limb(along(haft > 14 ? -6 : -3), along(haft), 0.75, 0.75, solid(WOOD));
-    const up = normalize(cross(side, dir));
+    // Parada (en la ventana de personaje), la hoja se ve de frente: crece a lo largo del mango.
+    const up = upright ? dir : normalize(cross(side, dir));
     const head = along(haft - 1.5);
     for (const k of double ? [1, -1] : [1])
       canvas.polygon(

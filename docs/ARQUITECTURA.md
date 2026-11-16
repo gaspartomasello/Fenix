@@ -1679,3 +1679,8 @@ lugares en sus plazas siguen a su gusto.
 - **Armas a la vista en la ventana de personaje**: en esa pose el arma colgaba hacia la cámara y casi
   no se veía (la katana, el puñal). Ahora el antebrazo va adelante y el arma en alto, en diagonal
   hacia afuera (`DISPLAY_ARMED_ARM`, `DISPLAY_WEAPON` en `humanoid-rig.ts`), como en UO.
+
+**Etapa 132**: en la ventana de personaje, las armas de asta (alabarda, bardiche, lanzas, horquilla,
+bastón) y las hachas largas de dos manos se muestran **paradas al costado**, del suelo hasta arriba
+de la cabeza, como en UO (`POLEARMS` y `rig.display` en `character-art.ts`); las hojas de hacha se
+ven de frente. Las demás armas siguen en alto, en diagonal.

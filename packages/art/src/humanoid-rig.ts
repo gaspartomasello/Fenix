@@ -624,6 +624,8 @@ export interface Rig {
   readonly sway: number;
   /** Fase del ciclo (0–3), para que la tela ondee distinto en cada paso. */
   readonly phase: number;
+  /** Es la pose de la ventana de personaje (las armas de asta se muestran paradas). */
+  readonly display?: boolean;
   /** Tensando la cuerda del arco (la cuerda va a la mano derecha). */
   readonly drawing: boolean;
   /**
@@ -827,6 +829,7 @@ export function humanoidRig(
     legs,
     arms,
     sway,
+    display: frame === 'display',
     phase: step,
     drawing: frame === 'shoot-0' || frame === 'shoot-1',
     hem: seat ? Math.min(legs[1].ankle[1], legs[-1].ankle[1]) + 2 : 0,
