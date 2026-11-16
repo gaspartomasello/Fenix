@@ -1161,6 +1161,278 @@ function corrupt(site: Site, radius: number): void {
     }
 }
 
+/** Un lugar suelto por el campo: dónde, cuántos, sus nombres posibles y cómo se arma. */
+interface ScatteredSpec {
+  readonly names: readonly string[];
+  readonly count: number;
+  readonly lands: readonly ('main' | 'jungle')[];
+  readonly biomes: readonly Biome[];
+  readonly radius: number;
+  readonly creatures: readonly (readonly [CreatureKind, number])[];
+  readonly build: (site: Site, n: number) => void;
+}
+
+const FARMERS: readonly (readonly [string, string])[] = [
+  ['Teófilo el chacarero', 'Amalia'],
+  ['Herminia la granjera', 'Pascual'],
+  ['Baldomero el tambero', 'Rosaura'],
+  ['Felisa la quintera', 'Ciriaco'],
+  ['Gumersindo el granjero', 'Dorotea'],
+  ['Petrona la chacarera', 'Anacleto'],
+  ['Wenceslao el granjero', 'Celedonia'],
+];
+
+/**
+ * Lugares sueltos que se descubren recorriendo el mundo: granjas que no están
+ * en el mapa, caseríos de pocas casas y rarezas (un anillo de hongos, un
+ * campo de batalla viejo, una torre de un mago chiflado…).
+ */
+const SCATTERED: readonly ScatteredSpec[] = [
+  {
+    names: [
+      'Chacra de los Benítez',
+      'Granja del Pozo Hondo',
+      'Tambo de la Vaca Overa',
+      'Chacra del Ombú',
+      'Granja de las Gallinas',
+      'Quinta de los Almendros',
+      'Chacra del Sauce',
+    ],
+    count: 7,
+    lands: ['main'],
+    biomes: ['grassland', 'meadow', 'plains', 'savanna'],
+    radius: 8,
+    creatures: [],
+    build(site, n) {
+      const [farmer, family] = pick(FARMERS, n);
+      farmstead(site, n % 2 ? LOG_KIT : PLANK_KIT, farmer, family);
+    },
+  },
+  {
+    names: [
+      'Caserío de Piedra Mansa',
+      'Aldea del Vado',
+      'Caserío de los Juncos',
+      'Aldea de la Loma',
+    ],
+    count: 3,
+    lands: ['main', 'jungle'],
+    biomes: ['grassland', 'meadow', 'plains', 'forest', 'savanna', 'jungle'],
+    radius: 10,
+    creatures: [],
+    build(site, n) {
+      hamlet(site, n);
+    },
+  },
+  {
+    names: ['Anillo de las Hadas'],
+    count: 1,
+    lands: ['main'],
+    biomes: ['meadow', 'grassland', 'forest'],
+    radius: 6,
+    creatures: [],
+    build(site) {
+      const { x, y } = site.center;
+      disk(site, 5, Terrain.Meadow);
+      for (let k = 0; k < 14; k++) {
+        const a = (k / 14) * Math.PI * 2;
+        site.put(Math.round(x + Math.cos(a) * 4), Math.round(y + Math.sin(a) * 4), 'mushrooms');
+      }
+      site.put(x, y, 'wildflowers');
+      site.put(x + 1, y - 1, 'flowers');
+      site.put(x - 1, y + 1, 'flowers');
+    },
+  },
+  {
+    names: ['Círculo de los Druidas'],
+    count: 1,
+    lands: ['main'],
+    biomes: ['grassland', 'meadow', 'tundra', 'plains'],
+    radius: 7,
+    creatures: [],
+    build(site) {
+      const { x, y } = site.center;
+      disk(site, 6, Terrain.Grass);
+      for (let k = 0; k < 8; k++) {
+        const a = (k / 8) * Math.PI * 2;
+        site.put(Math.round(x + Math.cos(a) * 5), Math.round(y + Math.sin(a) * 5), 'menhir');
+      }
+      site.put(x, y, 'shrine');
+      site.npc(x, y + 2, 'healer', 'Druida Anselma');
+    },
+  },
+  {
+    names: ['Oasis de las Palmeras', 'Oasis del Camello Viejo'],
+    count: 2,
+    lands: ['main'],
+    biomes: ['desert'],
+    radius: 7,
+    creatures: [],
+    build(site, n) {
+      const { x, y } = site.center;
+      disk(site, 6, Terrain.SandyGrass);
+      disk(site, 2, Terrain.ShallowWater);
+      for (let k = 0; k < 7; k++) {
+        const a = (k / 7) * Math.PI * 2 + 0.3;
+        site.put(Math.round(x + Math.cos(a) * 4), Math.round(y + Math.sin(a) * 4), 'palm');
+      }
+      tentAt(site, x - 6, y - 6, ['bed', 'chest']);
+      site.put(x + 4, y + 4, 'campfire');
+      site.npc(
+        x + 3,
+        y + 5,
+        'provisioner',
+        pick(['Yamil el mercader del desierto', 'Zulema la aguatera'], n),
+      );
+    },
+  },
+  {
+    names: ['Campo de la Última Batalla', 'Llano de las Espadas Rotas'],
+    count: 2,
+    lands: ['main'],
+    biomes: ['grassland', 'plains', 'badlands', 'savanna', 'tundra'],
+    radius: 7,
+    creatures: [['skeleton', 4]],
+    build(site) {
+      const { x, y } = site.center;
+      disk(site, 6, Terrain.SparseGrass);
+      for (let k = 0; k < 18; k++) {
+        const dx = Math.round((site.random.next() - 0.5) * 12);
+        const dy = Math.round((site.random.next() - 0.5) * 12);
+        site.put(
+          x + dx,
+          y + dy,
+          pick(['bones', 'gravestone', 'weapon-rack', 'rubble', 'bones'] as const, k),
+        );
+      }
+      site.put(x, y, 'banner');
+    },
+  },
+  {
+    names: ['Nido de las Tejedoras', 'Hondonada de las Arañas'],
+    count: 2,
+    lands: ['main', 'jungle'],
+    biomes: ['forest', 'jungle', 'swamp'],
+    radius: 6,
+    creatures: [['giant-spider', 4]],
+    build(site) {
+      const { x, y } = site.center;
+      disk(site, 5, Terrain.Leaves);
+      for (let k = 0; k < 14; k++) {
+        const dx = Math.round((site.random.next() - 0.5) * 10);
+        const dy = Math.round((site.random.next() - 0.5) * 10);
+        site.put(x + dx, y + dy, pick(['cobweb', 'bones', 'dead-tree', 'cobweb'] as const, k));
+      }
+      site.put(x, y, 'chest');
+    },
+  },
+  {
+    names: ['Torre del Mago Chiflado'],
+    count: 1,
+    lands: ['main'],
+    biomes: ['forest', 'grassland', 'foothill', 'tundra', 'meadow'],
+    radius: 7,
+    creatures: [],
+    build(site) {
+      const { x, y } = site.center;
+      disk(site, 6, Terrain.Gravel);
+      const room = cabin(site, { x0: x - 3, y0: y - 3, x1: x + 2, y1: y + 2 }, STONE_KIT);
+      site.put(room.x0, room.y0, 'bookshelf-x');
+      site.put(room.x0 + 1, room.y0, 'bookshelf-x');
+      site.put(room.x1, room.y0, 'alchemy-table');
+      site.put(room.x1, room.y1, 'cauldron');
+      site.put(room.x0, room.y1, 'bed');
+      site.put(room.x0 + 2, room.y0 + 2, 'candelabra');
+      site.npc(room.x0 + 2, room.y1, 'mage', 'Pancracio el mago chiflado');
+      site.put(x + 5, y - 4, 'brazier');
+      site.put(x - 5, y + 4, 'brazier');
+    },
+  },
+  {
+    names: ['Árbol del Ahorcado'],
+    count: 1,
+    lands: ['main'],
+    biomes: ['grassland', 'plains', 'badlands', 'tundra', 'meadow'],
+    radius: 5,
+    creatures: [['wraith', 1]],
+    build(site) {
+      const { x, y } = site.center;
+      disk(site, 3, Terrain.Dirt);
+      site.put(x, y, 'dead-tree');
+      site.put(x + 1, y + 1, 'bones');
+      site.put(x - 2, y + 2, 'gravestone');
+      site.put(x + 3, y - 1, 'weeds');
+    },
+  },
+  {
+    names: ['Laguna de los Ahogados'],
+    count: 1,
+    lands: ['main', 'jungle'],
+    biomes: ['swamp', 'forest', 'jungle'],
+    radius: 6,
+    creatures: [['zombie', 3]],
+    build(site) {
+      const { x, y } = site.center;
+      disk(site, 5, Terrain.Mud);
+      disk(site, 3, Terrain.ShallowWater);
+      for (let k = 0; k < 10; k++) {
+        const a = (k / 10) * Math.PI * 2;
+        site.put(
+          Math.round(x + Math.cos(a) * 4),
+          Math.round(y + Math.sin(a) * 4),
+          k % 3 ? 'reeds' : 'dead-tree',
+        );
+      }
+      site.put(x + 5, y, 'bones');
+    },
+  },
+];
+
+/**
+ * Un caserío: cuatro casas alrededor de una placita con aljibe, una de ellas
+ * la fonda; vive un puñado de gente.
+ */
+function hamlet(site: Site, n: number): void {
+  const { x, y } = site.center;
+  disk(site, 9, Terrain.Grass);
+  disk(site, 3, Terrain.Dirt);
+  site.put(x, y, 'well');
+  const kit = n % 2 ? LOG_KIT : PLANK_KIT;
+  const houses = [
+    { x0: x - 9, y0: y - 9, x1: x - 4, y1: y - 5 },
+    { x0: x + 3, y0: y - 9, x1: x + 8, y1: y - 5 },
+    { x0: x - 9, y0: y + 2, x1: x - 4, y1: y + 6 },
+    { x0: x + 3, y0: y + 2, x1: x + 8, y1: y + 6 },
+  ];
+  houses.forEach((r, k) => {
+    const room = cabin(site, r, kit);
+    site.put(room.x0, room.y0, 'bed');
+    site.put(room.x1, room.y0, 'hearth');
+    site.put(room.x0, room.y1, 'chest');
+    if (k === 0) {
+      // La fonda: mesas y el fondero.
+      site.put(room.x0 + 2, room.y0 + 1, 'table');
+      site.put(room.x0 + 3, room.y0 + 1, 'table');
+      site.put(room.x1, room.y1, 'keg');
+      site.npc(
+        room.x0 + 2,
+        room.y1,
+        'innkeeper',
+        pick(['Doña Eulogia la fondera', 'Melitón el fondero'], n),
+      );
+    } else if (k === 1) {
+      site.put(room.x0 + 2, room.y0 + 1, 'table');
+      site.npc(room.x0 + 2, room.y1, 'farmer', pick(FARMERS, n + k)[0]);
+    } else {
+      site.put(room.x0 + 2, room.y0 + 1, 'table');
+      site.npc(room.x0 + 2, room.y1, 'townsfolk', pick(FARMERS, n + k)[1]);
+    }
+  });
+  site.npc(x + 1, y + 1, 'townsfolk', pick(['Tobías', 'Clotilde', 'Severino', 'Etelvina'], n));
+  site.put(x - 2, y - 2, 'bench-x');
+  site.put(x + 2, y - 2, 'hay-bale');
+}
+
 /** Un campamento de camino: sus nombres posibles, quién vive y cómo se arma. */
 interface RoadCamp {
   readonly names: readonly string[];
@@ -1177,6 +1449,38 @@ const pick = <T>(list: readonly T[], n: number): T => list[n % list.length] as T
  * salteadores detrás de una empalizada.
  */
 const ROAD_CAMPS: readonly RoadCamp[] = [
+  {
+    names: ['Posada del Camino Real', 'Posada de la Rueda Rota', 'Parador del Viajero'],
+    lands: ['main'],
+    creatures: [],
+    build(site, n) {
+      const { x, y } = site.center;
+      disk(site, 6, Terrain.Dirt);
+      const room = cabin(
+        site,
+        { x0: x - 5, y0: y - 6, x1: x + 3, y1: y - 1 },
+        n % 2 ? LOG_KIT : PLANK_KIT,
+      );
+      site.put(room.x0, room.y0, 'bed');
+      site.put(room.x0 + 1, room.y0, 'bed');
+      site.put(room.x1, room.y0, 'hearth');
+      site.put(room.x0 + 3, room.y0 + 2, 'table');
+      site.put(room.x0 + 4, room.y0 + 2, 'table');
+      site.put(room.x0 + 2, room.y0 + 2, 'chair-e');
+      site.put(room.x1, room.y1, 'keg');
+      site.put(room.x1 - 1, room.y1, 'barrel');
+      site.npc(
+        room.x0 + 1,
+        room.y1,
+        'innkeeper',
+        pick(['Ño Facundo el posadero', 'Brígida la posadera', 'Aureliano el posadero'], n),
+      );
+      site.put(x + 5, y + 2, 'hitching-post');
+      site.put(x + 5, y + 3, 'water-trough');
+      site.put(x - 5, y + 3, 'hay-pile');
+      site.put(x + 3, y + 1, 'lamp');
+    },
+  },
   {
     names: ['Campamento de los Hacheros', 'Obraje del Quebracho', 'Campamento del Hacha Mellada'],
     lands: ['main', 'jungle'],
@@ -1875,6 +2179,140 @@ export function populateContinent(
           terrain[j] = isWater(terrain[j]) ? Terrain.Wood : trailGround(terrain[j]);
           statics.delete(j);
         }
+      }
+    }
+  }
+
+  // Lugares sueltos por el campo (granjas, caseríos y rarezas): no figuran en
+  // el mapa; se llega por un sendero corto desde el camino más cercano.
+  const scattered: { center: Position; r: number }[] = [];
+  for (const spec of shuffled(SCATTERED.filter((sp) => sp.lands.includes(land)))) {
+    const names = shuffled(spec.names);
+    const count = Math.min(
+      names.length,
+      land === 'jungle' ? Math.ceil(spec.count / 2) : spec.count,
+    );
+    for (let made = 0, tries = 0; made < count && tries < 4000; tries++) {
+      const x = 12 + Math.floor(random.next() * (width - 24));
+      const y = 12 + Math.floor(random.next() * (height - 24));
+      if (!spec.biomes.includes(continent.biomes[index(x, y)] ?? 'ocean')) continue;
+      const center = { x, y };
+      if (!spotFits(center, spec.radius, Math.min(45, Math.round(15 * scale)))) continue;
+      const name = names[made] ?? spec.names[0] ?? 'Lugar';
+      made++;
+      for (let dy = -spec.radius - 1; dy <= spec.radius + 1; dy++)
+        for (let dx = -spec.radius - 1; dx <= spec.radius + 1; dx++)
+          statics.delete(index(x + dx, y + dy));
+      spec.build(siteAt(center, spec.radius), made + tries);
+      scattered.push({ center, r: spec.radius });
+      regions.push({
+        name,
+        x: x - spec.radius - 1,
+        y: y - spec.radius - 1,
+        width: spec.radius * 2 + 3,
+        height: spec.radius * 2 + 3,
+        wild: true,
+        hidden: true,
+      });
+      for (const [kind, n] of spec.creatures)
+        for (let k = 0; k < n; k++) homes.push({ kind, home: spotNear(center, spec.radius) });
+      connect(center, spec.radius);
+    }
+  }
+
+  /** ¿Entra un lugar de radio `r` acá, lejos de pueblos y otros lugares? */
+  function spotFits(c: Position, r: number, apart: number): boolean {
+    if (c.x - r < 10 || c.y - r < 10 || c.x + r >= width - 10 || c.y + r >= height - 10)
+      return false;
+    for (let dy = -r - 1; dy <= r + 1; dy++)
+      for (let dx = -r - 1; dx <= r + 1; dx++) {
+        const i = index(c.x + dx, c.y + dy);
+        const biome = continent.biomes[i];
+        if (biome === 'ocean' || biome === 'mountain' || biome === 'wasteland') return false;
+        if (isWater(terrain[i]) || roads.has(i)) return false;
+        if (statics.get(i)?.kind === 'mountain') return false;
+      }
+    if (
+      continent.towns.some(
+        (t) =>
+          Math.max(t.x - c.x, 0, c.x - (t.x + t.width)) < apart &&
+          Math.max(t.y - c.y, 0, c.y - (t.y + t.height)) < apart,
+      )
+    )
+      return false;
+    if (scattered.some((o) => Math.hypot(o.center.x - c.x, o.center.y - c.y) < apart + o.r + r))
+      return false;
+    if (camps.some((o) => Math.hypot(o.x - c.x, o.y - c.y) < apart)) return false;
+    const pad = r + 6;
+    return !regions.some(
+      (q) =>
+        q.x < c.x + pad &&
+        q.x + q.width > c.x - pad &&
+        q.y < c.y + pad &&
+        q.y + q.height > c.y - pad,
+    );
+  }
+
+  /**
+   * Un sendero corto desde el borde sur del lugar hasta el camino más cercano
+   * (si hay uno a menos de 90 pasos), por donde se pueda caminar.
+   */
+  function connect(center: Position, r: number): void {
+    const start = index(center.x, center.y + r + 1);
+    const came = new Map<number, number>([[start, -1]]);
+    const queue = [start];
+    let found = -1;
+    for (let head = 0; head < queue.length && found < 0; head++) {
+      const i = queue[head] ?? start;
+      const x = i % width;
+      const y = (i - x) / width;
+      if (Math.abs(x - center.x) + Math.abs(y - center.y) > 90 + r) continue;
+      for (const [nx, ny] of [
+        [x, y + 1],
+        [x + 1, y],
+        [x - 1, y],
+        [x, y - 1],
+      ] as const) {
+        if (!free(nx, ny)) continue;
+        const j = index(nx, ny);
+        if (came.has(j)) continue;
+        // No se vuelve a entrar al lugar.
+        if (Math.abs(nx - center.x) <= r && Math.abs(ny - center.y) <= r) continue;
+        const biome = continent.biomes[j];
+        if (biome === 'ocean' || biome === 'mountain' || statics.get(j)?.kind === 'mountain')
+          continue;
+        if (
+          regions.some((q) => nx >= q.x && ny >= q.y && nx < q.x + q.width && ny < q.y + q.height)
+        )
+          continue;
+        came.set(j, i);
+        if (roads.has(j)) {
+          found = j;
+          break;
+        }
+        queue.push(j);
+      }
+    }
+    for (let at = found; at >= 0; at = came.get(at) ?? -1) {
+      if (roads.has(at) && at !== found) break;
+      const x = at % width;
+      const y = (at - x) / width;
+      for (const [dx, dy] of [
+        [0, 0],
+        [1, 0],
+      ] as const) {
+        if (!free(x + dx, y + dy)) continue;
+        const j = index(x + dx, y + dy);
+        if (
+          regions.some(
+            (q) =>
+              x + dx >= q.x && y + dy >= q.y && x + dx < q.x + q.width && y + dy < q.y + q.height,
+          )
+        )
+          continue;
+        terrain[j] = isWater(terrain[j]) ? Terrain.Wood : trailGround(terrain[j]);
+        const kind = statics.get(j)?.kind;
+        if (kind !== 'sign' && kind !== 'cave-entrance') statics.delete(j);
       }
     }
   }
