@@ -39,3 +39,8 @@ export function directions(
     ? `${place.name} queda hacia ${COMPASS[index]} de ${of}, ${distance < 60 ? 'cerca' : distance < 200 ? 'a un buen trecho' : 'lejos'}.`
     : `${place.name} queda hacia ${COMPASS[index]}, ${far}.`;
 }
+
+/** Hacia dónde apunta un desplazamiento en el mapa: «el norte», «el sureste»… */
+export function heading(dx: number, dy: number): (typeof COMPASS)[number] {
+  return COMPASS[(Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) + 8) % 8] ?? 'el norte';
+}

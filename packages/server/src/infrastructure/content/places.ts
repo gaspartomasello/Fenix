@@ -7,6 +7,7 @@ import { TileMap, type RegionData } from '@fenix/shared/world/tile-map';
 import { SeededRandom } from '../system/seeded-random';
 import { shapeMountains } from './mountains';
 import { type Biome, type Continent, wanderField } from './procedural-map';
+import { type Destination, buildRoadNetwork } from './road-network';
 import { cheapestPath, curvePath } from './roads';
 
 /** Un lugar con nombre en las tierras salvajes, con quienes viven ahí. */
@@ -1544,8 +1545,41 @@ export function populateContinent(
       }
   }
 
-  // Senderos: de cada lugar (y de la cueva) hasta el camino más cercano.
+  // La red de caminos del campo: une lugares, bocas de mazmorras y encrucijadas.
   const roads = new Set(continent.roads);
+  const entrances: Destination[] = [
+    ...(caveEntrance
+      ? [{ name: 'Cueva del Lamento', at: { x: caveEntrance.x, y: caveEntrance.y + 2 } }]
+      : []),
+    ...(iceEntrance
+      ? [{ name: 'Calabozo de Hielo', at: { x: iceEntrance.x, y: iceEntrance.y + 2 } }]
+      : []),
+    ...(tombEntrance
+      ? [{ name: 'Tumba de los Reyes', at: { x: tombEntrance.x, y: tombEntrance.y + 5 } }]
+      : []),
+  ];
+  const network = buildRoadNetwork({
+    width,
+    height,
+    terrain,
+    statics,
+    biomes: continent.biomes,
+    roads,
+    towns: continent.towns,
+    // Los del camino antiguo del imperio siguen con su sendero empedrado.
+    destinations: [
+      ...places.filter((p) => !oldRoads.has(p.name)).map((p) => ({ name: p.name, at: p.center })),
+      ...entrances,
+    ],
+    regions,
+    random,
+    seed: seed + 77,
+    land,
+  });
+  regions.push(...network.regions);
+  const networkSigns = network.signs;
+
+  // Senderos: de cada lugar (y de la cueva) que no quedó en la red, hasta el camino más cercano.
   const townCenters = continent.towns.map((t) => ({
     x: t.x + Math.floor(t.width / 2),
     y: t.y + Math.floor(t.height / 2),
@@ -1558,6 +1592,10 @@ export function populateContinent(
       ? [...places].sort((a, b) => nearest(a.center, townCenters) - nearest(b.center, townCenters))
       : places;
   for (const place of byDistance) {
+    if (network.linked.has(place.name)) {
+      joined.push(place.center);
+      continue;
+    }
     trail(
       place.center,
       place.region,
@@ -1566,11 +1604,11 @@ export function populateContinent(
     );
     joined.push(place.center);
   }
-  if (caveEntrance)
+  if (caveEntrance && !network.linked.has('Cueva del Lamento'))
     trail({ x: caveEntrance.x, y: caveEntrance.y + 2 }, undefined, undefined, townCenters);
-  if (iceEntrance)
+  if (iceEntrance && !network.linked.has('Calabozo de Hielo'))
     trail({ x: iceEntrance.x, y: iceEntrance.y + 2 }, undefined, undefined, townCenters);
-  if (tombEntrance)
+  if (tombEntrance && !network.linked.has('Tumba de los Reyes'))
     trail({ x: tombEntrance.x, y: tombEntrance.y + 5 }, undefined, undefined, townCenters);
 
   function nearest(p: Position, targets: readonly Position[]): number {
@@ -1679,7 +1717,9 @@ export function populateContinent(
     terrain,
     statics: [...statics.values()],
     regions,
-    signs: map.signs.filter((s) => statics.get(index(s.x, s.y))?.kind === 'sign'),
+    signs: [...map.signs, ...networkSigns].filter(
+      (s) => statics.get(index(s.x, s.y))?.kind === 'sign',
+    ),
     ...(heights ? { heights } : {}),
   });
   homes.push(...biomeCreatures(populated), ...roadTravelers(populated), ...continent.townCreatures);
@@ -1813,7 +1853,7 @@ export function populateContinent(
    */
   function roadTravelers(world: TileMap): { kind: CreatureKind; home: Position }[] {
     const kinds: readonly CreatureKind[] = ['traveler', 'peddler', 'pilgrim', 'huntress'];
-    const tiles = [...continent.roads]
+    const tiles = [...continent.roads, ...network.tiles]
       .map((i) => ({ x: i % width, y: Math.floor(i / width) }))
       .filter((p) =>
         continent.towns.every(
@@ -1877,5 +1917,5 @@ export function populateContinent(
 /** El suelo de un sendero: tierra pisada (en la nieve y la arena, el mismo suelo). */
 function trailGround(ground: Terrain | undefined): Terrain {
   if (ground === Terrain.Snow || ground === Terrain.Sand) return ground;
-  return Terrain.Dirt;
+  return Terrain.Path;
 }

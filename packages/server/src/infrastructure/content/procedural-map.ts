@@ -1071,7 +1071,7 @@ function terrainOf(biome: Biome): Terrain {
 function roadGround(biome: Biome | undefined): Terrain {
   if (biome === 'snow') return Terrain.Snow;
   if (biome === 'desert' || biome === 'beach') return Terrain.Sand;
-  return Terrain.Dirt;
+  return Terrain.Path;
 }
 
 /** Lo que no pinta el mapa de Tiled de un pueblo toma el suelo de su clima. */

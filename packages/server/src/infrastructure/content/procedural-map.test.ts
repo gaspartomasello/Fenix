@@ -142,7 +142,7 @@ describe('buildWorld: el continente', () => {
   });
 
   it('a la salida de los pueblos los caminos van empedrados', () => {
-    for (const sign of map.signs) {
+    for (const sign of map.signs.filter((s) => s.text.startsWith('Camino a '))) {
       let paved = false;
       for (let dy = -3; dy <= 3; dy++)
         for (let dx = -3; dx <= 3; dx++)
@@ -165,9 +165,11 @@ describe('buildWorld: el continente', () => {
   });
 
   it('los caminos tienen carteles con su destino', () => {
-    expect(map.signs.length).toBeGreaterThanOrEqual(4);
+    expect(map.signs.filter((s) => s.text.startsWith('Camino a ')).length).toBeGreaterThanOrEqual(
+      4,
+    );
     for (const sign of map.signs) {
-      expect(sign.text).toMatch(/^Camino a /);
+      expect(sign.text).toMatch(/^(Camino a |Desvío |(Cruce|Encrucijada) )/);
       expect(map.statics.some((s) => s.kind === 'sign' && s.x === sign.x && s.y === sign.y)).toBe(
         true,
       );
@@ -452,6 +454,29 @@ describe('buildWorld: el continente alargado (más alto que ancho)', () => {
     expect(median(snowY)).toBeLessThan(median(hotY));
     expect(spawnPoint.y).toBeGreaterThan(Math.min(...snowY));
     expect(map.regionAt(spawnPoint)?.name).toBe('Puerto Ceniza');
+  });
+
+  it('una red de caminos con encrucijadas con nombre y carteles que dicen adónde va cada rama', () => {
+    const crossroads = map.regions.filter((r) => /^(Cruce|Encrucijada) /.test(r.name));
+    expect(crossroads.length).toBeGreaterThanOrEqual(2);
+    expect(new Set(crossroads.map((r) => r.name)).size).toBe(crossroads.length);
+    for (const region of crossroads) {
+      const sign = map.signs.find((s) => s.text.startsWith(`${region.name}\n`));
+      expect(sign, region.name).toBeDefined();
+      // Al menos tres ramas, cada una con su rumbo: «Al norte: …».
+      expect(
+        sign?.text.match(/Al (norte|sur|este|oeste|noreste|noroeste|sureste|suroeste):/g)?.length ??
+          0,
+      ).toBeGreaterThanOrEqual(2);
+      // Se llega caminando desde la capital.
+      const walkable = reachable(map, spawnPoint);
+      expect(walkable.has(`${region.x + 4},${region.y + 4}`), region.name).toBe(true);
+    }
+    // Los caminos de tierra apisonada se distinguen del suelo del monte.
+    let path = 0;
+    for (let y = 0; y < 600; y++)
+      for (let x = 0; x < 420; x++) if (map.terrainAt({ x, y }) === Terrain.Path) path++;
+    expect(path).toBeGreaterThan(1500);
   });
 
   it('desde la capital se llega caminando a los otros pueblos', () => {

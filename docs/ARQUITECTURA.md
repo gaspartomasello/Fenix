@@ -1578,3 +1578,22 @@ ningún monumento real):
 - Tests junto al código (`*.test.ts`), con Vitest.
 - Cada etapa entra por Pull Request con `npm run check` en verde.
 - Código e identificadores en inglés; comentarios, textos de UI y documentación en español.
+
+## Red de caminos con encrucijadas (etapa 121)
+
+Además de los caminos entre pueblos, `road-network.ts` arma una **red de caminos de campo** en cada
+continente: une los lugares, las bocas de las mazmorras y **encrucijadas** repartidas por las
+tierras vacías (una cada ~110 tiles, lejos de pueblos y lugares). Los puntos se unen como un grafo
+de vecinos relativos, así quedan cruces de tres y cuatro ramas sin atajos que se pisen; cada tramo
+se traza con A* (con algo de ruido para que serpentee) y se suaviza con `curvePath`.
+
+- El suelo de los caminos es **`Terrain.Path`** (tierra apisonada con huellas de ruedas y grava):
+  se distingue de la tierra del monte en el juego y en el mapa. Los caminos entre pueblos también
+  lo usan (cerca de los pueblos siguen empedrados).
+- Las encrucijadas de tres ramas o más tienen **nombre** («Cruce del Lobo», «Encrucijada de las
+  Ánimas»; en la selva, nombres propios de allá) y son una zona chica con nombre en el mapa.
+- Cada encrucijada tiene un **cartel** con un renglón por rama: el rumbo y el primer lugar con
+  nombre al que lleva («Al norte: Paso del Cuervo»). Donde un camino nuevo sale de uno viejo, un
+  cartel marca el **desvío**. El cartel se lee al pasar el puntero o al tocarlo.
+- Los lugares del camino antiguo del imperio siguen con su sendero empedrado; los demás lugares
+  que quedaron en la red ya no necesitan sendero propio.
