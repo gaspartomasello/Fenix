@@ -8,7 +8,7 @@ import { SeededRandom } from '../system/seeded-random';
 import { shapeMountains } from './mountains';
 import { type Biome, type Continent, wanderField } from './procedural-map';
 import { type Destination, buildRoadNetwork } from './road-network';
-import { cheapestPath, curvePath } from './roads';
+import { cheapestPath, curvePath, straighten } from './roads';
 
 /** Un lugar con nombre en las tierras salvajes, con quienes viven ahí. */
 export interface Place {
@@ -2087,7 +2087,7 @@ export function populateContinent(
     };
     const straight = cheapestPath(width, height, from, target, cost, 2);
     if (!straight) return;
-    const path = curvePath(straight, cost, seed + from.x * 7 + from.y, 12, 3);
+    const path = curvePath(straighten(straight, cost), cost, seed + from.x * 7 + from.y, 12, 3);
     const carved: number[] = [];
     for (const p of path) {
       const i = index(p.x, p.y);

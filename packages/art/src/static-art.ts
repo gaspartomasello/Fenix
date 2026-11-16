@@ -394,10 +394,53 @@ const lamp: Model = (c, variant) => {
   c.sphere([0, 72.4, 0], 1.1, metal(BRASS));
 };
 
-const sign: Model = (c) => {
-  const wood = planks(WOOD, 1);
-  c.box([-6, 15, 0], UP, [1.3, 15, 1.3], wood);
-  c.box([0, 24, 0], axesAlong([1, 0, -1]), [1, 6, 9], planks(ramp([150, 106, 62]), 1, 3));
+/**
+ * Cartel de camino: un poste grueso de madera curtida con capuchón, dos
+ * tablas en flecha (una a cada lado) con letras talladas y clavos, y unas
+ * piedras al pie que lo sostienen.
+ */
+const sign: Model = (c, variant) => {
+  const stones = rocky(ramp([128, 120, 108]), 7);
+  for (const [x, z, r] of [
+    [-3, 2, 2.6],
+    [2.6, 2.4, 2.2],
+    [0.4, -3, 2.4],
+  ] as const)
+    c.ellipsoid([x, 1.4, z], UP, [r, 1.6, r * 0.9], stones);
+  const post: Material = (s) =>
+    tone(ramp([112, 80, 50]), s.light, noise(Math.floor(s.p[1] / 3), 7) > 0.72 ? -1 : 0);
+  c.box([0, 19, 0], UP, [2, 19, 2], post);
+  // Capuchón de tablitas para la lluvia.
+  c.box([0, 39, 0], UP, [3.2, 0.9, 3.2], solid(ramp([82, 58, 38])));
+  const board = ramp(variant === 1 ? [168, 124, 72] : [158, 116, 68]);
+  const carved: Material = (s) => {
+    // Las letras: rayas talladas en hileras sobre la cara de la tabla.
+    const t = s.p[0] - s.p[2];
+    const row = s.p[1] % 3.2;
+    const word = noise(Math.floor(t / 2.2), Math.floor(s.p[1] / 3.2), variant) > 0.35;
+    if (row > 1.1 && row < 2.2 && word && Math.abs(t) > 2.5)
+      return tone(ramp([60, 40, 26]), s.light);
+    return tone(board, s.light, noise(Math.floor(t / 4), Math.floor(s.p[1] / 2)) > 0.8 ? -1 : 0);
+  };
+  const iron = metal(IRON);
+  for (const [dir, y, length] of [
+    [1, 31, 10],
+    [-1, 23.5, 9],
+  ] as const) {
+    const f: Vec3 = [dir, 0, -dir];
+    const n = Math.SQRT1_2;
+    const center: Vec3 = [f[0] * n * (length - 1), y, f[2] * n * (length - 1)];
+    c.box(center, axesAlong(f), [0.9, 3.2, length - 1], carved);
+    // La punta de la flecha.
+    const end = (k: number, dy: number): Vec3 => [f[0] * n * k, y + dy, f[2] * n * k];
+    c.polygon(
+      [end(2 * length - 2, 3.2), end(2 * length - 2, -3.2), end(2 * length + 2, 0)],
+      carved,
+    );
+    // Dos clavos donde se clava al poste.
+    for (const dy of [-1.6, 1.6])
+      c.box([f[0] * n * 2.4, y + dy, f[2] * n * 2.4 + 0.4], UP, [0.5, 0.5, 0.5], iron);
+  }
 };
 
 const shrine: Model = (c) => {
@@ -3416,7 +3459,7 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   crate: { model: crate, shadow: [14, 6] },
   well: { model: well, shadow: [18, 8] },
   lamp: { model: lamp, shadow: [6, 3] },
-  sign: { model: sign, shadow: [9, 4] },
+  sign: { model: sign, shadow: [11, 5] },
   shrine: { model: shrine, shadow: [18, 8] },
   ankh: { model: ankh, shadow: [12, 6] },
   menhir: { model: menhir, shadow: [20, 9] },

@@ -244,3 +244,60 @@ function mix(seed: number, x: number, y: number): number {
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
+
+/**
+ * Endereza un camino trazado en escuadra: desde cada punto salta al punto más
+ * lejano del camino (hasta `reach` pasos adelante) al que se llega en línea
+ * recta sin pisar nada caro (`cost` ≥ `limit`). La línea va en cualquier
+ * dirección (también en diagonal), en pasos de a uno en 4 direcciones.
+ */
+export function straighten(
+  path: readonly Position[],
+  cost: (x: number, y: number) => number,
+  limit = 20,
+  reach = 90,
+): Position[] {
+  const first = path[0];
+  if (!first || path.length < 3) return [...path];
+  const out: Position[] = [first];
+  let i = 0;
+  while (i < path.length - 1) {
+    const from = path[i] ?? first;
+    let best = i + 1;
+    for (let j = Math.min(path.length - 1, i + reach); j > i + 1; j--) {
+      const to = path[j];
+      if (to && line(from, to).every((p) => cost(p.x, p.y) < limit)) {
+        best = j;
+        break;
+      }
+    }
+    const to = path[best] ?? from;
+    out.push(...line(from, to).slice(1));
+    i = best;
+  }
+  return out;
+}
+
+/** Una línea recta de `a` a `b` en pasos de a uno en 4 direcciones (sin cortes en diagonal). */
+function line(a: Position, b: Position): Position[] {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const sx = Math.sign(dx);
+  const sy = Math.sign(dy);
+  const nx = Math.abs(dx);
+  const ny = Math.abs(dy);
+  const out: Position[] = [{ x: a.x, y: a.y }];
+  let x = a.x;
+  let y = a.y;
+  for (let ix = 0, iy = 0; ix < nx || iy < ny;) {
+    if (iy >= ny || (ix < nx && (ix + 0.5) / nx < (iy + 0.5) / ny)) {
+      x += sx;
+      ix++;
+    } else {
+      y += sy;
+      iy++;
+    }
+    out.push({ x, y });
+  }
+  return out;
+}
