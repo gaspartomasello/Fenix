@@ -1,4 +1,8 @@
-import { spellCooldownMs } from '@fenix/shared/creatures/creature-pace';
+import {
+  CREATURE_SPELL_POWER,
+  firstSpellDelayMs,
+  spellCooldownMs,
+} from '@fenix/shared/creatures/creature-pace';
 import { tileDistance } from '@fenix/shared/geometry/position';
 import {
   attributeModifier,
@@ -43,7 +47,13 @@ export function startCreatureCast(
   visible = true,
 ): SpellKey | null {
   const spells = creature.definition.abilities?.spells;
-  if (!spells || creature.pendingCast || now < creature.nextSpellAt) return null;
+  if (!spells || creature.pendingCast) return null;
+  // Al empezar a pelear, cada uno se toma su tiempo: no salen todos los hechizos juntos.
+  if (creature.nextSpellAt === 0) {
+    creature.nextSpellAt = now + firstSpellDelayMs(random());
+    return null;
+  }
+  if (now < creature.nextSpellAt) return null;
   if (creature.combat.isParalyzed) return null;
   const distance = tileDistance(creature.position, target.position);
   if (distance > spells.range + 3) return null;
@@ -60,7 +70,7 @@ export function startCreatureCast(
     targetId: healing ? creature.id : target.id,
     resolveAt: now + SPELLS[spell].castMs,
   };
-  creature.nextSpellAt = now + SPELLS[spell].castMs + spellCooldownMs(spells.cooldownMs);
+  creature.nextSpellAt = now + SPELLS[spell].castMs + spellCooldownMs(spells.cooldownMs, random());
   return spell;
 }
 
@@ -94,7 +104,10 @@ export function resolveCreatureCast(
   const effect = spell.effect;
   switch (effect.kind) {
     case 'damage': {
-      const rolled = rollSpellPower(spell, magery, random);
+      const rolled = Math.max(
+        1,
+        Math.round(rollSpellPower(spell, magery, random) * CREATURE_SPELL_POWER),
+      );
       const amount = resisted ? Math.max(1, Math.round(rolled / 2)) : rolled;
       return result(amount, target.combat.takeDamage(amount), false);
     }

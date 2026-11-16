@@ -224,7 +224,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       { kind: 'bone-gloves', chance: 0.03 },
       { kind: 'scimitar', chance: 0.05 },
       { kind: 'chain-coif', chance: 0.05 },
-      { kind: 'gold', chance: 1, amount: [15, 40] },
+      { kind: 'gold', chance: 1, amount: [80, 120] },
       { kind: 'healing-potion', chance: 0.3 },
       { kind: 'short-sword', chance: 0.1 },
       { kind: 'iron-helmet', chance: 0.08 },
@@ -281,7 +281,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       { kind: 'club', chance: 0.12 },
       { kind: 'amethyst', chance: 0.08 },
       { kind: 'bread', chance: 0.3, amount: [1, 2] },
-      { kind: 'gold', chance: 1, amount: [20, 50] },
+      { kind: 'gold', chance: 1, amount: [80, 120] },
       { kind: 'mace', chance: 0.12 },
       { kind: 'leather-armor', chance: 0.1 },
       { kind: 'studded-leather', chance: 0.05 },
@@ -331,7 +331,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     summoned: false,
     abilities: { regeneration: 0.3 },
     loot: [
-      { kind: 'gold', chance: 1, amount: [10, 30] },
+      { kind: 'gold', chance: 1, amount: [80, 120] },
       { kind: 'bandage', chance: 0.4, amount: [1, 3] },
     ],
   },
@@ -352,7 +352,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     summoned: false,
     abilities: { poison: { chance: 0.2, level: 2 }, regeneration: 0.4 },
     loot: [
-      { kind: 'gold', chance: 1, amount: [40, 110] },
+      { kind: 'gold', chance: 1, amount: [80, 120] },
       { kind: 'bandage', chance: 0.8, amount: [3, 8] },
       { kind: 'ruby', chance: 0.12 },
       { kind: 'amethyst', chance: 0.1 },
@@ -423,7 +423,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     },
     loot: [
       { kind: 'fur-cape', chance: 0.12 },
-      { kind: 'gold', chance: 1, amount: [30, 70] },
+      { kind: 'gold', chance: 1, amount: [80, 120] },
       { kind: 'ham', chance: 0.3 },
       { kind: 'hides', chance: 0.5, amount: [1, 3] },
       { kind: 'amethyst', chance: 0.06 },
@@ -459,7 +459,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     loot: [
       { kind: 'bandana', chance: 0.2 },
       { kind: 'tricorne', chance: 0.05 },
-      { kind: 'gold', chance: 1, amount: [25, 60] },
+      { kind: 'gold', chance: 1, amount: [80, 120] },
       { kind: 'wine', chance: 0.3 },
       { kind: 'ale', chance: 0.3 },
       { kind: 'ruby', chance: 0.06 },
@@ -525,7 +525,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       rightHand: 'dagger',
     },
     loot: [
-      { kind: 'gold', chance: 1, amount: [20, 50] },
+      { kind: 'gold', chance: 1, amount: [80, 120] },
       { kind: 'bread', chance: 0.3 },
       { kind: 'torch', chance: 0.2 },
     ],
@@ -670,7 +670,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       rightHand: 'longsword',
       leftHand: 'heater-shield',
     },
-    loot: [{ kind: 'gold', chance: 1, amount: [20, 60] }],
+    loot: [{ kind: 'gold', chance: 1, amount: [80, 120] }],
   },
   axeman: {
     kind: 'axeman',
@@ -699,7 +699,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       cloak: 'fur-cape',
       rightHand: 'two-handed-axe',
     },
-    loot: [{ kind: 'gold', chance: 1, amount: [20, 60] }],
+    loot: [{ kind: 'gold', chance: 1, amount: [80, 120] }],
   },
   'battle-mage': {
     kind: 'battle-mage',
@@ -733,7 +733,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       rightHand: 'quarterstaff',
     },
     loot: [
-      { kind: 'gold', chance: 1, amount: [20, 60] },
+      { kind: 'gold', chance: 1, amount: [80, 120] },
       { kind: 'black-pearl', chance: 0.6, amount: [2, 5] },
     ],
   },
@@ -759,7 +759,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       leftHand: 'wooden-shield',
     },
     loot: [
-      { kind: 'gold', chance: 1, amount: [20, 50] },
+      { kind: 'gold', chance: 1, amount: [80, 120] },
       { kind: 'hides', chance: 0.3, amount: [1, 2] },
       { kind: 'emerald', chance: 0.05 },
     ],
@@ -781,7 +781,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     summoned: false,
     outfit: { head: 'tribal-mask', legs: 'short-pants', feet: 'sandals', rightHand: 'spear' },
     loot: [
-      { kind: 'gold', chance: 1, amount: [40, 90] },
+      { kind: 'gold', chance: 1, amount: [80, 120] },
       { kind: 'hides', chance: 0.5, amount: [1, 3] },
       { kind: 'emerald', chance: 0.08 },
     ],
@@ -820,7 +820,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       { kind: 'spiders-silk', chance: 0.5, amount: [2, 5] },
     ],
     loot: [
-      { kind: 'gold', chance: 1, amount: [40, 90] },
+      { kind: 'gold', chance: 1, amount: [80, 120] },
       { kind: 'emerald', chance: 0.1 },
     ],
   },
@@ -888,7 +888,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     abilities: { poison: { chance: 0.25, level: 1 } },
     loot: [
       { kind: 'amethyst', chance: 0.1 },
-      { kind: 'gold', chance: 1, amount: [20, 50] },
+      { kind: 'gold', chance: 1, amount: [80, 120] },
       { kind: 'cure-potion', chance: 0.2 },
     ],
   },
@@ -919,7 +919,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
     },
     loot: [
       { kind: 'sapphire', chance: 0.15 },
-      { kind: 'gold', chance: 1, amount: [30, 70] },
+      { kind: 'gold', chance: 1, amount: [80, 120] },
       { kind: 'refresh-potion', chance: 0.3 },
     ],
   },
@@ -957,7 +957,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       { kind: 'bone-armor', chance: 0.06 },
       { kind: 'sapphire', chance: 0.15 },
       { kind: 'quarterstaff', chance: 0.08 },
-      { kind: 'gold', chance: 1, amount: [30, 70] },
+      { kind: 'gold', chance: 1, amount: [80, 120] },
       { kind: 'blank-scroll', chance: 0.5, amount: [1, 4] },
       { kind: 'scroll-fireball', chance: 0.12 },
       { kind: 'scroll-lightning', chance: 0.08 },
