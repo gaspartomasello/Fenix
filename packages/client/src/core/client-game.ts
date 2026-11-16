@@ -660,6 +660,9 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     const entity = this.entities.get(id);
     if (!entity || entity.npc !== null) return false;
     if (entity.isPlayer) return entity.notoriety === 'innocent';
+    // Lo de alguien (un mercenario, una montura): atacarlo es atacar a su dueño.
+    if (entity.ownerId !== null)
+      return entity.ownerId !== this.self?.id && this.isInnocent(entity.ownerId);
     return entity.body !== 'human' && CREATURES[entity.body].innocent === true;
   }
 

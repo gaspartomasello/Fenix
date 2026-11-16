@@ -390,6 +390,16 @@ describe('ClientGame', () => {
       ]);
     });
 
+    it('el mercenario de un inocente cuenta como inocente (con el seguro, pregunta)', () => {
+      game.apply({
+        type: 'mobileAppeared',
+        mobile: { ...snapshot('merc', 1, 0), body: 'sellsword', ownerId: 'bruno' },
+      });
+      expect(game.isInnocent('merc')).toBe(true);
+      game.apply({ type: 'mobileStatus', id: 'bruno', notoriety: 'murderer', guildTag: null });
+      expect(game.isInnocent('merc')).toBe(false);
+    });
+
     it('actualiza la reputación y el gremio de quien se ve', () => {
       game.apply({ type: 'mobileStatus', id: 'bruno', notoriety: 'criminal', guildTag: 'FNX' });
       const bruno = [...game.allEntities()].find((e) => e.id === 'bruno');

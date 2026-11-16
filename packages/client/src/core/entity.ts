@@ -10,7 +10,7 @@ import type {
   EquipmentLook,
   MobileSnapshot,
 } from '@fenix/shared/protocol/messages';
-import { OVERHEAD_TEXT_DURATION_MS } from '@fenix/shared/rules/chat';
+import { overheadTextDurationMs } from '@fenix/shared/rules/chat';
 import type { MoveMode } from '@fenix/shared/rules/movement';
 import type { Notoriety } from '@fenix/shared/social/reputation';
 
@@ -307,7 +307,7 @@ export class Entity {
   say(text: string, now: number): void {
     this._overhead = [
       ...this._overhead,
-      { text, expiresAt: now + OVERHEAD_TEXT_DURATION_MS },
+      { text, expiresAt: now + overheadTextDurationMs(text) },
     ].slice(-MAX_OVERHEAD_TEXTS);
   }
 

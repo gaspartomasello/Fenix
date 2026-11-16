@@ -375,7 +375,8 @@ export class CharacterView {
     const color = entity.npc
       ? NAME_COLOR_NPC
       : !entity.isPlayer
-        ? entity.body !== 'human' && CREATURES[entity.body].innocent
+        ? // Los que tienen dueño (mercenarios, invocaciones, monturas) van de azul, como la gente de paz.
+          entity.ownerId !== null || (entity.body !== 'human' && CREATURES[entity.body].innocent)
           ? NAME_COLOR_NOTORIETY.innocent
           : NAME_COLOR_CREATURE
         : NAME_COLOR_NOTORIETY[entity.notoriety];
