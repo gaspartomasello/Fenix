@@ -1657,3 +1657,13 @@ las alturas como diferencia con el vecino y los objetos fijos ordenados por posi
 cliente lo baja (`platform/world-download.ts`, descomprime con `DecompressionStream`) y, si su
 clave coincide con la del mundo del juego, lo usa: entrar tarda unos segundos. Si no está (la
 página abierta como archivo suelto, sin conexión), se genera como antes y se guarda en el navegador.
+
+## Bosques más tupidos, con paso entre los árboles (etapa 129)
+
+Después de ralear la selva y el bosque (etapa 118) y los detalles chicos (etapa 125) quedaban unos
+75.000 árboles en el mundo; ahora hay unos 91.000 (un 20 % más), en los mismos bosques y selvas.
+La regla nueva: **un árbol nunca queda pegado a otro**, ni de costado ni en diagonal
+(`spaceTrees` en `procedural-map.ts`), así siempre se puede pasar entre ellos. Como esa regla
+descarta parte de los árboles que salen, la densidad de bosque y selva sube (`FOREST_TREES`,
+`JUNGLE_TREES`) para llegar a la cantidad pedida. Los árboles que plantan los pueblos y los
+lugares en sus plazas siguen a su gusto.

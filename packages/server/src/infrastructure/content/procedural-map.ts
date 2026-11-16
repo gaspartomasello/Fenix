@@ -583,6 +583,19 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
   const place = (x: number, y: number, kind: StaticKind): void => {
     statics.set(index(x, y), { kind, x, y });
   };
+  /** ¿Ya hay un árbol al lado (de los que se pusieron antes, arriba o a la izquierda)? */
+  const spaceTrees = (x: number, y: number): boolean => {
+    for (const [dx, dy] of [
+      [-1, -1],
+      [0, -1],
+      [1, -1],
+      [-1, 0],
+    ] as const) {
+      const kind = statics.get(index(x + dx, y + dy))?.kind;
+      if (kind && TREES.has(kind)) return true;
+    }
+    return false;
+  };
   const nearWater = (x: number, y: number): boolean => {
     for (let dy = -1; dy <= 1; dy++)
       for (let dx = -1; dx <= 1; dx++)
@@ -611,8 +624,12 @@ export function generateIslandMap(options: WorldGenerationOptions): Continent {
         conifers.at(x, y),
         nearWater(x, y),
       );
+      if (!kind) continue;
       // Los detalles chicos del suelo (flores, hongos, yuyos), un 30 % menos.
-      if (kind && !(SMALL_DETAILS.has(kind) && hash(seed + 23, x, y) < 0.3)) place(x, y, kind);
+      if (SMALL_DETAILS.has(kind) && hash(seed + 23, x, y) < 0.3) continue;
+      // Un árbol nunca queda pegado a otro (ni en diagonal): siempre se puede pasar entre ellos.
+      if (TREES.has(kind) && spaceTrees(x, y)) continue;
+      place(x, y, kind);
     }
   }
 
@@ -1103,6 +1120,34 @@ const CLEARING: Partial<Record<Biome, number>> = {
   forest: 0.7,
 };
 
+/**
+ * Cuántos árboles hay en los bosques y en la selva, sobre lo que había en la
+ * etapa 118. Como nunca quedan dos pegados (`spaceTrees`), parte de los que
+ * salen se pierden; con estos valores queda un 20 % más que en la etapa 128.
+ */
+const FOREST_TREES = 2.3;
+const JUNGLE_TREES = 2.3;
+
+/** Los árboles (lo que no se deja pasar de la vegetación). */
+const TREES: ReadonlySet<StaticKind> = new Set<StaticKind>([
+  'oak',
+  'pine',
+  'maple',
+  'birch',
+  'dead-tree',
+  'willow',
+  'ceibo',
+  'gomero',
+  'poplar',
+  'jungle-tree',
+  'palm',
+  'bamboo',
+  'snow-pine',
+  'acacia',
+  'baobab',
+  'cypress',
+]);
+
 /** Detalles chicos del suelo, que se ralean para que el campo no quede tan cargado. */
 const SMALL_DETAILS: ReadonlySet<StaticKind> = new Set<StaticKind>([
   'flowers',
@@ -1179,16 +1224,18 @@ function vegetation(
       if (roll < 0.085) return 'dry-shrub';
       if (roll < 0.09) return choose(['boulder', 'rock']);
       return null;
-    case 'jungle':
-      // Selva: árboles altos, palmeras, helechos y plantas de hojas grandes. Con un 40 % menos
-      // de lo que no deja pasar (árboles, palmeras y bambú) que antes: era intransitable.
-      if (wet && roll < 0.072) return 'bamboo';
-      if (roll < 0.096) return pick < 0.6 ? 'jungle-tree' : pick < 0.9 ? 'palm' : 'bamboo';
-      if (roll < 0.196) return 'jungle-plant';
-      if (roll < 0.276) return 'fern';
-      if (roll < 0.296) return 'mushrooms';
-      if (roll < 0.306) return 'mossy-rock';
+    case 'jungle': {
+      // Selva: árboles altos, palmeras, helechos y plantas de hojas grandes. Los árboles nunca
+      // quedan pegados uno al otro (ver `spaceTrees`), así se puede pasar entre ellos.
+      if (wet && roll < 0.072 * JUNGLE_TREES) return 'bamboo';
+      const trees = 0.096 * JUNGLE_TREES;
+      if (roll < trees) return pick < 0.6 ? 'jungle-tree' : pick < 0.9 ? 'palm' : 'bamboo';
+      if (roll < trees + 0.1) return 'jungle-plant';
+      if (roll < trees + 0.18) return 'fern';
+      if (roll < trees + 0.2) return 'mushrooms';
+      if (roll < trees + 0.21) return 'mossy-rock';
       return null;
+    }
     case 'swamp':
       if (roll < 0.07) return 'reeds';
       if (roll < 0.09) return pick < 0.7 ? 'willow' : 'cypress';
@@ -1224,9 +1271,9 @@ function vegetation(
       if (wet)
         return roll < 0.05 ? (pick < 0.55 ? 'willow' : 'ceibo') : roll < 0.09 ? 'reeds' : null;
       if (biome === 'forest') {
-        // Bosque abierto: árboles con espacio entre ellos para pasar (un 40 % menos que antes,
-        // que se hacía difícil de cruzar).
-        if (roll < 0.12)
+        // Bosque: árboles con espacio entre ellos para pasar (nunca pegados, ver `spaceTrees`).
+        const trees = 0.12 * FOREST_TREES;
+        if (roll < trees)
           return conifer > 0.55
             ? 'pine'
             : conifer < 0.24
@@ -1238,11 +1285,11 @@ function vegetation(
                 : pick < 0.14
                   ? 'birch'
                   : 'oak';
-        if (roll < 0.15) return 'bush';
-        if (roll < 0.18) return 'fern';
-        if (roll < 0.195) return 'mushrooms';
-        if (roll < 0.205) return 'mossy-rock';
-        if (roll < 0.22) return 'weeds';
+        if (roll < trees + 0.03) return 'bush';
+        if (roll < trees + 0.06) return 'fern';
+        if (roll < trees + 0.075) return 'mushrooms';
+        if (roll < trees + 0.085) return 'mossy-rock';
+        if (roll < trees + 0.1) return 'weeds';
         return null;
       }
       if (roll < 0.014) return conifer > 0.55 ? 'pine' : loneTree(pick);
