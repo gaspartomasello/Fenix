@@ -25,6 +25,9 @@ const TEST_SUPPLIES: readonly { kind: ItemKind; amount: number }[] = [
   { kind: 'pouch', amount: 1 },
 ];
 
+/** Lo del kit de prueba que no se cae al morir. */
+const KEPT: ReadonlySet<ItemKind> = new Set<ItemKind>(['spellbook', 'dye-tub', 'pouch']);
+
 /**
  * Versión del kit de prueba. La 2 le saca todo el oro que tenía (las de
  * antes le daban casi un millón): ahora lo tiene que ganar como cualquiera.
@@ -64,6 +67,13 @@ export function equipTestCharacter(player: Player, world: World, ids: () => Enti
   restock(player, world, ids, reagents, changes);
   bagReagents(player, world, ids, changes);
   restock(player, world, ids, rest, changes);
+  // Sus herramientas (el libro de hechizos, la tina, la bolsita) son su equipo
+  // inicial: no se caen al morir. Los reactivos se reponen solos al entrar.
+  for (const item of world.items.carried(player.id))
+    if (KEPT.has(item.kind) && !item.newbie) {
+      item.newbie = true;
+      changes.inventories.add(player.id);
+    }
   return changes;
 }
 

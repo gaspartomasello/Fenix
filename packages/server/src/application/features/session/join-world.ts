@@ -71,7 +71,8 @@ export class JoinWorld {
     this.persistence.register(player, auth.passwordHash);
     if (isTestCharacter(player.name, this.testCharacters)) {
       equipTestCharacter(player, this.world, () => this.ids.next());
-      this.dress(player, false);
+      // Su ropa es su equipo inicial: no se cae al morir.
+      this.dress(player, true);
     }
     return { ok: true, playerId: player.id };
   }
@@ -146,7 +147,8 @@ export class JoinWorld {
     this.persistence.register(player, account.passwordHash, account.name);
     if (isTestCharacter(player.name, this.testCharacters)) {
       equipTestCharacter(player, this.world, () => this.ids.next());
-      this.dress(player, false);
+      // Su ropa es su equipo inicial: no se cae al morir.
+      this.dress(player, true);
     }
     return { ok: true, playerId: player.id };
   }

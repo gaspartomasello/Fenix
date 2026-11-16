@@ -174,4 +174,26 @@ describe('el cuerpo de un jugador', () => {
     // Recuperar lo propio no es crimen.
     expect(player?.reputation.notoriety).toBe('innocent');
   });
+
+  it('etapa 130: si salió y volvió a entrar, su cuerpo sigue siendo suyo (y recuperarlo no es crimen)', () => {
+    const arena = createArena();
+    const beto = arena.join('Beto');
+    const corpseId = arena.killBeto(beto);
+    arena.app.leave(beto);
+    // Al volver a entrar le toca otro id, pero es el mismo personaje.
+    const again = arena.join('Beto');
+    expect(again).not.toBe(beto);
+    arena.app.handle(again, { type: 'useItem', itemId: corpseId });
+    const opened = arena.notifier.ofType('corpse').at(-1)?.message;
+    expect(opened?.type === 'corpse' && opened.noTakeAll).toBeFalsy();
+    const inCorpse = arena.world.items
+      .corpseOf(corpseId)
+      .filter((i) => i.kind === 'gold')
+      .reduce((n, i) => n + i.amount, 0);
+    expect(inCorpse).toBeGreaterThan(0);
+    const before = arena.world.items.countInBackpack(again, 'gold');
+    arena.app.handle(again, { type: 'lootAll', corpseId });
+    expect(arena.world.items.countInBackpack(again, 'gold')).toBe(before + inCorpse);
+    expect(arena.world.get(again)?.reputation.notoriety).toBe('innocent');
+  });
 });
