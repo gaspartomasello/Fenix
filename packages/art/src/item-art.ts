@@ -374,11 +374,17 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     fish(c, ramp([150, 170, 182]));
   },
   'fish-steak'(c) {
-    c.ellipsoid([0, 1, 0], lying(0.4), [4.6, 1.1, 3], (s) =>
-      s.n[1] > 0.6
-        ? tone(ramp([226, 140, 104]), s.light, Math.sin(s.p[0] * 2.4) > 0.7 ? 1 : 0)
-        : tone(ramp([170, 150, 130]), s.light),
-    );
+    // Rodaja de pescado: piel gris alrededor, carne rosada y espina al centro.
+    const flesh = ramp([224, 138, 108]);
+    const skin = ramp([104, 126, 132]);
+    c.ellipsoid([0, 1.2, 0], lying(0.4), [4.7, 1.2, 3.3], (s) => {
+      if (s.n[1] < 0.38) return tone(skin, s.light);
+      const ring = Math.hypot(s.p[0] / 4.7, s.p[2] / 3.3);
+      if (ring > 0.82) return tone(skin, s.light + 0.1);
+      if (ring > 0.68) return tone(ramp([244, 190, 154]), s.light);
+      return tone(flesh, s.light, ring < 0.25 ? 1 : 0);
+    });
+    c.ellipsoid([0, 2.35, 0], lying(0.4), [0.8, 0.15, 0.65], solid(ramp([246, 238, 212])));
   },
   'raw-ribs'(c) {
     ribs(c, ramp([176, 52, 52]));
@@ -406,13 +412,29 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     );
   },
   cheese(c) {
-    // Una rueda con una porción cortada: cáscara amarilla y agujeros.
-    const paste = ramp([236, 200, 90]);
-    c.limb([0, 0, 0], [0, 1.6, 0], 4.6, 4.6, (s) =>
-      noise(Math.floor(s.p[0] * 1.6), Math.floor(s.p[2] * 1.6), 3) > 0.84
-        ? tone(paste, s.light, -1)
-        : tone(paste, s.light),
+    // Cuña triangular gruesa: corte claro con agujeros y corteza dorada atrás.
+    const paste = ramp([238, 206, 100]);
+    const rind = ramp([176, 118, 44]);
+    const a: Vec3 = [-4.5, 0.6, 2.7];
+    const b: Vec3 = [4.5, 0.6, 2.7];
+    const tip: Vec3 = [0.3, 0.6, -5.4];
+    const topA: Vec3 = [a[0], 3.2, a[2]];
+    const topB: Vec3 = [b[0], 3.2, b[2]];
+    const topTip: Vec3 = [tip[0], 3.2, tip[2]];
+    c.polygon([a, b, topB, topA], solid(rind));
+    c.polygon([b, tip, topTip, topB], (s) =>
+      (s.p[0] - 2.5) ** 2 + (s.p[1] - 1.8) ** 2 < 0.42
+        ? tone(rind, s.light, -1)
+        : tone(paste, s.light, -1),
     );
+    c.polygon([tip, a, topA, topTip], solid(paste, -1));
+    c.polygon([topA, topB, topTip], (s) => {
+      const hole =
+        (s.p[0] + 2.1) ** 2 + (s.p[2] - 0.9) ** 2 < 0.6 ||
+        (s.p[0] - 1.6) ** 2 + (s.p[2] - 1.1) ** 2 < 0.42 ||
+        (s.p[0] - 0.1) ** 2 + (s.p[2] + 2.5) ** 2 < 0.24;
+      return tone(paste, s.light, hole ? -2 : 0);
+    });
   },
   ham(c) {
     const meat = ramp([196, 92, 80]);
