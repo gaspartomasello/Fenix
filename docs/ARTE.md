@@ -69,3 +69,9 @@ tiene que ver en el otro. Reglas de la ropa de tela (`character-art.ts`):
 - **Íconos de las armas en diagonal**: en la mochila y las ventanas, las armas que se empuñan se
   dibujan cruzadas de punta a punta del casillero y más grandes (`isLongWeapon`, `DIAGONAL_TURN`);
   si alguna se sale, se achica sola hasta entrar entera (`touchesEdge`).
+
+**Etapa 139 — cada arma, a su manera**: cuando el personaje descansa o avanza (en el mundo y en la
+ventana de personaje) cada tipo de arma se empuña distinto (`STANCES` en `character-art.ts`): las
+espadas con la hoja en alto y algo abierta; los puñales con el filo hacia abajo (empuñadura
+invertida); las mazas, hachas y martillos hacia el hombro; la katana baja y adelante. Las de asta
+siguen verticales (etapa 138); en guardia y al golpear todas apuntan al enemigo.
