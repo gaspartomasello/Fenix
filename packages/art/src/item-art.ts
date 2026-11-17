@@ -1,3 +1,4 @@
+import { weaponByKind } from '@fenix/shared/combat/weapons';
 import { ITEMS, type BaseItemKind, type ItemKind } from '@fenix/shared/items/item-catalog';
 import { SPELLS } from '@fenix/shared/magic/spell-catalog';
 import { hexToRgb, type PixelImage, type Rgb } from './pixel-art';
@@ -2345,6 +2346,15 @@ function coins(c: VolumeCanvas, count: number): void {
   }
 }
 
+/** Cuánto se giran y se agrandan las armas largas en los íconos. */
+const DIAGONAL_TURN = 0.62;
+const DIAGONAL_ZOOM = 1.3;
+
+/** Armas que se empuñan (espadas, hachas, mazas, astas, arcos): no los escudos ni las luces. */
+function isLongWeapon(kind: ItemKind): boolean {
+  return ITEMS[kind].slot === 'rightHand' && weaponByKind(kind) !== undefined;
+}
+
 /** Ícono de un objeto: en el suelo o, más grande, en las ventanas. */
 export function drawItem(
   kind: ItemKind,
@@ -2354,23 +2364,40 @@ export function drawItem(
 ): PixelImage {
   // Los íconos (mochila, ventanas) se dibujan al doble de resolución: más detalle.
   const detail = style === 'icon' ? ICON_DETAIL : 1;
-  const camera = new Camera(
-    0.45,
-    (ITEM_ART_SIZE * detail) / 2,
-    ITEM_ART_SIZE * 0.6 * detail,
-    0.8,
-    ZOOM[style] * detail * (style === 'icon' ? (ICON_FIT[kind] ?? 1) : 1),
-  );
-  const canvas = new VolumeCanvas(ITEM_ART_SIZE * detail, ITEM_ART_SIZE * detail, camera);
-  canvas.detail = detail;
   const definition = ITEMS[kind];
   const base = hue ?? definition.color;
   const color = ramp(base === undefined ? [128, 128, 128] : hexToRgb(base));
-  if (kind === 'gold') coins(canvas, GOLD_PILES[itemVariant(kind, amount)]?.coins ?? 7);
-  else if (definition.spell)
-    scroll(canvas, ramp(CIRCLE_RIBBON[SPELLS[definition.spell].circle - 1] ?? [200, 60, 50]));
-  else MODELS[kind as BaseItemKind](canvas, color);
-  return canvas.toImage(OUTLINE);
+  // Las armas, en los íconos, van cruzadas en diagonal (de punta a punta del
+  // casillero): así entran más grandes y se les ve el detalle. Si alguna se
+  // sale del casillero, se achica de a poco hasta que entre entera.
+  const diagonal = style === 'icon' && isLongWeapon(kind);
+  const size = ITEM_ART_SIZE * detail;
+  for (let fit = diagonal ? DIAGONAL_ZOOM : 1; ; fit *= 0.92) {
+    const camera = new Camera(
+      diagonal ? 0.45 + DIAGONAL_TURN : 0.45,
+      size / 2,
+      ITEM_ART_SIZE * (diagonal ? 0.5 : 0.6) * detail,
+      diagonal ? 1.15 : 0.8,
+      ZOOM[style] * detail * (style === 'icon' ? (ICON_FIT[kind] ?? 1) * fit : 1),
+    );
+    const canvas = new VolumeCanvas(size, size, camera);
+    canvas.detail = detail;
+    if (kind === 'gold') coins(canvas, GOLD_PILES[itemVariant(kind, amount)]?.coins ?? 7);
+    else if (definition.spell)
+      scroll(canvas, ramp(CIRCLE_RIBBON[SPELLS[definition.spell].circle - 1] ?? [200, 60, 50]));
+    else MODELS[kind as BaseItemKind](canvas, color);
+    const image = canvas.toImage(OUTLINE);
+    if (!diagonal || fit < 0.6 || !touchesEdge(image)) return image;
+  }
+}
+
+/** ¿El dibujo llega al borde de la imagen (o sea, quedó cortado)? */
+function touchesEdge(image: PixelImage): boolean {
+  const { width, height, data } = image;
+  const solid = (x: number, y: number): boolean => (data[(y * width + x) * 4 + 3] ?? 0) > 0;
+  for (let x = 0; x < width; x++) if (solid(x, 0) || solid(x, height - 1)) return true;
+  for (let y = 0; y < height; y++) if (solid(0, y) || solid(width - 1, y)) return true;
+  return false;
 }
 
 // ── Etapa 59: katana, mangual, escudos grandes y armaduras samurái, legionaria y templaria ──

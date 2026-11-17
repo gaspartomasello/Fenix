@@ -58,3 +58,14 @@ tiene que ver en el otro. Reglas de la ropa de tela (`character-art.ts`):
     cara) y cordón.
   - _Túnica raída con capucha_: la misma, gris, con el ruedo en jirones y las mangas rotas.
 - La hebilla del cinturón es chica: a tamaño de sprite una grande parecía una mancha.
+
+**También en la etapa 138:**
+
+- **El cinturón va en la cintura** (`WAIST`), no sobre la cadera; el cordón de las túnicas y el
+  arranque de las polleras suben con él.
+- **Armas largas derechas**: mientras el personaje descansa o avanza (quieto, caminando o
+  corriendo), las armas de asta y las hachas largas se llevan en vertical, con la punta al cielo y el
+  asta hasta el suelo (`rig.rest`); en guardia o al golpear apuntan al enemigo.
+- **Íconos de las armas en diagonal**: en la mochila y las ventanas, las armas que se empuñan se
+  dibujan cruzadas de punta a punta del casillero y más grandes (`isLongWeapon`, `DIAGONAL_TURN`);
+  si alguna se sale, se achica sola hasta entrar entera (`touchesEdge`).
