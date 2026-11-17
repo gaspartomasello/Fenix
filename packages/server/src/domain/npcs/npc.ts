@@ -217,6 +217,7 @@ const LOOKS: Readonly<Record<NpcRole, { appearance: Appearance; equipment: Equip
     },
     equipment: { legs: 'trousers', feet: 'boots', head: 'straw-hat', rightHand: 'shovel' },
   },
+  wanderer: { appearance: DEFAULT_APPEARANCE, equipment: { legs: 'trousers', feet: 'boots' } },
   beggar: {
     appearance: {
       ...DEFAULT_APPEARANCE,
@@ -328,6 +329,7 @@ const WANDER: Readonly<Partial<Record<NpcRole, number>>> = {
   guard: 2,
   farmer: 2,
   beggar: 2,
+  wanderer: 1,
 };
 
 /**
@@ -367,7 +369,7 @@ export class Npc implements Mobile {
     this._position = position;
     this.wander = WANDER[role] ?? 0;
     const look =
-      role === 'townsfolk'
+      role === 'townsfolk' || role === 'wanderer'
         ? (TOWNSFOLK[hashName(this.name) % TOWNSFOLK.length] ?? LOOKS[role])
         : LOOKS[role];
     this.appearance = look.appearance;

@@ -373,7 +373,10 @@ export class CharacterView {
     const { entity } = this;
     const text = entity.guildTag ? `${entity.name} [${entity.guildTag}]` : entity.name;
     const color = entity.npc
-      ? NAME_COLOR_NPC
+      ? // Los caminantes (gente de los caminos, fuera de los pueblos) van de azul, como la gente de paz.
+        entity.npc === 'wanderer'
+        ? NAME_COLOR_NOTORIETY.innocent
+        : NAME_COLOR_NPC
       : !entity.isPlayer
         ? // Los que tienen dueño (mercenarios, invocaciones, monturas) van de azul, como la gente de paz.
           entity.ownerId !== null || (entity.body !== 'human' && CREATURES[entity.body].innocent)

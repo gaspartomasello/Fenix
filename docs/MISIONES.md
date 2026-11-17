@@ -341,3 +341,20 @@ Además de la charla de siempre, cualquier vecino sabe del mundo (`features/lore
 - **Más rumores** sueltos, que apuntan a los lugares escondidos.
 - **Frases secretas** (`SECRETS`): «el sentido de la vida», «¿quién hizo este mundo?», «hola mundo»,
   «abracadabra», «esto es un juego», «tirar los dados» y otras tienen respuesta propia.
+
+## Los caminantes (etapa 136)
+
+En las encrucijadas del continente, lejos de los pueblos, hay **caminantes**: gente con nombre
+propio y **nombre azul** (oficio `wanderer`), que no pelea ni vende: cuenta. Son 16
+(`@fenix/shared/social/wanderers`), repartidos entre las encrucijadas del mapa (módulo `wanderers`):
+Baltasar el Ciego, Ña Rosenda la yuyera, Fray Lupercio, Catalina Dos Espadas, el Mudo Zenón, Maese
+Ireneo el cartógrafo, Tomasa la del burro, Lázaro Vuelveatrás, Doña Úrsula la adivina, Jacinto el
+poeta, Hermenegildo el buscador, el Capitán Olegario Sinbarco, Belisario el desertor, Eufrasia la
+partera, Nicomedes el cazador de tormentas y la Niña Abril.
+
+- Al saludarlos se presentan; «contame tu historia» cuenta quiénes son; cada uno tiene temas propios
+  (el sargento ciego, la guerra; la yuyera, los yuyos; la duelista, la esgrima…).
+- **«¿Qué hay cerca?»**: dicen hacia dónde queda el lugar escondido más próximo (los que no figuran
+  en los mapas).
+- A Doña Úrsula se le pide **«leeme la suerte»**.
+- Además contestan todo lo que contesta cualquier vecino (el mundo, rumores, historias verdaderas).
