@@ -90,6 +90,10 @@ export const BASE_ITEM_KINDS = [
   'fancy-shirt',
   'doublet',
   'dress',
+  'tunic',
+  'vest',
+  'hooded-robe',
+  'tattered-robe',
   'skirt',
   'short-pants',
   'straw-hat',
@@ -647,6 +651,20 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
   'fancy-shirt': cloth('camisa fina', 'camisas finas', 'una', 'torso', 0x8a2a4a),
   doublet: cloth('jubón', 'jubones', 'un', 'torso', 0x2a4a7a),
   dress: cloth('vestido', 'vestidos', 'un', 'torso', 0x6a2a6a),
+  // Sayo: túnica corta hasta la rodilla, ceñida con cinturón (se lleva sobre el pantalón).
+  tunic: cloth('sayo', 'sayos', 'un', 'torso', 0x5a6a3a),
+  // Chaleco de paño sobre camisa de lino.
+  vest: cloth('chaleco', 'chalecos', 'un', 'torso', 0x5a3a24),
+  // Hábito: túnica tosca hasta el suelo, con capucha y cordón.
+  'hooded-robe': cloth('túnica con capucha', 'túnicas con capucha', 'una', 'torso', 0x5a4a3a),
+  // Como la de capucha, pero vieja y gris, con el ruedo y las mangas hechos jirones.
+  'tattered-robe': cloth(
+    'túnica raída con capucha',
+    'túnicas raídas con capucha',
+    'una',
+    'torso',
+    0x74747c,
+  ),
   skirt: cloth('pollera', 'polleras', 'una', 'legs', 0x5a3a2a),
   'short-pants': cloth('pantalón corto', 'pantalones cortos', 'un', 'legs', 0x5a5a3a),
   'straw-hat': cloth('sombrero de paja', 'sombreros de paja', 'un', 'head', 0xd8b86a),

@@ -86,11 +86,27 @@ const SHIRTS: ReadonlySet<ItemKind> = new Set<ItemKind>([
   'fancy-shirt',
   'doublet',
   'dress',
+  'tunic',
+  'vest',
+  'hooded-robe',
+  'tattered-robe',
 ]);
+
+/** Las túnicas con capucha (la entera y la raída). */
+function isHooded(kind: ItemKind | undefined): boolean {
+  return kind === 'hooded-robe' || kind === 'tattered-robe';
+}
 const BONE = ramp([226, 218, 196]);
 /** Hueso viejo de la armadura: amarillento, con las sombras verdosas. */
 const OLD_BONE = ramp([212, 200, 150]);
 const BONE_GAP = ramp([40, 34, 30]);
+
+/** Cuánto más arriba que la cadera va la cintura (donde se ciñe el cinturón). */
+const WAIST = 2.2;
+
+/** El cordón de la túnica y el ribete dorado de las prendas finas. */
+const CORD = ramp([206, 178, 112]);
+const TRIM = ramp([214, 172, 72]);
 
 const WOOD = ramp([118, 78, 44]);
 const LEATHER_DARK = ramp([92, 60, 36]);
@@ -313,7 +329,11 @@ function drawFigure(
   const ride = mount ? drawMount(canvas, mount, frame) : null;
   const female = appearance.gender === 'female';
   const outfit = role ? (OUTFITS[role] ?? null) : null;
-  const robed = outfit === 'robe' || equipment.torso === 'robe' || equipment.torso === 'dress';
+  const robed =
+    outfit === 'robe' ||
+    equipment.torso === 'robe' ||
+    equipment.torso === 'dress' ||
+    isHooded(equipment.torso);
   const leftWeapon = heldInLeftHand(equipment.rightHand);
   const figure: Figure = {
     rig: humanoidRig(
@@ -379,7 +399,11 @@ function drawHead(
   drawHumanHead(canvas, figure.rig.head, figure.rig.neck, {
     skin: figure.palette.skin,
     hair: figure.palette.hair,
-    hairStyle: appearance.hairStyle ?? (female ? 'long' : 'short'),
+    // Con la capucha puesta el pelo queda adentro.
+    hairStyle:
+      isHooded(equipment.torso) && !headgear
+        ? 'bald'
+        : (appearance.hairStyle ?? (female ? 'long' : 'short')),
     facialHair: female ? 'none' : (appearance.facialHair ?? 'none'),
     female,
     headgear:
@@ -410,6 +434,21 @@ function drawHead(
     hatColor:
       headgear === 'wizard-hat' ? ramp(wornColor(headgear) ?? [58, 42, 106]) : figure.palette.cloth,
   });
+  // La capucha puesta (si no lleva nada en la cabeza): tapa el pelo y rodea la
+  // cara, que queda a la vista (armada con piezas alrededor, sin agujeros).
+  if (isHooded(equipment.torso) && !headgear) {
+    const head = figure.rig.head;
+    const cloth = solid(figure.palette.cloth);
+    const shade = solid(figure.palette.cloth, -1);
+    // La parte de atrás y de arriba.
+    canvas.ellipsoid(head.at([0, 1.1, -1.9]), head.axes, [5.1, 5.6, 4.7], cloth);
+    // El borde sobre la frente y los costados que bajan junto a las mejillas.
+    canvas.ellipsoid(head.at([0, 4.1, 1.5]), head.axes, [4.5, 2, 3.4], shade);
+    for (const side of [1, -1] as const)
+      canvas.ellipsoid(head.at([side * 4.1, -0.6, 0.9]), head.axes, [1.3, 4.6, 3], shade);
+    // La punta, caída hacia atrás.
+    canvas.sphere(head.at([0, 3.2, -5]), 2.2, shade);
+  }
   if (equipment.neck === 'samurai-mempo')
     drawMempo(canvas, figure.rig.head, ramp(wornColor(equipment.neck) ?? [154, 38, 32]));
 }
@@ -439,6 +478,8 @@ function drawLegs(
   const feet = equipment.feet;
   const shoeHeight =
     feet === 'sandals' ? 0.6 : feet === 'shoes' ? 1.6 : feet === 'thigh-boots' ? 0 : 6;
+  // El sayo: su faldón cae sobre el pantalón hasta la rodilla.
+  const tail = equipment.torso === 'tunic' && !robed && !skirt && !rig.seated;
   for (const side of [1, -1] as const) {
     const leg = rig.legs[side];
     // Pantalón (o piernas, bajo la pollera) hasta la caña de la bota; bota con borde claro.
@@ -492,26 +533,35 @@ function drawLegs(
       }
       if (mailLegs) return mailLegs(s);
       if (leather && Math.round(s.p[1]) % 5 === 0) return tone(p.pants, s.light, -1);
+      // Sentado con túnica o vestido, las piernas van envueltas en la tela (hasta la bota).
+      if (robed && !equipment.legs) return tone(p.cloth, s.light, -1);
       return tone(skirt ? p.skin : p.pants, s.light, skirt ? -1 : 0);
     };
+    // Bajo la túnica o la pollera las piernas no se dibujan (las caderas y los
+    // muslos asomaban por los costados de la tela): de la pollera para abajo,
+    // la canilla; de la túnica, solo los pies. Montado, la tela llega a las rodillas.
+    const thighHidden = (robed || skirt || tail) && !rig.seated;
+    const shinHidden = robed && !rig.seated;
     if (canvas.portrait) {
       // De cerca: el muslo lleno que se afina hacia la rodilla, y la pantorrilla
       // con su curva antes del tobillo fino.
-      canvas.shapedLimb(
-        leg.hip,
-        leg.knee,
-        female ? [3.7, 3.65, 3.2, 2.65, 2.2] : [3.5, 3.5, 3.1, 2.65, 2.3],
-        legMaterial,
-      );
-      canvas.shapedLimb(
-        leg.knee,
-        leg.ankle,
-        female ? [2.15, 2.45, 2.35, 1.9, 1.5, 1.35] : [2.25, 2.7, 2.6, 2.05, 1.65, 1.5],
-        legMaterial,
-      );
+      if (!thighHidden)
+        canvas.shapedLimb(
+          leg.hip,
+          leg.knee,
+          female ? [3.7, 3.65, 3.2, 2.65, 2.2] : [3.5, 3.5, 3.1, 2.65, 2.3],
+          legMaterial,
+        );
+      if (!shinHidden)
+        canvas.shapedLimb(
+          leg.knee,
+          leg.ankle,
+          female ? [2.15, 2.45, 2.35, 1.9, 1.5, 1.35] : [2.25, 2.7, 2.6, 2.05, 1.65, 1.5],
+          legMaterial,
+        );
     } else {
-      canvas.limb(leg.hip, leg.knee, 3.3 * thick, 2.7 * thick, legMaterial);
-      canvas.limb(leg.knee, leg.ankle, 2.7 * thick, 2.2 * thick, legMaterial);
+      if (!thighHidden) canvas.limb(leg.hip, leg.knee, 3.3 * thick, 2.7 * thick, legMaterial);
+      if (!shinHidden) canvas.limb(leg.knee, leg.ankle, 2.7 * thick, 2.2 * thick, legMaterial);
     }
     if (plate) {
       // Rodillera de placas con su ala y el empeine de la greba.
@@ -615,19 +665,37 @@ function drawLegs(
         (s) => tone(STEEL, s.light + 0.1, s.p[1] < rig.pelvis.at([0, dy - 0.7, 0])[1] ? -1 : 1),
       );
   }
-  if (robed || skirt) {
+  if (robed || skirt || tail) {
     // Túnica hasta el suelo, o pollera hasta la rodilla: discos que se ensanchan.
     // Montado, la tela cae hasta las rodillas sobre el lomo.
     const bottom = rig.seated
       ? Math.min(rig.legs[1].knee[1], rig.legs[-1].knee[1]) - 2
       : robed
         ? 2
-        : rig.legs[1].knee[1] - 1;
-    const top = rig.pelvis.origin[1] + 1;
-    const flare = robed ? 3.2 : 2.2;
+        : tail
+          ? Math.min(rig.legs[1].knee[1], rig.legs[-1].knee[1]) - 0.4
+          : rig.legs[1].knee[1] - 1;
+    const top = rig.pelvis.origin[1] + 1 + WAIST;
+    const dress = equipment.torso === 'dress';
+    const habit = isHooded(equipment.torso);
+    const ragged = equipment.torso === 'tattered-robe';
+    // El vestido tiene más vuelo que la túnica, que cae más derecha.
+    const flare = dress ? 4.6 : robed ? 2.8 : tail ? 1.3 : 2.2;
     const skirtCloth = equipment.legs === 'skirt' && !robed ? p.pants : p.cloth;
-    const fabric: Material = (s) =>
-      tone(skirtCloth, s.light, Math.sin(s.p[0] * 0.9) > 0.6 ? -1 : 0);
+    const fabric: Material = (s) => {
+      const fold = Math.sin(s.p[0] * 0.9) > 0.6 ? -1 : 0;
+      if (robed && !rig.seated) {
+        const up = s.p[1] - bottom;
+        // La raída: el ruedo en jirones (por los agujeros se ven los pies).
+        if (ragged && up < 1 + Math.abs(Math.sin(s.p[0] * 1.3) + Math.sin(s.p[2] * 1.9)) * 2.2)
+          return null;
+        // El ruedo: encaje blanco en el vestido, ribete dorado en la túnica.
+        if (dress && up < 1.6) return tone(LINEN, s.light, fold);
+        if (dress && up > 2.2 && up < 3) return tone(p.cloth, s.light, -1);
+        if (!dress && !habit && up > 0.8 && up < 2.4) return tone(TRIM, s.light, fold);
+      }
+      return tone(skirtCloth, s.light, fold);
+    };
     // La tela sigue a las rodillas: se corre y se abre cuando las piernas se separan.
     const knees = lerp(rig.legs[1].knee, rig.legs[-1].knee, 0.5);
     const kneeGap = Math.abs(rig.legs[1].knee[2] - rig.legs[-1].knee[2]);
@@ -644,11 +712,21 @@ function drawLegs(
       canvas.ellipsoid(
         center,
         rig.pelvis.axes,
-        [5.6 + t * flare, 1.4, 4.4 + t * (flare * 0.75 + kneeGap * 0.55)],
+        [(tail ? 6 : 5.6) + t * flare, 1.4, 4.4 + t * (flare * 0.75 + kneeGap * 0.55)],
         fabric,
         canvas.detail > 1 ? 0.92 : 0,
       );
     }
+    // En la cintura: el cordón de la túnica, o la cinta clara del vestido.
+    if (robed)
+      canvas.ellipsoid(
+        [rig.pelvis.origin[0], top + 0.9, rig.pelvis.origin[2]],
+        rig.pelvis.axes,
+        [5.75, 0.85, 4.5],
+        dress
+          ? (s) => tone(p.cloth, s.light + 0.3, 1)
+          : (s) => tone(CORD, s.light, Math.round(s.p[0] * 1.5) % 2 === 0 ? 0 : -1),
+      );
   }
 }
 
@@ -722,7 +800,8 @@ function torsoMaterial({
       : null;
   const studded = armor === 'studded-leather';
   const chest = rig.chest;
-  const beltY = rig.pelvis.origin[1];
+  // El cinturón va en la cintura, no sobre la cadera.
+  const beltY = rig.pelvis.origin[1] + WAIST;
   return (s) => {
     const local = chest.local(s.p);
     const n = chest.localDir(s.n);
@@ -743,8 +822,14 @@ function torsoMaterial({
     }
     // Cinturón con hebilla.
     if (y > -0.6 && y < 1.8 && !robed) {
-      if (front && Math.abs(local[0]) < 1.3) return tone(GOLD, s.light);
+      // La hebilla, chica: a tamaño de personaje del mundo una grande parecía una mancha.
+      if (front && Math.abs(local[0]) < 0.75 && y > 0 && y < 1.4) return tone(GOLD, s.light, -1);
       return tone(p.belt, s.light);
+    }
+    // La túnica se ciñe con un cordón claro; el vestido, con una cinta.
+    if (y > -0.5 && y < 1.3 && robed) {
+      if (armor === 'dress') return tone(p.cloth, s.light + 0.25, 1);
+      return tone(CORD, s.light, Math.round(local[0] * 1.5) % 2 === 0 ? 0 : -1);
     }
     // Debajo del cinturón, la cadera es del pantalón (no de la camisa).
     if (y <= -0.6 && equipment.legs && !robed && !skirt) return tone(p.pants, s.light);
@@ -822,6 +907,65 @@ function torsoMaterial({
           : tone(LINEN, s.light);
       }
       return tone(ramp([46, 40, 58]), s.light);
+    }
+    const weave = noise(Math.floor(local[0] / 2), Math.floor(y / 3)) > 0.82 ? -1 : 0;
+    if (isHooded(armor)) {
+      // Hábito: paño tosco, sin adornos (la capucha y el cordón van aparte).
+      return tone(p.cloth, s.light, (s.x + s.y * 2) % 4 === 0 ? -1 : 0);
+    }
+    if (armor === 'vest') {
+      // Chaleco abierto sobre la camisa de lino, con botones dorados.
+      if (front && local[1] > 5 && Math.abs(local[0]) < (local[1] - 4.6) * 0.8)
+        return tone(p.skin, s.light, -1);
+      if (front && Math.abs(local[0]) < 1.7)
+        return Math.abs(local[0]) < 0.5 && Math.round(y) % 3 === 0
+          ? tone(GOLD, s.light, 1)
+          : tone(LINEN, s.light);
+      return tone(p.cloth, s.light, weave);
+    }
+    if (armor === 'tunic') {
+      // Sayo: cuello redondo con un cordón que lo cierra, y una costura al hombro.
+      if (front && local[1] > 5.4 && Math.hypot(local[0], (local[1] - 7) * 1.3) < 2.2)
+        return tone(p.skin, s.light, -1);
+      if (front && Math.abs(local[0]) < 0.45 && local[1] > 3.4 && local[1] <= 5.4)
+        return tone(CORD, s.light);
+      return tone(p.cloth, s.light, weave);
+    }
+    if (armor === 'doublet') {
+      // Jubón: cerrado hasta el cuello, con una hilera de botones dorados al
+      // frente, cuello alto más oscuro y acolchado en rombos.
+      if (local[1] > 6.2) return tone(p.cloth, s.light, -1);
+      if (front && Math.abs(local[0]) < 0.55)
+        return ((y % 2.2) + 2.2) % 2.2 < 0.9 ? tone(GOLD, s.light, 1) : tone(p.cloth, s.light, -1);
+      const quilt =
+        Math.abs((((local[0] + y) % 3) + 3) % 3) < 0.4 ||
+        Math.abs((((local[0] - y) % 3) + 3) % 3) < 0.4;
+      return tone(p.cloth, s.light, quilt ? -1 : 0);
+    }
+    if (armor === 'dress') {
+      // Vestido: corpiño de escote cuadrado, con un cordón cruzado al frente.
+      if (front && local[1] > 4.4 && Math.abs(local[0]) < 2.6) return tone(p.skin, s.light, -1);
+      if (front && Math.abs(local[1] - 4.2) < 0.45 && Math.abs(local[0]) < 3)
+        return tone(LINEN, s.light);
+      if (front && Math.abs(local[0]) < 1 && y > 1.3)
+        return Math.round(y * 1.2) % 2 === 0 ? tone(LINEN, s.light) : tone(p.cloth, s.light, -1);
+      return tone(p.cloth, s.light, weave);
+    }
+    if (armor === 'robe' || (outfit === 'robe' && !armor)) {
+      // Túnica: cruzada al frente, con un ribete dorado que baja en diagonal desde el cuello.
+      if (front && local[1] > 4.6 && Math.abs(local[0]) < (local[1] - 4.2) * 0.8)
+        return tone(p.skin, s.light, -1);
+      const lapel = local[0] + (local[1] - 4.4) * 0.75;
+      if (front && Math.abs(lapel) < 0.55 && y > 1.3) return tone(TRIM, s.light);
+      return tone(p.cloth, s.light, weave);
+    }
+    if (armor === 'fancy-shirt') {
+      // Camisa fina: chorrera de encaje blanco al frente y cuello abierto.
+      if (front && local[1] > 5 && Math.abs(local[0]) < (local[1] - 4.6) * 0.8)
+        return tone(p.skin, s.light, -1);
+      if (front && Math.abs(local[0]) < 1.5 && y > 1.8)
+        return tone(LINEN, s.light, Math.round(y * 1.4) % 2 === 0 ? 0 : -1);
+      return tone(p.cloth, s.light, weave);
     }
     // Camisa con escote (en V, o redondo y más amplio en las mujeres).
     const neckline = female
@@ -933,13 +1077,17 @@ function drawTorso(canvas: VolumeCanvas, figure: Figure): void {
         canvas.sphere(chest.at([side * 2.1, 0.8, 2.4]), 2.2, material);
   }
   // Faldón de la camisa debajo del cinturón.
-  if (!robed && !skirt && !metalTorso && !bareTorso) {
+  if (isHooded(equipment.torso)) {
+    // El cuello ancho de la capucha sobre los hombros (la capucha va con la cabeza).
+    canvas.ellipsoid(chest.at([0, 6.5, -0.5]), chest.axes, [4.5, 1.5, 3.7], solid(p.cloth, -1));
+  }
+  if (!robed && !skirt && !metalTorso && !bareTorso && equipment.torso !== 'tunic') {
     // De cerca (ventana de personaje), un ruedo que rodea la cadera.
     if (canvas.detail > 1) {
       // Con pantalón, la camisa va metida adentro.
       if (!equipment.legs)
         canvas.ellipsoid(pelvis.at([0, -0.4, 0]), pelvis.axes, [5.7, 1.1, 4.1], solid(p.cloth));
-    } else
+    } else if (!equipment.legs)
       canvas.ellipsoid(pelvis.at([0, -2.2, 0]), pelvis.axes, [5.5, 2.6, 3.7], solid(p.cloth, -1));
   }
   const torso = equipment.torso;
@@ -1074,8 +1222,41 @@ function drawArms(canvas: VolumeCanvas, figure: Figure): void {
         : tone(LACE, q.light);
     const piece = sleeves === 'samurai-sode' ? kote : sleeves ? pieceSurface(sleeves, along) : null;
     const mail = mailTorso && torso ? pieceSurface(torso, along) : null;
-    const upper = piece ?? mail ?? cloth;
-    const lower = piece ?? (bareForearms ? solid(p.skin) : cloth);
+    // Cada prenda de tela tiene su manga: corta en el vestido, de campana con
+    // ribete en la túnica, con puño de encaje en la camisa fina y acuchillada en el jubón.
+    const garment = bareTorso || outfit ? undefined : torso;
+    const robeSleeve = garment === 'robe' || (outfit === 'robe' && !torso);
+    const habit = isHooded(garment);
+    const ragged = garment === 'tattered-robe';
+    const toHand = (q: Vec3): number => Math.hypot(...sub(q, arm.hand));
+    const clothLower: Material =
+      garment === 'dress'
+        ? solid(p.skin)
+        : robeSleeve
+          ? (q) => (toHand(q.p) < 1.9 ? tone(TRIM, q.light) : tone(p.cloth, q.light))
+          : garment === 'fancy-shirt'
+            ? (q) => (toHand(q.p) < 2.1 ? tone(LINEN, q.light) : tone(p.cloth, q.light))
+            : garment === 'vest'
+              ? solid(LINEN)
+              : ragged
+                ? // La manga rota: por los jirones se ve el antebrazo.
+                  (q) =>
+                    toHand(q.p) < 1.6 + Math.abs(Math.sin(q.p[0] * 2.3 + q.p[2] * 1.7)) * 2.4
+                      ? tone(p.skin, q.light)
+                      : tone(p.cloth, q.light)
+                : cloth;
+    const clothUpper: Material =
+      garment === 'doublet'
+        ? (q) =>
+            Math.round(along(q.p) * 1.1) % 2 === 0 && along(q.p) < 4.5
+              ? tone(LINEN, q.light, -1)
+              : tone(p.cloth, q.light)
+        : garment === 'vest'
+          ? solid(LINEN)
+          : cloth;
+    const upper = piece ?? mail ?? clothUpper;
+    const lower = piece ?? (bareForearms ? solid(p.skin) : clothLower);
+    const bell = (robeSleeve || habit) && !ragged && !piece ? 1.55 : 1;
     const bulk =
       sleeveStuff === 'plate' || sleeveStuff === 'segmented'
         ? 1.12
@@ -1100,12 +1281,14 @@ function drawArms(canvas: VolumeCanvas, figure: Figure): void {
       canvas.shapedLimb(
         arm.elbow,
         arm.hand,
-        by(female ? [1.75, 1.85, 1.6, 1.35, 1.2] : [2.05, 2.3, 1.95, 1.6, 1.4]),
+        bell > 1
+          ? by(female ? [1.8, 2, 2.2, 2.4, 2.5] : [2.1, 2.35, 2.5, 2.7, 2.8])
+          : by(female ? [1.75, 1.85, 1.6, 1.35, 1.2] : [2.05, 2.3, 1.95, 1.6, 1.4]),
         lower,
       );
     } else {
       canvas.limb(arm.shoulder, arm.elbow, 2.75 * thin * bulk, 2.1 * thin * bulk, upper);
-      canvas.limb(arm.elbow, arm.hand, 2.1 * thin * bulk, 1.8 * thin * bulk, lower);
+      canvas.limb(arm.elbow, arm.hand, 2.1 * thin * bulk, 1.8 * thin * bulk * bell, lower);
     }
     const back = normalize(sub(arm.elbow, arm.hand));
     if (sleeveStuff === 'plate') {
@@ -1538,11 +1721,19 @@ const POLEARMS: ReadonlySet<ItemKind> = new Set<ItemKind>([
 function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
   const { hand } = rig.arms[1];
   // En la ventana de personaje, las de asta y las hachas largas de dos manos, paradas.
+  // También en el mundo, mientras descansa o avanza: se llevan derechas, con la punta al
+  // cielo (en guardia o al golpear, apuntan al enemigo).
   const upright =
-    rig.display === true && (POLEARMS.has(kind) || (HEAVY_AXES[kind]?.haft ?? 0) > 14);
-  const dir = upright ? normalize(rig.chest.dir([0.07, 1, 0.05])) : rig.arms[1].weaponDir;
+    (rig.display === true || rig.rest === true) &&
+    (POLEARMS.has(kind) || (HEAVY_AXES[kind]?.haft ?? 0) > 14);
+  // En el mundo, derecha de verdad (aunque el cuerpo se incline al correr).
+  const dir = !upright
+    ? rig.arms[1].weaponDir
+    : rig.rest
+      ? normalize([0.03, 1, 0.02] as Vec3)
+      : normalize(rig.chest.dir([0.07, 1, 0.05]));
   // Parada, el asta llega hasta el suelo (la base apoyada junto al pie).
-  if (upright)
+  if (upright && !rig.seated)
     canvas.limb(add(hand, scale(dir, -6)), add(hand, scale(dir, -24)), 0.6, 0.6, solid(WOOD));
   const across = cross(dir, [0, 1, 0]);
   const side = Math.hypot(...across) < 0.2 ? rig.chest.dir([1, 0, 0]) : normalize(across);
