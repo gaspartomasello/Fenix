@@ -1702,6 +1702,7 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     c.sphere([4.6, 0.6, 2.6], 0.5, solid(ramp([200, 40, 40])));
   },
   'sewing-kit'(c) {
+    // Costurero de madera: carretes, aguja y un cabo de hilo suelto.
     c.box([0, 1.4, 0], lying(0.4), [4.2, 1.4, 3], (s) =>
       s.n[1] > 0.7 ? tone(ramp([150, 104, 60]), s.light) : tone(WOOD, s.light, -1),
     );
@@ -1710,11 +1711,14 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
       [0, [60, 90, 170]],
       [1.8, [210, 190, 80]],
     ] as [number, Rgb][]) {
+      c.limb([x, 2.8, -1.1], [x, 2.8, 1.1], 0.7, 0.7, solid(ramp([190, 153, 99])));
       c.limb([x, 2.8, -0.6], [x, 2.8, 0.8], 0.9, 0.9, solid(ramp(col)));
     }
+    c.limb([-3.8, 3.2, 2.3], [3.9, 3.2, -2.1], 0.18, 0.09, metal(STEEL));
+    c.limb([2.2, 3, 1.2], [3.2, 2.8, 2.7], 0.17, 0.13, solid(ramp([180, 40, 40])));
   },
   saw(c) {
-    const at: Vec3 = [-1, 0.6, 0.6];
+    // Hoja ancha con dientes recortados y mango separado del filo.
     c.polygon(
       [
         [-1.6, 0.6, 2.8],
@@ -1727,17 +1731,44 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
           ? tone(STEEL, s.light, -1)
           : tone(STEEL, s.light + 0.1),
     );
-    c.box(add(at, [-3.2, 0.4, 1.6]), lying(1.05), [1.4, 0.8, 2.2], solid(WOOD));
+    for (let i = 0; i < 9; i++) {
+      const t = (i + 0.15) / 9;
+      const x = -1.6 + t * 7.8;
+      const z = 2.8 - t * 4.2;
+      c.polygon(
+        [
+          [x, 0.65, z],
+          [x + 0.55, 0.65, z - 0.3],
+          [x + 0.5, 0.65, z + 0.65],
+        ],
+        metal(STEEL),
+      );
+    }
+    c.ellipsoid([-4.6, 1, 3.2], lying(1.05), [2.1, 0.8, 1.35], solid(WOOD));
+    c.limb([-3.2, 1, 2.4], [-1.8, 0.8, 1.5], 0.55, 0.55, solid(WOOD));
   },
   'fletching-kit'(c) {
-    c.box([0, 1, 0], lying(0.3), [3.8, 1, 2.6], solid(ramp([120, 84, 52])));
-    for (let i = 0; i < 4; i++) {
-      c.ellipsoid(
-        [-2 + i * 1.3, 2.4, -0.4 + (i % 2) * 0.6],
-        lying(0.4),
-        [0.5, 0.4, 2],
-        solid(ramp([236, 236, 240])),
+    // Bandeja de emplumado con tres astiles, puntas y plumas en el extremo.
+    c.box([0, 0.8, 0], lying(0.2), [4, 0.8, 2.6], solid(ramp([120, 84, 52])));
+    for (const z of [-1.5, 0, 1.5]) {
+      c.limb([-4.8, 2, z], [5.2, 2, z], 0.24, 0.24, solid(WOOD));
+      c.polygon(
+        [
+          [5.1, 2, z - 0.48],
+          [6, 2, z],
+          [5.1, 2, z + 0.48],
+        ],
+        metal(STEEL),
       );
+      for (const side of [-1, 1])
+        c.polygon(
+          [
+            [-4.7, 2.25, z],
+            [-2.7, 2.25, z],
+            [-4.2, 2.25, z + side * 1.1],
+          ],
+          solid(ramp([232, 230, 220])),
+        );
     }
   },
   'mortar-pestle'(c) {
