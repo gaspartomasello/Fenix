@@ -1718,6 +1718,31 @@ const POLEARMS: ReadonlySet<ItemKind> = new Set<ItemKind>([
   'quarterstaff',
 ]);
 
+/**
+ * Cómo se empuña cada tipo de arma cuando el personaje descansa o avanza
+ * (hacia dónde apunta, en el espacio del pecho: x afuera, y arriba, z adelante).
+ * Las espadas, con la hoja en alto y algo abierta; los puñales, con el filo
+ * hacia abajo (empuñadura invertida); las mazas, hachas y martillos, apoyados
+ * hacia el hombro; la katana, baja y adelante, lista para sacarla.
+ */
+const STANCES: Partial<Record<ItemKind, Vec3>> = {
+  ...Object.fromEntries(
+    ['longsword', 'broadsword', 'short-sword', 'viking-sword', 'scimitar', 'cutlass'].map((k) => [
+      k,
+      [0.42, 0.86, 0.3] as Vec3,
+    ]),
+  ),
+  katana: [0.12, -0.45, 0.88],
+  dagger: [0.1, -0.85, 0.5],
+  kryss: [0.1, -0.85, 0.5],
+  ...Object.fromEntries(
+    ['mace', 'club', 'flail', 'war-hammer', 'axe', 'war-axe', 'hammer-pick', 'pickaxe'].map((k) => [
+      k,
+      [-0.35, 0.85, -0.45] as Vec3,
+    ]),
+  ),
+};
+
 function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
   const { hand } = rig.arms[1];
   // En la ventana de personaje, las de asta y las hachas largas de dos manos, paradas.
@@ -1727,11 +1752,14 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     (rig.display === true || rig.rest === true) &&
     (POLEARMS.has(kind) || (HEAVY_AXES[kind]?.haft ?? 0) > 14);
   // En el mundo, derecha de verdad (aunque el cuerpo se incline al correr).
-  const dir = !upright
-    ? rig.arms[1].weaponDir
-    : rig.rest
+  const stance = rig.display === true || rig.rest === true ? STANCES[kind] : undefined;
+  const dir = upright
+    ? rig.rest
       ? normalize([0.03, 1, 0.02] as Vec3)
-      : normalize(rig.chest.dir([0.07, 1, 0.05]));
+      : normalize(rig.chest.dir([0.07, 1, 0.05]))
+    : stance
+      ? normalize(rig.chest.dir(stance))
+      : rig.arms[1].weaponDir;
   // Parada, el asta llega hasta el suelo (la base apoyada junto al pie).
   if (upright && !rig.seated)
     canvas.limb(add(hand, scale(dir, -6)), add(hand, scale(dir, -24)), 0.6, 0.6, solid(WOOD));
