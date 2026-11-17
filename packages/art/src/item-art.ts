@@ -1895,19 +1895,20 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     }
   },
   cloth(c) {
-    // Rollo de mercería apoyado de punta: capas de tela alrededor de un palo central.
+    // Rollo de mercería ligeramente inclinado, con capas alrededor de un palo central.
     const fabric = ramp([214, 198, 168]);
     const core = ramp([150, 108, 65]);
     const radius = 3.1;
     const height = 12.4;
     const sides = 14;
+    const lean = 0.18;
     const ring = (i: number, y: number): Vec3 => {
       const a = (i / sides) * Math.PI * 2;
-      return [Math.cos(a) * radius, y, Math.sin(a) * radius];
+      return [Math.cos(a) * radius + (y - 0.4) * lean, y, Math.sin(a) * radius];
     };
     for (let i = 0; i < sides; i++) {
       c.polygon([ring(i, 0.4), ring(i + 1, 0.4), ring(i + 1, height), ring(i, height)], (s) => {
-        const seam = Math.abs(Math.atan2(s.p[2], s.p[0]) - 0.8) < 0.12;
+        const seam = Math.abs(Math.atan2(s.p[2], s.p[0] - (s.p[1] - 0.4) * lean) - 0.8) < 0.12;
         const fold = Math.abs(s.p[1] - 3.1) < 0.12 || Math.abs(s.p[1] - 8.7) < 0.12;
         return tone(fabric, s.light, seam || fold ? -1 : 0);
       });
@@ -1915,13 +1916,19 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     c.polygon(
       Array.from({ length: sides }, (_, i) => ring(i, height)),
       (s) => {
-        const r = Math.hypot(s.p[0], s.p[2]);
+        const r = Math.hypot(s.p[0] - (height - 0.4) * lean, s.p[2]);
         if (r < 1.05) return tone(core, s.light, -1);
         if (r < 1.45 || (r > 2.1 && r < 2.35)) return tone(fabric, s.light, -1);
         return tone(fabric, s.light, 1);
       },
     );
-    c.limb([0, height, 0], [0, height + 2.6, 0], 0.8, 0.8, solid(core));
+    c.limb(
+      [(height - 0.4) * lean, height, 0],
+      [(height + 2.2) * lean, height + 2.6, 0],
+      0.8,
+      0.8,
+      solid(core),
+    );
   },
   hides(c) {
     // Piel extendida: cuerpo oval y cuatro extremos cortos de las patas.
