@@ -35,3 +35,26 @@ aspecto la hace visible.
   descripciones propias) que reemplazan al procedural objeto por objeto.
 - Prendas y armaduras en gris neutro cuando se pueden teñir: el juego les pone el color.
 - Antes de que algo entre al juego: comparar lado a lado con las referencias usadas.
+
+## La ropa en el personaje (etapa 138)
+
+El personaje del mundo y el de la ventana de personaje son el mismo modelo: lo que se ve en uno se
+tiene que ver en el otro. Reglas de la ropa de tela (`character-art.ts`):
+
+- **Bajo una túnica, un vestido o una pollera no se dibujan las piernas** (antes las caderas y los
+  muslos asomaban por los costados de la tela): de la pollera para abajo, la canilla; de la túnica,
+  solo los pies. Sentado o montado, las piernas van del color de la tela.
+- **Cada prenda tiene su corte**, no solo su color:
+  - _Camisa_: escote en V; va metida en el pantalón.
+  - _Camisa fina_: chorrera de encaje blanco al frente y puños de encaje.
+  - _Jubón_: cerrado hasta el cuello, botones dorados, acolchado en rombos y mangas acuchilladas.
+  - _Chaleco_: abierto sobre camisa de lino, con botones dorados y mangas blancas.
+  - _Sayo_: cuello redondo con cordón y un faldón hasta la rodilla sobre el pantalón.
+  - _Vestido_: corpiño de escote cuadrado con cordón cruzado, manga corta, cinta en la cintura y
+    falda con mucho vuelo y ruedo de encaje.
+  - _Túnica_: cruzada al frente con ribete dorado, cordón en la cintura, mangas de campana con
+    ribete y ruedo dorado.
+  - _Túnica con capucha_: paño tosco, sin adornos, con la capucha puesta (tapa el pelo y rodea la
+    cara) y cordón.
+  - _Túnica raída con capucha_: la misma, gris, con el ruedo en jirones y las mangas rotas.
+- La hebilla del cinturón es chica: a tamaño de sprite una grande parecía una mancha.

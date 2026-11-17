@@ -653,6 +653,41 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
       Math.abs(s.p[0]) < 0.4 ? tone(GOLD, s.light) : tone(color, s.light, (s.x + s.y) % 3 ? 0 : -1),
     );
   },
+  tunic(c, color) {
+    // Sayo: como una camisa larga, con el cinturón marcado.
+    tunic(c, (s) =>
+      Math.abs(s.p[2] - 0.6) < 0.6 ? tone(ramp([70, 48, 30]), s.light) : tone(color, s.light),
+    );
+  },
+  vest(c, color) {
+    // Chaleco abierto: se ve la camisa de lino al medio, con botones dorados.
+    tunic(c, (s) =>
+      Math.abs(s.p[0]) < 1.3
+        ? Math.abs(s.p[0]) < 0.4 && Math.round(s.p[2]) % 2 === 0
+          ? tone(GOLD, s.light)
+          : tone(ramp([226, 218, 200]), s.light)
+        : tone(color, s.light),
+    );
+  },
+  'hooded-robe'(c, color) {
+    // Hábito doblado, con la capucha arriba y el cordón enrollado encima.
+    c.ellipsoid([0, 1, 1.4], lying(0), [4.6, 1.2, 6.2], (s) =>
+      tone(color, s.light, (s.x + s.y) % 3 ? 0 : -1),
+    );
+    c.ellipsoid([0, 2, -4.4], lying(0), [3.2, 1.5, 2.4], solid(color, -1));
+    c.ellipsoid([0, 2.3, 1], lying(0.4), [2.2, 0.5, 2.2], (s) =>
+      Math.hypot(s.p[0], s.p[2] - 1) < 1.2 ? null : tone(ramp([206, 178, 112]), s.light),
+    );
+  },
+  'tattered-robe'(c, color) {
+    // Túnica raída doblada: el borde de abajo en jirones y la capucha arriba.
+    c.ellipsoid([0, 1, 1.4], lying(0), [4.6, 1.2, 6.2], (s) =>
+      s.p[2] > 5 + Math.sin(s.p[0] * 2.4) * 1.6
+        ? null
+        : tone(color, s.light, (s.x + s.y) % 3 ? 0 : -1),
+    );
+    c.ellipsoid([0, 2, -4.4], lying(0), [3.2, 1.5, 2.4], solid(color, -1));
+  },
   dress(c, color) {
     // Vestido largo doblado: corpiño angosto y falda ancha.
     c.ellipsoid([0, 1, -2.6], lying(0), [3, 1.1, 2.6], solid(color));
