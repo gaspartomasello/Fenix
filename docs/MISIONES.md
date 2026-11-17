@@ -358,3 +358,38 @@ partera, Nicomedes el cazador de tormentas y la Niña Abril.
   en los mapas).
 - A Doña Úrsula se le pide **«leeme la suerte»**.
 - Además contestan todo lo que contesta cualquier vecino (el mundo, rumores, historias verdaderas).
+
+## Historias largas con decisión (etapa 137)
+
+Cuatro leyendas nuevas, más largas (seis o siete pasos) y con un **final que se elige**. Empiezan
+con un caminante: se oye el rumor en cualquier pueblo (o de otro caminante), o se le pregunta
+directamente a él por lo suyo. El diario dice por dónde anda cada caminante.
+
+Dos piezas nuevas del sistema de leyendas:
+
+- **Preguntarle a alguien en particular** (`ask` con `person`): un caminante con nombre, no
+  cualquiera de un oficio.
+- **El paso `choice`**: lo que se encontró se le puede entregar a una persona o a otra. Cada opción
+  tiene su respuesta, su oro, sus objetos y su karma (que puede bajar). El pergamino de maestría se
+  gana con cualquiera de las dos. El diario deja anotado cómo terminó.
+
+| Historia                | Empieza con               | La decisión                                                              | Pergamino          |
+| ----------------------- | ------------------------- | ------------------------------------------------------------------------ | ------------------ |
+| Lo que cuidaba la orden | Fray Lupercio             | El cofre de plomo: a Fray Lupercio (se destruye) o venderlo a un mago    | Resistencia mágica |
+| La pluma roja           | la Niña Abril             | El anillo: al padre (guardarle el secreto) o a Abril (decirle la verdad) | Arquería           |
+| La goleta del capitán   | Capitán Olegario Sinbarco | Los dados cargados: al capitán, o al carpintero y quedarse con el barco  | Esgrima            |
+| La puerta abierta       | Belisario el desertor     | El libro de pagos: a un guardia (juicio) o a Belisario (por su cuenta)   | Parar golpes       |
+
+**Guía rápida** (lo que hay que hacer en cada una):
+
+- **Lo que cuidaba la orden**: Fray Lupercio («orden», «llave») → Cementerio Viejo → un sanador
+  («cementerio», «tumba») → vencer al Aprendiz Sin Rostro en la Torre Hueca → Capilla Olvidada → un
+  escriba («cofre», «tablilla») → decidir.
+- **La pluma roja**: la Niña Abril («papá») → un granjero («Evaristo») → Guarida de Bandoleros →
+  Evaristo, en la Casa del Ermitaño → vencer a la Tuerta Malena en la Guarida → decidir.
+- **La goleta del capitán**: Capitán Olegario («goleta», «dados») → un pescador («Barbas») → Faro
+  del Cabo → vencer a Barbas el Tramposo en la Cala de los Piratas → un carpintero de barcos
+  («dados») → decidir.
+- **La puerta abierta**: Belisario («puerta», «orden») → Granja Quemada → un guardia («Valdivia») →
+  un tabernero («sobreviviente») → Jimena, en el Refugio Helado → vencer a Urzog el Pagador en el
+  Campamento de los Colmillos → decidir.

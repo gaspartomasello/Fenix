@@ -40,8 +40,8 @@ const CHECK_MS = 2000;
 export class Legends {
   /** El jefe vivo de cada leyenda (si apareció). */
   private readonly bosses = new Map<LegendId, Creature>();
-  /** La persona escondida de cada leyenda (si ya apareció). */
-  private readonly people = new Map<LegendId, Npc>();
+  /** Las personas escondidas de las leyendas que ya aparecieron (por leyenda y nombre). */
+  private readonly people = new Map<string, Npc>();
   private nextCheckAt = 0;
 
   constructor(
@@ -73,6 +73,15 @@ export class Legends {
   ask(player: Player, npc: Npc, words: string): string | null {
     for (const id of LEGEND_IDS) {
       const legend = LEGENDS[id];
+      // Si le preguntan por lo suyo a quien empieza la historia, no hace falta haber oído el rumor.
+      const opening = legend.steps[0];
+      if (
+        !player.legends.has(id) &&
+        opening?.kind === 'ask' &&
+        opening.person === npc.name &&
+        opening.keywords.some((k) => words.includes(normalize(k)))
+      )
+        this.heard(player, legend);
       const progress = player.legends.get(id);
       const step = progress === undefined ? null : legend.steps[progress];
       // Lo que toca ahora.
@@ -84,7 +93,7 @@ export class Legends {
       const told = legend.steps.findIndex(
         (s, i) =>
           s.kind === 'ask' &&
-          s.role === npc.role &&
+          (s.person ? s.person === npc.name : s.role === npc.role) &&
           progress !== undefined &&
           i < progress &&
           s.keywords.some((k) => words.includes(normalize(k))),
@@ -110,13 +119,14 @@ export class Legends {
   ): string | null {
     switch (step.kind) {
       case 'ask': {
-        if (step.role !== npc.role || this.isLegendPerson(npc)) return null;
+        if (step.person ? step.person !== npc.name : step.role !== npc.role) return null;
+        if (this.isLegendPerson(npc)) return null;
         if (!step.keywords.some((k) => words.includes(normalize(k)))) return null;
         this.advance(player, legend, progress, step.gives);
         return step.reply + this.where(legend, progress + 1, npc.position);
       }
       case 'meet': {
-        if (this.people.get(legend.id) !== npc) return null;
+        if (this.people.get(personKey(legend.id, step.person.name)) !== npc) return null;
         this.advance(player, legend, progress);
         return step.reply;
       }
@@ -127,6 +137,22 @@ export class Legends {
         // Se devuelve con solo hablarle (aunque no se digan las palabras exactas).
         if (!relic) return null;
         return this.complete(player, legend, relic.id, step.thanks);
+      }
+      case 'choice': {
+        // La decisión: a quién se le entrega lo encontrado (con solo ir a hablarle).
+        const chosen = step.options.findIndex((o) =>
+          o.person ? o.person === npc.name : o.role === npc.role && !this.isLegendPerson(npc),
+        );
+        const option = step.options[chosen];
+        if (!option) return null;
+        const item = this.world.items.backpackOf(player.id).find((i) => i.kind === step.item);
+        if (!item) return null;
+        return this.complete(player, legend, item.id, option.thanks, {
+          index: chosen,
+          gold: option.gold,
+          karma: option.karma,
+          items: option.items ?? [],
+        });
       }
       default:
         return null;
@@ -156,6 +182,14 @@ export class Legends {
           // La persona a la que hay que devolverle algo vuelve a estar donde se la encontró.
           const met = legend.steps.find((s) => s.kind === 'meet' && s.person.name === step.person);
           if (met?.kind === 'meet' && met.place === here) this.bringPerson(legend, met, player);
+        } else if (step.kind === 'choice') {
+          // Lo mismo con quienes pueden recibir lo encontrado.
+          for (const option of step.options) {
+            const met = legend.steps.find(
+              (s) => s.kind === 'meet' && s.person.name === option.person,
+            );
+            if (met?.kind === 'meet' && met.place === here) this.bringPerson(legend, met, player);
+          }
         } else if (step.kind === 'slay' && step.place === here) {
           const boss = this.bosses.get(id);
           if (!boss || boss.combat.isDead || boss.gone) this.summon(legend, step, player);
@@ -234,7 +268,7 @@ export class Legends {
   private where(legend: Legend, step: number, from: Position | null): string {
     const name = legendPlace(legend, step);
     const region = name ? this.region(name) : undefined;
-    if (!region) return '';
+    if (!region) return this.wherePerson(legend, step, from);
     if (from) return ` ${directions(from, { name: region.name, center: regionCenter(region) })}`;
     const center = regionCenter(region);
     const town = this.world.map.regions
@@ -246,6 +280,30 @@ export class Legends {
       )[0];
     if (!town) return '';
     return ` ${directions(regionCenter(town), { name: region.name, center }, town.name)}`;
+  }
+
+  /** Si el paso es preguntarle a alguien en particular (un caminante): por dónde anda. */
+  private wherePerson(legend: Legend, step: number, from: Position | null): string {
+    const current = legend.steps[step];
+    if (current?.kind !== 'ask' || !current.person) return '';
+    const npc = this.world.allNpcs().find((n) => n.name === current.person);
+    if (!npc) return '';
+    const crossing = this.world.map.regionAt(npc.position)?.name;
+    const target = { name: current.person, center: npc.position };
+    const said = from
+      ? directions(from, target)
+      : (() => {
+          const town = this.world.map.regions
+            .filter((r) => !r.wild && !r.dungeon && !r.floor)
+            .sort(
+              (a, b) =>
+                Math.hypot(regionCenter(a).x - npc.position.x, regionCenter(a).y - npc.position.y) -
+                Math.hypot(regionCenter(b).x - npc.position.x, regionCenter(b).y - npc.position.y),
+            )[0];
+          return town ? directions(regionCenter(town), target, town.name) : '';
+        })();
+    if (!said) return '';
+    return ` ${said.replace(' queda ', ' anda ')}${crossing ? ` Suele estar en ${crossing}.` : ''}`;
   }
 
   private region(name: string): RegionData | undefined {
@@ -265,22 +323,43 @@ export class Legends {
     this.send(player);
   }
 
-  private complete(player: Player, legend: Legend, relicId: EntityId, thanks: string): string {
+  private complete(
+    player: Player,
+    legend: Legend,
+    relicId: EntityId,
+    thanks: string,
+    /** El final elegido (en las historias con decisión): su premio se suma al de la leyenda. */
+    ending?: {
+      index: number;
+      gold: number;
+      karma: number;
+      items: readonly (readonly [ItemKind, number])[];
+    },
+  ): string {
     const changes = emptyChanges();
     this.world.items.destroy(relicId, changes);
-    const { scroll, gold, items = [] } = legend.reward;
+    const scroll = legend.reward.scroll;
+    const gold = legend.reward.gold + (ending?.gold ?? 0);
+    const items = [...(legend.reward.items ?? []), ...(ending?.items ?? [])];
     for (const [kind, amount] of [[scroll, 1] as const, ['gold', gold] as const, ...items])
-      this.world.items.addToBackpack(player.id, kind, amount, () => this.ids.next(), changes);
+      if (amount > 0)
+        this.world.items.addToBackpack(player.id, kind, amount, () => this.ids.next(), changes);
     this.items.publish(changes, player.id);
-    player.legends.set(legend.id, legendEnd(legend.id));
-    player.reputation.award(500, 400);
+    // Terminada (y, si hubo decisión, cuál: queda anotada en el diario).
+    player.legends.set(legend.id, legendEnd(legend.id) + (ending?.index ?? 0));
+    if (!ending) player.reputation.award(500, 400);
+    else if (ending.karma >= 0) player.reputation.award(500, ending.karma);
+    else {
+      player.reputation.award(500, 0);
+      player.reputation.loseKarma(-ending.karma);
+    }
     this.send(player);
     const extras = items.map(([kind, n]) =>
       n === 1 ? ITEMS[kind].name : `${n} ${ITEMS[kind].plural}`,
     );
     this.say(
       player,
-      `Recibiste ${ITEMS[scroll].article} ${ITEMS[scroll].name}, ${gold} monedas de oro${extras.length ? ` y ${extras.join(', ')}` : ''}. Leyenda terminada: «${legend.title}».`,
+      `Recibiste ${ITEMS[scroll].article} ${ITEMS[scroll].name}${gold > 0 ? `, ${gold} monedas de oro` : ''}${extras.length ? ` y ${extras.join(', ')}` : ''}. Leyenda terminada: «${legend.title}».`,
     );
     return thanks;
   }
@@ -291,14 +370,15 @@ export class Legends {
     step: Extract<LegendStep, { kind: 'meet' }>,
     seeker: Player,
   ): void {
-    if (this.people.has(legend.id)) return;
+    const key = personKey(legend.id, step.person.name);
+    if (this.people.has(key)) return;
     const region = this.region(step.place);
     if (!region) return;
     const spot = this.freeNear(regionCenter(region)) ?? seeker.position;
     const npc = new Npc(this.ids.next(), step.person.role, spot, step.person.name);
     this.world.addNpc(npc);
     this.mobiles.appear(npc);
-    this.people.set(legend.id, npc);
+    this.people.set(key, npc);
     this.say(seeker, 'Entre las sombras se mueve alguien que se esconde de vos.');
   }
 
@@ -346,6 +426,10 @@ export class Legends {
   private say(player: Player, text: string): void {
     this.notifier.send(player.id, { type: 'system', text });
   }
+}
+
+function personKey(id: LegendId, name: string): string {
+  return `${id}:${name}`;
 }
 
 function hash(text: string): number {

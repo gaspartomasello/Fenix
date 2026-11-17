@@ -904,6 +904,80 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
           : tone(ramp([230, 80, 30]), s.light, 1),
     );
   },
+  'order-key'(c) {
+    // Una llave de hierro vieja, grande, con el ojo en forma de trébol.
+    const iron = metal(ramp([92, 88, 84]));
+    c.limb([-1.5, 0.7, 0], [4.6, 0.7, 0], 0.5, 0.5, iron);
+    for (const [x, z] of [
+      [-2.6, 0],
+      [-3.6, 1],
+      [-3.6, -1],
+    ] as const)
+      c.sphere([x, 0.7, z], 1, iron);
+    c.box([3.6, 0.7, 1], lying(0), [0.4, 0.4, 1], iron);
+    c.box([4.6, 0.7, 0.8], lying(0), [0.4, 0.4, 0.8], iron);
+  },
+  'lead-casket'(c) {
+    // Un cofrecito de plomo gris, soldado, con un sello de cera negra.
+    c.box([0, 1.8, 0], lying(0.3), [3.4, 1.8, 2.4], (s) =>
+      s.n[1] > 0.6 && Math.hypot(s.p[0], s.p[2]) < 1
+        ? tone(ramp([30, 26, 30]), s.light)
+        : tone(ramp([110, 112, 120]), s.light, (s.x + s.y) % 5 ? 0 : -1),
+    );
+  },
+  'red-feather-hat'(c) {
+    // Un sombrero de ala ancha, pisoteado, con una pluma roja.
+    const felt = ramp([84, 62, 44]);
+    c.ellipsoid([0, 0.6, 0], lying(0.2), [4.4, 0.5, 4], solid(felt));
+    c.ellipsoid([0, 1.6, 0], lying(0.2), [2.2, 1.3, 2], solid(felt, -1));
+    c.limb([1.6, 1.8, 0.6], [4.6, 4.6, -1.6], 0.7, 0.2, solid(ramp([200, 40, 40])));
+  },
+  'mother-ring'(c) {
+    // Un anillo de oro finito con una piedra verde.
+    c.ellipsoid([0, 0.6, 0], lying(0.2), [2, 0.5, 2], (s) =>
+      Math.hypot(s.p[0], s.p[2]) < 1.2 ? null : metal(GOLD)(s),
+    );
+    c.sphere([0, 1, -2], 0.8, solid(ramp([60, 180, 110]), 1));
+  },
+  'loaded-dice'(c) {
+    // Dos dados de hueso, con los puntos negros; uno muestra el uno.
+    const bone = ramp([226, 216, 190]);
+    for (const [x, z, turn] of [
+      [-1.6, 0.4, 0.3],
+      [1.6, -0.6, -0.5],
+    ] as const)
+      c.box([x, 1.3, z], lying(turn), [1.3, 1.3, 1.3], (s) =>
+        s.n[1] > 0.6 && Math.hypot(s.p[0] - x, s.p[2] - z) < 0.45
+          ? [24, 20, 20]
+          : tone(bone, s.light),
+      );
+  },
+  'burnt-order'(c) {
+    // Una hoja de pergamino con un borde quemado y el sello de la guardia.
+    c.box([0, 0.3, 0], lying(0.25), [3.6, 0.25, 4.4], (s) =>
+      s.p[2] > 2.6 + Math.sin(s.p[0] * 2) * 0.6
+        ? tone(ramp([40, 30, 24]), s.light)
+        : Math.hypot(s.p[0] - 1.6, s.p[2] + 2.4) < 0.9
+          ? tone(ramp([150, 36, 36]), s.light)
+          : tone(ramp([214, 198, 160]), s.light, (s.y + s.x) % 3 ? 0 : -1),
+    );
+  },
+  'orc-ledger'(c) {
+    // Un cuaderno tosco de cuero crudo, atado con una tira.
+    tome(c, ramp([96, 104, 60]), ramp([170, 150, 110]));
+  },
+  'mastery-magic-resist'(c) {
+    scroll(c, ramp([70, 110, 220]));
+  },
+  'mastery-parrying'(c) {
+    scroll(c, ramp([150, 150, 160]));
+  },
+  'mastery-archery'(c) {
+    scroll(c, ramp([110, 150, 60]));
+  },
+  'mastery-fencing'(c) {
+    scroll(c, ramp([210, 170, 90]));
+  },
   'mastery-swordsmanship'(c) {
     scroll(c, ramp([180, 180, 190]));
   },
