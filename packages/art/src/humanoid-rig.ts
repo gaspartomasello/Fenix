@@ -626,6 +626,8 @@ export interface Rig {
   readonly phase: number;
   /** Es la pose de la ventana de personaje (las armas de asta se muestran paradas). */
   readonly display?: boolean;
+  /** Descansa o avanza (quieto, caminando o corriendo, sin estar en guardia ni en una acción). */
+  readonly rest?: boolean;
   /** Tensando la cuerda del arco (la cuerda va a la mano derecha). */
   readonly drawing: boolean;
   /**
@@ -830,6 +832,7 @@ export function humanoidRig(
     arms,
     sway,
     display: frame === 'display',
+    rest: frame === 'idle' || (cycle !== null && !cycle.guard),
     phase: step,
     drawing: frame === 'shoot-0' || frame === 'shoot-1',
     hem: seat ? Math.min(legs[1].ankle[1], legs[-1].ankle[1]) + 2 : 0,

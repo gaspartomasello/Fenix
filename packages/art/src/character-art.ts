@@ -101,6 +101,9 @@ const BONE = ramp([226, 218, 196]);
 const OLD_BONE = ramp([212, 200, 150]);
 const BONE_GAP = ramp([40, 34, 30]);
 
+/** Cuánto más arriba que la cadera va la cintura (donde se ciñe el cinturón). */
+const WAIST = 2.2;
+
 /** El cordón de la túnica y el ribete dorado de las prendas finas. */
 const CORD = ramp([206, 178, 112]);
 const TRIM = ramp([214, 172, 72]);
@@ -672,7 +675,7 @@ function drawLegs(
         : tail
           ? Math.min(rig.legs[1].knee[1], rig.legs[-1].knee[1]) - 0.4
           : rig.legs[1].knee[1] - 1;
-    const top = rig.pelvis.origin[1] + 1;
+    const top = rig.pelvis.origin[1] + 1 + WAIST;
     const dress = equipment.torso === 'dress';
     const habit = isHooded(equipment.torso);
     const ragged = equipment.torso === 'tattered-robe';
@@ -797,7 +800,8 @@ function torsoMaterial({
       : null;
   const studded = armor === 'studded-leather';
   const chest = rig.chest;
-  const beltY = rig.pelvis.origin[1];
+  // El cinturón va en la cintura, no sobre la cadera.
+  const beltY = rig.pelvis.origin[1] + WAIST;
   return (s) => {
     const local = chest.local(s.p);
     const n = chest.localDir(s.n);
@@ -1717,11 +1721,19 @@ const POLEARMS: ReadonlySet<ItemKind> = new Set<ItemKind>([
 function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
   const { hand } = rig.arms[1];
   // En la ventana de personaje, las de asta y las hachas largas de dos manos, paradas.
+  // También en el mundo, mientras descansa o avanza: se llevan derechas, con la punta al
+  // cielo (en guardia o al golpear, apuntan al enemigo).
   const upright =
-    rig.display === true && (POLEARMS.has(kind) || (HEAVY_AXES[kind]?.haft ?? 0) > 14);
-  const dir = upright ? normalize(rig.chest.dir([0.07, 1, 0.05])) : rig.arms[1].weaponDir;
+    (rig.display === true || rig.rest === true) &&
+    (POLEARMS.has(kind) || (HEAVY_AXES[kind]?.haft ?? 0) > 14);
+  // En el mundo, derecha de verdad (aunque el cuerpo se incline al correr).
+  const dir = !upright
+    ? rig.arms[1].weaponDir
+    : rig.rest
+      ? normalize([0.03, 1, 0.02] as Vec3)
+      : normalize(rig.chest.dir([0.07, 1, 0.05]));
   // Parada, el asta llega hasta el suelo (la base apoyada junto al pie).
-  if (upright)
+  if (upright && !rig.seated)
     canvas.limb(add(hand, scale(dir, -6)), add(hand, scale(dir, -24)), 0.6, 0.6, solid(WOOD));
   const across = cross(dir, [0, 1, 0]);
   const side = Math.hypot(...across) < 0.2 ? rig.chest.dir([1, 0, 0]) : normalize(across);
