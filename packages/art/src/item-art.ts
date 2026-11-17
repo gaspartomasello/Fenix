@@ -1658,13 +1658,16 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     // Hebras de telaraña alrededor de un pequeño ovillo de seda.
     const strand = solid(ramp([220, 222, 218]));
     const center: Vec3 = [0, 1.1, 0];
+    const small = c.detail === 1;
+    const sides = small ? 6 : 8;
     const point = (i: number, r: number): Vec3 => {
-      const a = (i * Math.PI) / 4;
+      const a = (i * Math.PI * 2) / sides;
       return [Math.cos(a) * r, 0.9, Math.sin(a) * r];
     };
-    for (let i = 0; i < 8; i++) {
-      c.limb(center, point(i, 5.7), 0.28, 0.16, strand);
-      for (const r of [2.8, 4.6]) c.limb(point(i, r), point((i + 1) % 8, r), 0.18, 0.18, strand);
+    for (let i = 0; i < sides; i++) {
+      c.limb(center, point(i, 5.4), 0.5, 0.4, strand);
+      for (const r of small ? [4.2] : [3, 4.8])
+        c.limb(point(i, r), point((i + 1) % sides, r), 0.42, 0.42, strand);
     }
     c.ellipsoid(center, lying(0), [1.45, 0.8, 1.7], (s) =>
       tone(ramp([236, 233, 220]), s.light, Math.floor((s.p[0] + s.p[2]) * 2) % 3 === 0 ? -1 : 0),
