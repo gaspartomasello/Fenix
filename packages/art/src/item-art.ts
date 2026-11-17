@@ -351,9 +351,23 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
   'strength-potion': potion([232, 232, 236]),
   'agility-potion': potion([52, 92, 204]),
   'empty-bottle'(c) {
+    // Botella vacía: base plana, hombros, cuello estrecho y boca oscura.
     const glass = ramp([176, 196, 204]);
-    c.sphere([0, 3, 0], 3, (s) => (s.light > 0.85 ? [240, 248, 252] : tone(glass, s.light, -1)));
-    c.limb([0, 5.2, 0], [0, 8, 0], 1.1, 0.9, (s) => tone(glass, s.light));
+    c.limb([0, 0.5, 0], [0, 5.3, 0], 2.5, 2.5, (s) =>
+      Math.abs(s.p[0] + 1.1) < 0.35 ? [238, 245, 242] : tone(glass, s.light, s.p[1] < 1.1 ? -1 : 0),
+    );
+    c.ellipsoid([0, 5.25, 0], lying(0), [2.45, 0.8, 2.45], solid(glass));
+    c.limb([0, 5.6, 0], [0, 8.3, 0], 0.95, 0.95, (s) => tone(glass, s.light, 1));
+    c.polygon(
+      Array.from({ length: 12 }, (_, i): Vec3 => {
+        const a = (i * Math.PI) / 6;
+        return [Math.cos(a) * 1.15, 8.5, Math.sin(a) * 1.15];
+      }),
+      (s) =>
+        Math.hypot(s.p[0], s.p[2]) < 0.7
+          ? tone(ramp([65, 76, 82]), s.light)
+          : tone(glass, s.light, 1),
+    );
   },
   // Bolsas de cuero atadas con un cordón, y una caja de tablas con tapa.
   // El cuero toma el color con que se tiñó (si no, el suyo).
@@ -614,18 +628,37 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
   },
   torch(c) {
     c.limb([-4, 0.6, 2.4], [3, 0.8, -1.4], 0.6, 0.8, solid(WOOD));
-    c.ellipsoid([3.6, 1.2, -1.8], lying(1), [1.3, 1.1, 1.8], solid(ramp([60, 40, 28])));
-    c.sphere([4.4, 2.4, -2.2], 1.4, (s) => tone(ramp([255, 190, 70]), 0.6 + s.light * 0.4));
+    c.ellipsoid([3.6, 1.2, -1.8], lying(1), [1.5, 1, 1.8], solid(ramp([70, 43, 29])));
+    c.limb([4, 1.7, -1.8], [4.5, 5, -1.8], 1.1, 0.08, solid(ramp([255, 137, 30]), 1));
+    c.limb([4, 1.9, -0.6], [4.3, 3.8, -0.6], 0.55, 0.08, solid(ramp([255, 226, 85]), 1));
   },
   lantern(c) {
     // Farol de hierro con vidrios y una llama adentro.
-    c.box([0, 2.8, 0], lying(0.3), [2.2, 2.8, 2.2], (s) =>
-      Math.abs(s.n[1]) > 0.7 || Math.abs(Math.abs(s.p[0]) - 2) < 0.4
+    c.box([0, 2.8, 0], lying(0), [2.25, 2.65, 2.25], (s) =>
+      s.p[1] < 0.8 || s.p[1] > 4.9
         ? tone(DARK_STEEL, s.light)
-        : tone(ramp([255, 210, 120]), 0.7 + s.light * 0.3),
+        : tone(ramp([246, 184, 74]), 0.65 + s.light * 0.25),
     );
-    c.limb([0, 5.6, 0], [0, 6.8, 0], 1.6, 0.6, metal(DARK_STEEL));
-    c.limb([-1, 7, 0], [1, 7, 0], 0.3, 0.3, metal(DARK_STEEL));
+    for (const x of [-2.15, 2.15])
+      for (const z of [-2.15, 2.15])
+        c.limb([x, 0.55, z], [x, 5.15, z], 0.3, 0.3, metal(DARK_STEEL));
+    c.box([0, 0.45, 0], lying(0), [2.7, 0.45, 2.7], metal(DARK_STEEL));
+    const roof: Vec3 = [0, 6.3, 0];
+    for (let i = 0; i < 4; i++) {
+      const a = (i * Math.PI) / 2;
+      const b = ((i + 1) * Math.PI) / 2;
+      c.polygon(
+        [
+          [Math.cos(a) * 2.5, 5.25, Math.sin(a) * 2.5],
+          [Math.cos(b) * 2.5, 5.25, Math.sin(b) * 2.5],
+          roof,
+        ],
+        solid(DARK_STEEL),
+      );
+    }
+    c.limb([-1.25, 6.1, 0], [-1.05, 7.7, 0], 0.28, 0.28, metal(DARK_STEEL));
+    c.limb([-1.05, 7.7, 0], [1.05, 7.7, 0], 0.28, 0.28, metal(DARK_STEEL));
+    c.limb([1.05, 7.7, 0], [1.25, 6.1, 0], 0.28, 0.28, metal(DARK_STEEL));
   },
   lute(c) {
     // Caja en forma de pera y mástil con el clavijero doblado.
