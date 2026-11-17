@@ -3299,6 +3299,13 @@ body {
 }
 
 /* Ventana de todos los objetos (administrador, /objetos). */
+/* Todos los objetos (`/objetos`): casilleros de cuero con canto de bronce. */
+.catalog-window {
+  width: min(640px, calc(100vw - 24px));
+}
+.catalog-tabs {
+  margin-bottom: 6px;
+}
 .catalog-tools {
   display: flex;
   gap: 8px;
@@ -3312,41 +3319,76 @@ body {
 .catalog-amount {
   width: 72px;
 }
+.catalog-amount-label[hidden] {
+  display: none;
+}
 .catalog-list {
-  width: min(560px, 86vw);
   max-height: min(60vh, 520px);
   overflow-y: auto;
+  padding-right: 4px;
+}
+.catalog-list[hidden] {
+  display: none;
 }
 .catalog-title {
-  margin: 8px 0 4px;
-  font-size: 0.95em;
+  margin: 10px 0 5px;
+  padding-bottom: 2px;
+  font-size: 0.9em;
+  letter-spacing: 0.06em;
+  color: var(--bronze-light);
+  text-shadow: 0 0 6px var(--ember);
+  border-bottom: 1px solid rgba(214, 176, 106, 0.28);
 }
 .catalog-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-  gap: 4px;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 5px;
 }
 .catalog-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 4px 2px;
-  background: rgba(0, 0, 0, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 4px;
-  color: inherit;
-  font-size: 0.78em;
+  gap: 3px;
+  padding: 5px 3px 4px;
+  font: inherit;
+  font-size: 0.74rem;
+  color: var(--color-text);
   cursor: pointer;
+  background: radial-gradient(ellipse at 50% 38%, #3a2a1a, var(--leather) 72%);
+  border: 1px solid var(--bronze-dark);
+  border-top-color: var(--bronze);
+  border-radius: 3px;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.6),
+    inset 0 -6px 10px rgba(0, 0, 0, 0.35);
 }
 .catalog-item:hover,
 .catalog-item:focus-visible {
-  background: rgba(255, 220, 140, 0.16);
+  border-color: var(--bronze-light);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.6),
+    0 0 8px var(--ember);
+  outline: none;
 }
-.catalog-item img {
-  width: 44px;
-  height: 44px;
+.catalog-item--piece {
+  cursor: default;
+}
+.catalog-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+}
+.catalog-icon img {
+  max-width: 56px;
+  max-height: 56px;
+  width: auto;
+  height: auto;
+  min-width: 40px;
+  object-fit: contain;
   image-rendering: auto;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.6));
 }
 .catalog-name {
   text-align: center;
@@ -3355,6 +3397,24 @@ body {
 .catalog-item[hidden],
 .catalog-group[hidden] {
   display: none;
+}
+/* En el celular acostado: casilleros más chicos para que entren más por fila. */
+@media (max-height: 500px) {
+  .catalog-list {
+    max-height: calc(100vh - 180px);
+  }
+  .catalog-grid {
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  }
+  .catalog-icon {
+    width: 44px;
+    height: 44px;
+  }
+  .catalog-icon img {
+    max-width: 44px;
+    max-height: 44px;
+    min-width: 32px;
+  }
 }
 
 /* Rastrear: la ventana y la flecha alrededor del personaje. */

@@ -24,6 +24,9 @@ import { StaticLayer } from './static-layer';
 import { TerrainLayer } from './terrain-layer';
 import { TextureCache } from './texture-cache';
 
+/** El halo de un portal: tiles que alumbra y su color (azul de luna). */
+const PORTAL_LIGHT_RADIUS = 4;
+const PORTAL_LIGHT_COLOR = 0x5a86d8;
 /** Cuánto se muestra el aviso de que se perdió la imagen antes de recargar. */
 const CONTEXT_RELOAD_MS = 2500;
 /** Niveles de zoom; el primero (más lejos) solo en el celular, donde la pantalla es chica. */
@@ -391,8 +394,14 @@ export class GameRenderer {
   }
 
   /** Quienes llevan una antorcha o un farol en la mano: alumbran a su alrededor. */
-  private *carriedLights(now: number): Iterable<{ at: FractionalPosition; radius: number }> {
+  private *carriedLights(
+    now: number,
+  ): Iterable<{ at: FractionalPosition; radius: number; color?: number }> {
     yield* this.fields.lights();
+    // Los portales abiertos alumbran alrededor con su luz azulada.
+    for (const item of this.game.groundItems())
+      if (item.kind === 'moongate')
+        yield { at: item.position, radius: PORTAL_LIGHT_RADIUS, color: PORTAL_LIGHT_COLOR };
     for (const entity of this.game.allEntities()) {
       const held = entity.equipment.leftHand;
       const radius = held ? ITEMS[held].light : undefined;
