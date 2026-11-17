@@ -1626,10 +1626,26 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     }
   },
   ginseng(c) {
-    const root = solid(ramp([206, 170, 112]));
-    c.limb([-3, 0.8, 1.4], [0.6, 0.8, -0.2], 1.1, 0.8, root);
-    c.limb([0.6, 0.8, -0.2], [3.6, 0.6, 1.2], 0.8, 0.4, root);
-    c.limb([0.6, 0.8, -0.2], [2.4, 0.6, -2.6], 0.7, 0.3, root);
+    // Raíz nudosa con varias raicillas y hojas pequeñas en el cuello.
+    const root = solid(ramp([204, 168, 111]));
+    const fineRoot = solid(ramp([166, 129, 82]));
+    c.ellipsoid([-0.3, 1.2, -0.6], lying(0.25), [1.7, 1.2, 2.4], root);
+    for (const [from, to, thick] of [
+      [[-0.7, 0.9, 0.5], [-3.5, 0.55, 4], 0.8],
+      [[0.1, 0.9, 0.9], [0.8, 0.55, 6], 0.85],
+      [[0.8, 0.85, 0.1], [3.2, 0.5, 2.9], 0.55],
+      [[-1.2, 0.9, -1.1], [-2.8, 0.55, -2.4], 0.3],
+    ] as [Vec3, Vec3, number][]) {
+      c.limb(from, to, thick, 0.15, root);
+      c.limb(to, [to[0] * 1.15, 0.45, to[2] * 1.16], 0.2, 0.08, fineRoot);
+    }
+    const leaf = solid(ramp([88, 125, 60]));
+    c.limb([-0.3, 2.2, -1.8], [-0.6, 3.4, -2.9], 0.22, 0.15, leaf);
+    for (const at of [
+      [-2.1, 3.3, -3.1],
+      [1.2, 3.5, -3.2],
+    ] as Vec3[])
+      c.ellipsoid(at, lying(0.2), [1.3, 0.3, 0.65], leaf);
   },
   'mandrake-root'(c) {
     const root = solid(ramp([126, 88, 56]));
@@ -1639,16 +1655,20 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     c.ellipsoid([0, 2, -3], lying(0), [1.6, 1, 1.6], solid(ramp([80, 130, 60])));
   },
   'spiders-silk'(c) {
-    for (let i = 0; i < 9; i++) {
-      const at: Vec3 = [
-        (noise(i, 1) - 0.5) * 4.5,
-        1.2 + noise(i, 2) * 1.6,
-        (noise(i, 3) - 0.5) * 4,
-      ];
-      c.sphere(at, 1.3, (s) =>
-        tone(ramp([228, 228, 232]), s.light, noise(s.x, s.y) > 0.7 ? -1 : 0),
-      );
+    // Hebras de telaraña alrededor de un pequeño ovillo de seda.
+    const strand = solid(ramp([220, 222, 218]));
+    const center: Vec3 = [0, 1.1, 0];
+    const point = (i: number, r: number): Vec3 => {
+      const a = (i * Math.PI) / 4;
+      return [Math.cos(a) * r, 0.9, Math.sin(a) * r];
+    };
+    for (let i = 0; i < 8; i++) {
+      c.limb(center, point(i, 5.7), 0.28, 0.16, strand);
+      for (const r of [2.8, 4.6]) c.limb(point(i, r), point((i + 1) % 8, r), 0.18, 0.18, strand);
     }
+    c.ellipsoid(center, lying(0), [1.45, 0.8, 1.7], (s) =>
+      tone(ramp([236, 233, 220]), s.light, Math.floor((s.p[0] + s.p[2]) * 2) % 3 === 0 ? -1 : 0),
+    );
   },
   'sulfurous-ash'(c) {
     // Montículo gris oscuro de ceniza con granos de azufre amarillo encima.
@@ -1869,9 +1889,36 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     for (const y of [4, 10, 15]) c.sphere([2.6, y, 1], 0.8, solid(ramp([240, 250, 255])));
   },
   'blood-moss'(c) {
-    for (let i = 0; i < 8; i++) {
-      const at: Vec3 = [(noise(i, 4) - 0.5) * 4.4, 1 + noise(i, 5) * 1.2, (noise(i, 6) - 0.5) * 4];
-      c.sphere(at, 1.2, (s) => tone(ramp([150, 30, 34]), s.light, noise(s.x, s.y) > 0.7 ? -1 : 0));
+    // Frondas rojizas rastreras, con ramificaciones finas en vez de bayas.
+    const moss = solid(ramp([143, 40, 43]));
+    const tips = solid(ramp([181, 59, 55]));
+    c.ellipsoid([0, 0.65, 0], lying(0), [2, 0.6, 1.7], moss);
+    for (const [end, side] of [
+      [
+        [-5.1, 0.45, -2.8],
+        [-3.4, 0.5, -4.1],
+      ],
+      [
+        [-5.5, 0.45, 2],
+        [-3.3, 0.5, 3.7],
+      ],
+      [
+        [4.7, 0.45, -3.2],
+        [3.1, 0.5, -4.4],
+      ],
+      [
+        [5.3, 0.45, 2.6],
+        [3.5, 0.5, 4.2],
+      ],
+      [
+        [0.3, 0.45, 5.4],
+        [-1.2, 0.5, 4.4],
+      ],
+    ] as [Vec3, Vec3][]) {
+      const mid: Vec3 = [end[0] * 0.52, 0.55, end[2] * 0.52];
+      c.limb([0, 0.7, 0], end, 0.85, 0.23, moss);
+      c.limb(mid, side, 0.45, 0.12, tips);
+      c.sphere(end, 0.42, tips);
     }
   },
   nightshade(c) {
