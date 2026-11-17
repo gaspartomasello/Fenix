@@ -394,16 +394,28 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     ribs(c, ramp([132, 70, 36]));
   },
   bandage(c) {
+    // Venda enrollada con espiral visible en el extremo y una tira suelta.
     const linen = ramp([232, 226, 210]);
-    for (const [at, a] of [
-      [[-1.6, 1.4, 0.6], 0.2],
-      [[1.8, 1.4, -0.4], -0.5],
-      [[0.2, 3.6, 0.2], 1.2],
-    ] as [Vec3, number][]) {
-      c.ellipsoid(at, lying(a), [2.6, 1.5, 1.5], (s) =>
-        tone(linen, s.light, Math.sin(s.p[0] * 3 + a) > 0.75 ? -1 : 0),
-      );
-    }
+    c.polygon(
+      [
+        [-2.8, 0.65, 0.8],
+        [-0.5, 0.65, 1.5],
+        [-2.4, 0.65, 5.6],
+        [-5.2, 0.65, 4.5],
+      ],
+      (s) => tone(linen, s.light, Math.abs(s.p[2] - 3.7) < 0.14 ? -1 : 0),
+    );
+    c.limb([-2.5, 2, 0], [2.5, 2, 0], 1.85, 1.85, (s) =>
+      tone(linen, s.light, Math.abs(s.p[0] + 0.5) < 0.2 ? -1 : 0),
+    );
+    const end = Array.from({ length: 12 }, (_, i): Vec3 => {
+      const a = (i * Math.PI) / 6;
+      return [2.55, 2 + Math.cos(a) * 1.8, Math.sin(a) * 1.8];
+    });
+    c.polygon(end, (s) => {
+      const r = Math.hypot(s.p[1] - 2, s.p[2]);
+      return tone(linen, s.light, r < 0.35 || (r > 0.85 && r < 1.1) ? -2 : 1);
+    });
   },
   bread(c) {
     // Hogaza dorada con cortes en la corteza.
@@ -439,10 +451,14 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
   },
   ham(c) {
     const meat = ramp([196, 92, 80]);
-    c.ellipsoid([0, 2.4, 0.6], lying(0.6), [3.4, 2.6, 4.8], (s) =>
-      tone(meat, s.light, s.n[1] > 0.6 ? 1 : 0),
+    // Pata acostada: carne alargada y hueso que sale por un extremo.
+    c.ellipsoid([0.6, 2.2, -0.3], lying(1.1), [4.7, 2.1, 2.7], (s) =>
+      tone(meat, s.light, s.n[1] > 0.65 ? 1 : Math.abs(s.p[0] - 2.7) < 0.35 ? -1 : 0),
     );
-    c.limb([-2, 2.4, -3.2], [-3.4, 2.6, -5.6], 0.8, 0.6, solid(ramp([236, 228, 210])));
+    const bone = solid(ramp([236, 228, 210]));
+    c.limb([-3.2, 1.9, 1.7], [-6.8, 1.7, 3.4], 0.75, 0.58, bone);
+    c.sphere([-7.1, 1.7, 2.7], 0.75, bone);
+    c.sphere([-6.7, 1.7, 4.1], 0.75, bone);
   },
   carrot(c) {
     for (const [x, z, a] of [
@@ -463,11 +479,17 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
   },
   'meat-pie'(c) {
     const crust = ramp([206, 150, 80]);
-    c.limb([0, 0, 0], [0, 1.2, 0], 5, 4.4, (s) =>
-      s.n[1] > 0.7 && Math.abs(((s.p[0] + s.p[2] + 20) % 2.4) - 1.2) < 0.25
-        ? tone(crust, s.light, -1)
-        : tone(crust, s.light),
-    );
+    // Pastel bajo con relleno oscuro y tiras de masa cruzadas.
+    c.ellipsoid([0, 0.9, 0], lying(0), [5.1, 0.9, 4.6], solid(crust));
+    c.ellipsoid([0, 1.65, 0], lying(0), [4.2, 0.23, 3.7], solid(ramp([128, 75, 49])));
+    for (const offset of [-2, 0, 2]) {
+      c.limb([-3.8, 1.95, offset], [3.8, 1.95, offset], 0.32, 0.32, solid(crust, 1));
+      c.limb([offset, 2.05, -3.3], [offset, 2.05, 3.3], 0.32, 0.32, solid(crust, 1));
+    }
+    for (let i = 0; i < 12; i++) {
+      const a = (i * Math.PI) / 6;
+      c.sphere([Math.cos(a) * 4.55, 1.8, Math.sin(a) * 4.1], 0.55, solid(crust));
+    }
   },
   wine(c) {
     // Botella oscura con corcho.
