@@ -324,6 +324,24 @@ empedrado viejo, fuera de los pueblos, cada tanto pasa algo (a lo sumo uno cada 
 
 Los que aparecen se van a los cinco minutos.
 
+## Lo que saben los vecinos (etapa 135)
+
+Además de la charla de siempre, cualquier vecino sabe del mundo (`features/lore/world-lore.ts`):
+
+- **Historia y lugares**: el imperio antiguo, los reyes del desierto, las Tierras de Ceniza, la
+  fundación de Puerto Ceniza, Roca Alta y sus minas, Junco Verde y el pantano, la selva, los portales.
+- **Creencias y costumbres**: los dioses y santuarios, la muerte y los fantasmas, las fiestas, la
+  comida, la música, el clima, los caminos, los campamentos, los druidas, orcos, muertos que caminan,
+  tesoros, la reputación, las casas, las habilidades.
+- **«Contame más»**: sigue con el tema del que venía hablando (cada tema tiene varias respuestas).
+- **«Contame una historia verdadera»**: cuentos de «tierras lejanas» que son hechos reales (la miel
+  que no se echa a perder, la plaga del baile, el fuego que ardía sobre el agua…).
+- **«¿Qué hay cerca?»**: nombra los lugares más próximos de los que figuran en los mapas y hacia
+  dónde quedan.
+- **Más rumores** sueltos, que apuntan a los lugares escondidos.
+- **Frases secretas** (`SECRETS`): «el sentido de la vida», «¿quién hizo este mundo?», «hola mundo»,
+  «abracadabra», «esto es un juego», «tirar los dados» y otras tienen respuesta propia.
+
 ## Los caminantes (etapa 136)
 
 En las encrucijadas del continente, lejos de los pueblos, hay **caminantes**: gente con nombre
