@@ -77,6 +77,7 @@ const ICON_FIT: Partial<Record<ItemKind, number>> = {
   'samurai-do': 0.9,
   'samurai-haidate': 0.92,
   'templar-hauberk': 0.9,
+  cloth: 0.85,
 };
 
 const OUTLINE: Rgb = [24, 17, 14];
@@ -394,16 +395,28 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     ribs(c, ramp([132, 70, 36]));
   },
   bandage(c) {
+    // Venda enrollada con espiral visible en el extremo y una tira suelta.
     const linen = ramp([232, 226, 210]);
-    for (const [at, a] of [
-      [[-1.6, 1.4, 0.6], 0.2],
-      [[1.8, 1.4, -0.4], -0.5],
-      [[0.2, 3.6, 0.2], 1.2],
-    ] as [Vec3, number][]) {
-      c.ellipsoid(at, lying(a), [2.6, 1.5, 1.5], (s) =>
-        tone(linen, s.light, Math.sin(s.p[0] * 3 + a) > 0.75 ? -1 : 0),
-      );
-    }
+    c.polygon(
+      [
+        [-2.8, 0.65, 0.8],
+        [-0.5, 0.65, 1.5],
+        [-2.4, 0.65, 5.6],
+        [-5.2, 0.65, 4.5],
+      ],
+      (s) => tone(linen, s.light, Math.abs(s.p[2] - 3.7) < 0.14 ? -1 : 0),
+    );
+    c.limb([-2.5, 2, 0], [2.5, 2, 0], 1.85, 1.85, (s) =>
+      tone(linen, s.light, Math.abs(s.p[0] + 0.5) < 0.2 ? -1 : 0),
+    );
+    const end = Array.from({ length: 12 }, (_, i): Vec3 => {
+      const a = (i * Math.PI) / 6;
+      return [2.55, 2 + Math.cos(a) * 1.8, Math.sin(a) * 1.8];
+    });
+    c.polygon(end, (s) => {
+      const r = Math.hypot(s.p[1] - 2, s.p[2]);
+      return tone(linen, s.light, r < 0.35 || (r > 0.85 && r < 1.1) ? -2 : 1);
+    });
   },
   bread(c) {
     // Hogaza dorada con cortes en la corteza.
@@ -439,10 +452,14 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
   },
   ham(c) {
     const meat = ramp([196, 92, 80]);
-    c.ellipsoid([0, 2.4, 0.6], lying(0.6), [3.4, 2.6, 4.8], (s) =>
-      tone(meat, s.light, s.n[1] > 0.6 ? 1 : 0),
+    // Pata acostada: carne alargada y hueso que sale por un extremo.
+    c.ellipsoid([0.6, 2.2, -0.3], lying(1.1), [4.7, 2.1, 2.7], (s) =>
+      tone(meat, s.light, s.n[1] > 0.65 ? 1 : Math.abs(s.p[0] - 2.7) < 0.35 ? -1 : 0),
     );
-    c.limb([-2, 2.4, -3.2], [-3.4, 2.6, -5.6], 0.8, 0.6, solid(ramp([236, 228, 210])));
+    const bone = solid(ramp([236, 228, 210]));
+    c.limb([-3.2, 1.9, 1.7], [-6.8, 1.7, 3.4], 0.75, 0.58, bone);
+    c.sphere([-7.1, 1.7, 2.7], 0.75, bone);
+    c.sphere([-6.7, 1.7, 4.1], 0.75, bone);
   },
   carrot(c) {
     for (const [x, z, a] of [
@@ -463,11 +480,17 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
   },
   'meat-pie'(c) {
     const crust = ramp([206, 150, 80]);
-    c.limb([0, 0, 0], [0, 1.2, 0], 5, 4.4, (s) =>
-      s.n[1] > 0.7 && Math.abs(((s.p[0] + s.p[2] + 20) % 2.4) - 1.2) < 0.25
-        ? tone(crust, s.light, -1)
-        : tone(crust, s.light),
-    );
+    // Pastel bajo con relleno oscuro y tiras de masa cruzadas.
+    c.ellipsoid([0, 0.9, 0], lying(0), [5.1, 0.9, 4.6], solid(crust));
+    c.ellipsoid([0, 1.65, 0], lying(0), [4.2, 0.23, 3.7], solid(ramp([128, 75, 49])));
+    for (const offset of [-2, 0, 2]) {
+      c.limb([-3.8, 1.95, offset], [3.8, 1.95, offset], 0.32, 0.32, solid(crust, 1));
+      c.limb([offset, 2.05, -3.3], [offset, 2.05, 3.3], 0.32, 0.32, solid(crust, 1));
+    }
+    for (let i = 0; i < 12; i++) {
+      const a = (i * Math.PI) / 6;
+      c.sphere([Math.cos(a) * 4.55, 1.8, Math.sin(a) * 4.1], 0.55, solid(crust));
+    }
   },
   wine(c) {
     // Botella oscura con corcho.
@@ -1661,10 +1684,26 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     }
   },
   ginseng(c) {
-    const root = solid(ramp([206, 170, 112]));
-    c.limb([-3, 0.8, 1.4], [0.6, 0.8, -0.2], 1.1, 0.8, root);
-    c.limb([0.6, 0.8, -0.2], [3.6, 0.6, 1.2], 0.8, 0.4, root);
-    c.limb([0.6, 0.8, -0.2], [2.4, 0.6, -2.6], 0.7, 0.3, root);
+    // Raíz nudosa con varias raicillas y hojas pequeñas en el cuello.
+    const root = solid(ramp([204, 168, 111]));
+    const fineRoot = solid(ramp([166, 129, 82]));
+    c.ellipsoid([-0.3, 1.2, -0.6], lying(0.25), [1.7, 1.2, 2.4], root);
+    for (const [from, to, thick] of [
+      [[-0.7, 0.9, 0.5], [-3.5, 0.55, 4], 0.8],
+      [[0.1, 0.9, 0.9], [0.8, 0.55, 6], 0.85],
+      [[0.8, 0.85, 0.1], [3.2, 0.5, 2.9], 0.55],
+      [[-1.2, 0.9, -1.1], [-2.8, 0.55, -2.4], 0.3],
+    ] as [Vec3, Vec3, number][]) {
+      c.limb(from, to, thick, 0.15, root);
+      c.limb(to, [to[0] * 1.15, 0.45, to[2] * 1.16], 0.2, 0.08, fineRoot);
+    }
+    const leaf = solid(ramp([88, 125, 60]));
+    c.limb([-0.3, 2.2, -1.8], [-0.6, 3.4, -2.9], 0.22, 0.15, leaf);
+    for (const at of [
+      [-2.1, 3.3, -3.1],
+      [1.2, 3.5, -3.2],
+    ] as Vec3[])
+      c.ellipsoid(at, lying(0.2), [1.3, 0.3, 0.65], leaf);
   },
   'mandrake-root'(c) {
     const root = solid(ramp([126, 88, 56]));
@@ -1674,23 +1713,36 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     c.ellipsoid([0, 2, -3], lying(0), [1.6, 1, 1.6], solid(ramp([80, 130, 60])));
   },
   'spiders-silk'(c) {
-    for (let i = 0; i < 9; i++) {
-      const at: Vec3 = [
-        (noise(i, 1) - 0.5) * 4.5,
-        1.2 + noise(i, 2) * 1.6,
-        (noise(i, 3) - 0.5) * 4,
-      ];
-      c.sphere(at, 1.3, (s) =>
-        tone(ramp([228, 228, 232]), s.light, noise(s.x, s.y) > 0.7 ? -1 : 0),
-      );
+    // Hebras de telaraña alrededor de un pequeño ovillo de seda.
+    const strand = solid(ramp([220, 222, 218]));
+    const center: Vec3 = [0, 1.1, 0];
+    const small = c.detail === 1;
+    const sides = small ? 6 : 8;
+    const point = (i: number, r: number): Vec3 => {
+      const a = (i * Math.PI * 2) / sides;
+      return [Math.cos(a) * r, 0.9, Math.sin(a) * r];
+    };
+    for (let i = 0; i < sides; i++) {
+      c.limb(center, point(i, 5.4), 0.5, 0.4, strand);
+      for (const r of small ? [4.2] : [3, 4.8])
+        c.limb(point(i, r), point((i + 1) % sides, r), 0.42, 0.42, strand);
     }
+    c.ellipsoid(center, lying(0), [1.45, 0.8, 1.7], (s) =>
+      tone(ramp([236, 233, 220]), s.light, Math.floor((s.p[0] + s.p[2]) * 2) % 3 === 0 ? -1 : 0),
+    );
   },
   'sulfurous-ash'(c) {
-    c.ellipsoid([0, 0.6, 0], lying(0), [4.6, 1.6, 4], (s) =>
-      noise(s.x, s.y) > 0.8
-        ? tone(ramp([214, 190, 70]), s.light)
-        : tone(ramp([128, 124, 118]), s.light),
+    // Montículo gris oscuro de ceniza con granos de azufre amarillo encima.
+    const ash = ramp([94, 90, 82]);
+    c.ellipsoid([0, 0.65, 0], lying(0), [4.7, 1.4, 3.7], (s) =>
+      tone(ash, s.light, noise(Math.floor(s.p[0] * 2), Math.floor(s.p[2] * 2)) > 0.72 ? 1 : 0),
     );
+    for (const [x, z, size] of [
+      [-1.7, -0.7, 0.75],
+      [1.3, -1.1, 0.65],
+      [0.6, 1.5, 0.55],
+    ] as const)
+      c.sphere([x, 1.7, z], size, solid(ramp([220, 184, 58])));
   },
   pickaxe(c) {
     c.limb([-5.6, 0.7, 3.4], [4.6, 0.7, -2.2], 0.7, 0.7, solid(WOOD));
@@ -1708,6 +1760,7 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     c.sphere([4.6, 0.6, 2.6], 0.5, solid(ramp([200, 40, 40])));
   },
   'sewing-kit'(c) {
+    // Costurero de madera: carretes, aguja y un cabo de hilo suelto.
     c.box([0, 1.4, 0], lying(0.4), [4.2, 1.4, 3], (s) =>
       s.n[1] > 0.7 ? tone(ramp([150, 104, 60]), s.light) : tone(WOOD, s.light, -1),
     );
@@ -1716,11 +1769,14 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
       [0, [60, 90, 170]],
       [1.8, [210, 190, 80]],
     ] as [number, Rgb][]) {
+      c.limb([x, 2.8, -1.1], [x, 2.8, 1.1], 0.7, 0.7, solid(ramp([190, 153, 99])));
       c.limb([x, 2.8, -0.6], [x, 2.8, 0.8], 0.9, 0.9, solid(ramp(col)));
     }
+    c.limb([-3.8, 3.2, 2.3], [3.9, 3.2, -2.1], 0.18, 0.09, metal(STEEL));
+    c.limb([2.2, 3, 1.2], [3.2, 2.8, 2.7], 0.17, 0.13, solid(ramp([180, 40, 40])));
   },
   saw(c) {
-    const at: Vec3 = [-1, 0.6, 0.6];
+    // Hoja ancha con dientes recortados y mango separado del filo.
     c.polygon(
       [
         [-1.6, 0.6, 2.8],
@@ -1733,17 +1789,44 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
           ? tone(STEEL, s.light, -1)
           : tone(STEEL, s.light + 0.1),
     );
-    c.box(add(at, [-3.2, 0.4, 1.6]), lying(1.05), [1.4, 0.8, 2.2], solid(WOOD));
+    for (let i = 0; i < 9; i++) {
+      const t = (i + 0.15) / 9;
+      const x = -1.6 + t * 7.8;
+      const z = 2.8 - t * 4.2;
+      c.polygon(
+        [
+          [x, 0.65, z],
+          [x + 0.55, 0.65, z - 0.3],
+          [x + 0.5, 0.65, z + 0.65],
+        ],
+        metal(STEEL),
+      );
+    }
+    c.ellipsoid([-4.6, 1, 3.2], lying(1.05), [2.1, 0.8, 1.35], solid(WOOD));
+    c.limb([-3.2, 1, 2.4], [-1.8, 0.8, 1.5], 0.55, 0.55, solid(WOOD));
   },
   'fletching-kit'(c) {
-    c.box([0, 1, 0], lying(0.3), [3.8, 1, 2.6], solid(ramp([120, 84, 52])));
-    for (let i = 0; i < 4; i++) {
-      c.ellipsoid(
-        [-2 + i * 1.3, 2.4, -0.4 + (i % 2) * 0.6],
-        lying(0.4),
-        [0.5, 0.4, 2],
-        solid(ramp([236, 236, 240])),
+    // Bandeja de emplumado con tres astiles, puntas y plumas en el extremo.
+    c.box([0, 0.8, 0], lying(0.2), [4, 0.8, 2.6], solid(ramp([120, 84, 52])));
+    for (const z of [-1.5, 0, 1.5]) {
+      c.limb([-4.8, 2, z], [5.2, 2, z], 0.24, 0.24, solid(WOOD));
+      c.polygon(
+        [
+          [5.1, 2, z - 0.48],
+          [6, 2, z],
+          [5.1, 2, z + 0.48],
+        ],
+        metal(STEEL),
       );
+      for (const side of [-1, 1])
+        c.polygon(
+          [
+            [-4.7, 2.25, z],
+            [-2.7, 2.25, z],
+            [-4.2, 2.25, z + side * 1.1],
+          ],
+          solid(ramp([232, 230, 220])),
+        );
     }
   },
   'mortar-pestle'(c) {
@@ -1898,9 +1981,36 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     for (const y of [4, 10, 15]) c.sphere([2.6, y, 1], 0.8, solid(ramp([240, 250, 255])));
   },
   'blood-moss'(c) {
-    for (let i = 0; i < 8; i++) {
-      const at: Vec3 = [(noise(i, 4) - 0.5) * 4.4, 1 + noise(i, 5) * 1.2, (noise(i, 6) - 0.5) * 4];
-      c.sphere(at, 1.2, (s) => tone(ramp([150, 30, 34]), s.light, noise(s.x, s.y) > 0.7 ? -1 : 0));
+    // Frondas rojizas rastreras, con ramificaciones finas en vez de bayas.
+    const moss = solid(ramp([143, 40, 43]));
+    const tips = solid(ramp([181, 59, 55]));
+    c.ellipsoid([0, 0.65, 0], lying(0), [2, 0.6, 1.7], moss);
+    for (const [end, side] of [
+      [
+        [-5.1, 0.45, -2.8],
+        [-3.4, 0.5, -4.1],
+      ],
+      [
+        [-5.5, 0.45, 2],
+        [-3.3, 0.5, 3.7],
+      ],
+      [
+        [4.7, 0.45, -3.2],
+        [3.1, 0.5, -4.4],
+      ],
+      [
+        [5.3, 0.45, 2.6],
+        [3.5, 0.5, 4.2],
+      ],
+      [
+        [0.3, 0.45, 5.4],
+        [-1.2, 0.5, 4.4],
+      ],
+    ] as [Vec3, Vec3][]) {
+      const mid: Vec3 = [end[0] * 0.52, 0.55, end[2] * 0.52];
+      c.limb([0, 0.7, 0], end, 0.85, 0.23, moss);
+      c.limb(mid, side, 0.45, 0.12, tips);
+      c.sphere(end, 0.42, tips);
     }
   },
   nightshade(c) {
@@ -1924,25 +2034,61 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     }
   },
   cloth(c) {
-    const fabric = ramp([196, 184, 160]);
-    c.limb([-4, 2, 1], [4, 2, -1], 2.2, 2.2, (s) =>
-      tone(fabric, s.light, Math.sin(Math.atan2(s.p[1] - 2, s.p[2]) * 6) > 0.7 ? -1 : 0),
+    // Rollo de mercería ligeramente inclinado, con capas alrededor de un palo central.
+    const fabric = ramp([214, 198, 168]);
+    const core = ramp([150, 108, 65]);
+    const radius = 3.1;
+    const height = 12.4;
+    const sides = 14;
+    const lean = 0.18;
+    const ring = (i: number, y: number): Vec3 => {
+      const a = (i / sides) * Math.PI * 2;
+      return [Math.cos(a) * radius + (y - 0.4) * lean, y, Math.sin(a) * radius];
+    };
+    for (let i = 0; i < sides; i++) {
+      c.polygon([ring(i, 0.4), ring(i + 1, 0.4), ring(i + 1, height), ring(i, height)], (s) => {
+        const seam = Math.abs(Math.atan2(s.p[2], s.p[0] - (s.p[1] - 0.4) * lean) - 0.8) < 0.12;
+        const fold = Math.abs(s.p[1] - 3.1) < 0.12 || Math.abs(s.p[1] - 8.7) < 0.12;
+        return tone(fabric, s.light, seam || fold ? -1 : 0);
+      });
+    }
+    c.polygon(
+      Array.from({ length: sides }, (_, i) => ring(i, height)),
+      (s) => {
+        const r = Math.hypot(s.p[0] - (height - 0.4) * lean, s.p[2]);
+        if (r < 1.05) return tone(core, s.light, -1);
+        if (r < 1.45 || (r > 2.1 && r < 2.35)) return tone(fabric, s.light, -1);
+        return tone(fabric, s.light, 1);
+      },
+    );
+    c.limb(
+      [(height - 0.4) * lean, height, 0],
+      [(height + 2.2) * lean, height + 2.6, 0],
+      0.8,
+      0.8,
+      solid(core),
     );
   },
   hides(c) {
-    const hide = ramp([138, 96, 60]);
-    c.polygon(
-      [
-        [-5, 0.6, -1],
-        [-2.4, 0.6, -4],
-        [2.6, 0.6, -3.6],
-        [5.2, 0.6, -0.4],
-        [3, 0.6, 3.6],
-        [-2.8, 0.6, 3.4],
-      ],
-      (s) =>
-        tone(hide, s.light + 0.15, noise(Math.floor(s.p[0]), Math.floor(s.p[2])) > 0.75 ? -1 : 0),
-    );
+    // Piel extendida: cuerpo oval y cuatro extremos cortos de las patas.
+    const leather = ramp([146, 98, 61]);
+    const edge = solid(ramp([104, 67, 44]));
+    for (const side of [-1, 1])
+      for (const end of [-1, 1])
+        c.polygon(
+          [
+            [side * 2.3, 0.55, end * 2],
+            [side * 4.5, 0.55, end * 3.8],
+            [side * 3.5, 0.55, end * 4.1],
+            [side * 1.7, 0.55, end * 3.2],
+          ],
+          edge,
+        );
+    c.ellipsoid([0, 0.58, 0], lying(0), [4.1, 0.28, 3.7], (s) => {
+      const mottled = noise(Math.floor(s.p[0] * 1.4), Math.floor(s.p[2] * 1.4));
+      const rim = Math.hypot(s.p[0] / 4.1, s.p[2] / 3.7) > 0.8;
+      return tone(leather, s.light + 0.15, rim || mottled > 0.75 ? -1 : 0);
+    });
   },
   logs(c) {
     const bark = ramp([104, 72, 44]);
