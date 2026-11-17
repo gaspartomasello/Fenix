@@ -153,7 +153,8 @@ export class WorldMap {
       ctx.lineWidth = 3 * ratio;
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
       ctx.strokeText(label.name, x, y);
-      ctx.fillStyle = LABEL_COLORS[label.kind];
+      // Las ciudades sin ley, de un blanco rojizo: no hay guardias.
+      ctx.fillStyle = label.unsafe ? '#ffc4a3' : LABEL_COLORS[label.kind];
       ctx.fillText(label.name, x, y);
     }
     // Los lugares a los que mandan las leyendas: una cruz roja con borde dorado, como en un mapa de tesoro.

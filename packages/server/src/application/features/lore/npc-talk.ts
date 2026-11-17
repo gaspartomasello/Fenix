@@ -23,6 +23,7 @@ import {
   TOPICS,
 } from './npc-lore';
 import { rumorOf, type Legends } from './legends';
+import { MORE_RUMORS, SECRETS, TRUE_STORIES, WORLD_TOPICS } from './world-lore';
 import type { Notifier, RandomSource } from '../../ports';
 
 /** A qué distancia un vecino escucha lo que le dicen. */
@@ -64,6 +65,7 @@ const TRADE: Readonly<Record<NpcRole, string>> = {
   townsfolk: 'Vivo acá, nomás. Trabajo en lo que salga.',
   guard: 'Cuido la paz de la ciudad. Los criminales no pasan.',
   beggar: 'Pido. Y escucho. Nadie le presta atención a un mendigo.',
+  wanderer: 'Ando. Los caminos son mi casa, y en los caminos se aprende de todo.',
   mercenary:
     'Alquilo espadas. Mi gente pelea por vos mientras le pagues. Decime «mercenarios» y te los presento.',
 };
@@ -98,7 +100,11 @@ const FAREWELL: Readonly<Record<Temper, string>> = {
 };
 
 /** Rumores sueltos, para quien no sabe ninguna leyenda. */
+/** Todos los temas: los de siempre y lo que se sabe del mundo. */
+const ALL_TOPICS = [...TOPICS, ...WORLD_TOPICS];
+
 const IDLE_RUMORS: readonly string[] = [
+  ...MORE_RUMORS,
   'Dicen que en las Tierras de Ceniza vive un dragón enorme.',
   'En el cementerio, de noche, se oyen pasos. Yo no voy ni loco.',
   'Los bandidos tienen su refugio en una isla del sur.',
@@ -126,6 +132,8 @@ export class NpcTalk {
   private readonly insults = new Map<string, number>();
   /** Lo último que el vecino le preguntó (para entender la respuesta). */
   private readonly asked = new Map<string, 'mood'>();
+  /** De qué venía hablando con cada uno (para seguir con «contame más»). */
+  private readonly threads = new Map<string, { lines: readonly string[]; at: number }>();
 
   constructor(
     private readonly world: World,
@@ -225,6 +233,23 @@ export class NpcTalk {
         ? `¡Asesino! ${player.name}, entregate o te vamos a buscar.`
         : 'Yo... yo no quiero problemas. Por favor, andate.';
 
+    // Frases secretas: respuestas que nadie espera.
+    const secret = SECRETS.find((x) => x.words.test(words));
+    if (secret) return this.pick(secret.replies, npc.name + words);
+    // «Contame más»: sigue con el tema del que venía hablando.
+    if (
+      /\b(contame mas|cuenta mas|decime mas|y que mas|que mas|segui|seguime contando|otra|otro)\b/.test(
+        words,
+      )
+    ) {
+      const thread = this.threads.get(key);
+      if (thread) {
+        if (thread.lines.length < 2) return 'Eso es todo lo que sé de eso.';
+        thread.at = (thread.at + 1) % thread.lines.length;
+        return thread.lines[thread.at] ?? '';
+      }
+    }
+
     // Le había preguntado cómo andaba: entiende la respuesta.
     if (this.asked.get(key) === 'mood') {
       this.asked.delete(key);
@@ -261,13 +286,25 @@ export class NpcTalk {
     const more = this.smallTalk(player, npc, words, temper);
     if (more) return more;
     if (
+      /\b(historia verdadera|historias verdaderas|historia real|historias reales|algo increible|tierras lejanas|aunque no lo creas)\b/.test(
+        words,
+      )
+    )
+      return this.follow(key, TRUE_STORIES, npc.name + 'verdad');
+    if (
+      /\b(que hay cerca|que hay por aca|alrededores|lugares cerca|que hay afuera|donde puedo ir)\b/.test(
+        words,
+      )
+    )
+      return this.nearby(npc);
+    if (
       /\b(historia|tu vida|de donde sos|de donde eres|contame de vos|tu pasado|como llegaste)\b/.test(
         words,
       )
     )
       return this.story(npc);
     if (/\b(temas|de que hablas|de que sabes|que sabes|palabras|sobre que)\b/.test(words))
-      return `Podés preguntarme cómo estoy, mi nombre, mi trabajo, mi historia, mi familia, qué me gusta, qué hora es, un chiste, un consejo, qué pienso de vos, por otro vecino, dónde se compra algo, el pueblo, los rumores o dónde queda un lugar. Y de lo que se habla en las tabernas: dragones, magia, guardias, asesinos, el mar, gremios, mercenarios...`;
+      return `Podés preguntarme cómo estoy, mi nombre, mi trabajo, mi historia, mi familia, qué me gusta, qué hora es, un chiste, un consejo, qué pienso de vos, por otro vecino, dónde se compra algo, el pueblo, qué hay cerca, los rumores o dónde queda un lugar. De lo que se habla en las tabernas: dragones, magia, guardias, asesinos, el mar, gremios, mercenarios. Del mundo: el imperio antiguo, los reyes del desierto, el volcán, la selva, los portales, los dioses, la muerte, las fiestas, los caminos. Y si querés, te cuento una historia verdadera de tierras lejanas. Si algo te interesa, decime «contame más».`;
     if (
       /\b(mision|misiones|necesitas algo|necesitas ayuda|te ayudo|puedo ayudar|trabajo para mi)\b/.test(
         words,
@@ -292,9 +329,8 @@ export class NpcTalk {
         ? 'Tocame y te muestro lo que tengo.'
         : 'Yo no vendo nada. Buscá a los comerciantes del pueblo.';
     if (/\b(chau|adios|hasta luego|nos vemos)\b/.test(words)) return FAREWELL[temper];
-    const topic = TOPICS.find((t) => t.words.test(words));
-    if (topic)
-      return topic.replies[hash(npc.name + words) % topic.replies.length] ?? topic.replies[0] ?? '';
+    const topic = ALL_TOPICS.find((t) => t.words.test(words));
+    if (topic) return this.follow(key, topic.replies, npc.name + topic.words.source);
     if (/\b(gracias)\b/.test(words)) return temper === 'gruff' ? 'Sí, sí.' : 'No hay de qué.';
     // Si no se entiende y no le hablaban a él, mejor callarse.
     if (tileDistance(npc.position, player.position) > 2 && !words.includes(normalize(npc.name)))
@@ -431,6 +467,32 @@ export class NpcTalk {
 
   private pick(lines: readonly string[], seed: string): string {
     return lines[hash(seed) % Math.max(1, lines.length)] ?? lines[0] ?? '';
+  }
+
+  /** Contesta con una de las líneas (la de este vecino) y recuerda el tema para «contame más». */
+  private follow(key: string, lines: readonly string[], seed: string): string {
+    const at = hash(seed) % Math.max(1, lines.length);
+    this.threads.set(key, { lines, at });
+    return lines[at] ?? '';
+  }
+
+  /** Lo que hay cerca: los lugares con nombre más próximos (de los que figuran en los mapas). */
+  private nearby(npc: Npc): string {
+    const here = this.world.map.regionAt(npc.position);
+    const places = this.world.map.regions
+      .filter((r) => r !== here && !r.dungeon && !r.floor && !r.hidden && r.wild)
+      .filter((r) => !/^(Cruce|Encrucijada) /.test(r.name))
+      .map((r) => ({
+        name: r.name,
+        center: { x: r.x + r.width / 2, y: r.y + r.height / 2 },
+      }))
+      .map((p) => ({ ...p, d: tileDistance(p.center, npc.position) }))
+      .filter((p) => p.d < 260)
+      .sort((a, b) => a.d - b.d)
+      .slice(0, 3);
+    if (places.length === 0)
+      return 'Por acá cerca no hay nada que valga la caminata. Campo y más campo.';
+    return places.map((p) => directions(npc.position, p)).join(' ');
   }
 
   /** Su historia: cada vecino tiene la suya (sale de su nombre) y la cuenta igual cada vez. */

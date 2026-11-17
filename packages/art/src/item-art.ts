@@ -76,6 +76,7 @@ const ICON_FIT: Partial<Record<ItemKind, number>> = {
   'samurai-do': 0.9,
   'samurai-haidate': 0.92,
   'templar-hauberk': 0.9,
+  cloth: 0.85,
 };
 
 const OUTLINE: Rgb = [24, 17, 14];
@@ -903,6 +904,80 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
           ? [255, 220, 120]
           : tone(ramp([230, 80, 30]), s.light, 1),
     );
+  },
+  'order-key'(c) {
+    // Una llave de hierro vieja, grande, con el ojo en forma de trébol.
+    const iron = metal(ramp([92, 88, 84]));
+    c.limb([-1.5, 0.7, 0], [4.6, 0.7, 0], 0.5, 0.5, iron);
+    for (const [x, z] of [
+      [-2.6, 0],
+      [-3.6, 1],
+      [-3.6, -1],
+    ] as const)
+      c.sphere([x, 0.7, z], 1, iron);
+    c.box([3.6, 0.7, 1], lying(0), [0.4, 0.4, 1], iron);
+    c.box([4.6, 0.7, 0.8], lying(0), [0.4, 0.4, 0.8], iron);
+  },
+  'lead-casket'(c) {
+    // Un cofrecito de plomo gris, soldado, con un sello de cera negra.
+    c.box([0, 1.8, 0], lying(0.3), [3.4, 1.8, 2.4], (s) =>
+      s.n[1] > 0.6 && Math.hypot(s.p[0], s.p[2]) < 1
+        ? tone(ramp([30, 26, 30]), s.light)
+        : tone(ramp([110, 112, 120]), s.light, (s.x + s.y) % 5 ? 0 : -1),
+    );
+  },
+  'red-feather-hat'(c) {
+    // Un sombrero de ala ancha, pisoteado, con una pluma roja.
+    const felt = ramp([84, 62, 44]);
+    c.ellipsoid([0, 0.6, 0], lying(0.2), [4.4, 0.5, 4], solid(felt));
+    c.ellipsoid([0, 1.6, 0], lying(0.2), [2.2, 1.3, 2], solid(felt, -1));
+    c.limb([1.6, 1.8, 0.6], [4.6, 4.6, -1.6], 0.7, 0.2, solid(ramp([200, 40, 40])));
+  },
+  'mother-ring'(c) {
+    // Un anillo de oro finito con una piedra verde.
+    c.ellipsoid([0, 0.6, 0], lying(0.2), [2, 0.5, 2], (s) =>
+      Math.hypot(s.p[0], s.p[2]) < 1.2 ? null : metal(GOLD)(s),
+    );
+    c.sphere([0, 1, -2], 0.8, solid(ramp([60, 180, 110]), 1));
+  },
+  'loaded-dice'(c) {
+    // Dos dados de hueso, con los puntos negros; uno muestra el uno.
+    const bone = ramp([226, 216, 190]);
+    for (const [x, z, turn] of [
+      [-1.6, 0.4, 0.3],
+      [1.6, -0.6, -0.5],
+    ] as const)
+      c.box([x, 1.3, z], lying(turn), [1.3, 1.3, 1.3], (s) =>
+        s.n[1] > 0.6 && Math.hypot(s.p[0] - x, s.p[2] - z) < 0.45
+          ? [24, 20, 20]
+          : tone(bone, s.light),
+      );
+  },
+  'burnt-order'(c) {
+    // Una hoja de pergamino con un borde quemado y el sello de la guardia.
+    c.box([0, 0.3, 0], lying(0.25), [3.6, 0.25, 4.4], (s) =>
+      s.p[2] > 2.6 + Math.sin(s.p[0] * 2) * 0.6
+        ? tone(ramp([40, 30, 24]), s.light)
+        : Math.hypot(s.p[0] - 1.6, s.p[2] + 2.4) < 0.9
+          ? tone(ramp([150, 36, 36]), s.light)
+          : tone(ramp([214, 198, 160]), s.light, (s.y + s.x) % 3 ? 0 : -1),
+    );
+  },
+  'orc-ledger'(c) {
+    // Un cuaderno tosco de cuero crudo, atado con una tira.
+    tome(c, ramp([96, 104, 60]), ramp([170, 150, 110]));
+  },
+  'mastery-magic-resist'(c) {
+    scroll(c, ramp([70, 110, 220]));
+  },
+  'mastery-parrying'(c) {
+    scroll(c, ramp([150, 150, 160]));
+  },
+  'mastery-archery'(c) {
+    scroll(c, ramp([110, 150, 60]));
+  },
+  'mastery-fencing'(c) {
+    scroll(c, ramp([210, 170, 90]));
   },
   'mastery-swordsmanship'(c) {
     scroll(c, ramp([180, 180, 190]));
@@ -1820,21 +1895,33 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     }
   },
   cloth(c) {
-    // Rollo de tela con un tramo suelto: el borde curvo evita que parezca una tabla.
-    const fabric = ramp([201, 184, 151]);
+    // Rollo de mercería apoyado de punta: capas de tela alrededor de un palo central.
+    const fabric = ramp([214, 198, 168]);
+    const core = ramp([150, 108, 65]);
+    const radius = 3.1;
+    const height = 12.4;
+    const sides = 14;
+    const ring = (i: number, y: number): Vec3 => {
+      const a = (i / sides) * Math.PI * 2;
+      return [Math.cos(a) * radius, y, Math.sin(a) * radius];
+    };
+    for (let i = 0; i < sides; i++) {
+      c.polygon([ring(i, 0.4), ring(i + 1, 0.4), ring(i + 1, height), ring(i, height)], (s) => {
+        const seam = Math.abs(Math.atan2(s.p[2], s.p[0]) - 0.8) < 0.12;
+        const fold = Math.abs(s.p[1] - 3.1) < 0.12 || Math.abs(s.p[1] - 8.7) < 0.12;
+        return tone(fabric, s.light, seam || fold ? -1 : 0);
+      });
+    }
     c.polygon(
-      [
-        [-4.2, 0.4, 0],
-        [3.8, 0.4, 0],
-        [4.5, 0.4, 4.3],
-        [-3.5, 0.4, 4.8],
-      ],
-      (s) => tone(fabric, s.light, Math.sin(s.p[2] * 2.6 + s.p[0] * 0.3) > 0.72 ? -1 : 0),
+      Array.from({ length: sides }, (_, i) => ring(i, height)),
+      (s) => {
+        const r = Math.hypot(s.p[0], s.p[2]);
+        if (r < 1.05) return tone(core, s.light, -1);
+        if (r < 1.45 || (r > 2.1 && r < 2.35)) return tone(fabric, s.light, -1);
+        return tone(fabric, s.light, 1);
+      },
     );
-    c.limb([-4, 1.55, -0.3], [4, 1.55, -0.3], 1.55, 1.55, solid(fabric));
-    c.ellipsoid([4, 1.55, -0.3], axesAlong([1, 0, 0]), [1.55, 1.55, 0.22], (s) =>
-      tone(fabric, s.light, Math.sin(Math.hypot(s.p[1] - 1.55, s.p[2] + 0.3) * 6) > 0.2 ? -1 : 1),
-    );
+    c.limb([0, height, 0], [0, height + 2.6, 0], 0.8, 0.8, solid(core));
   },
   hides(c) {
     // Piel extendida: cuerpo oval y cuatro extremos cortos de las patas.

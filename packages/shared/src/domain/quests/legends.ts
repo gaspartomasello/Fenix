@@ -23,6 +23,10 @@ export const LEGEND_IDS = [
   'orc-banner',
   'lost-cartographer',
   'crater-heart',
+  'order-vow',
+  'red-feather',
+  'captain-schooner',
+  'deserter-gate',
 ] as const;
 export type LegendId = (typeof LEGEND_IDS)[number];
 
@@ -32,6 +36,8 @@ export type LegendStep =
   | {
       readonly kind: 'ask';
       readonly role: NpcRole;
+      /** Si hay que preguntarle a alguien en particular (un caminante), su nombre. */
+      readonly person?: string;
       readonly keywords: readonly string[];
       readonly reply: string;
       readonly hint: string;
@@ -71,7 +77,31 @@ export type LegendStep =
       readonly person?: string;
       readonly item: ItemKind;
       readonly thanks: string;
+    }
+  /**
+   * El final con una decisión: lo que se encontró se le puede entregar a una
+   * persona o a otra, y cada una termina la historia a su manera (con otro
+   * premio y otro peso en la conciencia). Se elige con solo ir a hablarle.
+   */
+  | {
+      readonly kind: 'choice';
+      readonly item: ItemKind;
+      readonly options: readonly LegendOption[];
     };
+
+/** Una de las maneras de terminar una historia con decisión. */
+export interface LegendOption {
+  readonly role: NpcRole;
+  /** Si es a alguien en particular (un caminante, o quien se encontró en un paso `meet`). */
+  readonly person?: string;
+  readonly thanks: string;
+  /** Lo que queda anotado en el diario. */
+  readonly ending: string;
+  readonly gold: number;
+  /** Cuánto sube (o baja) el karma. */
+  readonly karma: number;
+  readonly items?: readonly (readonly [ItemKind, number])[];
+}
 
 export interface Legend {
   readonly id: LegendId;
@@ -101,6 +131,16 @@ export const LEGEND_DONE = 3;
 /** El paso en que una leyenda queda terminada. */
 export function legendEnd(id: LegendId): number {
   return LEGENDS[id].steps.length;
+}
+
+/**
+ * El número más alto que puede tener el avance de una leyenda: las que
+ * terminan con una decisión guardan cuál fue (fin + número de la opción).
+ */
+export function legendMax(id: LegendId): number {
+  const steps = LEGENDS[id].steps;
+  const last = steps[steps.length - 1];
+  return steps.length + (last?.kind === 'choice' ? last.options.length - 1 : 0);
 }
 
 /** El paso que le toca a quien va por `step` (null si ya terminó). */
@@ -588,11 +628,342 @@ export const LEGENDS: Readonly<Record<LegendId, Legend>> = {
       ],
     },
   },
+  'order-vow': {
+    id: 'order-vow',
+    title: 'Lo que cuidaba la orden',
+    rumor: {
+      roles: ['wanderer', 'healer', 'scribe', 'innkeeper'],
+      text: 'Anda un fraile por las encrucijadas, Fray Lupercio, el último de la orden de la Capilla Olvidada. Dice que juraron cuidar algo y que se murieron todos sin decirle qué. Pregunta por eso a todo el que pasa.',
+    },
+    steps: [
+      {
+        kind: 'ask',
+        role: 'wanderer',
+        person: 'Fray Lupercio',
+        keywords: ['orden', 'capilla', 'cuidaban', 'cuidar', 'juramento', 'llave', 'secreto'],
+        reply:
+          'Lo único que sé: había una llave, y el hermano Anselmo la llevaba al cuello. Lo enterramos con ella en el Cementerio Viejo, en la tumba del fondo, la de la cruz torcida. Yo no tengo estómago para abrir la tumba de un amigo. Si vos sí... mirá sin romper.',
+        hint: 'Andá al Cementerio Viejo y buscá la tumba del hermano Anselmo.',
+      },
+      {
+        kind: 'visit',
+        place: 'Cementerio Viejo',
+        found:
+          'La tumba de la cruz torcida ya está abierta. Tierra fresca: fue hace poco. No hay llave. En el barro, huellas de botas finas, de ciudad, y una moneda de las que se le dan a alguien para que mire para otro lado.',
+        hint: 'Alguien pagó para que no lo vieran en el cementerio. Preguntale a un sanador: ellos entierran a los muertos y saben quién anduvo por ahí.',
+      },
+      {
+        kind: 'ask',
+        role: 'healer',
+        keywords: ['cementerio', 'tumba', 'anselmo', 'llave', 'moneda', 'huellas', 'abrieron'],
+        reply:
+          'Bajá la voz. Sí, vino uno, de túnica gris, sin cara que uno pueda recordar. Pagó en oro viejo para que nadie pasara esa noche. Olía a pantano y a vela. Así huelen los que sirven en la Torre Hueca. Yo no te dije nada.',
+        hint: 'El que se llevó la llave sirve en la Torre Hueca. Recuperala.',
+      },
+      {
+        kind: 'slay',
+        place: 'Torre Hueca',
+        boss: { kind: 'skeleton-mage', name: 'el Aprendiz Sin Rostro' },
+        escort: ['skeleton', 'skeleton', 'zombie'],
+        relic: 'order-key',
+        hint: 'Llevá la llave a la Capilla Olvidada y buscá qué abre.',
+      },
+      {
+        kind: 'visit',
+        place: 'Capilla Olvidada',
+        found:
+          'La llave entra en una losa detrás del altar. Abajo hay un cofre de plomo, soldado, y una tablilla: «No es un tesoro. Es una promesa. No abrir, no vender, no acercar al pantano.» El cofre está tibio. Adentro, algo late despacio.',
+        hint: 'Un escriba puede leer lo que dice la tablilla del cofre. Preguntale qué es.',
+        gives: 'lead-casket',
+      },
+      {
+        kind: 'ask',
+        role: 'scribe',
+        keywords: ['cofre', 'plomo', 'tablilla', 'promesa', 'late', 'orden', 'capilla'],
+        reply:
+          'Dejame ver... Esto es letra del imperio. Dice que el mago de la Torre Hueca, para no morir, sacó su vida del cuerpo y la guardó aparte. La orden se la robó y juró tenerla lejos: mientras no la recupere, el liche no puede salir del pantano. Si se rompe el cofre, él se termina para siempre. Y si llega a manos de un mago... un mago pagaría lo que le pidas. Pensá bien a quién se lo llevás.',
+        hint: 'Decidí: llevale el cofre a Fray Lupercio, para que la orden cumpla su promesa, o vendéselo a un mago.',
+      },
+      {
+        kind: 'choice',
+        item: 'lead-casket',
+        options: [
+          {
+            role: 'wanderer',
+            person: 'Fray Lupercio',
+            thanks:
+              'Así que era esto. Cuarenta hermanos, doscientos años, cuidando que un muerto no terminara de volver. Dámelo. Sé dónde hay un horno de herrero que no pregunta. ...Gracias. Ya me acordé de qué era lo que cuidábamos: era a todos ustedes.',
+            ending: 'Le diste el cofre a Fray Lupercio. La orden cumplió su promesa.',
+            gold: 500,
+            karma: 600,
+            items: [['healing-potion', 5]],
+          },
+          {
+            role: 'mage',
+            thanks:
+              '¿Sabés lo que es esto? No, claro que no, si supieras no me lo venderías. Tomá, y no cuentes las monedas acá. Lo voy a... estudiar. Con mucho cuidado. Andate tranquilo.',
+            ending: 'Le vendiste el cofre a un mago. Nadie sabe qué hizo con él.',
+            gold: 2500,
+            karma: -500,
+          },
+        ],
+      },
+    ],
+    reward: { scroll: 'mastery-magic-resist', gold: 0 },
+  },
+  'red-feather': {
+    id: 'red-feather',
+    title: 'La pluma roja',
+    rumor: {
+      roles: ['wanderer', 'farmer', 'provisioner', 'townsfolk'],
+      text: 'En una encrucijada hay una nena sola, Abril, esperando al padre. Dice que es un buhonero de sombrero con pluma roja y que vuelve antes de que baje el sol. Hace días que dice lo mismo.',
+    },
+    steps: [
+      {
+        kind: 'ask',
+        role: 'wanderer',
+        person: 'la Niña Abril',
+        keywords: ['papa', 'padre', 'evaristo', 'buhonero', 'sombrero', 'pluma'],
+        reply:
+          'Se fue para las granjas, a vender el tónico. Siempre pasa primero por las granjas, porque ahí le compran. ¿Lo vas a buscar? Decile que no me moví. Bueno, me moví un poquito, pero volví.',
+        hint: 'Preguntale a un granjero si vio a Evaristo, el buhonero de la pluma roja.',
+      },
+      {
+        kind: 'ask',
+        role: 'farmer',
+        keywords: ['evaristo', 'buhonero', 'pluma', 'tonico', 'sombrero'],
+        reply:
+          'El del tónico, sí. Me vendió un frasco que no cura nada. Se fue con dos tipos de capa que le prometieron comprarle la carga entera. Iban para el lado de la Guarida de Bandoleros. Yo le hice señas, pero el hombre veía monedas, no capas.',
+        hint: 'Andá a la Guarida de Bandoleros y buscá algún rastro de Evaristo.',
+      },
+      {
+        kind: 'visit',
+        place: 'Guarida de Bandoleros',
+        found:
+          'Junto a una fogata apagada hay un sombrero pisoteado, con una pluma roja. Adentro de la copa, un papel: «Malena: te debo, ya sé. Me escondo donde el ermitaño hasta juntar. No toques a la nena.» No es letra de alguien secuestrado.',
+        hint: 'Evaristo se esconde en la Casa del Ermitaño. Andá a buscarlo.',
+        gives: 'red-feather-hat',
+      },
+      {
+        kind: 'meet',
+        place: 'Casa del Ermitaño',
+        person: { name: 'Evaristo el buhonero', role: 'beggar' },
+        reply:
+          '¿Te manda Malena? ¿No? ...¿Abril? ¿Sigue en el cruce? Soy una basura. No me secuestró nadie: aposté el anillo de su madre, lo único que le quedaba de ella, y lo perdí con la Tuerta Malena, la que manda en la guarida. No puedo mirar a mi hija sin ese anillo. Traémelo y vuelvo. Y por favor... a ella decile que me tenían preso.',
+        hint: 'Recuperá el anillo: lo tiene la Tuerta Malena, en la Guarida de Bandoleros.',
+      },
+      {
+        kind: 'slay',
+        place: 'Guarida de Bandoleros',
+        boss: { kind: 'brigand', name: 'la Tuerta Malena' },
+        escort: ['brigand', 'brigand', 'brigand'],
+        relic: 'mother-ring',
+        hint: 'Decidí: llevale el anillo a Evaristo (y guardale el secreto), o dáselo a la Niña Abril y contale la verdad.',
+      },
+      {
+        kind: 'choice',
+        item: 'mother-ring',
+        options: [
+          {
+            role: 'beggar',
+            person: 'Evaristo el buhonero',
+            thanks:
+              'El anillo... Gracias. Vuelvo hoy mismo. Le voy a contar que me tuvieron atado y que un valiente me soltó. Vos y yo sabemos que no fue así. Tomá, es todo lo que junté escondido acá. No vuelvo a tocar un dado, te lo juro por ella.',
+            ending:
+              'Le llevaste el anillo a Evaristo y le guardaste el secreto. Volvió con su hija.',
+            gold: 700,
+            karma: 150,
+            items: [['healing-potion', 3]],
+          },
+          {
+            role: 'wanderer',
+            person: 'la Niña Abril',
+            thanks:
+              '¡El anillo de mamá! ...¿Lo apostó? (Se queda callada un rato largo.) Yo ya sabía que no vendía tanto tónico. Gracias por no mentirme: todos los grandes me mienten. Voy a ir a buscarlo yo. Tomá, es mi piedra de la suerte. A mí ya no me hace falta: ahora tengo el anillo.',
+            ending:
+              'Le diste el anillo a Abril y le contaste la verdad. Fue ella a buscar a su padre.',
+            gold: 150,
+            karma: 500,
+            items: [['emerald', 2]],
+          },
+        ],
+      },
+    ],
+    reward: { scroll: 'mastery-archery', gold: 0 },
+  },
+  'captain-schooner': {
+    id: 'captain-schooner',
+    title: 'La goleta del capitán',
+    rumor: {
+      roles: ['wanderer', 'fisherman', 'shipwright', 'innkeeper'],
+      text: 'Hay un capitán sin barco caminando tierra adentro, Olegario. Perdió su goleta a los dados contra un pirata: sacó uno siete veces seguidas. Siete. Hasta los piratas se rieron.',
+    },
+    steps: [
+      {
+        kind: 'ask',
+        role: 'wanderer',
+        person: 'Capitán Olegario Sinbarco',
+        keywords: ['goleta', 'barco', 'dados', 'barbas', 'pirata', 'apuesta', 'golondrina'],
+        reply:
+          'La Golondrina. Veinte años juntos. Barbas puso los dados, yo puse la goleta: siete unos al hilo. Nadie tiene tanta mala suerte... ni yo. Uno de los hombres de Barbas dejó la piratería esa misma noche, de vergüenza, dicen. Hoy es pescador. Si alguien sabe algo de esos dados, es él.',
+        hint: 'Preguntale a un pescador por los dados de Barbas.',
+      },
+      {
+        kind: 'ask',
+        role: 'fisherman',
+        keywords: ['barbas', 'dados', 'pirata', 'goleta', 'olegario', 'golondrina'],
+        reply:
+          'No digas mi nombre cerca del agua. Sí, yo estaba. Los dados tienen plomo adentro: caen en uno si los tirás con la zurda. Barbas los lleva siempre encima. Vuelve a la Cala de los Piratas con cada luna, pero no sé cuál. El farero anota todo barco que pasa: mirá su bitácora.',
+        hint: 'Andá al Faro del Cabo y mirá cuándo fondea la Golondrina.',
+      },
+      {
+        kind: 'visit',
+        place: 'Faro del Cabo',
+        found:
+          'En la bitácora del faro, entre barcos mercantes, una línea se repite: «Goleta de velas remendadas, sin bandera, rumbo a la cala. Vuelve cada luna.» La última anotación es de anoche. La Golondrina está fondeada.',
+        hint: 'Barbas está en la Cala de los Piratas. Sacale los dados.',
+      },
+      {
+        kind: 'slay',
+        place: 'Cala de los Piratas',
+        boss: { kind: 'corsair', name: 'Barbas el Tramposo' },
+        escort: ['pirate', 'pirate', 'pirate'],
+        relic: 'loaded-dice',
+        hint: 'Mostrale los dados a un carpintero de barcos: él sabe si están cargados y qué dice la ley del puerto.',
+      },
+      {
+        kind: 'ask',
+        role: 'shipwright',
+        keywords: ['dados', 'cargados', 'plomo', 'goleta', 'golondrina', 'ley', 'apuesta'],
+        reply:
+          'A ver... (Los hace rodar. Uno. Uno. Uno.) Plomo, sí. Por la ley del puerto, una apuesta con dados cargados no vale: la Golondrina nunca dejó de ser de Olegario. Ahora, entre nosotros: Barbas ya no la reclama y los papeles están en blanco. El que me traiga estos dados como prueba, firma. Puede ser el capitán... o podés ser vos. Yo no vi nada.',
+        hint: 'Decidí: llevale los dados al Capitán Olegario, para que recupere su goleta, o dáselos al carpintero de barcos y quedate vos con el barco.',
+      },
+      {
+        kind: 'choice',
+        item: 'loaded-dice',
+        options: [
+          {
+            role: 'wanderer',
+            person: 'Capitán Olegario Sinbarco',
+            thanks:
+              '¡Plomo! ¡Lo sabía! ¡Siete unos, las pelotas! Con esto la Golondrina vuelve a ser mía por ley. Mirá, me tiemblan las manos. Tomá: es lo que tenía guardado para comprar un bote. Ya no me hace falta. Y si alguna vez necesitás cruzar el mar, mi cubierta es tu casa.',
+            ending: 'Le llevaste los dados al Capitán Olegario. Recuperó la Golondrina.',
+            gold: 900,
+            karma: 500,
+            items: [['fish-steak', 10]],
+          },
+          {
+            role: 'shipwright',
+            thanks:
+              'Entonces firmás vos. Acá, y acá. Listo: tenés barco. Los dados me los quedo yo, que no anden dando vueltas. El viejo Olegario va a seguir caminando, pero bueno... la mala suerte es de él, no tuya. ¿No?',
+            ending: 'Te quedaste con el barco del capitán. Olegario sigue caminando.',
+            gold: 0,
+            karma: -600,
+            items: [['sloop-deed', 1]],
+          },
+        ],
+      },
+    ],
+    reward: { scroll: 'mastery-fencing', gold: 0 },
+  },
+  'deserter-gate': {
+    id: 'deserter-gate',
+    title: 'La puerta abierta',
+    rumor: {
+      roles: ['wanderer', 'guard', 'innkeeper', 'blacksmith'],
+      text: 'En un cruce hay un hombre con capa de la guardia que no es guardia: Belisario. Dicen que desertó la noche que ardió la Granja Quemada. Él no cuenta nada, pero pregunta a todos si saben cuánta gente se salvó.',
+    },
+    steps: [
+      {
+        kind: 'ask',
+        role: 'wanderer',
+        person: 'Belisario el desertor',
+        keywords: ['puerta', 'granja quemada', 'orden', 'capitan', 'desertor', 'salvaron', 'noche'],
+        reply:
+          'Era un caserío con empalizada. Venían los orcos y el capitán Valdivia ordenó cerrar con media aldea todavía afuera. Yo dejé la lanza y abrí. Después corrí, como un cobarde, y no supe más. Si vas a la Granja Quemada... fijate. Solo quiero saber si sirvió de algo.',
+        hint: 'Andá a la Granja Quemada y buscá qué pasó esa noche.',
+      },
+      {
+        kind: 'visit',
+        place: 'Granja Quemada',
+        found:
+          'Entre las cenizas del puesto de guardia hay un parte a medio quemar: «...la puerta quedó abierta por un desertor. Entraron once antes del fuego. El capitán V. ordenó no perseguir a los orcos y retirarse sin pelear, según lo conv...» El resto se quemó.',
+        hint: 'Once se salvaron. Y el capitán se retiró «según lo convenido». Preguntale a un guardia por el capitán Valdivia.',
+        gives: 'burnt-order',
+      },
+      {
+        kind: 'ask',
+        role: 'guard',
+        keywords: ['valdivia', 'capitan', 'granja quemada', 'parte', 'orcos', 'convenido'],
+        reply:
+          '¿De dónde sacaste eso? Guardalo. Valdivia ya no es capitán: es comandante, y a los que preguntan por esa noche los mandan a cuidar el pantano. Yo no sé nada. Pero una de los once que entraron no se quedó a que le dijeran qué contar. El tabernero le fiaba; él sabe para dónde se fue.',
+        hint: 'Preguntale a un tabernero por la sobreviviente de la Granja Quemada.',
+      },
+      {
+        kind: 'ask',
+        role: 'innkeeper',
+        keywords: ['sobreviviente', 'granja quemada', 'once', 'valdivia', 'se fue', 'fiaba'],
+        reply:
+          'Jimena. Tomaba sola, mirando la puerta. Una noche dijo: «Acá los que mandan son los mismos que nos vendieron», pagó todo lo que debía y se fue al norte, donde no llega ni la guardia ni la ley: al Refugio Helado.',
+        hint: 'Andá al Refugio Helado y buscá a Jimena.',
+      },
+      {
+        kind: 'meet',
+        place: 'Refugio Helado',
+        person: { name: 'Jimena la sobreviviente', role: 'townsfolk' },
+        reply:
+          '¿Belisario vive? Decile que entramos once. Que mi hijo es uno. ...Valdivia nos vendió: los orcos le pagaron para que la guardia se retirara, yo vi cuando le daban la bolsa. Los orcos anotan todo lo que pagan, son así. El que lleva las cuentas es Urzog, en el Campamento de los Colmillos. Ese libro es la soga de Valdivia.',
+        hint: 'Conseguí el libro de pagos: lo tiene Urzog, en el Campamento de los Colmillos.',
+      },
+      {
+        kind: 'slay',
+        place: 'Campamento de los Colmillos',
+        boss: { kind: 'orc', name: 'Urzog el Pagador' },
+        escort: ['orc', 'orc', 'orc', 'troll'],
+        relic: 'orc-ledger',
+        hint: 'Decidí: llevale el libro a un guardia, para que juzguen a Valdivia, o dáselo a Belisario y que él haga lo que crea.',
+      },
+      {
+        kind: 'choice',
+        item: 'orc-ledger',
+        options: [
+          {
+            role: 'guard',
+            thanks:
+              'Esto es... la letra de un orco y el sello de Valdivia. Con esto no lo salva nadie. Lo van a juzgar en la plaza, con los once mirando. Y al desertor se le va a levantar la pena: el que abrió esa puerta hizo lo que debía hacer la guardia. Tomá, de la caja del cuartel. Esta vez la justicia paga.',
+            ending:
+              'Le llevaste el libro a la guardia. Valdivia fue juzgado y Belisario, perdonado.',
+            gold: 1200,
+            karma: 600,
+            items: [['bandage', 30]],
+          },
+          {
+            role: 'wanderer',
+            person: 'Belisario el desertor',
+            thanks:
+              'Once. Entraron once. ...Y él cobró por los que no. Dame ese libro. No, no se lo voy a llevar a ningún juez: los jueces comen en su mesa. Lo voy a ir a buscar yo, con esto en una mano y la lanza en la otra. Tomá mi capa de guardia, ya no la quiero. Y gracias. Ahora sé que sirvió.',
+            ending: 'Le diste el libro a Belisario. Fue a buscar a Valdivia por su cuenta.',
+            gold: 300,
+            karma: -100,
+            items: [['cloak', 1]],
+          },
+        ],
+      },
+    ],
+    reward: { scroll: 'mastery-parrying', gold: 0 },
+  },
 };
 
 /** Lo que pone el diario de misiones en cada paso (sin decir de más). */
 export function legendHint(legend: Legend, step: number): string {
-  if (step >= legend.steps.length) return 'Terminada.';
+  if (step >= legend.steps.length) {
+    // Las historias con decisión recuerdan cómo terminaron.
+    const last = legend.steps[legend.steps.length - 1];
+    const ending =
+      last?.kind === 'choice' ? last.options[step - legend.steps.length]?.ending : undefined;
+    return ending ? `Terminada. ${ending}` : 'Terminada.';
+  }
   if (step === 0) return `Un rumor: "${legend.rumor.text}"`;
   // Cada paso deja anotado lo que hay que hacer después (lo que te dijeron o encontraste).
   const before = legend.steps[step - 1];
@@ -622,6 +993,10 @@ export const MASTERY_SCROLLS: Readonly<Partial<Record<ItemKind, SkillKey>>> = {
   'mastery-tracking': 'tracking',
   'mastery-meditation': 'meditation',
   'mastery-stealth': 'stealth',
+  'mastery-magic-resist': 'magic-resist',
+  'mastery-parrying': 'parrying',
+  'mastery-archery': 'archery',
+  'mastery-fencing': 'fencing',
 };
 
 export function isLegendId(value: unknown): value is LegendId {

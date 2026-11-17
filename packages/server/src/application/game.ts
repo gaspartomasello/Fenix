@@ -13,6 +13,7 @@ import { loreModule } from './features/lore/lore.module';
 import { assassinsModule } from './features/assassins/assassins.module';
 import { mercenariesModule } from './features/mercenaries/mercenaries.module';
 import { homeModule } from './features/home/home.module';
+import { wanderersModule } from './features/wanderers/wanderers.module';
 import { talesModule } from './features/tales/tales.module';
 import { encountersModule } from './features/encounters/encounters.module';
 import { moongatesModule } from './features/moongates/moongates.module';
@@ -63,6 +64,7 @@ export const ALL_MODULES: readonly ModuleFactory[] = [
   homeModule,
   moongatesModule,
   talesModule,
+  wanderersModule,
   encountersModule,
   trackingModule,
   thieveryModule,
