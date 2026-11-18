@@ -1,4 +1,11 @@
-import { FURNITURE_REACH, furnitureItemOf, turned } from '@fenix/shared/housing/furniture';
+import {
+  FURNITURE_REACH,
+  furnitureItemOf,
+  isPlacedChest,
+  placedChestOf,
+  turned,
+  turnedChest,
+} from '@fenix/shared/housing/furniture';
 import { tileDistance, type Position } from '@fenix/shared/geometry/position';
 import { ITEMS, describeItem } from '@fenix/shared/items/item-catalog';
 import type { EntityId } from '@fenix/shared/protocol/messages';
@@ -46,7 +53,7 @@ export class Furniture {
     if (!house.indoors(at)) return say('Ponelo adentro de la casa, no en el patio.');
     if (tileDistance(player.position, at) > FURNITURE_REACH)
       return say('Acercate más al lugar donde lo querés poner.');
-    if (house.furniture.length >= house.limit)
+    if (house.furniture.length + this.chestsIn(house.id).length >= house.limit)
       return say(`Ya no entran más muebles en «${house.name}» (hasta ${house.limit}).`);
     const problem = this.spotProblem(at);
     if (problem) return say(problem);
@@ -54,8 +61,63 @@ export class Furniture {
     const changes = emptyChanges();
     this.world.items.destroy(item.id, changes);
     changes.message = `Pusiste ${describeItem(item.kind)}.`;
+    // Un cofre queda como cofre de verdad: guarda cosas y se guarda con la casa.
+    const chest = placedChestOf(piece);
+    if (chest) {
+      const placed = this.world.items.add(this.ids.next(), chest, 1, {
+        type: 'ground',
+        position: { ...at },
+      });
+      changes.groundAdded.push(placed);
+      this.items.publish(changes, playerId);
+      return;
+    }
     this.items.publish(changes, playerId);
     this.houses.setFurniture(house.id, [...house.furniture, { kind: piece, ...at }]);
+  }
+
+  /** Los cofres puestos en una casa (no los que trae). */
+  private chestsIn(houseId: EntityId) {
+    return this.world.items
+      .all()
+      .filter(
+        (i) =>
+          isPlacedChest(i.kind) &&
+          i.location.type === 'ground' &&
+          this.houses.at(i.location.position)?.id === houseId,
+      );
+  }
+
+  /** El cofre puesto en esa posición, si hay. */
+  private chestAt(at: Position) {
+    return this.world.items
+      .groundNear(at)
+      .find(
+        (i) =>
+          isPlacedChest(i.kind) && i.location.type === 'ground' && same(i.location.position, at),
+      );
+  }
+
+  /** Girar un cofre puesto: el mismo cofre mirando al otro lado, con lo que tiene adentro. */
+  private turnChest(playerId: EntityId, chestId: EntityId): void {
+    const chest = this.world.items.get(chestId);
+    if (!chest || chest.location.type !== 'ground') return;
+    const changes = emptyChanges();
+    const next = this.world.items.add(
+      this.ids.next(),
+      turnedChest(chest.kind as 'placed-chest-x'),
+      1,
+      {
+        type: 'ground',
+        position: { ...chest.location.position },
+      },
+    );
+    for (const inside of this.world.items.contentsOf(chest.id))
+      if (inside.location.type === 'container')
+        inside.location = { ...inside.location, containerId: next.id };
+    this.world.items.destroy(chest.id, changes);
+    changes.groundAdded.push(next);
+    this.items.publish(changes, playerId);
   }
 
   /** Girar un mueble puesto o volver a guardarlo en la mochila. */
@@ -65,10 +127,32 @@ export class Furniture {
     const say = (text: string): void => this.say(playerId, text);
     const house = this.houses.at(at);
     const piece = house?.furniture.find((p) => same(p, at));
-    if (!house || !piece) return say('Ahí no hay un mueble de una casa.');
+    const chest = piece ? undefined : this.chestAt(at);
+    if (!house || (!piece && !chest)) return say('Ahí no hay un mueble de una casa.');
     if (!house.canFurnish(player.name))
       return say(`Solo el dueño o un copropietario puede tocar los muebles de «${house.name}».`);
     if (tileDistance(player.position, at) > FURNITURE_REACH) return say('Acercate más al mueble.');
+    if (chest) {
+      if (action === 'turn') return this.turnChest(playerId, chest.id);
+      if (this.world.items.contentsOf(chest.id).length > 0)
+        return say('Vacialo antes de guardarlo en la mochila.');
+      const changes = emptyChanges();
+      if (
+        !this.world.items.addToBackpack(
+          playerId,
+          'furniture-chest',
+          1,
+          () => this.ids.next(),
+          changes,
+        )
+      )
+        return say('No te entra en la mochila.');
+      this.world.items.destroy(chest.id, changes);
+      changes.message = 'Guardaste un cofre en la mochila.';
+      this.items.publish(changes, playerId);
+      return;
+    }
+    if (!piece) return;
     const others = house.furniture.filter((p) => p !== piece);
     if (action === 'turn') {
       const kind = turned(piece.kind);

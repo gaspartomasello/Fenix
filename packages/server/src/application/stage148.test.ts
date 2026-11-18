@@ -184,10 +184,68 @@ describe('etapa 148: amueblar la casa', () => {
 
   it('los muebles se guardan con la casa', () => {
     const f = withHouse();
+    const bed = f.give(f.ana, 'furniture-bed');
+    f.ana.teleport({ x: f.spot.x + 1, y: f.spot.y });
+    f.app.handle(f.ana.id, { type: 'placeFurniture', itemId: bed.id, position: f.spot });
+    f.app.saveAll();
+    expect(f.store.raw).toContain('"bed-x"');
+  });
+
+  it('etapa 150: el cofre puesto guarda cosas, se gira con lo de adentro y se guarda vacío', () => {
+    const f = withHouse();
     const chest = f.give(f.ana, 'furniture-chest');
     f.ana.teleport({ x: f.spot.x + 1, y: f.spot.y });
     f.app.handle(f.ana.id, { type: 'placeFurniture', itemId: chest.id, position: f.spot });
+    const placed = () =>
+      f.world.items
+        .groundNear(f.spot)
+        .find(
+          (i) =>
+            (i.kind === 'placed-chest-x' || i.kind === 'placed-chest-y') &&
+            i.location.type === 'ground' &&
+            i.location.position.x === f.spot.x &&
+            i.location.position.y === f.spot.y,
+        );
+    const first = placed();
+    expect(first?.kind).toBe('placed-chest-x');
+    if (!first) throw new Error('sin cofre');
+    // Se abre como cualquier cofre y guarda cosas.
+    f.app.handle(f.ana.id, { type: 'useItem', itemId: first.id });
+    expect(f.texts().at(-1) ?? '').not.toContain('Solo');
+    f.world.items.add('oro', 'gold', 300, {
+      type: 'container',
+      containerId: first.id,
+      position: { x: 0, y: 0 },
+    });
+    // Girado, es el mismo cofre mirando al otro lado, con el oro adentro.
+    f.app.handle(f.ana.id, { type: 'furnitureAction', position: f.spot, action: 'turn' });
+    const turned = placed();
+    expect(turned?.kind).toBe('placed-chest-y');
+    if (!turned) throw new Error('sin cofre');
+    expect(f.world.items.contentsOf(turned.id).map((i) => i.kind)).toEqual(['gold']);
+    // Con cosas adentro no se guarda; se guarda con la casa.
+    f.app.handle(f.ana.id, { type: 'furnitureAction', position: f.spot, action: 'pickUp' });
+    expect(f.texts().at(-1)).toBe('Vacialo antes de guardarlo en la mochila.');
     f.app.saveAll();
-    expect(f.store.raw).toContain('"chest-x"');
+    expect(f.store.raw).toContain('"placed-chest-y"');
+    expect(f.store.raw).toContain('"gold"');
+    // Vacío, vuelve a la mochila.
+    f.world.items.remove('oro');
+    f.app.handle(f.ana.id, { type: 'furnitureAction', position: f.spot, action: 'pickUp' });
+    expect(placed()).toBeUndefined();
+    expect(f.world.items.countInBackpack(f.ana.id, 'furniture-chest')).toBe(1);
+  });
+
+  it('etapa 150: un extraño no abre el cofre de una casa privada', () => {
+    const f = withHouse();
+    const chest = f.give(f.ana, 'furniture-chest');
+    f.ana.teleport({ x: f.spot.x + 1, y: f.spot.y });
+    f.app.handle(f.ana.id, { type: 'placeFurniture', itemId: chest.id, position: f.spot });
+    const placed = f.world.items.groundNear(f.spot).find((i) => i.kind === 'placed-chest-x');
+    if (!placed) throw new Error('sin cofre');
+    const beto = f.join('Beto');
+    beto.teleport({ x: f.spot.x + 1, y: f.spot.y });
+    f.app.handle(beto.id, { type: 'useItem', itemId: placed.id });
+    expect(f.texts().at(-1)).toContain('solo los amigos de la casa');
   });
 });

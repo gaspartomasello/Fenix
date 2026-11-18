@@ -1,10 +1,18 @@
-import { ITEM_ART_SIZE, MOONGATE_ART, PLAYER_CORPSE_LAYOUT, drawMoongate } from '@fenix/art';
+import {
+  ITEM_ART_SIZE,
+  MOONGATE_ART,
+  PLAYER_CORPSE_LAYOUT,
+  drawMoongate,
+  drawStatic,
+  staticFrame,
+} from '@fenix/art';
+import { CHEST_ART } from '@fenix/shared/housing/furniture';
 import type { EntityId, GroundItemSnapshot } from '@fenix/shared/protocol/messages';
 import { Sprite, type Container } from 'pixi.js';
-import { characterDepth, groundItemDepth } from './depth';
+import { characterDepth, groundItemDepth, staticDepth } from './depth';
 import { drawnAsField } from './field-layer';
 import type { Ground } from './ground';
-import { CHARACTER_SCALE, type ScreenPoint } from './iso';
+import { ART_SCALE, CHARACTER_SCALE, type ScreenPoint } from './iso';
 import type { TextureCache } from './texture-cache';
 
 /** Los objetos, como los personajes, tienen el doble de detalle y se muestran sin escalar. */
@@ -53,6 +61,16 @@ export class ItemLayer {
         sprite.position.set(screen.x, screen.y);
       } else if (item.kind === 'player-corpse' || item.kind === 'player-bones')
         sprite.scale.set(CHARACTER_SCALE * 2.2);
+      const chestArt = CHEST_ART[item.kind];
+      if (chestArt) {
+        // Los cofres de las casas: el baúl de los muebles, de su tamaño y mirando a su lado.
+        const frame = staticFrame(chestArt);
+        sprite.texture = this.textures.custom(`chest:${chestArt}`, () => drawStatic(chestArt, 0));
+        sprite.anchor.set(frame.ground.x / frame.width, frame.ground.y / frame.height);
+        sprite.scale.set(ART_SCALE);
+        sprite.position.set(screen.x, screen.y);
+        sprite.zIndex = staticDepth(item.position);
+      }
       if (item.kind === 'moongate') {
         // El portal está parado, un poco más alto que una persona: se apoya en el piso y brilla.
         sprite.anchor.set(0.5, MOONGATE_ART.groundY / MOONGATE_ART.height);
@@ -79,7 +97,7 @@ export class ItemLayer {
       if (!sprite.visible) continue;
       // El cuerpo de un jugador es grande (una persona tirada): se toca en cualquier parte de él.
       const inside =
-        item.kind === 'player-corpse' || item.kind === 'player-bones'
+        item.kind === 'player-corpse' || item.kind === 'player-bones' || CHEST_ART[item.kind]
           ? insideDrawing(sprite, point)
           : Math.abs(point.x - sprite.x) <= HALF * 0.7 &&
             Math.abs(point.y - sprite.y) <= HALF * 0.7;

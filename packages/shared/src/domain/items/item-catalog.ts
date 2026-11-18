@@ -194,6 +194,9 @@ export const BASE_ITEM_KINDS = [
   'deed-lot-large',
   'deed-lot-huge',
   'house-chest',
+  // Los cofres que se ponen en la casa (hechos por un carpintero), mirando a un lado o al otro.
+  'placed-chest-x',
+  'placed-chest-y',
   'black-pearl',
   'blood-moss',
   'garlic',
@@ -578,6 +581,8 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
     fixed: true,
     capacity: 125,
   },
+  'placed-chest-x': { name: 'cofre', plural: 'cofres', article: 'un', fixed: true, capacity: 60 },
+  'placed-chest-y': { name: 'cofre', plural: 'cofres', article: 'un', fixed: true, capacity: 60 },
   'ship-hold': {
     name: 'bodega del barco',
     plural: 'bodegas de barco',
