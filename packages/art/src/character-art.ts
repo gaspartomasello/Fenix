@@ -67,6 +67,11 @@ export {
 
 /** Color del contorno de todos los sprites. */
 export const OUTLINE: Rgb = [24, 17, 14];
+/** Margen superior de la hoz al levantarla para el primer cuadro del tajo. */
+export const SICKLE_ART_WIDTH = 72;
+export const SICKLE_TOP_MARGIN = 12;
+export const SICKLE_ART_HEIGHT = CHARACTER_ART_HEIGHT + SICKLE_TOP_MARGIN;
+export const SICKLE_FEET_Y = CHARACTER_FEET_Y + SICKLE_TOP_MARGIN;
 
 // ── Colores ─────────────────────────────────────────────────────────
 
@@ -339,15 +344,19 @@ function drawFigure(
       ? equipment.rightHand === 'pitchfork'
         ? 104
         : equipment.rightHand === 'sickle'
-          ? 72
+          ? SICKLE_ART_WIDTH
           : CHARACTER_ART_WIDTH
       : CHARACTER_ART_WIDTH;
+  const raisedSickle = canvasFor === spriteCanvas && !mount && equipment.rightHand === 'sickle';
   const canvas = layout
     ? spriteCanvas(layout.width, layout.height, mountedCamera(direction, mount ?? undefined))
     : canvasFor(
         worldWidth,
-        CHARACTER_ART_HEIGHT,
-        cameraFor(direction, undefined, { width: worldWidth, feetY: CHARACTER_FEET_Y }),
+        raisedSickle ? SICKLE_ART_HEIGHT : CHARACTER_ART_HEIGHT,
+        cameraFor(direction, undefined, {
+          width: worldWidth,
+          feetY: raisedSickle ? SICKLE_FEET_Y : CHARACTER_FEET_Y,
+        }),
       );
   const ride = mount ? drawMount(canvas, mount, frame) : null;
   const female = appearance.gender === 'female';
