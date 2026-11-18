@@ -10,6 +10,7 @@ import '../styles.css';
 import { AmountPicker } from '../ui/amount-picker';
 import { HouseDesignWindow } from '../ui/house-design-window';
 import { HouseWindow } from '../ui/house-window';
+import { ItemCatalogWindow } from '../ui/item-catalog-window';
 import { prefersTouch } from '../ui/touch-hud';
 
 const ui = document.getElementById('ui');
@@ -66,6 +67,12 @@ gallery.cantidad = () => {
       ask();
     });
   ask();
+};
+
+gallery.objetos = () => {
+  const catalog = new ItemCatalogWindow(() => undefined);
+  ui.append(catalog.window.element);
+  catalog.open();
 };
 
 const only = new URLSearchParams(location.search).get('ventana');
