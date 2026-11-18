@@ -1,7 +1,8 @@
 import { weaponByKind } from '@fenix/shared/combat/weapons';
 import { ITEMS, type BaseItemKind, type ItemKind } from '@fenix/shared/items/item-catalog';
 import { SPELLS } from '@fenix/shared/magic/spell-catalog';
-import { hexToRgb, type PixelImage, type Rgb } from './pixel-art';
+import { PixelImage, hexToRgb, type Rgb } from './pixel-art';
+import { CHEST_HEIGHT, CHEST_WIDTH, drawPixelChest } from './pixel-chest-art';
 import {
   clipping,
   Camera,
@@ -326,7 +327,7 @@ function houseDeed(c: VolumeCanvas, seal: Ramp, lot = false): void {
   c.ellipsoid([-1.9, 1.1, 0.6], lying(0), [1.1, 0.45, 1.1], (s) => tone(seal, s.light));
 }
 
-const MODELS: Readonly<Record<BaseItemKind, Model>> = {
+const MODELS: Readonly<Record<Exclude<BaseItemKind, 'house-chest' | 'house-chest-y'>, Model>> = {
   gold(c) {
     coins(c, 7);
   },
@@ -1642,19 +1643,6 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     c.box([1.9, 1.4, -0.4], lying(-0.15), [2.4, 1.4, 1.8], cut);
     c.box([0.2, 4.2, 0.1], lying(0.05), [2.5, 1.4, 1.9], cut);
   },
-  'house-chest'(c) {
-    // Un arcón grande de roble con tapa abovedada, flejes de hierro oscuro y un candado.
-    const wood = ramp([104, 66, 36]);
-    const iron = ramp([58, 60, 68]);
-    const plank: Material = (s) =>
-      tone(wood, s.light, Math.abs(((s.p[0] + 20) % 2.2) - 1.1) < 0.14 ? -1 : 0);
-    const axes = lying(0);
-    c.box([0, 2.6, 0], axes, [6.2, 2.6, 4], plank);
-    c.ellipsoid([0, 5.2, 0], axes, [6.3, 1.7, 4.1], plank);
-    for (const x of [-4.6, 0, 4.6]) c.box([x, 3.4, 0], axes, [0.4, 3.3, 4.15], solid(iron));
-    c.box([0, 4.4, 4.2], axes, [0.9, 1, 0.35], solid(iron));
-    c.ellipsoid([0, 3.4, 4.5], lying(0), [0.55, 0.55, 0.3], metal(GOLD));
-  },
   'ship-hold'(c) {
     // Escotilla de la bodega: un marco de madera con tapa de tablas y una argolla.
     c.box([0, 1.4, 0], lying(0), [7, 1.4, 6], solid(ramp([96, 64, 38])));
@@ -2525,6 +2513,16 @@ export function drawItem(
 ): PixelImage {
   // Los íconos (mochila, ventanas) se dibujan al doble de resolución: más detalle.
   const detail = style === 'icon' ? ICON_DETAIL : 1;
+  if (kind === 'house-chest' || kind === 'house-chest-y') {
+    const image = new PixelImage(ITEM_ART_SIZE * detail, CHEST_HEIGHT * detail);
+    const chest = drawPixelChest(detail);
+    image.draw(
+      kind === 'house-chest-y' ? chest.mirrored() : chest,
+      ((ITEM_ART_SIZE - CHEST_WIDTH) / 2) * detail,
+      0,
+    );
+    return image;
+  }
   const definition = ITEMS[kind];
   const base = hue ?? definition.color;
   const color = ramp(base === undefined ? [128, 128, 128] : hexToRgb(base));
@@ -2546,7 +2544,7 @@ export function drawItem(
     if (kind === 'gold') coins(canvas, GOLD_PILES[itemVariant(kind, amount)]?.coins ?? 7);
     else if (definition.spell)
       scroll(canvas, ramp(CIRCLE_RIBBON[SPELLS[definition.spell].circle - 1] ?? [200, 60, 50]));
-    else MODELS[kind as BaseItemKind](canvas, color);
+    else MODELS[kind as Exclude<BaseItemKind, 'house-chest' | 'house-chest-y'>](canvas, color);
     const image = canvas.toImage(OUTLINE);
     if (!diagonal || fit < 0.6 || !touchesEdge(image)) return image;
   }

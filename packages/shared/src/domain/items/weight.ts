@@ -41,6 +41,7 @@ const WEIGHTS: Partial<Record<ItemKind, number>> = {
   kryss: 2,
   lockpick: 0.1,
   'house-chest': 50,
+  'house-chest-y': 50,
 };
 
 export function itemWeight(kind: ItemKind): number {

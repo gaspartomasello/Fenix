@@ -26,6 +26,7 @@ import {
 import { FLOOR_MARGIN } from '@fenix/shared/housing/layout';
 import {
   houseChests,
+  houseChestsWithKind,
   houseDoors,
   houseFootprint,
   houseFront,
@@ -137,8 +138,8 @@ export class Housing {
     this.houses.set(house.id, house);
     const changes = emptyChanges();
     this.world.items.destroy(deed.id, changes);
-    for (const at of houseChests(house.site())) {
-      const chest = this.world.items.add(this.ids.next(), 'house-chest', 1, {
+    for (const { position: at, kind } of houseChestsWithKind(house.site())) {
+      const chest = this.world.items.add(this.ids.next(), kind, 1, {
         type: 'ground',
         position: at,
       });
@@ -250,15 +251,21 @@ export class Housing {
     // Se rearma la casa y sus cofres (los que siguen, en su lugar).
     house.design = design;
     const placed: EntityId[] = [];
-    for (const at of houseChests(house.site())) {
+    for (const { position: at, kind } of houseChestsWithKind(house.site())) {
       const key = `${at.x},${at.y}`;
       const existing = chestsBefore.get(key);
       if (existing) {
+        const chest = this.world.items.get(existing);
+        if (chest && chest.kind !== kind) {
+          changes.groundRemoved.push({ id: existing, position: at });
+          chest.kind = kind;
+          changes.groundAdded.push(chest);
+        }
         placed.push(existing);
         chestsBefore.delete(key);
         continue;
       }
-      const chest = this.world.items.add(this.ids.next(), 'house-chest', 1, {
+      const chest = this.world.items.add(this.ids.next(), kind, 1, {
         type: 'ground',
         position: at,
       });
@@ -692,8 +699,8 @@ export class Housing {
       const house = houseOf(saved);
       this.world.map.addStructure(houseStructure(house.site()));
       this.houses.set(house.id, house);
-      for (const at of houseChests(house.site())) {
-        const chest = this.world.items.add(this.ids.next(), 'house-chest', 1, {
+      for (const { position: at, kind } of houseChestsWithKind(house.site())) {
+        const chest = this.world.items.add(this.ids.next(), kind, 1, {
           type: 'ground',
           position: at,
         });

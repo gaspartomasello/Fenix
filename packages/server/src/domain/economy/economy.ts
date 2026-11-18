@@ -104,7 +104,10 @@ export function gather(
 
 /** Fundir todo el mineral en lingotes (uno por uno) cerca de una forja. */
 export function smelt(player: Player, world: World, ids: () => EntityId): EconomyResult {
-  if (!near(world, player.position, 'forge', CRAFT_RANGE))
+  if (
+    !near(world, player.position, 'forge', CRAFT_RANGE) &&
+    !near(world, player.position, 'forge-small', CRAFT_RANGE)
+  )
     return fail('Necesitás estar al lado de una forja.');
   const ore = world.items.countInBackpack(player.id, 'iron-ore');
   if (ore === 0) return fail('No tenés mineral para fundir.');

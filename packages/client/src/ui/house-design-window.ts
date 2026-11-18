@@ -247,7 +247,9 @@ export class HouseDesignWindow {
         piece('stairs-wood'),
         piece('stairs-stone'),
         piece('chest'),
+        piece('chest-y'),
       ]),
+      group('Muebles · elegir pared', [piece('armoire-x'), piece('armoire-y')]),
       group('Sacar', [
         tool('Sacar pieza', 'Sacar la pieza (devuelve la mitad de los materiales)', {
           kind: 'erase-piece',
@@ -301,7 +303,9 @@ export class HouseDesignWindow {
         if (cell.piece) {
           const def = HOUSE_PIECES[cell.piece];
           names.push(def.name);
-          const mark = el('span', { className: `design-piece design-piece--${def.group}` });
+          const mark = el('span', {
+            className: `design-piece design-piece--${def.group} design-piece--${cell.piece}`,
+          });
           if (def.style) mark.style.setProperty('--piece', WALL_COLORS[def.style]);
           if (cell.piece === 'door-iron') mark.style.setProperty('--piece', '#6d7177');
           if (cell.piece === 'stairs-stone') mark.style.setProperty('--piece', '#9a9a9a');
@@ -422,7 +426,7 @@ export class HouseDesignWindow {
       case 'piece': {
         const group = HOUSE_PIECES[this.tool.piece].group;
         // Las escaleras y los cofres van sobre un piso: si falta, se pone.
-        const needsFloor = group === 'stairs' || group === 'chest';
+        const needsFloor = group === 'stairs' || group === 'chest' || group === 'furniture';
         const floor = designCell(design, l, x, y, side).floor;
         return withCell(design, l, x, y, side, {
           piece: this.tool.piece,

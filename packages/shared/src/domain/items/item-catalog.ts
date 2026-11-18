@@ -191,6 +191,7 @@ export const BASE_ITEM_KINDS = [
   'deed-lot-large',
   'deed-lot-huge',
   'house-chest',
+  'house-chest-y',
   'black-pearl',
   'blood-moss',
   'garlic',
@@ -554,6 +555,13 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
   'deed-lot-large': houseDeed('lot-large'),
   'deed-lot-huge': houseDeed('lot-huge'),
   'house-chest': {
+    name: 'cofre de la casa',
+    plural: 'cofres de la casa',
+    article: 'un',
+    fixed: true,
+    capacity: 125,
+  },
+  'house-chest-y': {
     name: 'cofre de la casa',
     plural: 'cofres de la casa',
     article: 'un',

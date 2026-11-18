@@ -438,6 +438,42 @@ describe('casas a medida', () => {
     return { ...field, ana, origin, houseId, send };
   };
 
+  it('girar el cofre conserva su identificador y contenido, sin cobrar otra vez', () => {
+    const { world, notifier, ana, send, app, store } = setup();
+    world.items.add('oro-giro', 'gold', 50000, {
+      type: 'bank',
+      ownerId: ana.id,
+      position: { x: 0, y: 0 },
+    });
+    send(cottage(), 'gold');
+    const chest = world.items.all().find((i) => i.kind === 'house-chest');
+    expect(chest).toBeDefined();
+    world.items.add('joya-giro', 'gold', 1, {
+      type: 'container',
+      containerId: chest?.id ?? '',
+      position: { x: 0, y: 0 },
+    });
+    const before = world.items.bankOf(ana.id).find((i) => i.id === 'oro-giro')?.amount;
+    const side = lotSide('lot-small');
+    const turned = withCell(cottage(), 0, side - 2, 1, side, { piece: 'chest-y' });
+    expect(designCost('lot-small', cottage(), turned)).toMatchObject({ gold: 0, materials: {} });
+    send(turned, 'gold');
+    expect(lastSystem(notifier)).toMatch(/La obra está lista/);
+    expect(world.items.get(chest?.id ?? '')?.kind).toBe('house-chest-y');
+    expect(world.items.contentsOf(chest?.id ?? '').map((i) => i.id)).toEqual(['joya-giro']);
+    expect(world.items.bankOf(ana.id).find((i) => i.id === 'oro-giro')?.amount).toBe(before);
+    app.saveAll();
+    const restored = createField(store);
+    const loadedChest = restored.world.items.all().find((i) => i.kind === 'house-chest-y');
+    expect(loadedChest).toBeDefined();
+    expect(restored.world.items.contentsOf(loadedChest?.id ?? '').map((i) => i.kind)).toEqual([
+      'gold',
+    ]);
+    send(cottage(), 'gold');
+    expect(world.items.get(chest?.id ?? '')?.kind).toBe('house-chest');
+    expect(world.items.contentsOf(chest?.id ?? '').map((i) => i.id)).toEqual(['joya-giro']);
+  });
+
   it('el lote se levanta vacío y se construye pagando con oro (de la mochila y del banco)', () => {
     const { world, notifier, ana, origin, send } = setup();
     expect(lastSystem(notifier)).toMatch(/Diseñar la casa/);

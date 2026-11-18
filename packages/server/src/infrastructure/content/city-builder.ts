@@ -1905,7 +1905,7 @@ function furnishShop(plan: Plan, role: NpcRole, room: Room, random: SeededRandom
       break;
     }
     case 'blacksmith': {
-      put(room.x0, room.y0, 'forge');
+      put(room.x0, room.y0, 'forge-small');
       put(room.x0 + 2, room.y0 + 1, 'anvil');
       put(room.x1, room.y0, 'weapon-rack');
       put(room.x1, room.y1, 'armor-stand');

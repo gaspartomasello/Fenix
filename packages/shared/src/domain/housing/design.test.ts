@@ -19,6 +19,7 @@ import { HOUSE_DEEDS, HOUSE_PLANS, houseKindOfDeed } from './houses';
 import {
   HOUSE_SLOT,
   houseChests,
+  houseChestsWithKind,
   houseDoors,
   houseFront,
   houseOrigin,
@@ -32,6 +33,19 @@ import {
 
 const KIND = 'lot-small';
 const SIDE = lotSide(KIND);
+
+it('la orientación del cofre se conserva en el diseño y en su posición', () => {
+  const original = cottage();
+  const turned = withCell(original, 0, SIDE - 2, 1, SIDE, { piece: 'chest-y' });
+  expect(parseHouseDesign(turned, KIND)).toEqual(turned);
+  expect(houseChestsWithKind(siteOf(original))).toEqual([
+    { position: houseChests(siteOf(original))[0], kind: 'house-chest' },
+  ]);
+  expect(houseChestsWithKind(siteOf(turned))).toEqual([
+    { position: houseChests(siteOf(original))[0], kind: 'house-chest-y' },
+  ]);
+  expect(designCost(KIND, original, turned)).toMatchObject({ gold: 0, materials: {} });
+});
 
 function paint(
   design: HouseDesign,
@@ -142,6 +156,33 @@ describe('casas a medida', () => {
     expect(at(3, SIDE - 1)).toBe('door-x');
     expect(at(5, SIDE - 1)).toBe('wall-window-x');
     expect(layout.chests).toEqual([{ x: SIDE - 2, y: 1 }]);
+  });
+
+  it('el armario se puede orientar hacia cualquiera de las dos paredes sin volver a pagarlo', () => {
+    const base = cottage();
+    const west = withCell(base, 0, 2, 1, SIDE, { piece: 'armoire-x' });
+    const north = withCell(west, 0, 2, 1, SIDE, { piece: 'armoire-y' });
+    expect(designProblem(KIND, west)).toBeNull();
+    expect(designProblem(KIND, north)).toBeNull();
+    expect(siteLayout({ kind: KIND, design: west }).statics).toContainEqual({
+      x: 2,
+      y: 1,
+      kind: 'armoire-x',
+    });
+    expect(siteLayout({ kind: KIND, design: north }).statics).toContainEqual({
+      x: 2,
+      y: 1,
+      kind: 'armoire-y',
+    });
+    expect(designCost(KIND, base, west).materials.boards).toBe(35);
+    expect(designCost(KIND, west, north)).toMatchObject({
+      changes: 1,
+      gold: 0,
+      materials: {},
+      refund: {},
+    });
+    const withoutFloor = withCell(west, 0, 2, 1, SIDE, { floor: null });
+    expect(designProblem(KIND, withoutFloor)).toMatch(/muebles.*piso/);
   });
 
   it('sin puerta no se llega al cofre; con lo de arriba en el aire tampoco se puede', () => {

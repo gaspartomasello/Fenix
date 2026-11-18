@@ -16,6 +16,8 @@ const WATER_SOURCES: ReadonlySet<StaticKind> = new Set<StaticKind>([
   'well',
   'fountain',
   'water-trough',
+  'water-trough-x',
+  'water-trough-y',
 ]);
 
 /**
