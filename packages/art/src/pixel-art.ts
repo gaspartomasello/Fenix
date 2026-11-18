@@ -178,3 +178,14 @@ export function seededRandom(seed: number): () => number {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+/** La misma imagen al doble de tamaño, píxel por píxel (cada uno, un cuadrado de 2 × 2). */
+export function doubled(image: PixelImage): PixelImage {
+  const out = new PixelImage(image.width * 2, image.height * 2);
+  for (let y = 0; y < out.height; y++)
+    for (let x = 0; x < out.width; x++) {
+      const from = (Math.floor(y / 2) * image.width + Math.floor(x / 2)) * 4;
+      out.data.set(image.data.subarray(from, from + 4), (y * out.width + x) * 4);
+    }
+  return out;
+}

@@ -1,4 +1,4 @@
-import { PixelImage } from './pixel-art';
+import { PixelImage, doubled } from './pixel-art';
 
 /** Píxeles originales del pitchfork adjunto (50 × 50 RGBA), sin interpolación. */
 const COLORS = [
@@ -90,14 +90,12 @@ const PIXELS = [
 ].join('');
 
 export function drawPixelPitchfork(style: 'ground' | 'icon' = 'ground'): PixelImage {
-  const size = style === 'icon' ? 88 : 50;
-  const image = new PixelImage(size, size);
-  const offset = (size - 50) / 2;
+  const image = new PixelImage(50, 50);
   for (let i = 0; i < PIXELS.length; i++) {
     const color = COLORS[SYMBOLS.indexOf(PIXELS[i] ?? '')];
     if (!color) throw new Error('Invalid pitchfork pixel');
-    const at = ((Math.floor(i / 50) + offset) * size + (i % 50) + offset) * 4;
-    image.data.set(color, at);
+    image.data.set(color, i * 4);
   }
-  return image;
+  // El ícono va al doble (como todos los íconos): cada píxel, un cuadrado de 2 × 2, sin suavizar.
+  return style === 'icon' ? doubled(image) : image;
 }
