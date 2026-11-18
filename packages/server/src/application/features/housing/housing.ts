@@ -54,7 +54,9 @@ import { Player } from '../../../domain/player';
 import type { World } from '../../../domain/world';
 import type { ItemNotifications } from '../../kernel/item-notifications';
 import type { MobileNotifications } from '../../kernel/mobile-notifications';
-import type { GameServices } from '../../kernel/services';
+import type { FurnishedHouse, GameServices } from '../../kernel/services';
+import { furnitureLimit } from '@fenix/shared/housing/furniture';
+import type { StaticPlacement } from '@fenix/shared/world/statics';
 import type { Clock, HouseStore, IdGenerator, Notifier } from '../../ports';
 import { BuildingPayment, describeMaterials } from './building-payment';
 
@@ -561,6 +563,30 @@ export class Housing {
       ...[...this.houses.values()].map((h) => captureHouse(this.world, h)),
       ...this.stale,
     ]);
+  }
+
+  // ── Muebles (los pone el módulo de muebles) ────────────────────────
+
+  /** Lo que el módulo de muebles necesita saber de la casa de una posición. */
+  furnishedAt(position: Position): FurnishedHouse | null {
+    const house = this.houseAt(position);
+    if (!house) return null;
+    return {
+      id: house.id,
+      name: house.name,
+      limit: furnitureLimit(house.kind),
+      furniture: house.furniture,
+      canFurnish: (name) => houseLevelAtLeast(house.levelOf(name), 'co-owner'),
+      indoors: (at) => house.contains(at) && indoorsAt(house.site(), at),
+    };
+  }
+
+  /** Cambian los muebles: se rearma la casa en el mapa y se avisa a todos. */
+  setFurniture(houseId: EntityId, furniture: readonly StaticPlacement[]): void {
+    const house = this.houses.get(houseId);
+    if (!house) return;
+    house.furniture = [...furniture];
+    this.rebuild(house);
   }
 
   // ── Consultas ──────────────────────────────────────────────────────

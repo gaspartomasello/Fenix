@@ -188,6 +188,15 @@ export class GameRenderer {
     return null;
   }
 
+  /** El mueble de una casa bajo un punto de la pantalla: el del tile o uno un poco más adelante. */
+  furnitureAt(point: ScreenPoint): Position | null {
+    for (const lift of [0, 14, 28]) {
+      const tile = this.screenToTile({ x: point.x, y: point.y + lift * this.zoom });
+      if (this.game.furnitureAt(tile)) return tile;
+    }
+    return null;
+  }
+
   /** El santuario (la piedra azul de las ciudades) bajo un punto de la pantalla: es alto. */
   shrineAt(point: ScreenPoint): Position | null {
     const map = this.game.map;

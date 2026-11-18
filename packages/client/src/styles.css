@@ -5501,8 +5501,12 @@ html:not(.touch-ui) .info-strip .info-chip-icon {
 
 .confirm-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
+}
+.confirm-other[hidden] {
+  display: none;
 }
 
 /* La tabla de un cartel de camino: madera tallada sobre el cuero, una flecha por rama. */

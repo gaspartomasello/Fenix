@@ -16,6 +16,8 @@ const EVERY_MESSAGE: Record<
   move: true,
   chat: true,
   moveItem: true,
+  placeFurniture: true,
+  furnitureAction: true,
   useItem: true,
   useOn: true,
   attack: true,

@@ -691,6 +691,7 @@ export class Items {
       case 'house':
       case 'lockpick':
       case 'mastery':
+      case 'furniture':
         // Se resuelven en otros casos de uso (o en el cliente): acá no hay nada que hacer.
         return { ok: true, changes };
       case 'none': {

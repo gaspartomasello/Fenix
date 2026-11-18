@@ -13,7 +13,13 @@ export class ConfirmDialog {
     className: 'button button--plaque confirm-ok',
     attrs: { type: 'button' },
   });
+  /** Una segunda acción, además de aceptar (por ejemplo: girar o guardar un mueble). */
+  private readonly other = el('button', {
+    className: 'button button--plaque confirm-other',
+    attrs: { type: 'button' },
+  });
   private onAccept: (() => void) | null = null;
+  private onOther: (() => void) | null = null;
 
   constructor() {
     const cancel = el('button', {
@@ -27,12 +33,17 @@ export class ConfirmDialog {
       attrs: { type: 'button', 'aria-label': 'Cancelar' },
     });
     onPress(this.ok, () => this.finish(true));
+    onPress(this.other, () => {
+      const run = this.onOther;
+      this.finish(false);
+      run?.();
+    });
     onPress(cancel, () => this.finish(false));
     onPress(close, () => this.finish(false));
     const panel = el('div', { className: 'panel confirm-panel', attrs: { role: 'dialog' } }, [
       el('div', { className: 'confirm-head' }, [this.title, close]),
       this.text,
-      el('div', { className: 'confirm-actions' }, [this.ok, cancel]),
+      el('div', { className: 'confirm-actions' }, [this.ok, this.other, cancel]),
     ]);
     this.element = el('div', { className: 'confirm-dialog' }, [panel]);
     this.element.hidden = true;
@@ -53,11 +64,20 @@ export class ConfirmDialog {
     );
   }
 
-  ask(title: string, text: string, accept: string, onAccept: () => void): void {
+  ask(
+    title: string,
+    text: string,
+    accept: string,
+    onAccept: () => void,
+    other?: { readonly label: string; readonly run: () => void },
+  ): void {
     this.title.textContent = title;
     this.text.textContent = text;
     this.ok.textContent = accept;
     this.onAccept = onAccept;
+    this.onOther = other?.run ?? null;
+    this.other.textContent = other?.label ?? '';
+    this.other.hidden = !other;
     this.element.hidden = false;
   }
 
@@ -66,6 +86,7 @@ export class ConfirmDialog {
     this.element.hidden = true;
     const accept = this.onAccept;
     this.onAccept = null;
+    this.onOther = null;
     if (accepted) accept?.();
   }
 }

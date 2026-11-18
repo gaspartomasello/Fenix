@@ -17,6 +17,7 @@ import { wanderersModule } from './features/wanderers/wanderers.module';
 import { talesModule } from './features/tales/tales.module';
 import { encountersModule } from './features/encounters/encounters.module';
 import { washingModule } from './features/washing/washing.module';
+import { furnitureModule } from './features/furniture/furniture.module';
 import { moongatesModule } from './features/moongates/moongates.module';
 import { mountsModule } from './features/mounts/mounts.module';
 import { movementModule } from './features/movement/movement.module';
@@ -68,6 +69,7 @@ export const ALL_MODULES: readonly ModuleFactory[] = [
   wanderersModule,
   encountersModule,
   washingModule,
+  furnitureModule,
   trackingModule,
   thieveryModule,
   portalsModule,

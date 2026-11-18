@@ -8,6 +8,7 @@ import type { EffectSnapshot } from '../domain/magic/effects';
 import type { Body } from '../domain/creatures/creature-catalog';
 import type { NpcRole } from '../domain/economy/vendors';
 import type { MountKind } from '../domain/mounts/mount-catalog';
+import type { StaticPlacement } from '../domain/world/statics';
 import type { ContainerLook } from '../domain/world/statics';
 import type { ChatChannel, SocialCommand } from '../domain/social/groups';
 import type { Notoriety } from '../domain/social/reputation';
@@ -341,6 +342,20 @@ export interface HouseDesignRequest {
   readonly pay: 'gold' | 'materials';
 }
 
+/** Poner un mueble de la mochila adentro de la casa propia. */
+export interface PlaceFurnitureRequest {
+  readonly type: 'placeFurniture';
+  readonly itemId: EntityId;
+  readonly position: Position;
+}
+
+/** Girar un mueble puesto o volver a guardarlo en la mochila. */
+export interface FurnitureActionRequest {
+  readonly type: 'furnitureAction';
+  readonly position: Position;
+  readonly action: 'turn' | 'pickUp';
+}
+
 export interface BuyRequest {
   readonly type: 'buy';
   readonly vendorId: EntityId;
@@ -615,6 +630,8 @@ export type ClientMessage =
   | HouseActionRequest
   | HouseSecurityRequest
   | HouseDesignRequest
+  | PlaceFurnitureRequest
+  | FurnitureActionRequest
   | BuyRequest
   | SellRequest
   | CraftRequest
@@ -995,6 +1012,8 @@ export interface HouseSnapshot {
   readonly openDoors?: readonly Position[];
   /** El diseño, si es una casa a medida. */
   readonly design?: HouseDesign;
+  /** Los muebles puestos. */
+  readonly furniture?: readonly StaticPlacement[];
 }
 
 /** Todas las casas del mundo (al entrar). */

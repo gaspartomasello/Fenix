@@ -18,6 +18,7 @@ import { SnoopWindow } from '../ui/snoop-window';
 import { ConfirmDialog } from '../ui/confirm-dialog';
 import { MoongateWindow } from '../ui/moongate-window';
 import { WorldShrines } from './world-shrines';
+import { WorldFurniture } from './world-furniture';
 import { WorldPaperdolls } from './world-paperdolls';
 import { HudButtons, type HudButton } from '../ui/hud-buttons';
 import { SocialWindow } from '../ui/social-window';
@@ -307,6 +308,7 @@ export class GameSession {
     this.hosts.ui.append(moongate.element);
     this.game.on('moongateMenu', (m) => moongate.show(m.here, m.destinations));
     const worldShrines = new WorldShrines(this.game, renderer, tooltip, confirmDialog);
+    const worldFurniture = new WorldFurniture(this.game, renderer, tooltip, confirmDialog);
     const worldMounts = new WorldMounts(this.game, renderer, tooltip);
     const signWindow = new SignWindow();
     this.hosts.ui.append(signWindow.element);
@@ -335,6 +337,7 @@ export class GameSession {
         !worldDoors.hasDoorAt(point) &&
         !worldContainers.hasContainerAt(point) &&
         !worldShrines.hasShrineAt(point) &&
+        !worldFurniture.hasFurnitureAt(point) &&
         !worldMounts.hasPetAt(point) &&
         !worldNpcs.hasNpcAt(point),
     });
@@ -850,6 +853,13 @@ export class GameSession {
             return;
           case 'house':
             if (item) houses.place(itemId, item.kind);
+            return;
+          case 'furniture':
+            banner.show('Tocá dónde ponerlo, adentro de tu casa y cerca tuyo (Escape cancela).');
+            tilePicker.pick((tile) => {
+              done();
+              this.game.placeFurniture(itemId, tile);
+            }, done);
             return;
           case 'dig':
             banner.show('Tocá dónde querés cavar, al lado tuyo (Escape cancela).');

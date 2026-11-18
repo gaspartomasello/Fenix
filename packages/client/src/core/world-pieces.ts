@@ -146,6 +146,13 @@ const LEFT_OUT: ReadonlySet<StaticKind> = new Set<StaticKind>([
   'ship',
   'pirate-ship',
   'stair-hole',
+  // Las de las casas de los jugadores: la misma cama o el mismo cofre, mirando a un lado.
+  'bed-x',
+  'bed-y',
+  'double-bed-x',
+  'double-bed-y',
+  'chest-x',
+  'chest-y',
 ]);
 
 /** ¿Es una versión repetida de otra pieza (la otra dirección, abierta, una hoja, el poste)? */
