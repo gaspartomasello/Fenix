@@ -331,11 +331,17 @@ function drawFigure(
 ): PixelImage {
   // Montado: lienzo más grande, la montura primero y el jinete sentado en ella.
   const layout = mount ? mountLayout(mount) : null;
-  // La horca supera el ancho normal al extenderse en la estocada. Se amplía
+  // La horca y la hoz superan el ancho normal en algunos cuadros. Se amplía
   // solo el sprite del mundo, con los pies y el centro en el mismo lugar.
   // Los lienzos propios de la ventana de equipo y los cuerpos conservan su tamaño.
   const worldWidth =
-    equipment.rightHand === 'pitchfork' && canvasFor === spriteCanvas ? 104 : CHARACTER_ART_WIDTH;
+    canvasFor === spriteCanvas
+      ? equipment.rightHand === 'pitchfork'
+        ? 104
+        : equipment.rightHand === 'sickle'
+          ? 72
+          : CHARACTER_ART_WIDTH
+      : CHARACTER_ART_WIDTH;
   const canvas = layout
     ? spriteCanvas(layout.width, layout.height, mountedCamera(direction, mount ?? undefined))
     : canvasFor(

@@ -220,17 +220,35 @@ describe('animaciones y cuerpos', () => {
     }
   });
 
-  it('la punta de la horca queda completa en todos los cuadros de la estocada', () => {
-    for (const direction of ALL_DIRECTIONS) {
-      for (const frame of ['guard', 'thrust-0', 'thrust-1', 'thrust-2', 'thrust-3'] as const) {
-        const image = drawCharacterFrame(DEFAULT_APPEARANCE, direction, frame, {
-          rightHand: 'pitchfork',
-        });
-        expect(image.width).toBe(104);
-        for (let x = 0; x < image.width; x++) expect(image.alphaAt(x, 0)).toBe(0);
-        for (let y = 0; y < image.height; y++) {
-          expect(image.alphaAt(0, y)).toBe(0);
-          expect(image.alphaAt(image.width - 1, y)).toBe(0);
+  it('la horca y la hoz quedan completas durante los ataques en ocho direcciones', () => {
+    for (const [kind, width] of [
+      ['pitchfork', 104],
+      ['sickle', 72],
+    ] as const) {
+      for (const direction of ALL_DIRECTIONS) {
+        for (const frame of [
+          'idle',
+          'guard',
+          'thrust-0',
+          'thrust-1',
+          'thrust-2',
+          'thrust-3',
+          'slash-0',
+          'slash-1',
+          'slash-2',
+          'slash-3',
+        ] as const) {
+          const image = drawCharacterFrame(DEFAULT_APPEARANCE, direction, frame, {
+            rightHand: kind,
+          });
+          expect(image.width).toBe(width);
+          if (kind === 'pitchfork' && frame.startsWith('thrust')) {
+            for (let x = 0; x < image.width; x++) expect(image.alphaAt(x, 0)).toBe(0);
+          }
+          for (let y = 0; y < image.height; y++) {
+            expect(image.alphaAt(0, y)).toBe(0);
+            expect(image.alphaAt(image.width - 1, y)).toBe(0);
+          }
         }
       }
     }
