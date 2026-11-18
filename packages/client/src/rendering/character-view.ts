@@ -4,6 +4,10 @@ import {
   CHARACTER_ART_WIDTH,
   CHARACTER_FEET_Y,
   CHARACTER_HEAD_Y,
+  SICKLE_ART_HEIGHT,
+  SICKLE_ART_WIDTH,
+  SICKLE_FEET_Y,
+  SICKLE_TOP_MARGIN,
   WALK_FRAMES,
   guardFrame,
   attackStyleFor,
@@ -95,7 +99,7 @@ export class CharacterView {
   /** Altura de la cabeza sobre los pies, en pantalla (depende del cuerpo y de si va montado). */
   private _spriteHeight = 0;
   private readonly shadow = new Graphics();
-  /** Montura con la que se armó el lienzo (al montar o desmontar cambia). */
+  /** Lienzo actual (cambia al montar o al equipar la hoz). */
   private shownMount: string | null = null;
   /** Ciclo de caminar o correr ya pedido de antemano (dirección, modo, aspecto). */
   private preparedCycle = '';
@@ -158,7 +162,9 @@ export class CharacterView {
   private syncLayout(): void {
     const mount = this.entity.mount;
     const lying = this.lyingCorpse;
-    const key = lying ? 'cuerpo' : (mount ?? '');
+    const raisedSickle =
+      this.entity.body === 'human' && !mount && this.entity.equipment.rightHand === 'sickle';
+    const key = lying ? 'cuerpo' : (mount ?? (raisedSickle ? 'hoz' : ''));
     if (key === this.shownMount) return;
     this.shownMount = key;
     if (lying && this.entity.body !== 'human') {
@@ -180,12 +186,12 @@ export class CharacterView {
         : mount
           ? mountLayout(mount)
           : {
-              width: CHARACTER_ART_WIDTH,
-              height: CHARACTER_ART_HEIGHT,
-              feetY: CHARACTER_FEET_Y,
-              headY: CHARACTER_HEAD_Y,
+              width: raisedSickle ? SICKLE_ART_WIDTH : CHARACTER_ART_WIDTH,
+              height: raisedSickle ? SICKLE_ART_HEIGHT : CHARACTER_ART_HEIGHT,
+              feetY: raisedSickle ? SICKLE_FEET_Y : CHARACTER_FEET_Y,
+              headY: CHARACTER_HEAD_Y + (raisedSickle ? SICKLE_TOP_MARGIN : 0),
             };
-    const big = layout.height > CHARACTER_ART_HEIGHT;
+    const big = layout.height > CHARACTER_ART_HEIGHT && !raisedSickle;
     this._spriteHeight = (layout.feetY - layout.headY) * CHARACTER_SCALE;
     this._hitBox = {
       halfWidth: 16 * (this._spriteHeight > 70 ? 2.5 : 1),

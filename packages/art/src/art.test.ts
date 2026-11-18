@@ -11,6 +11,10 @@ import {
   ART_DETAIL,
   CHARACTER_ART_HEIGHT,
   CHARACTER_ART_WIDTH,
+  CHARACTER_FEET_Y,
+  SICKLE_ART_HEIGHT,
+  SICKLE_FEET_Y,
+  SICKLE_TOP_MARGIN,
   attackStyleFor,
   drawCharacterFrame,
 } from './character-art';
@@ -242,7 +246,8 @@ describe('animaciones y cuerpos', () => {
             rightHand: kind,
           });
           expect(image.width).toBe(width);
-          if (kind === 'pitchfork' && frame.startsWith('thrust')) {
+          expect(image.height).toBe(kind === 'sickle' ? SICKLE_ART_HEIGHT : CHARACTER_ART_HEIGHT);
+          if (kind === 'sickle' || frame.startsWith('thrust')) {
             for (let x = 0; x < image.width; x++) expect(image.alphaAt(x, 0)).toBe(0);
           }
           for (let y = 0; y < image.height; y++) {
@@ -252,6 +257,8 @@ describe('animaciones y cuerpos', () => {
         }
       }
     }
+    expect(SICKLE_ART_HEIGHT - CHARACTER_ART_HEIGHT).toBe(SICKLE_TOP_MARGIN);
+    expect(SICKLE_FEET_Y - CHARACTER_FEET_Y).toBe(SICKLE_TOP_MARGIN);
     expect(drawCharacterFrame(DEFAULT_APPEARANCE, Direction.SouthEast, 'idle').width).toBe(
       CHARACTER_ART_WIDTH,
     );
