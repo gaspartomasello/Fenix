@@ -115,6 +115,13 @@ const WEAPONS: Partial<Record<ItemKind, Weapon>> = {
     swingMs: 2750,
     skill: 'fencing',
   },
+  pitchfork: {
+    name: 'horca de combate',
+    minDamage: 13,
+    maxDamage: 14,
+    swingMs: 2500,
+    skill: 'fencing',
+  },
   'short-spear': {
     name: 'lanza corta',
     minDamage: 6,

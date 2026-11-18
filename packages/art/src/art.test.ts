@@ -62,8 +62,24 @@ describe('arte procedural (sin DOM)', () => {
   it('dibuja el ícono de cada objeto', () => {
     for (const kind of ITEM_KINDS) {
       const image = drawItem(kind);
-      expect(image.width).toBe(ITEM_ART_SIZE);
+      expect(image.width).toBe(kind === 'pitchfork' ? 50 : ITEM_ART_SIZE);
       expect(opaquePixels(image.data)).toBeGreaterThan(20);
+    }
+  });
+
+  it('conserva los píxeles RGBA originales del pitchfork en suelo e inventario', () => {
+    const ground = drawItem('pitchfork');
+    const icon = drawItem('pitchfork', 'icon');
+    expect([ground.width, ground.height, icon.width, icon.height]).toEqual([50, 50, 88, 88]);
+    let hash = 2166136261;
+    for (const byte of ground.data) hash = Math.imul(hash ^ byte, 16777619) >>> 0;
+    expect(hash).toBe(2936446925);
+    for (let y = 0; y < 50; y++) {
+      for (let x = 0; x < 50; x++) {
+        const source = (y * 50 + x) * 4;
+        const target = ((y + 19) * 88 + x + 19) * 4;
+        expect(icon.data.slice(target, target + 4)).toEqual(ground.data.slice(source, source + 4));
+      }
     }
   });
 

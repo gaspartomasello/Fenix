@@ -1714,6 +1714,7 @@ const POLEARMS: ReadonlySet<ItemKind> = new Set<ItemKind>([
   'spear',
   'short-spear',
   'war-fork',
+  'pitchfork',
   'bardiche',
   'quarterstaff',
 ]);
@@ -1800,8 +1801,8 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     );
     return;
   }
-  if (kind === 'war-fork' || kind === 'short-spear') {
-    const fork = kind === 'war-fork';
+  if (kind === 'war-fork' || kind === 'pitchfork' || kind === 'short-spear') {
+    const fork = kind === 'war-fork' || kind === 'pitchfork';
     const end = fork ? 16 : 12;
     canvas.limb(along(fork ? -8 : -5), along(end), 0.6, 0.6, solid(WOOD));
     if (fork) {
@@ -1813,7 +1814,7 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
         0.5,
         metal(DARK_STEEL),
       );
-      for (const k of [1, -1])
+      for (const k of kind === 'pitchfork' ? [1, 0, -1] : [1, -1])
         canvas.limb(
           add(along(end), scale(side, 1.2 * k)),
           add(along(end + 5), scale(side, 1.2 * k)),

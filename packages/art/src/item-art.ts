@@ -2,6 +2,7 @@ import { weaponByKind } from '@fenix/shared/combat/weapons';
 import { ITEMS, type BaseItemKind, type ItemKind } from '@fenix/shared/items/item-catalog';
 import { SPELLS } from '@fenix/shared/magic/spell-catalog';
 import { hexToRgb, type PixelImage, type Rgb } from './pixel-art';
+import { drawPixelPitchfork } from './pixel-pitchfork-art';
 import {
   clipping,
   Camera,
@@ -1317,6 +1318,12 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     c.limb(at(0, -1.4), at(0, 1.4), 0.5, 0.5, metal(DARK_STEEL));
     for (const out of [-1.2, 1.2]) c.limb(at(0, out), at(4.6, out), 0.4, 0.12, metal(STEEL));
   },
+  pitchfork(c) {
+    // Respaldo del modelo volumétrico; suelo e inventario usan la imagen exacta.
+    const at = haft(c, alongPole(10), alongPole(-8), 0.55);
+    c.limb(at(0, -1.4), at(0, 1.4), 0.5, 0.5, metal(DARK_STEEL));
+    for (const out of [-1.2, 0, 1.2]) c.limb(at(0, out), at(4.6, out), 0.4, 0.12, metal(STEEL));
+  },
   'short-spear'(c) {
     // De pie, más corta que la lanza.
     const at = haft(c, alongPole(8), alongPole(-7), 0.55);
@@ -2523,6 +2530,7 @@ export function drawItem(
   amount = 1,
   hue?: number,
 ): PixelImage {
+  if (kind === 'pitchfork') return drawPixelPitchfork(style);
   // Los íconos (mochila, ventanas) se dibujan al doble de resolución: más detalle.
   const detail = style === 'icon' ? ICON_DETAIL : 1;
   const definition = ITEMS[kind];
