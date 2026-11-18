@@ -1,3 +1,4 @@
+import { weaponSpeed } from '@fenix/shared/combat/swing-speed';
 import { armorRating, weaponByKind } from '@fenix/shared/combat/weapons';
 import { ITEMS, describeItem, type ItemKind } from '@fenix/shared/items/item-catalog';
 import type { ItemSnapshot } from '@fenix/shared/protocol/messages';
@@ -25,7 +26,11 @@ export function itemDetails(kind: ItemKind): string {
   const definition = ITEMS[kind];
   const parts: string[] = [];
   const weapon = weaponByKind(kind);
-  if (weapon) parts.push(`daño ${weapon.minDamage}–${weapon.maxDamage}`);
+  if (weapon)
+    parts.push(
+      `daño ${weapon.minDamage}–${weapon.maxDamage}`,
+      `velocidad ${Math.round(weaponSpeed(weapon))}`,
+    );
   if (definition.twoHanded) parts.push('a dos manos');
   const armor = armorRating(kind);
   if (armor > 0) parts.push(`defensa ${armor}`);

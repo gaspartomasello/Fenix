@@ -1,3 +1,4 @@
+import { swingDelayMs } from '@fenix/shared/combat/swing-speed';
 import { MELEE_RANGE, resolveAttack, type DefenderStats } from '@fenix/shared/combat/combat-rules';
 import { armorOf, weaponOf, type Weapon } from '@fenix/shared/combat/weapons';
 import { tileDistance } from '@fenix/shared/geometry/position';
@@ -62,6 +63,12 @@ function defenseFor(mobile: Mobile, world: World): DefenderStats {
   return { armor, skill: fightingSkill(mobile, world), parrying: 0 };
 }
 
+/** La parte de la energía que le queda (1 = llena). */
+function energyLeft(player: Player): number {
+  const { stamina, maxStamina } = player.combat.current;
+  return maxStamina > 0 ? stamina / maxStamina : 1;
+}
+
 /** La munición (flechas o virotes) que le falta para el arma que tiene en la mano. */
 export function missingAmmo(player: Player, world: World): ItemKind | null {
   const ammo = weaponFor(player, world).ammo;
@@ -95,7 +102,13 @@ export function trySwing(
     itemChanges = emptyChanges();
     if (!world.items.consumeFromBackpack(attacker.id, weapon.ammo, 1, itemChanges)) return null;
   }
-  attacker.combat.nextSwingAt = now + weapon.swingMs;
+  // Los jugadores pegan según su destreza y la energía que les queda (Sphere y OSI);
+  // las criaturas, al ritmo de su catálogo.
+  attacker.combat.nextSwingAt =
+    now +
+    (attacker instanceof Player
+      ? swingDelayMs(weapon, attacker.combat.attributes.dexterity, energyLeft(attacker))
+      : weapon.swingMs);
   const tactics = attacker instanceof Player ? attacker.skills.get('tactics') : 500;
   const anatomy = attacker instanceof Player ? attacker.skills.get('anatomy') : 0;
   const defense = defenseFor(target, world);
