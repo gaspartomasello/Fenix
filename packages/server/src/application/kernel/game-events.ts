@@ -16,6 +16,8 @@ export interface GameEvents {
   stepped: { readonly player: Player };
   /** Un jugador eligió a quién atacar. */
   attacked: { readonly attacker: Player; readonly targetId: EntityId };
+  /** Un jugador terminó de poner una venda (haya curado o no): la venda queda usada. */
+  bandageUsed: { readonly player: Player };
   /** Un jugador empezó a lanzar un hechizo. */
   castStarted: { readonly caster: Player };
   /** Murió un jugador (queda fantasma; sus cosas, en su cuerpo). */

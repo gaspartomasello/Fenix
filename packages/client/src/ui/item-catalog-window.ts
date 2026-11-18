@@ -49,7 +49,10 @@ export function catalogGroup(kind: ItemKind): Group {
   )
     return 'Magia y pergaminos';
   if (definition.capacity && !definition.fixed) return 'Recipientes';
-  if (['tool', 'craft', 'dig', 'lockpick', 'dye', 'bandage', 'map'].includes(definition.use))
+  if (
+    kind === 'bloody-bandage' ||
+    ['tool', 'craft', 'dig', 'lockpick', 'dye', 'bandage', 'map'].includes(definition.use)
+  )
     return 'Herramientas';
   if (definition.stackable) return 'Recursos';
   return 'Otros';

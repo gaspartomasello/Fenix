@@ -170,6 +170,7 @@ export class GameLoop {
     const outcome = resolveBandage(player, this.world, this.roll);
     if (!outcome) return;
     const say = (text: string): void => this.notifier.send(player.id, { type: 'system', text });
+    if (outcome.kind !== 'lost-target') this.events.emit('bandageUsed', { player });
     switch (outcome.kind) {
       case 'lost-target':
         say('Te alejaste demasiado y la venda no sirvió.');

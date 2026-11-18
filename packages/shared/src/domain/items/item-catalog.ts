@@ -26,6 +26,8 @@ export const BASE_ITEM_KINDS = [
   'agility-potion',
   'empty-bottle',
   'bandage',
+  // La venda usada: se lava en el agua y vuelve a ser una venda.
+  'bloody-bandage',
   // Recipientes: se abren con doble clic y guardan cosas adentro
   'bag',
   'pouch',
@@ -403,6 +405,13 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
     stackable: true,
   },
   bandage: { name: 'venda', plural: 'vendas', article: 'una', stackable: true, use: 'bandage' },
+  'bloody-bandage': {
+    name: 'venda ensangrentada',
+    plural: 'vendas ensangrentadas',
+    article: 'una',
+    stackable: true,
+    color: 0x9a3a2e,
+  },
   // Las bolsas son de cuero: se pueden teñir, como en UO.
   bag: {
     name: 'bolsa',

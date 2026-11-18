@@ -290,7 +290,10 @@ veneno; el dueño recibe la lista con `effects`, que el cliente muestra en la ba
 
 Vendas (`domain/healing/bandage.ts`, mensaje `useOn`) y pociones (`domain/items/consumables.ts`)
 siguen las mismas reglas de UO: la venda tarda según la destreza, cura según Primeros auxilios y
-Anatomía y, con 60 en ambas, puede sacar el veneno.
+Anatomía y, con 60 en ambas, puede sacar el veneno. Al terminar de vendar (salga bien o no), el
+combate avisa `bandageUsed` y `features/washing` deja una venda ensangrentada en la mochila. Con
+doble clic a dos tiles o menos del agua (mar, río, orilla, aljibe, fuente o bebedero de caballos)
+se lavan todas y vuelven a ser vendas.
 
 ### Economía
 
