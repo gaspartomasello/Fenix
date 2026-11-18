@@ -507,38 +507,100 @@ const ankh: Model = (c) => {
   }
 };
 
-const forge: Model = (c) => {
-  const bricks: Material = (s) => {
-    const course = Math.floor(s.p[1] / 3);
-    const along = (Math.abs(s.n[0]) > 0.6 ? s.p[2] : s.p[0]) + (course % 2) * 2.5 + 100;
-    if (s.p[1] - course * 3 < 0.6 || along % 5 < 0.6) return tone(ramp([90, 80, 72]), s.light);
-    return tone(BRICK, s.light, noise(Math.floor(along / 5), course) > 0.75 ? 1 : 0);
-  };
-  c.box([0, 11, 0], UP, [13, 11, 11], bricks);
-  // Boca del fuego al frente.
-  c.box([4, 8, 6], UP, [6, 4, 5.5], glowing(ramp([255, 150, 50])));
-  c.sphere([4, 7, 9], 3, glowing(ramp([255, 220, 120])));
-  // Chimenea.
-  c.box([-5, 34, -4], UP, [4.5, 12, 4.5], bricks);
-  c.box([-5, 46.5, -4], UP, [5.3, 1, 5.3], solid(ramp([90, 80, 72])));
-};
-
 const anvil: Model = (c) => {
-  const iron = metal(ramp([92, 96, 108]));
+  const iron = metal(ramp([86, 90, 102]));
   cylinder(
     c,
     [0, 0, 0],
-    9,
-    () => 6,
+    8,
+    () => 7,
     (s) =>
       s.n[1] > 0.8
         ? tone(ramp([160, 120, 80]), s.light, Math.hypot(s.p[0], s.p[2]) % 2 < 0.6 ? -1 : 0)
         : bark(s),
   );
-  c.box([0, 11.5, 0], UP, [3, 2.5, 2.2], iron);
-  c.box([0, 15.5, 0], UP, [8, 1.8, 3.2], iron);
-  // Cuerno del yunque.
-  c.limb([8, 15.5, 0], [13, 15.8, 0], 2.2, 0.5, iron);
+  c.box([0, 9.4, 0], UP, [6, 1.4, 4], iron);
+  c.box([0, 12.4, 0], UP, [3, 1.8, 2.2], iron);
+  c.box([0, 15.6, 0], UP, [7.5, 1.6, 3.6], iron);
+  // Cara de trabajo pulida.
+  c.box([0, 17.3, 0], UP, [7.3, 0.2, 3.4], metal(ramp([170, 174, 184])));
+  // El cuerno, cónico, y la cola con su agujero.
+  c.limb([7.5, 15.8, 0], [14, 16.6, 0], 2.6, 0.4, iron);
+  c.box([-8.6, 16.2, 0], UP, [1.6, 1, 2.6], iron);
+  // Un martillo apoyado.
+  c.limb([-3, 17.6, 2], [3.5, 17.6, 4.5], 0.4, 0.4, solid(ramp([120, 82, 48])));
+  c.box([-3.3, 18, 1.8], UP, [1.2, 0.8, 0.8], iron);
+};
+
+const forgeBricks: Material = (s) => {
+  const course = Math.floor(s.p[1] / 3);
+  const along = (Math.abs(s.n[0]) > 0.6 ? s.p[2] : s.p[0]) + (course % 2) * 2.5 + 100;
+  if (s.p[1] - course * 3 < 0.6 || along % 5 < 0.6) return tone(ramp([90, 80, 72]), s.light);
+  return tone(BRICK, s.light, noise(Math.floor(along / 5), course) > 0.75 ? 1 : 0);
+};
+
+const forge: Model = (c) => {
+  c.box([0, 11, 0], UP, [13, 11, 11], forgeBricks);
+  // Boca del fuego al frente.
+  c.box([4, 8, 6], UP, [6, 4, 5.5], glowing(ramp([255, 150, 50])));
+  c.sphere([4, 7, 9], 3, glowing(ramp([255, 220, 120])));
+  // Chimenea.
+  c.box([-5, 34, -4], UP, [4.5, 12, 4.5], forgeBricks);
+  c.box([-5, 46.5, -4], UP, [5.3, 1, 5.3], solid(ramp([90, 80, 72])));
+};
+
+/** Fuelle de cuero con tapas de madera y boquilla de hierro. */
+function bellows(c: VolumeCanvas, at: Vec3, length: number): void {
+  c.box(add3(at, [0, 3.6, 0]), UP, [length, 0.5, 3.2], solid(FURNITURE));
+  c.ellipsoid(add3(at, [0, 2.4, 0]), UP, [length * 0.9, 1.6, 3], solid(ramp([96, 62, 40])));
+  c.box(add3(at, [0, 1, 0]), UP, [length, 0.5, 3.2], solid(FURNITURE));
+  c.limb(add3(at, [length, 2.4, 0]), add3(at, [length + 4, 2.2, 0]), 0.8, 0.5, metal(IRON));
+  c.limb(add3(at, [-length, 3.8, 0]), add3(at, [-length - 3, 6, 0]), 0.4, 0.4, solid(FURNITURE));
+}
+
+/** Forja chica: un fogón bajo de piedra con brasas, campana de hierro y fuelle al costado. */
+const smallForge: Model = (c) => {
+  const stone = rocky(ramp([128, 118, 108]), 3);
+  c.box([0, 6, 0], UP, [9, 6, 8], stone);
+  c.box([0, 12.4, 0], UP, [7, 0.6, 6], solid(ramp([40, 30, 26])));
+  for (let i = 0; i < 7; i++)
+    c.sphere(
+      [((i * 37) % 9) - 4, 13, ((i * 53) % 7) - 3],
+      1.6,
+      glowing(ramp([255, 120 + i * 12, 40])),
+    );
+  // Campana de hierro y su caño.
+  c.box([0, 24, -2], UP, [8, 1, 7], metal(IRON));
+  c.box([0, 21, -2], UP, [6.5, 2.5, 5.5], metal(ramp([80, 82, 90])));
+  c.box([0, 32, -3], UP, [2.4, 8, 2.4], metal(IRON));
+  for (const sx of [-7, 7]) c.limb([sx, 12, 4], [sx, 22, 2], 0.5, 0.5, metal(IRON));
+  bellows(c, [-16, 6, 0], 4.5);
+};
+
+/** Gran forja (2 × 2 tiles): hogar de ladrillo con dos bocas, chimenea alta, fuelle grande y una pila de agua. */
+const greatForge: Model = (c) => {
+  c.box([0, 13, -6], UP, [22, 13, 12], forgeBricks);
+  for (const sx of [-10, 10]) {
+    c.box([sx, 9, 6.2], UP, [6, 4.5, 0.6], glowing(ramp([255, 150, 50])));
+    c.sphere([sx, 8, 6], 3.4, glowing(ramp([255, 220, 120])));
+  }
+  // Mesa de brasas arriba, con una pinza.
+  c.box([0, 26.6, -4], UP, [18, 0.6, 8], solid(ramp([40, 30, 26])));
+  for (let i = 0; i < 12; i++)
+    c.sphere(
+      [((i * 41) % 32) - 16, 27.4, ((i * 29) % 12) - 10],
+      1.8,
+      glowing(ramp([255, 110 + i * 9, 40])),
+    );
+  c.limb([6, 28, 2], [16, 28.5, 8], 0.4, 0.4, metal(IRON));
+  // Chimenea alta y campana.
+  c.box([0, 34, -8], UP, [14, 2, 9], forgeBricks);
+  c.box([0, 52, -10], UP, [6, 16, 5.5], forgeBricks);
+  c.box([0, 68.6, -10], UP, [7, 1, 6.5], solid(ramp([90, 80, 72])));
+  // Fuelle grande a un lado y la pila de agua para templar al otro.
+  bellows(c, [-30, 8, 6], 6);
+  c.box([26, 4.5, 8], UP, [5, 4.5, 7], planks(DARK_WOOD, 2, 3));
+  c.box([26, 8.6, 8], UP, [4.2, 0.4, 6.2], solid(ramp([70, 110, 140])));
 };
 
 // ── Mazmorra ────────────────────────────────────────────────────────
@@ -2176,10 +2238,30 @@ const counter: Model = (c, variant) => {
 const chest: Model = (c, variant) => {
   const f: Vec3 = variant === 1 ? [0, 0, 1] : [Math.SQRT1_2, 0, Math.SQRT1_2];
   const wood = planks(variant === 2 ? ramp([110, 40, 40]) : FURNITURE, 0, 3);
-  c.box(local(f, 0, 4.5, 0), facing(f), [8, 4.5, 5], wood);
-  c.ellipsoid(local(f, 0, 9, 0), axesAlong(axesAlong(f)[0]), [8, 3, 5], wood);
-  for (const sx of [-5, 5]) c.box(local(f, sx, 6.5, 0), facing(f), [0.7, 6.5, 5.3], metal(IRON));
-  c.box(local(f, 0, 7.5, 5.2), facing(f), [1.2, 1.4, 0.4], metal(BRASS));
+  // Baúl grande: caja, tapa abombada, flejes y esquineros de hierro, y una cerradura de bronce.
+  c.box(local(f, 0, 5.5, 0), facing(f), [10, 5.5, 6.5], wood);
+  c.box(local(f, 0, 0.6, 0), facing(f), [10.4, 0.6, 6.9], solid(DARK_WOOD));
+  // Tapa levemente abovedada: tres escalones de tablas, cada uno más angosto.
+  const lid: readonly [number, number, number][] = [
+    [11.6, 0.9, 6.9],
+    [13.2, 0.8, 5.6],
+    [14.5, 0.6, 3.8],
+  ];
+  for (const [y, h, d] of lid) c.box(local(f, 0, y, 0), facing(f), [10.3, h, d], wood);
+  // Flejes de hierro que abrazan la caja y la tapa, y esquineros.
+  for (const sx of [-6.5, 0, 6.5]) {
+    c.box(local(f, sx, 5.5, 0), facing(f), [0.8, 5.6, 6.8], metal(IRON));
+    for (const [y, h, d] of lid)
+      c.box(local(f, sx, y, 0), facing(f), [0.8, h + 0.1, d + 0.15], metal(IRON));
+  }
+  for (const sx of [-9.6, 9.6])
+    for (const fz of [-6.2, 6.2])
+      c.box(local(f, sx, 5.5, fz), facing(f), [0.7, 5.7, 0.7], metal(IRON));
+  c.box(local(f, 0, 9, 6.7), facing(f), [1.6, 2, 0.5], metal(BRASS));
+  c.sphere(local(f, 0, 8.6, 7.2), 0.5, solid(ramp([30, 24, 18])));
+  // Asas a los costados.
+  for (const sx of [-10.6, 10.6])
+    c.limb(local(f, sx, 7, -2), local(f, sx, 7, 2), 0.5, 0.5, metal(IRON));
 };
 
 /** Armero: bastidor con lanzas, espadas y un escudo. */
@@ -2220,20 +2302,43 @@ const armorStand: Model = (c) => {
   c.box([0, 30, 3.3], axesAlong([0, 0, 1]), [2.6, 0.4, 0.4], solid(ramp([30, 30, 34])));
 };
 
-/** Cama: armazón de madera, colchón, frazada y almohada. */
-const bed: Model = (c, variant) => {
-  const f: Vec3 = variant === 1 ? [1, 0, 0] : [0, 0, 1];
-  c.box(local(f, 0, 3.4, 0), facing(f), [7, 3.4, 13], planks(FURNITURE, 2, 4));
-  c.box(local(f, 0, 9, -13), facing(f), [7.4, 9, 1], planks(DARK_WOOD, 0, 3));
-  c.box(local(f, 0, 7.6, 0), facing(f), [6.4, 1.6, 12.4], solid(LINEN_WHITE));
-  const blanket =
-    [ramp([150, 40, 44]), ramp([50, 80, 140]), ramp([70, 110, 60])][variant % 3] ??
-    ramp([150, 40, 44]);
-  c.box(local(f, 0, 9.4, 3.4), facing(f), [6.8, 0.6, 9], (s) =>
-    tone(blanket, s.light, Math.floor((s.p[0] + s.p[2] + 99) / 3) % 2 === 0 ? 0 : -1),
-  );
-  c.ellipsoid(local(f, 0, 10.2, -9.6), facing(f), [4.4, 1.6, 2.2], solid(LINEN_WHITE, 1));
-};
+/** Cama: armazón de madera con postes torneados, colchón, frazada y almohada (de una plaza o de dos). */
+function bedOf(width: number): Model {
+  return (c, variant) => {
+    const f: Vec3 = variant === 1 ? [1, 0, 0] : [0, 0, 1];
+    const half = width / 2;
+    c.box(local(f, 0, 3.4, 0), facing(f), [half, 3.4, 13], planks(FURNITURE, 2, 4));
+    // Cabecera alta con dos postes y una tabla tallada; los pies, más bajos.
+    c.box(local(f, 0, 10, -13), facing(f), [half + 0.4, 7, 1], planks(DARK_WOOD, 0, 3));
+    c.box(local(f, 0, 6.5, 13), facing(f), [half + 0.4, 3, 0.8], planks(DARK_WOOD, 0, 3));
+    for (const sx of [-half - 0.4, half + 0.4]) {
+      c.limb(local(f, sx, 0, -13), local(f, sx, 19.5, -13), 1, 1, solid(DARK_WOOD));
+      c.sphere(local(f, sx, 20.3, -13), 1.2, solid(DARK_WOOD, 1));
+      c.limb(local(f, sx, 0, 13), local(f, sx, 11, 13), 0.9, 0.9, solid(DARK_WOOD));
+      c.sphere(local(f, sx, 11.7, 13), 1, solid(DARK_WOOD, 1));
+    }
+    c.box(local(f, 0, 7.6, 0), facing(f), [half - 0.6, 1.6, 12.4], solid(LINEN_WHITE));
+    const blanket =
+      [ramp([150, 40, 44]), ramp([50, 80, 140]), ramp([70, 110, 60])][variant % 3] ??
+      ramp([150, 40, 44]);
+    // Frazada a cuadros con el borde doblado.
+    c.box(local(f, 0, 9.4, 3.4), facing(f), [half - 0.2, 0.6, 9], (s) =>
+      tone(blanket, s.light, Math.floor((s.p[0] + s.p[2] + 99) / 3) % 2 === 0 ? 0 : -1),
+    );
+    c.box(local(f, 0, 9.6, -5.4), facing(f), [half - 0.2, 0.7, 1], solid(LINEN_WHITE, 1));
+    // Una almohada por persona.
+    const pillows = width > 16 ? [-half / 2, half / 2] : [0];
+    for (const sx of pillows)
+      c.ellipsoid(
+        local(f, sx, 10.2, -9.6),
+        facing(f),
+        [width > 16 ? 4.2 : 4.4, 1.6, 2.2],
+        solid(LINEN_WHITE, 1),
+      );
+  };
+}
+const bed = bedOf(14);
+const doubleBed = bedOf(24);
 
 /** Hogar: chimenea de piedra con el fuego encendido y leños. */
 const hearth: Model = (c) => {
@@ -3464,7 +3569,13 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   ankh: { model: ankh, shadow: [12, 6] },
   menhir: { model: menhir, shadow: [20, 9] },
   forge: { model: forge, shadow: [20, 8] },
-  anvil: { model: anvil, shadow: [14, 6] },
+  'small-forge': { model: smallForge, shadow: [16, 7] },
+  'great-forge': {
+    model: greatForge,
+    shadow: [44, 18],
+    frame: { width: 200, height: 200, ground: { x: 100, y: 172 } },
+  },
+  anvil: { model: anvil, shadow: [15, 6] },
   'cave-wall': { model: caveWall },
   'ice-wall': { model: iceWall },
   'ice-crystal': { model: iceCrystal, shadow: [9, 4] },
@@ -3633,10 +3744,11 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   table: { model: table, shadow: [14, 6] },
   stool: { model: stool, shadow: [6, 3] },
   counter: { model: counter, shadow: [12, 5] },
-  chest: { model: chest, shadow: [11, 5] },
+  chest: { model: chest, shadow: [13, 6] },
   'weapon-rack': { model: weaponRack, shadow: [14, 5] },
   'armor-stand': { model: armorStand, shadow: [8, 3] },
   bed: { model: bed, shadow: [16, 7] },
+  'double-bed': { model: doubleBed, shadow: [20, 8] },
   hearth: { model: hearth, shadow: [16, 6] },
   keg: { model: keg, shadow: [11, 5] },
   'chair-n': { model: (c) => chair(c, [0, 0, -1]), shadow: [7, 3] },
