@@ -292,9 +292,9 @@ export class GameSession {
     worldNpcs.busy = () => worldCombat.isPicking;
     const worldCorpses = new WorldCorpses(this.game, renderer, tooltip);
     const worldDoors = new WorldDoors(this.game, renderer, tooltip);
-    const worldContainers = new WorldContainers(this.game, renderer, tooltip);
     const confirmDialog = new ConfirmDialog();
     this.hosts.ui.append(confirmDialog.element);
+    const worldContainers = new WorldContainers(this.game, renderer, tooltip, confirmDialog);
     // El seguro: antes de lastimar a un inocente, la advertencia.
     this.game.on('safetyPrompt', ({ name, accept }) =>
       confirmDialog.ask(

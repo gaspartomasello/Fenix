@@ -59,7 +59,7 @@ export class WorldFurniture {
       'Es un mueble de tu casa: podés girarlo o guardarlo en la mochila.',
       'Girar',
       () => this.game.furnitureAction(found.at, 'turn'),
-      { label: 'Guardar', run: () => this.game.furnitureAction(found.at, 'pickUp') },
+      [{ label: 'Guardar', run: () => this.game.furnitureAction(found.at, 'pickUp') }],
     );
   }
 

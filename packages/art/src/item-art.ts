@@ -4,6 +4,7 @@ import { SPELLS } from '@fenix/shared/magic/spell-catalog';
 import { PixelImage, hexToRgb, type Rgb } from './pixel-art';
 import { drawPixelPitchfork } from './pixel-pitchfork-art';
 import { drawStatic } from './static-art';
+import { CHEST_ART } from '@fenix/shared/housing/furniture';
 import { drawPixelSickle } from './pixel-sickle-art';
 import {
   clipping,
@@ -330,7 +331,7 @@ function houseDeed(c: VolumeCanvas, seal: Ramp, lot = false): void {
 }
 
 /** Los objetos que tienen modelo propio (los muebles usan el dibujo de su pieza). */
-type ModeledKind = Exclude<BaseItemKind, `furniture-${string}`>;
+type ModeledKind = Exclude<BaseItemKind, `furniture-${string}` | `placed-chest-${string}`>;
 
 const MODELS: Readonly<Record<ModeledKind, Model>> = {
   gold(c) {
@@ -2544,7 +2545,7 @@ export function drawItem(
 ): PixelImage {
   if (kind === 'pitchfork') return drawPixelPitchfork(style);
   if (kind === 'sickle') return drawPixelSickle(style);
-  const piece = ITEMS[kind].furniture;
+  const piece = ITEMS[kind].furniture ?? CHEST_ART[kind];
   if (piece)
     return fitted(drawStatic(piece, 0), ITEM_ART_SIZE * (style === 'icon' ? ICON_DETAIL : 1));
   // Los íconos (mochila, ventanas) se dibujan al doble de resolución: más detalle.

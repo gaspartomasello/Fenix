@@ -1,4 +1,4 @@
-import { FURNITURE_KINDS, ITEMS, type BaseItemKind } from '../items/item-catalog';
+import { FURNITURE_KINDS, ITEMS, type BaseItemKind, type ItemKind } from '../items/item-catalog';
 import type { StaticKind } from '../world/statics';
 import { HOUSE_PLANS, type HouseKind } from './houses';
 
@@ -39,3 +39,28 @@ export function furnitureLimit(kind: HouseKind): number {
 
 /** A cuántos tiles de uno se puede poner un mueble. */
 export const FURNITURE_REACH = 2;
+
+/**
+ * Los cofres fijos de las casas (el de la casa y los que se ponen): se dibujan
+ * como el baúl de los muebles, mirando hacia su lado.
+ */
+export const CHEST_ART: Readonly<Partial<Record<ItemKind, StaticKind>>> = {
+  'house-chest': 'chest-x',
+  'placed-chest-x': 'chest-x',
+  'placed-chest-y': 'chest-y',
+};
+
+/** El cofre (que guarda cosas) en que se convierte un mueble al ponerlo, si es un cofre. */
+export function placedChestOf(piece: StaticKind): BaseItemKind | null {
+  return piece === 'chest-x' ? 'placed-chest-x' : piece === 'chest-y' ? 'placed-chest-y' : null;
+}
+
+/** Un cofre puesto, girado un cuarto de vuelta. */
+export function turnedChest(kind: BaseItemKind): BaseItemKind {
+  return kind === 'placed-chest-x' ? 'placed-chest-y' : 'placed-chest-x';
+}
+
+/** ¿Es un cofre puesto por el dueño (no el que trae la casa)? */
+export function isPlacedChest(kind: ItemKind): boolean {
+  return kind === 'placed-chest-x' || kind === 'placed-chest-y';
+}
