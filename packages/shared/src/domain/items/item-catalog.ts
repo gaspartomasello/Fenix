@@ -1,6 +1,7 @@
 import { SPELLS, SPELL_KEYS, type SpellKey } from '../magic/spell-catalog';
 import type { SkillKey } from '../skills/skill-catalog';
 import { HOUSE_PLANS, type HouseKind } from '../housing/houses';
+import type { StaticKind } from '../world/statics';
 import type { EquipmentSlot } from './equipment';
 
 /** Tipos de objeto del juego. La clave es la que se usa en mapas y en la red. */
@@ -268,6 +269,18 @@ export const BASE_ITEM_KINDS = [
   'iron-ingot',
   'cloth',
   'hides',
+  // Muebles (carpintería): se llevan en la mochila y se ponen en la casa
+  'furniture-stool',
+  'furniture-chair',
+  'furniture-table',
+  'furniture-bench',
+  'furniture-bookshelf',
+  'furniture-crate',
+  'furniture-chest',
+  'furniture-throne',
+  'furniture-wardrobe',
+  'furniture-bed',
+  'furniture-double-bed',
 ] as const;
 
 export type BaseItemKind = (typeof BASE_ITEM_KINDS)[number];
@@ -342,6 +355,8 @@ export interface ItemDefinition {
   readonly light?: number;
   /** Se puede teñir (tela y cuero). */
   readonly dyeable?: boolean;
+  /** Mueble: la pieza que queda puesta al soltarlo en la casa. */
+  readonly furniture?: StaticKind;
 }
 
 type Spec = Omit<ItemDefinition, 'kind' | 'stackable' | 'use'> &
@@ -919,6 +934,33 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
 
   logs: { name: 'tronco', plural: 'troncos', article: 'un', stackable: true },
   boards: { name: 'tabla', plural: 'tablas', article: 'una', stackable: true },
+  'furniture-stool': { name: 'banqueta', plural: 'banquetas', article: 'una', furniture: 'stool' },
+  'furniture-chair': { name: 'silla', plural: 'sillas', article: 'una', furniture: 'chair-s' },
+  'furniture-table': { name: 'mesa', plural: 'mesas', article: 'una', furniture: 'table' },
+  'furniture-bench': { name: 'banco', plural: 'bancos', article: 'un', furniture: 'bench-x' },
+  'furniture-bookshelf': {
+    name: 'biblioteca',
+    plural: 'bibliotecas',
+    article: 'una',
+    furniture: 'bookshelf-x',
+  },
+  'furniture-crate': { name: 'cajón', plural: 'cajones', article: 'un', furniture: 'crate' },
+  'furniture-chest': { name: 'cofre', plural: 'cofres', article: 'un', furniture: 'chest' },
+  'furniture-throne': { name: 'trono', plural: 'tronos', article: 'un', furniture: 'throne' },
+  'furniture-wardrobe': { name: 'ropero', plural: 'roperos', article: 'un', furniture: 'wardrobe' },
+  'furniture-bed': {
+    name: 'cama de una plaza',
+    plural: 'camas de una plaza',
+    article: 'una',
+    furniture: 'bed',
+  },
+  'furniture-double-bed': {
+    name: 'cama de dos plazas',
+    plural: 'camas de dos plazas',
+    article: 'una',
+    furniture: 'double-bed',
+  },
+
   'stone-block': {
     name: 'bloque de piedra',
     plural: 'bloques de piedra',
@@ -1014,6 +1056,11 @@ export const ITEMS: Readonly<Record<ItemKind, ItemDefinition>> = {
   ) as Record<BaseItemKind, ItemDefinition>),
   ...scrolls,
 };
+
+/** Los muebles que se fabrican: el objeto y la pieza que queda puesta. */
+export const FURNITURE_KINDS: readonly BaseItemKind[] = BASE_ITEM_KINDS.filter(
+  (kind) => BASE[kind].furniture !== undefined,
+);
 
 export function isItemKind(value: unknown): value is ItemKind {
   return typeof value === 'string' && (ITEM_KINDS as readonly string[]).includes(value);
