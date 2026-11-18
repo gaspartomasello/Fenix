@@ -1,3 +1,4 @@
+import { weaponByKind } from '@fenix/shared/combat/weapons';
 import type { Appearance } from '@fenix/shared/character/appearance';
 import type { NpcRole } from '@fenix/shared/economy/vendors';
 import type { Direction } from '@fenix/shared/geometry/direction';
@@ -112,6 +113,12 @@ const WOOD = ramp([118, 78, 44]);
 const LEATHER_DARK = ramp([92, 60, 36]);
 const LINEN = ramp([214, 206, 186]);
 const DARK_STEEL = ramp([96, 102, 114]);
+/** Armas de dos manos que se agarran con las dos (no el arco ni las ballestas, que se apuntan). */
+function gripsWithBothHands(kind: ItemKind | undefined): boolean {
+  return kind !== undefined && ITEMS[kind].twoHanded === true && !weaponByKind(kind)?.range;
+}
+/** Hierro de herramienta de campo (la horca), más oscuro que el acero. */
+const DARK_IRON = ramp([70, 72, 80]);
 
 /** De qué está hecha cada pieza de armadura (decide cómo se ve puesta). */
 type Stuff = 'leather' | 'studded' | 'ringmail' | 'chain' | 'plate' | 'bone' | 'segmented';
@@ -341,6 +348,7 @@ function drawFigure(
       equipment.rightHand !== undefined && !leftWeapon,
       (canvas.portrait ? PORTRAIT_BUILDS : BUILDS)[female ? 'female' : 'male'],
       ride?.seat,
+      gripsWithBothHands(equipment.rightHand),
     ),
     palette: paletteFor(appearance, equipment),
     equipment,
@@ -1714,6 +1722,7 @@ const POLEARMS: ReadonlySet<ItemKind> = new Set<ItemKind>([
   'spear',
   'short-spear',
   'war-fork',
+  'pitchfork',
   'bardiche',
   'quarterstaff',
 ]);
@@ -1733,6 +1742,8 @@ const STANCES: Partial<Record<ItemKind, Vec3>> = {
     ]),
   ),
   katana: [0.12, -0.45, 0.88],
+  // La hoz cuelga junto al muslo, con la media luna hacia adelante.
+  sickle: [0.18, -0.9, 0.42],
   dagger: [0.1, -0.85, 0.5],
   kryss: [0.1, -0.85, 0.5],
   ...Object.fromEntries(
@@ -1798,6 +1809,33 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
       [along(10), along(17.5), add(along(19), scale(side, 3.2)), add(along(12), scale(side, 3.8))],
       metal(STEEL),
     );
+    return;
+  }
+  if (kind === 'pitchfork') {
+    // Horca de campo: asta larga y fina, un casquillo de hierro y tres dientes oscuros
+    // que se abren un poco y se curvan hacia adelante en la punta (como el ícono).
+    const forward = normalize(cross(side, dir));
+    canvas.limb(along(-10), along(17), 0.5, 0.5, solid(WOOD));
+    canvas.limb(along(16.4), along(17.6), 0.7, 0.6, metal(DARK_IRON));
+    canvas.limb(
+      add(along(17.6), scale(side, -1.9)),
+      add(along(17.6), scale(side, 1.9)),
+      0.45,
+      0.45,
+      metal(DARK_IRON),
+    );
+    for (const k of [-1, 0, 1]) {
+      const root = add(along(17.6), scale(side, 1.7 * k));
+      const bend = add(add(along(22), scale(side, 2.1 * k)), scale(forward, 0.4));
+      canvas.limb(root, bend, 0.4, 0.3, metal(DARK_IRON));
+      canvas.limb(
+        bend,
+        add(add(along(24), scale(side, 2.2 * k)), scale(forward, 1.3)),
+        0.3,
+        0.08,
+        metal(DARK_IRON),
+      );
+    }
     return;
   }
   if (kind === 'war-fork' || kind === 'short-spear') {
@@ -1996,6 +2034,26 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
   };
   const { length, width, guard } = blades[kind] ?? { length: 13, width: 0.85, guard: 2.4 };
   const katana = kind === 'katana';
+  if (kind === 'sickle') {
+    // Hoz: mango corto de madera y una hoja en media luna que sale hacia adelante
+    // y vuelve con la punta hacia el mango (como el ícono).
+    canvas.limb(along(-3.4), along(2.6), 0.8, 0.75, grip);
+    canvas.sphere(along(-3.6), 0.65, metal(DARK_IRON));
+    const radius = 4.6;
+    const center = along(2.6 + radius);
+    const rim = (t: number): Vec3 =>
+      add(center, add(scale(dir, -radius * Math.cos(t)), scale(up, radius * Math.sin(t) * 1.15)));
+    const steps = 9;
+    const last = (225 * Math.PI) / 180;
+    for (let i = 0; i < steps; i++) {
+      const t0 = (last * i) / steps;
+      const t1 = (last * (i + 1)) / steps;
+      const w0 = 1.15 - (0.95 * i) / steps;
+      const w1 = 1.15 - (0.95 * (i + 1)) / steps;
+      canvas.limb(rim(t0), rim(t1), w0, w1, metal(STEEL));
+    }
+    return;
+  }
   if (kind === 'scimitar' || kind === 'cutlass') {
     // Hoja curva que se ensancha antes de la punta.
     canvas.limb(along(-2), along(1.2), 0.8, 0.8, grip);

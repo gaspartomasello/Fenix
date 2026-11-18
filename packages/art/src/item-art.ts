@@ -2,6 +2,8 @@ import { weaponByKind } from '@fenix/shared/combat/weapons';
 import { ITEMS, type BaseItemKind, type ItemKind } from '@fenix/shared/items/item-catalog';
 import { SPELLS } from '@fenix/shared/magic/spell-catalog';
 import { hexToRgb, type PixelImage, type Rgb } from './pixel-art';
+import { drawPixelPitchfork } from './pixel-pitchfork-art';
+import { drawPixelSickle } from './pixel-sickle-art';
 import {
   clipping,
   Camera,
@@ -1317,6 +1319,19 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     c.limb(at(0, -1.4), at(0, 1.4), 0.5, 0.5, metal(DARK_STEEL));
     for (const out of [-1.2, 1.2]) c.limb(at(0, out), at(4.6, out), 0.4, 0.12, metal(STEEL));
   },
+  pitchfork(c) {
+    // Respaldo del modelo volumétrico; suelo e inventario usan la imagen exacta.
+    const at = haft(c, alongPole(10), alongPole(-8), 0.55);
+    c.limb(at(0, -1.4), at(0, 1.4), 0.5, 0.5, metal(DARK_STEEL));
+    for (const out of [-1.2, 0, 1.2]) c.limb(at(0, out), at(4.6, out), 0.4, 0.12, metal(STEEL));
+  },
+  sickle(c) {
+    // Respaldo volumétrico: mochila y suelo muestran el sprite original.
+    c.limb([-3.3, 0.7, 3], [0.6, 0.7, -0.2], 0.6, 0.5, solid(WOOD));
+    c.limb([0.6, 0.7, -0.2], [3.1, 0.7, -2.8], 0.7, 0.75, metal(STEEL));
+    c.limb([3.1, 0.7, -2.8], [5.1, 0.7, -2.6], 0.75, 0.55, metal(STEEL));
+    c.limb([5.1, 0.7, -2.6], [5.4, 0.7, -0.2], 0.55, 0.08, metal(STEEL));
+  },
   'short-spear'(c) {
     // De pie, más corta que la lanza.
     const at = haft(c, alongPole(8), alongPole(-7), 0.55);
@@ -2523,6 +2538,8 @@ export function drawItem(
   amount = 1,
   hue?: number,
 ): PixelImage {
+  if (kind === 'pitchfork') return drawPixelPitchfork(style);
+  if (kind === 'sickle') return drawPixelSickle(style);
   // Los íconos (mochila, ventanas) se dibujan al doble de resolución: más detalle.
   const detail = style === 'icon' ? ICON_DETAIL : 1;
   const definition = ITEMS[kind];
