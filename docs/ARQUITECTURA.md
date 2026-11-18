@@ -201,6 +201,11 @@ objetivo y turno de golpe. El cliente solo elige objetivo (`attack`); el golpe l
   gastan el maná del hechizo, lo recuperan de a poco y, si reciben un golpe mientras conjuran,
   pierden la concentración y el hechizo falla;
 - resuelve golpes con `resolveAttack` (acierto por destreza, daño del arma, la armadura absorbe);
+- cada cuánto pega un jugador lo decide `swingDelayMs` (`shared/combat/swing-speed.ts`), como en
+  Sphere: `15000 ÷ ((destreza + 100) × velocidad del arma)`. El `swingMs` de cada arma es lo que
+  tarda con 40 de destreza (un personaje nuevo); con 100 pega un 30 % más rápido, y nunca más de
+  un golpe por segundo. Como en OSI, cansado pega más lento: la destreza cuenta en proporción a la
+  energía que le queda. Las criaturas pegan al ritmo de su catálogo;
   el arco dispara desde lejos y gasta una flecha por tiro;
 - regenera vitales, guarda el botín dentro del cuerpo de las criaturas muertas y las hace
   reaparecer a los 30 s de que el cuerpo se deshaga;

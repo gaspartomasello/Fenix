@@ -1,5 +1,6 @@
+import { swingDelayMs } from '@fenix/shared/combat/swing-speed';
 import type { Attributes, Vitals } from '@fenix/shared/combat/vitals';
-import { armorOf, weaponOf } from '@fenix/shared/combat/weapons';
+import { armorOf, weaponOf, type Weapon } from '@fenix/shared/combat/weapons';
 import { ITEMS } from '@fenix/shared/items/item-catalog';
 import { describeWeight, encumbrance } from '@fenix/shared/items/weight';
 import type { EquipmentLook } from '@fenix/shared/protocol/messages';
@@ -72,7 +73,7 @@ export class StatusWindow {
       ['Arma', weaponName],
       [
         'Daño',
-        `${weapon.minDamage}–${weapon.maxDamage} · un golpe cada ${(weapon.swingMs / 1000).toLocaleString('es-AR')} s`,
+        `${weapon.minDamage}–${weapon.maxDamage} · un golpe cada ${seconds(swingFor(weapon, info))} s`,
       ],
       ['Peso', describeWeight(info.weight, info.maxWeight)],
       ['Oro', info.gold.toLocaleString('es-AR')],
@@ -92,4 +93,16 @@ export class StatusWindow {
     );
     this.weightBar.hidden = info.maxWeight === null;
   }
+}
+
+/** Cada cuánto pega según la destreza y la energía que le queda (la misma regla del servidor). */
+function swingFor(weapon: Weapon, info: StatusInfo): number {
+  if (!info.attributes) return weapon.swingMs;
+  const energy =
+    info.vitals && info.vitals.maxStamina > 0 ? info.vitals.stamina / info.vitals.maxStamina : 1;
+  return swingDelayMs(weapon, info.attributes.dexterity, energy);
+}
+
+function seconds(ms: number): string {
+  return (ms / 1000).toLocaleString('es-AR', { maximumFractionDigits: 2 });
 }
