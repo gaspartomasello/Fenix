@@ -85,8 +85,8 @@ export const STATION_NAMES: Readonly<Record<CraftStation, string>> = {
   heat: 'al lado de un fuego, como el de una forja',
 };
 export const STATION_STATICS: Readonly<Record<CraftStation, readonly (readonly StaticKind[])[]>> = {
-  smithy: [['anvil'], ['forge']],
-  heat: [['forge']],
+  smithy: [['anvil'], ['forge', 'small-forge', 'great-forge']],
+  heat: [['forge', 'small-forge', 'great-forge']],
 };
 
 export interface Material {

@@ -1905,8 +1905,31 @@ function furnishShop(plan: Plan, role: NpcRole, room: Room, random: SeededRandom
       break;
     }
     case 'blacksmith': {
-      put(room.x0, room.y0, 'forge');
-      put(room.x0 + 2, room.y0 + 1, 'anvil');
+      // La forja según el taller: la gran forja (2 × 2) si entra, la de siempre, o una chica.
+      const wide = room.x1 - room.x0 >= 5 && room.y1 - room.y0 >= 3;
+      const great =
+        wide &&
+        [0, 1].every((dx) =>
+          [0, 1].every(
+            (dy) =>
+              plan.isFree(room.x0 + dx, room.y0 + dy) &&
+              !keep.has(`${room.x0 + dx},${room.y0 + dy}`),
+          ),
+        );
+      if (great) {
+        plan.put(room.x0, room.y0, 'great-forge');
+        // Ocupa también los otros tres tiles: ahí no va otro mueble.
+        for (const [dx, dy] of [
+          [1, 0],
+          [0, 1],
+          [1, 1],
+        ] as const)
+          keep.add(`${room.x0 + dx},${room.y0 + dy}`);
+        put(room.x0 + 3, room.y0 + 1, 'anvil');
+      } else {
+        put(room.x0, room.y0, room.x1 - room.x0 >= 4 ? 'forge' : 'small-forge');
+        put(room.x0 + 2, room.y0 + 1, 'anvil');
+      }
       put(room.x1, room.y0, 'weapon-rack');
       put(room.x1, room.y1, 'armor-stand');
       put(room.x1 - 1, room.y1, 'armor-stand');
@@ -2086,7 +2109,8 @@ function furnishHome(plan: Plan, room: Room, random: SeededRandom, style: Style)
   const keep = reserved(room);
   const put = (x: number, y: number, kind: StaticKind): boolean =>
     furniture(plan, keep, x, y, kind);
-  put(room.x0, room.y0, 'bed');
+  // Las casas de familia tienen cama de dos plazas; los que viven solos, de una.
+  put(room.x0, room.y0, random.next() < 0.5 ? 'double-bed' : 'bed');
   put(room.x0 + 1, room.y0, 'candle-table');
   put(room.x1, room.y0, random.next() < 0.5 ? 'chest' : 'wardrobe');
   if (room.x1 - room.x0 >= 4)

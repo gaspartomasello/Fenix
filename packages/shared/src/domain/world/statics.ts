@@ -62,6 +62,9 @@ export const STATIC_KINDS = [
   // Piedras paradas del círculo que rodea a cada portal lunar.
   'menhir',
   'forge',
+  // Forja chica (un fogón con fuelle) y gran forja (ocupa 2 × 2 tiles).
+  'small-forge',
+  'great-forge',
   'anvil',
   'cave-wall',
   'cave-entrance',
@@ -163,6 +166,8 @@ export const STATIC_KINDS = [
   'weapon-rack',
   'armor-stand',
   'bed',
+  // Cama de dos plazas (la otra es de una).
+  'double-bed',
   'hearth',
   'keg',
   'chair-n',
@@ -475,6 +480,8 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   ankh: define('ankh', 'cruz de la resurrección', true, 3),
   menhir: define('menhir', 'piedra parada', true),
   forge: define('forge', 'forja', true, 3),
+  'small-forge': define('small-forge', 'forja chica', true, 3),
+  'great-forge': define('great-forge', 'gran forja', true, 4, 2),
   anvil: define('anvil', 'yunque', true),
   'cave-wall': define('cave-wall', 'pared de roca', true),
   'cave-entrance': define('cave-entrance', 'entrada a la cueva', false),
@@ -572,7 +579,8 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   chest: define('chest', 'cofre', true),
   'weapon-rack': define('weapon-rack', 'armero', true),
   'armor-stand': define('armor-stand', 'maniquí con armadura', true),
-  bed: define('bed', 'cama', true),
+  bed: define('bed', 'cama de una plaza', true),
+  'double-bed': define('double-bed', 'cama de dos plazas', true),
   hearth: define('hearth', 'hogar', true, 4),
   keg: define('keg', 'tonel', true),
   'chair-n': define('chair-n', 'silla', false),
