@@ -1,6 +1,17 @@
 import { Direction } from '@fenix/shared/geometry/direction';
 import type { ItemKind } from '@fenix/shared/items/item-catalog';
-import { Camera, VolumeCanvas, add, normalize, pitch, scale, sub, yaw, type Vec3 } from './volume';
+import {
+  Camera,
+  VolumeCanvas,
+  add,
+  cross,
+  normalize,
+  pitch,
+  scale,
+  sub,
+  yaw,
+  type Vec3,
+} from './volume';
 
 /**
  * Tamaño del sprite en pixeles. Se dibuja al doble de detalle que el resto
@@ -92,6 +103,7 @@ const THRUSTING: ReadonlySet<ItemKind> = new Set<ItemKind>([
   'spear',
   'short-spear',
   'war-fork',
+  'pitchfork',
 ]);
 
 /** Armas que se llevan en la mano izquierda (el arco, como en UO). */
@@ -672,6 +684,65 @@ const FOREARM = 8;
 /** Ángulo extra con el que la mano sostiene el arma respecto del antebrazo. */
 const GRIP = 0.15;
 
+/**
+ * ¿Las dos manos van al arma? En guardia y al golpear (tajo o estocada); no al
+ * descansar, al caminar ni en los gestos (hechizo, encogerse de hombros…).
+ */
+function bothHands(frame: CharacterFrame, guarding: boolean): boolean {
+  return guarding || (typeof frame === 'string' && /^(slash|thrust)-/.test(frame));
+}
+
+/** Hacia dónde apunta un arma de dos manos en guardia: cruzada, de la cadera derecha al hombro izquierdo. */
+const TWO_HANDED_GUARD: Vec3 = [-0.55, 0.72, 0.42];
+/** Dónde agarra la mano izquierda: tantos px más adelante que la derecha, sobre el asta. */
+const SECOND_GRIP = 5.5;
+
+type ArmJoints = { shoulder: Vec3; elbow: Vec3; hand: Vec3; weaponDir: Vec3 };
+
+/**
+ * Arma de dos manos: en guardia va cruzada en diagonal delante del cuerpo; la
+ * mano izquierda se estira hasta el asta (el codo se acomoda solo, hacia abajo
+ * y afuera) y la acompaña también al golpear.
+ */
+function twoHandedGrip(
+  right: ArmJoints,
+  left: ArmJoints,
+  chest: Basis,
+  guarding: boolean,
+  upper: number,
+  fore: number,
+): Record<1 | -1, ArmJoints> {
+  const held = guarding ? { ...right, weaponDir: normalize(chest.dir(TWO_HANDED_GUARD)) } : right;
+  const target = add(held.hand, scale(held.weaponDir, SECOND_GRIP));
+  const reach = reachTo(left.shoulder, target, upper, fore, chest.dir([-1, -1, -0.3]));
+  return { 1: held, [-1]: { ...left, ...reach } };
+}
+
+/**
+ * Brazo de dos huesos que lleva la mano hasta `target` (si no llega, se estira
+ * hacia ahí); `hint` dice hacia dónde se dobla el codo.
+ */
+function reachTo(
+  shoulder: Vec3,
+  target: Vec3,
+  upper: number,
+  fore: number,
+  hint: Vec3,
+): { elbow: Vec3; hand: Vec3 } {
+  const toTarget = sub(target, shoulder);
+  const distance = Math.min(Math.hypot(...toTarget), (upper + fore) * 0.999);
+  const u = normalize(toTarget);
+  const hand = add(shoulder, scale(u, distance));
+  const along = (upper * upper - fore * fore + distance * distance) / (2 * distance);
+  const height = Math.sqrt(Math.max(0, upper * upper - along * along));
+  // La parte del `hint` perpendicular al brazo: para ese lado sale el codo.
+  const dot = hint[0] * u[0] + hint[1] * u[1] + hint[2] * u[2];
+  let bend = sub(hint, scale(u, dot));
+  if (Math.hypot(...bend) < 1e-3) bend = normalize(cross(u, [0, 1, 0]));
+  const elbow = add(add(shoulder, scale(u, along)), scale(normalize(bend), height));
+  return { elbow, hand };
+}
+
 /** El brazo del arma en la ventana de personaje: el antebrazo hacia adelante. */
 const DISPLAY_ARMED_ARM: ArmPose = { raise: 0.22, spread: 0.3, bend: 1.05 };
 /** Hacia dónde apunta el arma en la ventana de personaje: arriba y un poco afuera y adelante. */
@@ -697,6 +768,8 @@ export function humanoidRig(
   armed: boolean,
   build: Build = BUILDS.male,
   seat?: Seat,
+  /** Arma de dos manos (no arco ni ballesta): en guardia y al golpear la agarran las dos. */
+  twoHanded = false,
 ): Rig {
   // Sentado en una silla: no es como ir montado, las piernas van juntas,
   // los muslos derechos hacia adelante, las canillas al piso y las manos en
@@ -801,15 +874,25 @@ export function humanoidRig(
     );
     return { shoulder, elbow, hand, weaponDir };
   };
-  const arms = {
+  const right =
     // En la ventana de personaje, con un arma: el antebrazo adelante y el arma
     // en alto, en diagonal hacia afuera (como en UO), para que se vea entera.
-    1:
-      frame === 'display' && armed
-        ? displayGrip(armFor(1, DISPLAY_ARMED_ARM), chest)
-        : armFor(1, pose.rightArm ?? defaultArm(1)),
-    [-1]: armFor(-1, pose.leftArm ?? defaultArm(-1)),
-  } as Rig['arms'];
+    frame === 'display' && armed
+      ? displayGrip(armFor(1, DISPLAY_ARMED_ARM), chest)
+      : armFor(1, pose.rightArm ?? defaultArm(1));
+  const left = armFor(-1, pose.leftArm ?? defaultArm(-1));
+  const arms = (
+    twoHanded && !seat && bothHands(frame, guarding)
+      ? twoHandedGrip(
+          right,
+          left,
+          chest,
+          guarding,
+          UPPER_ARM * k * armLength,
+          FOREARM * k * armLength,
+        )
+      : { 1: right, [-1]: left }
+  ) as Rig['arms'];
 
   const cycle = cyclePhase(frame);
   const running = cycle?.running === true;
