@@ -16,6 +16,14 @@ import {
 import { drawCreatureFrame } from './creature-art';
 import { creatureLayout } from './monster-art';
 import { ITEM_ART_SIZE, drawItem, itemVariant } from './item-art';
+import { CHEST_HEIGHT, CHEST_WIDTH, drawPixelChest } from './pixel-chest-art';
+import {
+  drawPixelBed,
+  drawPixelEasel,
+  drawPixelForge,
+  drawPixelSignHanger,
+  drawPixelWaterTrough,
+} from './pixel-reference-art';
 import {
   INVISIBLE_STATICS,
   STATIC_ART_HEIGHT,
@@ -57,6 +65,131 @@ describe('arte procedural (sin DOM)', () => {
       width: STATIC_ART_WIDTH,
       height: STATIC_ART_HEIGHT,
     });
+  });
+
+  it('las dos orientaciones del armario tienen siluetas distintas', () => {
+    expect(drawStatic('armoire-x', 0).data).not.toEqual(drawStatic('armoire-y', 0).data);
+  });
+
+  it('reproduce exactamente los píxeles del cofre adjuntado en piso y mochila', () => {
+    const original = drawPixelChest();
+    expect([original.width, original.height]).toEqual([36, 45]);
+    const checksum = original.data.reduce(
+      (hash, byte) => Math.imul(hash ^ byte, 16777619) >>> 0,
+      2166136261,
+    );
+    expect(checksum).toBe(149989901);
+    const inventory = drawItem('house-chest');
+    const world = drawStatic('chest', 0);
+    for (let y = 0; y < CHEST_HEIGHT; y++)
+      for (let x = 0; x < CHEST_WIDTH; x++) {
+        const i = (y * CHEST_WIDTH + x) * 4;
+        const inBag = (y * inventory.width + x + 4) * 4;
+        const onGround = ((y + 101) * world.width + x + 50) * 4;
+        expect(inventory.data.slice(inBag, inBag + 4)).toEqual(original.data.slice(i, i + 4));
+        if (original.data[i + 3] !== 0)
+          expect(world.data.slice(onGround, onGround + 4)).toEqual(original.data.slice(i, i + 4));
+      }
+  });
+
+  it('el cofre para la otra pared espeja los mismos píxeles', () => {
+    expect(drawItem('house-chest-y').data).toEqual(drawItem('house-chest').mirrored().data);
+  });
+
+  it('copia las dos forjas y el soporte sin alterar un píxel de las referencias', () => {
+    const originals = [
+      {
+        image: drawPixelForge('small'),
+        kind: 'forge-small' as const,
+        size: [34, 46],
+        hash: 3996936486,
+      },
+      { image: drawPixelForge('large'), kind: 'forge' as const, size: [78, 102], hash: 479252133 },
+      {
+        image: drawPixelSignHanger(),
+        kind: 'sign-hanger-x' as const,
+        size: [34, 37],
+        hash: 2267609558,
+      },
+    ];
+    for (const { image, kind, size, hash } of originals) {
+      expect([image.width, image.height]).toEqual(size);
+      expect(image.data.reduce((h, byte) => Math.imul(h ^ byte, 16777619) >>> 0, 2166136261)).toBe(
+        hash,
+      );
+      const world = drawStatic(kind, 0);
+      const frame = staticFrame(kind);
+      const x0 = frame.ground.x - Math.floor(image.width / 2);
+      const y0 = frame.ground.y - (kind.startsWith('forge') ? image.height : 66);
+      for (let y = 0; y < image.height; y++)
+        for (let x = 0; x < image.width; x++) {
+          const i = (y * image.width + x) * 4;
+          const j = ((y + y0) * world.width + x + x0) * 4;
+          expect(world.data.subarray(j, j + 4)).toEqual(image.data.subarray(i, i + 4));
+        }
+    }
+    expect(drawPixelSignHanger(true).data).toEqual(drawPixelSignHanger().mirrored().data);
+  });
+
+  it('conserva el atril original y refleja sus píxeles para la otra pared', () => {
+    const original = drawPixelEasel();
+    expect([original.width, original.height]).toEqual([37, 102]);
+    expect(original.data.reduce((h, byte) => Math.imul(h ^ byte, 16777619) >>> 0, 2166136261)).toBe(
+      4277617452,
+    );
+    expect(drawPixelEasel(true).data).toEqual(original.mirrored().data);
+    const world = drawStatic('easel-x', 0);
+    const flipped = drawStatic('easel-y', 0);
+    for (let y = 0; y < original.height; y++)
+      for (let x = 0; x < original.width; x++) {
+        const src = (y * original.width + x) * 4;
+        const dst = ((y + 44) * world.width + x + 50) * 4;
+        expect(world.data.subarray(dst, dst + 4)).toEqual(original.data.subarray(src, src + 4));
+        expect(flipped.data.subarray(dst, dst + 4)).toEqual(
+          original.data.subarray(
+            (y * original.width + 36 - x) * 4,
+            (y * original.width + 36 - x) * 4 + 4,
+          ),
+        );
+      }
+  });
+
+  it('conserva las camas originales y solo tiñe la manta de la cama doble', () => {
+    for (const [size, dimensions, checksum] of [
+      ['single', [66, 90], 835205598],
+      ['double', [85, 143], 420339739],
+    ] as const) {
+      const image = drawPixelBed(size);
+      expect([image.width, image.height]).toEqual(dimensions);
+      expect(image.data.reduce((h, byte) => Math.imul(h ^ byte, 16777619) >>> 0, 2166136261)).toBe(
+        checksum,
+      );
+      expect(drawPixelBed(size, true).data).toEqual(image.mirrored().data);
+    }
+    const natural = drawPixelBed('double');
+    const dyed = drawPixelBed('double', false, [180, 25, 35]);
+    expect(dyed.data).not.toEqual(natural.data);
+    const wood = (38 * natural.width + 30) * 4;
+    expect(dyed.data.subarray(wood, wood + 4)).toEqual(natural.data.subarray(wood, wood + 4));
+    expect(drawStatic('bed-double-y', 0, 0xb41923).data).not.toEqual(
+      drawStatic('bed-double-y', 0).data,
+    );
+  });
+
+  it('conserva los píxeles del bebedero y refleja la orientación opuesta', () => {
+    const original = drawPixelWaterTrough();
+    expect([original.width, original.height]).toEqual([67, 78]);
+    expect(original.data.reduce((h, byte) => Math.imul(h ^ byte, 16777619) >>> 0, 2166136261)).toBe(
+      4070907827,
+    );
+    expect(drawPixelWaterTrough(true).data).toEqual(original.mirrored().data);
+    const world = drawStatic('water-trough-x', 0);
+    for (let y = 0; y < original.height; y++)
+      for (let x = 0; x < original.width; x++) {
+        const src = (y * original.width + x) * 4;
+        const dst = ((y + 68) * world.width + x + 35) * 4;
+        expect(world.data.subarray(dst, dst + 4)).toEqual(original.data.subarray(src, src + 4));
+      }
   });
 
   it('dibuja el ícono de cada objeto', () => {

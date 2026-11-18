@@ -41,14 +41,14 @@ function extent(kind: StaticKind): { left: number; right: number; top: number; b
 
 /** Punto de apoyo: el centro de la base (un objeto de 2 × 2 se apoya entre sus cuatro tiles). */
 function footing(placement: StaticPlacement): FractionalPosition {
-  const half = (STATICS[placement.kind].footprint - 1) / 2;
-  return { x: placement.x + half, y: placement.y + half };
+  const { footprint, footprintY = footprint } = STATICS[placement.kind];
+  return { x: placement.x + (footprint - 1) / 2, y: placement.y + (footprintY - 1) / 2 };
 }
 
 /** El tile de más adelante de la base: ahí se ordena el dibujo. */
 function front(placement: StaticPlacement): FractionalPosition {
-  const last = STATICS[placement.kind].footprint - 1;
-  return { x: placement.x + last, y: placement.y + last };
+  const { footprint, footprintY = footprint } = STATICS[placement.kind];
+  return { x: placement.x + footprint - 1, y: placement.y + footprintY - 1 };
 }
 
 /** Caja del personaje en pantalla respecto de sus pies (para la transparencia). */
@@ -165,7 +165,11 @@ export class StaticLayer {
     for (const placement of chunk.placements) {
       const kind = this.map.isDoorOpen(placement) ? DOORS[placement.kind] : undefined;
       if (
-        !this.textures.prepareStatic(kind ?? placement.kind, variantFor(placement.x, placement.y))
+        !this.textures.prepareStatic(
+          kind ?? placement.kind,
+          variantFor(placement.x, placement.y),
+          placement.hue,
+        )
       )
         ready = false;
     }
@@ -210,7 +214,11 @@ export class StaticLayer {
   /** La textura de un objeto: las puertas abiertas se ven abiertas. */
   private textureOf(placement: StaticPlacement) {
     const open = this.map.isDoorOpen(placement) ? DOORS[placement.kind] : undefined;
-    return this.textures.static(open ?? placement.kind, variantFor(placement.x, placement.y));
+    return this.textures.static(
+      open ?? placement.kind,
+      variantFor(placement.x, placement.y),
+      placement.hue,
+    );
   }
 
   /** Una puerta cambió: si se ve, se le cambia el dibujo. */

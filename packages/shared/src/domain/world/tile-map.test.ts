@@ -64,6 +64,51 @@ describe('TileMap', () => {
     expect(coast.isWalkable({ x: 3, y: 3 })).toBe(true);
   });
 
+  it('la forja grande ocupa dos tiles de largo y uno de ancho', () => {
+    const workshop = new TileMap({
+      width: 4,
+      height: 3,
+      terrain: new Array<Terrain>(12).fill(G),
+      statics: [{ kind: 'forge', x: 1, y: 1 }],
+    });
+    expect(workshop.hasBlockingStatic({ x: 1, y: 1 })).toBe(true);
+    expect(workshop.hasBlockingStatic({ x: 2, y: 1 })).toBe(true);
+    expect(workshop.hasBlockingStatic({ x: 1, y: 2 })).toBe(false);
+    expect(workshop.hasBlockingStatic({ x: 3, y: 1 })).toBe(false);
+  });
+
+  it('las camas individuales ocupan dos tiles y las dobles cuatro', () => {
+    const singles = new TileMap({
+      width: 4,
+      height: 4,
+      terrain: new Array<Terrain>(16).fill(G),
+      statics: [{ kind: 'bed-single-y', x: 1, y: 1 }],
+    });
+    expect(singles.hasBlockingStatic({ x: 1, y: 2 })).toBe(true);
+    expect(singles.hasBlockingStatic({ x: 2, y: 1 })).toBe(false);
+    const double = new TileMap({
+      width: 4,
+      height: 4,
+      terrain: new Array<Terrain>(16).fill(G),
+      statics: [{ kind: 'bed-double-x', x: 1, y: 1 }],
+    });
+    for (const y of [1, 2])
+      for (const x of [1, 2]) expect(double.hasBlockingStatic({ x, y })).toBe(true);
+    expect(double.hasBlockingStatic({ x: 3, y: 1 })).toBe(false);
+  });
+
+  it('el bebedero largo bloquea sus dos tiles', () => {
+    const stable = new TileMap({
+      width: 4,
+      height: 4,
+      terrain: new Array<Terrain>(16).fill(G),
+      statics: [{ kind: 'water-trough-x', x: 1, y: 1 }],
+    });
+    expect(stable.hasBlockingStatic({ x: 1, y: 1 })).toBe(true);
+    expect(stable.hasBlockingStatic({ x: 2, y: 1 })).toBe(true);
+    expect(stable.hasBlockingStatic({ x: 1, y: 2 })).toBe(false);
+  });
+
   it('el agua poco profunda se camina; la profunda, no', () => {
     const shore = new TileMap({
       width: 2,

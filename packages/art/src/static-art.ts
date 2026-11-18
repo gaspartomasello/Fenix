@@ -5,6 +5,24 @@ import {
   type StaticKind,
 } from '@fenix/shared/world/statics';
 import { PixelImage, type Rgb } from './pixel-art';
+import { CHEST_HEIGHT, CHEST_WIDTH, drawPixelChest } from './pixel-chest-art';
+import {
+  drawPixelForge,
+  drawPixelEasel,
+  drawPixelWaterTrough,
+  drawPixelBed,
+  DOUBLEBED_HEIGHT,
+  DOUBLEBED_WIDTH,
+  SINGLEBED_HEIGHT,
+  SINGLEBED_WIDTH,
+  WATER_TROUGH_HEIGHT,
+  WATER_TROUGH_WIDTH,
+  drawPixelSignHanger,
+  LARGE_FORGE_HEIGHT,
+  LARGE_FORGE_WIDTH,
+  SMALL_FORGE_HEIGHT,
+  SMALL_FORGE_WIDTH,
+} from './pixel-reference-art';
 import { TREE_SHADOWS, drawTree, type TreeSpecies } from './tree-art';
 import {
   VolumeCanvas,
@@ -73,9 +91,66 @@ export function staticFrame(kind: StaticKind): StaticFrame {
 }
 
 /** Dibuja un objeto fijo. Las variantes cambian detalles (copa, flores, piedras…). */
-export function drawStatic(kind: StaticKind, variant: number): PixelImage {
+export function drawStatic(kind: StaticKind, variant: number, hue?: number): PixelImage {
   const spec = SPECS[kind];
   const frame = staticFrame(kind);
+  if (kind === 'chest') {
+    const image = new PixelImage(frame.width, frame.height);
+    if (spec.shadow) softShadow(image, frame, spec.shadow[0], spec.shadow[1]);
+    image.draw(
+      drawPixelChest(),
+      frame.ground.x - Math.floor(CHEST_WIDTH / 2),
+      frame.ground.y - CHEST_HEIGHT,
+    );
+    return image;
+  }
+  if (kind === 'forge' || kind === 'forge-small') {
+    const image = new PixelImage(frame.width, frame.height);
+    const large = kind === 'forge';
+    image.draw(
+      drawPixelForge(large ? 'large' : 'small'),
+      frame.ground.x - Math.floor((large ? LARGE_FORGE_WIDTH : SMALL_FORGE_WIDTH) / 2),
+      frame.ground.y - (large ? LARGE_FORGE_HEIGHT : SMALL_FORGE_HEIGHT),
+    );
+    return image;
+  }
+  if (kind === 'sign-hanger-x' || kind === 'sign-hanger-y') {
+    const image = new PixelImage(frame.width, frame.height);
+    image.draw(
+      drawPixelSignHanger(kind === 'sign-hanger-y'),
+      frame.ground.x - 17,
+      frame.ground.y - 66,
+    );
+    return image;
+  }
+  if (kind === 'easel-x' || kind === 'easel-y') {
+    const image = new PixelImage(frame.width, frame.height);
+    image.draw(drawPixelEasel(kind === 'easel-y'), frame.ground.x - 18, frame.ground.y - 102);
+    return image;
+  }
+  if (kind === 'bed' || kind.startsWith('bed-single-') || kind.startsWith('bed-double-')) {
+    const double = kind.startsWith('bed-double-');
+    const image = new PixelImage(frame.width, frame.height);
+    const tint =
+      double && hue !== undefined && Number.isInteger(hue) && hue >= 0 && hue <= 0xffffff
+        ? ([hue >> 16, (hue >> 8) & 255, hue & 255] as const)
+        : undefined;
+    image.draw(
+      drawPixelBed(double ? 'double' : 'single', kind.endsWith('-x'), tint),
+      frame.ground.x - Math.floor((double ? DOUBLEBED_WIDTH : SINGLEBED_WIDTH) / 2),
+      frame.ground.y - (double ? DOUBLEBED_HEIGHT : SINGLEBED_HEIGHT),
+    );
+    return image;
+  }
+  if (kind === 'water-trough' || kind.startsWith('water-trough-')) {
+    const image = new PixelImage(frame.width, frame.height);
+    image.draw(
+      drawPixelWaterTrough(kind.endsWith('-y')),
+      frame.ground.x - Math.floor(WATER_TROUGH_WIDTH / 2),
+      frame.ground.y - WATER_TROUGH_HEIGHT,
+    );
+    return image;
+  }
   const canvas = new VolumeCanvas(
     frame.width,
     frame.height,
@@ -86,6 +161,8 @@ export function drawStatic(kind: StaticKind, variant: number): PixelImage {
   const image = new PixelImage(frame.width, frame.height);
   if (spec.shadow) softShadow(image, frame, spec.shadow[0], spec.shadow[1]);
   image.draw(body, 0, 0);
+  if (kind.startsWith('shop-sign-'))
+    image.draw(drawPixelSignHanger(kind.endsWith('-y')), frame.ground.x - 17, frame.ground.y - 66);
   return image;
 }
 
@@ -129,7 +206,6 @@ const BARK = ramp([96, 66, 42]);
 const STONE = ramp([150, 142, 128]);
 const WOOD = ramp([132, 92, 54]);
 const IRON = ramp([70, 72, 80]);
-const BRICK = ramp([146, 74, 52]);
 
 /** Corteza con vetas verticales. */
 const bark: Material = (s) =>
@@ -507,38 +583,23 @@ const ankh: Model = (c) => {
   }
 };
 
-const forge: Model = (c) => {
-  const bricks: Material = (s) => {
-    const course = Math.floor(s.p[1] / 3);
-    const along = (Math.abs(s.n[0]) > 0.6 ? s.p[2] : s.p[0]) + (course % 2) * 2.5 + 100;
-    if (s.p[1] - course * 3 < 0.6 || along % 5 < 0.6) return tone(ramp([90, 80, 72]), s.light);
-    return tone(BRICK, s.light, noise(Math.floor(along / 5), course) > 0.75 ? 1 : 0);
-  };
-  c.box([0, 11, 0], UP, [13, 11, 11], bricks);
-  // Boca del fuego al frente.
-  c.box([4, 8, 6], UP, [6, 4, 5.5], glowing(ramp([255, 150, 50])));
-  c.sphere([4, 7, 9], 3, glowing(ramp([255, 220, 120])));
-  // Chimenea.
-  c.box([-5, 34, -4], UP, [4.5, 12, 4.5], bricks);
-  c.box([-5, 46.5, -4], UP, [5.3, 1, 5.3], solid(ramp([90, 80, 72])));
-};
-
 const anvil: Model = (c) => {
-  const iron = metal(ramp([92, 96, 108]));
+  const iron = metal(ramp([76, 88, 101]));
   cylinder(
     c,
     [0, 0, 0],
-    9,
-    () => 6,
+    10,
+    (t) => 5.5 - t * 0.6,
     (s) =>
       s.n[1] > 0.8
-        ? tone(ramp([160, 120, 80]), s.light, Math.hypot(s.p[0], s.p[2]) % 2 < 0.6 ? -1 : 0)
+        ? tone(ramp([151, 105, 61]), s.light, Math.hypot(s.p[0], s.p[2]) % 2 < 0.6 ? -1 : 0)
         : bark(s),
   );
-  c.box([0, 11.5, 0], UP, [3, 2.5, 2.2], iron);
-  c.box([0, 15.5, 0], UP, [8, 1.8, 3.2], iron);
-  // Cuerno del yunque.
-  c.limb([8, 15.5, 0], [13, 15.8, 0], 2.2, 0.5, iron);
+  c.box([0, 11.5, 0], UP, [2.7, 1.8, 2], iron);
+  c.box([-1, 14.5, 0], UP, [6.2, 1.45, 2.8], iron);
+  // Cara pulida y cuerno afinado, apoyados sobre el tronco oscuro.
+  c.box([-1, 16.05, 0], UP, [5.8, 0.18, 2.5], metal(ramp([138, 151, 160])));
+  c.limb([5, 14.8, 0], [10.5, 15, 0], 1.9, 0.35, iron);
 };
 
 // ── Mazmorra ────────────────────────────────────────────────────────
@@ -1885,20 +1946,6 @@ const hitchingPost: Model = (c) => {
     c.limb(local(f, 0.9, 15, t), local(f, 0.9, 12.6, t), 0.6, 0.6, metal(IRON));
 };
 
-/** Bebedero (fuentón): artesa de tablas con agua. */
-const waterTrough: Model = (c, variant) => {
-  const f: Vec3 = variant === 1 ? [0, 0, 1] : [1, 0, 0];
-  c.box(local(f, 0, 4, 0), facing(f), [5, 4, 12], planks(FURNITURE, 2, 3));
-  c.box(local(f, 0, 8.1, 0), facing(f), [4, 0.4, 11], (s) =>
-    tone(
-      ramp([80, 140, 190]),
-      0.75 + s.light * 0.25,
-      noise(Math.floor(s.p[0] / 2), Math.floor(s.p[2] / 2)) > 0.8 ? 1 : 0,
-    ),
-  );
-  for (const t of [-10, 10]) c.box(local(f, 0, 4, t), facing(f), [5.4, 4.4, 0.8], metal(IRON));
-};
-
 /** Tocón con un hacha clavada y astillas alrededor. */
 const stumpAxe: Model = (c, variant) => {
   cylinder(c, [0, 0, 0], 11, (t) => 9.5 - t * 0.8, bark);
@@ -2071,6 +2118,29 @@ function bookshelf(c: VolumeCanvas, along: 0 | 2, potions: boolean): void {
   }
 }
 
+/** Armario de dos hojas: la puerta mira a una de las dos paredes visibles. */
+function armoire(c: VolumeCanvas, along: 0 | 2): void {
+  const f: Vec3 = along === 0 ? [0, 0, 1] : [1, 0, 0];
+  const body = solid(ramp([105, 61, 33]));
+  const wood = solid(ramp([137, 91, 51]));
+  const light = solid(ramp([184, 133, 77]));
+  const trim = solid(ramp([77, 46, 26]));
+  for (const side of [-7.3, 7.3]) c.box(local(f, side, 2, 0), facing(f), [1.1, 2, 4.6], trim);
+  c.box(local(f, 0, 14.5, 0), facing(f), [8.1, 12.7, 4.7], trim);
+  c.box(local(f, 0, 15, 4.8), facing(f), [7.4, 11.6, 0.25], wood);
+  for (const side of [-3.5, 3.5]) {
+    c.box(local(f, side, 16, 5.1), facing(f), [2.9, 8.9, 0.18], body);
+    c.box(local(f, side, 16, 5.35), facing(f), [2.25, 8.1, 0.18], wood);
+    c.box(local(f, side, 22.5, 5.55), facing(f), [2.15, 0.18, 0.15], light);
+  }
+  c.box(local(f, 0, 14.5, 5.55), facing(f), [0.25, 11.4, 0.26], trim);
+  for (const side of [-0.9, 0.9])
+    c.box(local(f, side, 14.5, 5.85), facing(f), [0.25, 0.8, 0.25], metal(BRASS));
+  c.box(local(f, 0, 28, 0), facing(f), [9.3, 1.1, 5.8], wood);
+  c.box(local(f, 0, 29.1, 0), facing(f), [8.8, 0.25, 5.5], light);
+  c.box(local(f, 0, 2.5, 5), facing(f), [8.3, 0.7, 0.75], body);
+}
+
 /** Caldero de hierro sobre tres patas, con un brebaje verde que burbujea y brasas abajo. */
 const cauldron: Model = (c) => {
   for (let i = 0; i < 3; i++) {
@@ -2172,16 +2242,6 @@ const counter: Model = (c, variant) => {
   }
 };
 
-/** Cofre con tapa redondeada, flejes de hierro y cerradura de bronce. */
-const chest: Model = (c, variant) => {
-  const f: Vec3 = variant === 1 ? [0, 0, 1] : [Math.SQRT1_2, 0, Math.SQRT1_2];
-  const wood = planks(variant === 2 ? ramp([110, 40, 40]) : FURNITURE, 0, 3);
-  c.box(local(f, 0, 4.5, 0), facing(f), [8, 4.5, 5], wood);
-  c.ellipsoid(local(f, 0, 9, 0), axesAlong(axesAlong(f)[0]), [8, 3, 5], wood);
-  for (const sx of [-5, 5]) c.box(local(f, sx, 6.5, 0), facing(f), [0.7, 6.5, 5.3], metal(IRON));
-  c.box(local(f, 0, 7.5, 5.2), facing(f), [1.2, 1.4, 0.4], metal(BRASS));
-};
-
 /** Armero: bastidor con lanzas, espadas y un escudo. */
 const weaponRack: Model = (c) => {
   const f: Vec3 = [Math.SQRT1_2, 0, Math.SQRT1_2];
@@ -2218,21 +2278,6 @@ const armorStand: Model = (c) => {
   c.ellipsoid([0, 12.6, 0], UP, [5.4, 2.6, 3.4], mail);
   c.sphere([0, 30.5, 0], 3.6, metal(ramp([160, 162, 170])));
   c.box([0, 30, 3.3], axesAlong([0, 0, 1]), [2.6, 0.4, 0.4], solid(ramp([30, 30, 34])));
-};
-
-/** Cama: armazón de madera, colchón, frazada y almohada. */
-const bed: Model = (c, variant) => {
-  const f: Vec3 = variant === 1 ? [1, 0, 0] : [0, 0, 1];
-  c.box(local(f, 0, 3.4, 0), facing(f), [7, 3.4, 13], planks(FURNITURE, 2, 4));
-  c.box(local(f, 0, 9, -13), facing(f), [7.4, 9, 1], planks(DARK_WOOD, 0, 3));
-  c.box(local(f, 0, 7.6, 0), facing(f), [6.4, 1.6, 12.4], solid(LINEN_WHITE));
-  const blanket =
-    [ramp([150, 40, 44]), ramp([50, 80, 140]), ramp([70, 110, 60])][variant % 3] ??
-    ramp([150, 40, 44]);
-  c.box(local(f, 0, 9.4, 3.4), facing(f), [6.8, 0.6, 9], (s) =>
-    tone(blanket, s.light, Math.floor((s.p[0] + s.p[2] + 99) / 3) % 2 === 0 ? 0 : -1),
-  );
-  c.ellipsoid(local(f, 0, 10.2, -9.6), facing(f), [4.4, 1.6, 2.2], solid(LINEN_WHITE, 1));
 };
 
 /** Hogar: chimenea de piedra con el fuego encendido y leños. */
@@ -3253,10 +3298,7 @@ function shopSign(icon: ShopSignIcon, along: 0 | 2): Model {
       (color: Ramp): Material =>
       (s) =>
         tone(color, 0.55 + s.light * 0.45);
-    // Brazo con una voluta de refuerzo, a la altura del alero.
-    c.limb(edge(along, 0, 50, 2.5), edge(along, 0, 50, inset + 11), 0.7, 0.6, iron);
-    c.limb(edge(along, 0, 42, 2.5), edge(along, 0, 50, inset - 3), 0.5, 0.5, iron);
-    c.sphere(edge(along, 0, 50, inset + 11.4), 0.9, iron);
+    // El soporte se superpone después con los píxeles exactos de la referencia.
     // La tabla, perpendicular a la pared: borde oscuro y frente claro; las cadenas.
     const center = edge(along, 0, 37, inset);
     const plane: readonly [Vec3, Vec3, Vec3] =
@@ -3463,7 +3505,12 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   shrine: { model: shrine, shadow: [18, 8] },
   ankh: { model: ankh, shadow: [12, 6] },
   menhir: { model: menhir, shadow: [20, 9] },
-  forge: { model: forge, shadow: [20, 8] },
+  forge: { model: () => {} },
+  'forge-small': { model: () => {} },
+  'sign-hanger-x': { model: () => {} },
+  'sign-hanger-y': { model: () => {} },
+  'easel-x': { model: () => {} },
+  'easel-y': { model: () => {} },
   anvil: { model: anvil, shadow: [14, 6] },
   'cave-wall': { model: caveWall },
   'ice-wall': { model: iceWall },
@@ -3620,23 +3667,31 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   'hay-bale': { model: hayBale, shadow: [14, 6] },
   'hay-pile': { model: hayPile },
   'hitching-post': { model: hitchingPost, shadow: [14, 5] },
-  'water-trough': { model: waterTrough, shadow: [14, 6] },
+  'water-trough': { model: () => {} },
+  'water-trough-x': { model: () => {} },
+  'water-trough-y': { model: () => {} },
   'stump-axe': { model: stumpAxe, shadow: [10, 4] },
   'log-pile': { model: logPile, shadow: [16, 7] },
   workbench: { model: workbench, shadow: [16, 7] },
   'alchemy-table': { model: alchemyTable, shadow: [16, 7] },
   'bookshelf-x': { model: (c) => bookshelf(c, 0, false) },
   'bookshelf-y': { model: (c) => bookshelf(c, 2, false) },
+  'armoire-x': { model: (c) => armoire(c, 0), shadow: [11, 5] },
+  'armoire-y': { model: (c) => armoire(c, 2), shadow: [11, 5] },
   'potion-shelf-x': { model: (c) => bookshelf(c, 0, true) },
   'potion-shelf-y': { model: (c) => bookshelf(c, 2, true) },
   cauldron: { model: cauldron, shadow: [10, 4] },
   table: { model: table, shadow: [14, 6] },
   stool: { model: stool, shadow: [6, 3] },
   counter: { model: counter, shadow: [12, 5] },
-  chest: { model: chest, shadow: [11, 5] },
+  chest: { model: () => {}, shadow: [11, 5] }, // drawStatic usa el trazado exacto.
   'weapon-rack': { model: weaponRack, shadow: [14, 5] },
   'armor-stand': { model: armorStand, shadow: [8, 3] },
-  bed: { model: bed, shadow: [16, 7] },
+  bed: { model: () => {} },
+  'bed-single-x': { model: () => {} },
+  'bed-single-y': { model: () => {} },
+  'bed-double-x': { model: () => {} },
+  'bed-double-y': { model: () => {} },
   hearth: { model: hearth, shadow: [16, 6] },
   keg: { model: keg, shadow: [11, 5] },
   'chair-n': { model: (c) => chair(c, [0, 0, -1]), shadow: [7, 3] },

@@ -85,7 +85,7 @@ export const HOUSE_FLOORS: Readonly<Record<FloorKind, FloorDefinition>> = {
   },
 };
 
-export type PieceGroup = 'wall' | 'window' | 'door' | 'stairs' | 'chest';
+export type PieceGroup = 'wall' | 'window' | 'door' | 'stairs' | 'chest' | 'furniture';
 
 export type PieceKind =
   | `wall-${HouseStyle}`
@@ -94,7 +94,10 @@ export type PieceKind =
   | 'door-iron'
   | 'stairs-wood'
   | 'stairs-stone'
-  | 'chest';
+  | 'armoire-x'
+  | 'armoire-y'
+  | 'chest'
+  | 'chest-y';
 
 export interface PieceDefinition extends Priced {
   readonly group: PieceGroup;
@@ -168,11 +171,32 @@ export const HOUSE_PIECES: Readonly<Record<PieceKind, PieceDefinition>> = {
     materials: { 'stone-block': 30 },
   },
   chest: {
-    name: 'cofre de la casa',
+    name: 'cofre ↙',
     code: 'C',
     group: 'chest',
     gold: 1000,
     materials: { boards: 40, 'iron-ingot': 5 },
+  },
+  'chest-y': {
+    name: 'cofre ↘',
+    code: 'c',
+    group: 'chest',
+    gold: 1000,
+    materials: { boards: 40, 'iron-ingot': 5 },
+  },
+  'armoire-x': {
+    name: 'armario ↙',
+    code: 'G',
+    group: 'furniture',
+    gold: 250,
+    materials: { boards: 35 },
+  },
+  'armoire-y': {
+    name: 'armario ↘',
+    code: 'g',
+    group: 'furniture',
+    gold: 250,
+    materials: { boards: 35 },
   },
 };
 
@@ -416,6 +440,8 @@ function staticOf(grid: Grid, level: number, x: number, y: number): StaticKind |
       return piece === 'stairs-stone' ? 'stairs-stone' : 'stairs-wood';
     case 'chest':
       return null;
+    case 'furniture':
+      return piece === 'armoire-y' ? 'armoire-y' : 'armoire-x';
   }
 }
 
@@ -508,12 +534,14 @@ function buildCustom(kind: HouseKind, design: HouseDesign): Built {
     }
   }
 
-  // Los cofres de la casa: con piso y sin pasarse de los que entran en el lote.
+  // El mobiliario necesita piso; los cofres además respetan el límite del lote.
   let chestCount = 0;
   for (let l = 0; l < design.levels.length; l++)
     for (let y = 0; y < side; y++)
       for (let x = 0; x < side; x++)
-        if (grid.group(l, x, y) === 'chest') {
+        if (grid.group(l, x, y) === 'furniture' && !grid.cell(l, x, y).floor)
+          fail('Los muebles necesitan piso debajo.');
+        else if (grid.group(l, x, y) === 'chest') {
           chestCount++;
           if (!grid.cell(l, x, y).floor) fail('Los cofres necesitan piso debajo.');
         }
@@ -758,11 +786,16 @@ export function designCost(kind: HouseKind, before: HouseDesign, after: HouseDes
         }
         if (was.piece !== now.piece) {
           changes++;
-          if (now.piece) {
+          const turnFurniture =
+            (was.piece === 'armoire-x' && now.piece === 'armoire-y') ||
+            (was.piece === 'armoire-y' && now.piece === 'armoire-x') ||
+            (was.piece === 'chest' && now.piece === 'chest-y') ||
+            (was.piece === 'chest-y' && now.piece === 'chest');
+          if (now.piece && !turnFurniture) {
             gold += HOUSE_PIECES[now.piece].gold;
             addTo(materials, HOUSE_PIECES[now.piece].materials);
           }
-          if (was.piece) addTo(removed, HOUSE_PIECES[was.piece].materials);
+          if (was.piece && !turnFurniture) addTo(removed, HOUSE_PIECES[was.piece].materials);
         }
       }
   // El techo se rehace solo: se paga lo que se agrega y vuelve la mitad de lo que se saca.

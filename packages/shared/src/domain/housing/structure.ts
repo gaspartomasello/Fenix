@@ -7,7 +7,7 @@ import type {
   Teleporter,
   TileMap,
 } from '../world/tile-map';
-import { customLayout, designFloorAt, type HouseDesign } from './design';
+import { customLayout, designCell, designFloorAt, lotSide, type HouseDesign } from './design';
 import { HOUSE_PLANS, type HouseKind } from './houses';
 import { FLOOR_MARGIN, houseLayout, levelName, type HouseLayout } from './layout';
 
@@ -88,6 +88,31 @@ function upper(site: HouseSite, layout: HouseLayout, what: 'doors' | 'chests'): 
 export function houseChests(site: HouseSite): Position[] {
   const layout = siteLayout(site);
   return [...layout.chests.map((p) => at(site, p)), ...upper(site, layout, 'chests')];
+}
+
+/** Ubicación y orientación del cofre, también en los pisos altos. */
+export function houseChestsWithKind(
+  site: HouseSite,
+): { position: Position; kind: 'house-chest' | 'house-chest-y' }[] {
+  const layout = siteLayout(site);
+  const facing = (level: number, p: Position): 'house-chest' | 'house-chest-y' =>
+    site.design &&
+    HOUSE_PLANS[site.kind].lot &&
+    designCell(site.design, level, p.x, p.y, lotSide(site.kind)).piece === 'chest-y'
+      ? 'house-chest-y'
+      : 'house-chest';
+  return [
+    ...layout.chests.map((p) => ({ position: at(site, p), kind: facing(0, p) })),
+    ...layout.levels.flatMap((level, i) => {
+      const slot = site.slots[i];
+      return slot
+        ? (level.chests ?? []).map((p) => ({
+            position: at(slot, p),
+            kind: facing(i + 1, { x: p.x - FLOOR_MARGIN + 1, y: p.y - FLOOR_MARGIN + 1 }),
+          }))
+        : [];
+    }),
+  ];
 }
 
 /** Delante de la puerta, afuera (adonde va quien es echado). */

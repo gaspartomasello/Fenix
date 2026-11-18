@@ -62,6 +62,11 @@ export const STATIC_KINDS = [
   // Piedras paradas del círculo que rodea a cada portal lunar.
   'menhir',
   'forge',
+  'forge-small',
+  'sign-hanger-x',
+  'sign-hanger-y',
+  'easel-x',
+  'easel-y',
   'anvil',
   'cave-wall',
   'cave-entrance',
@@ -147,6 +152,8 @@ export const STATIC_KINDS = [
   'hay-pile',
   'hitching-post',
   'water-trough',
+  'water-trough-x',
+  'water-trough-y',
   'stump-axe',
   'log-pile',
   'workbench',
@@ -163,6 +170,10 @@ export const STATIC_KINDS = [
   'weapon-rack',
   'armor-stand',
   'bed',
+  'bed-single-x',
+  'bed-single-y',
+  'bed-double-x',
+  'bed-double-y',
   'hearth',
   'keg',
   'chair-n',
@@ -291,6 +302,9 @@ export const STATIC_KINDS = [
   // La Tumba de los Reyes (etapa 81).
   'tomb-wall',
   ...SHOP_SIGN_KINDS,
+  // Al final para conservar los GID de los mapas existentes.
+  'armoire-x',
+  'armoire-y',
 ] as const;
 
 export type StaticKind = (typeof STATIC_KINDS)[number];
@@ -306,6 +320,8 @@ export interface StaticDefinition {
    * tile hacia +x y +y (el faro, 2 × 2).
    */
   readonly footprint: number;
+  /** Profundidad en tiles; si se omite, usa el mismo lado que footprint. */
+  readonly footprintY?: number;
 }
 
 const define = (
@@ -314,7 +330,15 @@ const define = (
   blocking: boolean,
   lightRadius = 0,
   footprint = 1,
-): StaticDefinition => ({ kind, name, blocking, lightRadius, footprint });
+  footprintY?: number,
+): StaticDefinition => ({
+  kind,
+  name,
+  blocking,
+  lightRadius,
+  footprint,
+  ...(footprintY === undefined ? {} : { footprintY }),
+});
 
 /**
  * Lo que tapa la vista: paredes (y sus ventanas), puertas cerradas, rejas,
@@ -474,7 +498,12 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   shrine: define('shrine', 'santuario', true, 4),
   ankh: define('ankh', 'cruz de la resurrección', true, 3),
   menhir: define('menhir', 'piedra parada', true),
-  forge: define('forge', 'forja', true, 3),
+  forge: define('forge', 'forja grande', true, 3, 2, 1),
+  'forge-small': define('forge-small', 'forja pequeña', true, 3),
+  'sign-hanger-x': define('sign-hanger-x', 'soporte para letrero', false),
+  'sign-hanger-y': define('sign-hanger-y', 'soporte para letrero', false),
+  'easel-x': define('easel-x', 'atril de pintor', true),
+  'easel-y': define('easel-y', 'atril de pintor', true),
   anvil: define('anvil', 'yunque', true),
   'cave-wall': define('cave-wall', 'pared de roca', true),
   'cave-entrance': define('cave-entrance', 'entrada a la cueva', false),
@@ -557,12 +586,16 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   'hay-pile': define('hay-pile', 'paja', false),
   'hitching-post': define('hitching-post', 'palenque', true),
   'water-trough': define('water-trough', 'bebedero', true),
+  'water-trough-x': define('water-trough-x', 'bebedero', true, 0, 2, 1),
+  'water-trough-y': define('water-trough-y', 'bebedero', true, 0, 1, 2),
   'stump-axe': define('stump-axe', 'tocón con un hacha', true),
   'log-pile': define('log-pile', 'pila de leños', true),
   workbench: define('workbench', 'banco de carpintero', true),
   'alchemy-table': define('alchemy-table', 'mesa de alquimia', true),
   'bookshelf-x': define('bookshelf-x', 'biblioteca', true),
   'bookshelf-y': define('bookshelf-y', 'biblioteca', true),
+  'armoire-x': define('armoire-x', 'armario', true),
+  'armoire-y': define('armoire-y', 'armario', true),
   'potion-shelf-x': define('potion-shelf-x', 'estante de frascos', true),
   'potion-shelf-y': define('potion-shelf-y', 'estante de frascos', true),
   cauldron: define('cauldron', 'caldero', true, 2),
@@ -573,6 +606,10 @@ export const STATICS: Readonly<Record<StaticKind, StaticDefinition>> = {
   'weapon-rack': define('weapon-rack', 'armero', true),
   'armor-stand': define('armor-stand', 'maniquí con armadura', true),
   bed: define('bed', 'cama', true),
+  'bed-single-x': define('bed-single-x', 'cama individual', true, 0, 2, 1),
+  'bed-single-y': define('bed-single-y', 'cama individual', true, 0, 1, 2),
+  'bed-double-x': define('bed-double-x', 'cama de dos plazas', true, 0, 2),
+  'bed-double-y': define('bed-double-y', 'cama de dos plazas', true, 0, 2),
   hearth: define('hearth', 'hogar', true, 4),
   keg: define('keg', 'tonel', true),
   'chair-n': define('chair-n', 'silla', false),
@@ -722,4 +759,6 @@ export interface StaticPlacement {
   readonly kind: StaticKind;
   readonly x: number;
   readonly y: number;
+  /** Color de tintura para las telas de muebles compatibles (0xRRGGBB). */
+  readonly hue?: number;
 }

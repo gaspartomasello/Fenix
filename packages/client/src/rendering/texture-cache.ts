@@ -66,8 +66,8 @@ export class TextureCache {
     return this.fromEntry(this.terrainEntry(terrain, variant, neighbors));
   }
 
-  static(kind: StaticKind, variant: number): Texture {
-    return this.fromEntry(this.staticEntry(kind, variant));
+  static(kind: StaticKind, variant: number, hue?: number): Texture {
+    return this.fromEntry(this.staticEntry(kind, variant, hue));
   }
 
   /** Pide de antemano la textura de un tile; devuelve si ya está dibujada. */
@@ -76,8 +76,8 @@ export class TextureCache {
   }
 
   /** Pide de antemano la textura de un objeto fijo; devuelve si ya está dibujada. */
-  prepareStatic(kind: StaticKind, variant: number): boolean {
-    return this.prepare(this.staticEntry(kind, variant));
+  prepareStatic(kind: StaticKind, variant: number, hue?: number): boolean {
+    return this.prepare(this.staticEntry(kind, variant, hue));
   }
 
   private terrainEntry(terrain: Terrain, variant: number, neighbors: TerrainNeighbors): Entry {
@@ -89,9 +89,10 @@ export class TextureCache {
     };
   }
 
-  private staticEntry(kind: StaticKind, variant: number): Entry {
+  private staticEntry(kind: StaticKind, variant: number, hue?: number): Entry {
     const v = variant % STATIC_VARIANTS;
-    return { key: `s:${kind}:${v}`, draw: () => drawStatic(kind, v) };
+    const tint = kind.startsWith('bed-double-') ? hue : undefined;
+    return { key: `s:${kind}:${v}:${tint ?? ''}`, draw: () => drawStatic(kind, v, tint) };
   }
 
   character(

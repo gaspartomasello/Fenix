@@ -35,7 +35,7 @@ export type ItemLocation =
 export class Item {
   constructor(
     readonly id: EntityId,
-    readonly kind: ItemKind,
+    public kind: ItemKind,
     public amount: number,
     public location: ItemLocation,
   ) {}

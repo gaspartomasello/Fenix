@@ -3269,6 +3269,17 @@ body {
   border-width: 2px;
 }
 
+.design-piece--furniture {
+  --piece: #80502c;
+  inset: 3px 6px;
+  border: 2px solid #b5864a;
+  border-radius: 2px;
+}
+
+.design-piece--armoire-y {
+  transform: rotate(90deg);
+}
+
 .design-street {
   margin-top: 2px;
   font-size: 0.75rem;

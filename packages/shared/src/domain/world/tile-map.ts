@@ -181,9 +181,9 @@ export class TileMap {
       const level = GROUND_DECOR.has(placed.kind) ? 1 : 2;
       this.eachTile(placed, (i) => (this.occupied[i] = Math.max(this.occupied[i] ?? 0, level)));
       if (blocksSight(placed.kind)) {
-        const side = STATICS[placed.kind].footprint;
-        for (let dy = 0; dy < side; dy++)
-          for (let dx = 0; dx < side; dx++) {
+        const { footprint, footprintY = footprint } = STATICS[placed.kind];
+        for (let dy = 0; dy < footprintY; dy++)
+          for (let dx = 0; dx < footprint; dx++) {
             const tile = { x: placed.x + dx, y: placed.y + dy };
             if (this.contains(tile)) this.opaque[tile.y * this.width + tile.x] = 1;
           }
@@ -191,9 +191,9 @@ export class TileMap {
       const seat = SEATS[placed.kind];
       if (seat !== undefined) this.seats.set(placed.y * this.width + placed.x, seat);
       if (DOORS[placed.kind]) this.doors.set(placed.y * this.width + placed.x, placed.kind);
-      const { blocking, footprint } = STATICS[placed.kind];
+      const { blocking, footprint, footprintY = footprint } = STATICS[placed.kind];
       if (!blocking) continue;
-      for (let dy = 0; dy < footprint; dy++)
+      for (let dy = 0; dy < footprintY; dy++)
         for (let dx = 0; dx < footprint; dx++) {
           const tile = { x: placed.x + dx, y: placed.y + dy };
           if (this.contains(tile)) this.blocked[tile.y * this.width + tile.x] = 1;
@@ -500,9 +500,9 @@ export class TileMap {
 
   /** Los tiles (índices) que ocupa un objeto fijo según su base. */
   private eachTile(placed: StaticPlacement, visit: (i: number) => void): void {
-    const side = STATICS[placed.kind].footprint;
-    for (let dy = 0; dy < side; dy++)
-      for (let dx = 0; dx < side; dx++) {
+    const { footprint, footprintY = footprint } = STATICS[placed.kind];
+    for (let dy = 0; dy < footprintY; dy++)
+      for (let dx = 0; dx < footprint; dx++) {
         const x = placed.x + dx;
         const y = placed.y + dy;
         if (x >= 0 && y >= 0 && x < this.width && y < this.height) visit(y * this.width + x);
