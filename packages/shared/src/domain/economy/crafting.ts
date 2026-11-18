@@ -179,6 +179,7 @@ export const RECIPES: readonly Recipe[] = [
       ['hammer-pick', 450, ingots(16)],
       ['war-fork', 450, ingots(12)],
       ['pitchfork', 500, ingots(12)],
+      ['sickle', 450, ingots(8)],
       ['battle-axe', 550, ingots(14)],
       ['two-handed-axe', 600, ingots(16)],
       ['bardiche', 650, ingots(18)],

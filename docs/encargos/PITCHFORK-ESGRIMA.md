@@ -6,6 +6,8 @@ Fecha: 18 de noviembre de 2026. Fuente de verdad: `main` de `gaspartomasello/Fen
 
 Agregar el arma **Pitchfork** (horca de combate): habilidad **Esgrima**, **dos manos**, daño base del arma **13–14** y **2,5 segundos** de intervalo base entre ataques, que se modifica con **Destreza**. Usar como referencia el sprite RGBA de 50 × 50 píxeles en `docs/referencias/pitchfork-50.png`. Su FNV-1a de los bytes RGBA, en orden por filas, es `2936446925`. Conservar cada píxel del sprite en inventario y en el suelo; la variante para el personaje equipado puede adaptarse a las orientaciones del cuerpo.
 
+Agregar también la **Hoz**: habilidad **Espadachín** (`swordsmanship`), **una mano**, daño base **12–16**, intervalo base de **3 segundos** que se ajustará con **Destreza**. Referencia de 50 × 50 píxeles en `docs/referencias/hoz-50.png`; FNV-1a RGBA `3168388371`. Codex dejó su sprite, catálogo, arma, aspecto equipado, receta y vendedor en esta misma rama. La velocidad dinámica también queda pendiente para Claude.
+
 ## Integración y responsables
 
 **Codex se encarga de los objetos nuevos.** En esta rama preparó el sprite exacto, catálogo, datos base del arma, aspecto equipado, receta y vendedor del pitchfork. **Claude se encarga de la integración con la arquitectura del juego**, especialmente de la regla compartida de velocidad según Destreza y de reconciliar los objetos anteriores con `main`.

@@ -1728,10 +1728,9 @@ const POLEARMS: ReadonlySet<ItemKind> = new Set<ItemKind>([
  */
 const STANCES: Partial<Record<ItemKind, Vec3>> = {
   ...Object.fromEntries(
-    ['longsword', 'broadsword', 'short-sword', 'viking-sword', 'scimitar', 'cutlass'].map((k) => [
-      k,
-      [0.42, 0.86, 0.3] as Vec3,
-    ]),
+    ['longsword', 'broadsword', 'short-sword', 'viking-sword', 'scimitar', 'cutlass', 'sickle'].map(
+      (k) => [k, [0.42, 0.86, 0.3] as Vec3],
+    ),
   ),
   katana: [0.12, -0.45, 0.88],
   dagger: [0.1, -0.85, 0.5],
@@ -1993,10 +1992,31 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     longsword: { length: 17, width: 1, guard: 3 },
     scimitar: { length: 13, width: 1.1, guard: 2.2 },
     cutlass: { length: 10, width: 1.3, guard: 1.6 },
+    sickle: { length: 8, width: 0.9, guard: 0 },
     'viking-sword': { length: 13, width: 1.25, guard: 2.2 },
   };
   const { length, width, guard } = blades[kind] ?? { length: 13, width: 0.85, guard: 2.4 };
   const katana = kind === 'katana';
+  if (kind === 'sickle') {
+    // Hoja curvada que vuelve hacia el mango, sin guarda de espada.
+    canvas.limb(along(-2), along(1.5), 0.8, 0.7, grip);
+    canvas.limb(along(1.5), add(along(6), scale(up, 2.5)), 0.7, 0.95, metal(STEEL));
+    canvas.limb(
+      add(along(6), scale(up, 2.5)),
+      add(along(8), scale(up, 5)),
+      0.95,
+      0.55,
+      metal(STEEL),
+    );
+    canvas.limb(
+      add(along(8), scale(up, 5)),
+      add(along(5), scale(up, 5.3)),
+      0.55,
+      0.1,
+      metal(STEEL),
+    );
+    return;
+  }
   if (kind === 'scimitar' || kind === 'cutlass') {
     // Hoja curva que se ensancha antes de la punta.
     canvas.limb(along(-2), along(1.2), 0.8, 0.8, grip);

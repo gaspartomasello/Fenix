@@ -122,6 +122,7 @@ const WEAPONS: Partial<Record<ItemKind, Weapon>> = {
     swingMs: 2500,
     skill: 'fencing',
   },
+  sickle: { name: 'hoz', minDamage: 12, maxDamage: 16, swingMs: 3000, skill: 'swordsmanship' },
   'short-spear': {
     name: 'lanza corta',
     minDamage: 6,
