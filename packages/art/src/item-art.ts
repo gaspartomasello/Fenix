@@ -1,8 +1,9 @@
 import { weaponByKind } from '@fenix/shared/combat/weapons';
 import { ITEMS, type BaseItemKind, type ItemKind } from '@fenix/shared/items/item-catalog';
 import { SPELLS } from '@fenix/shared/magic/spell-catalog';
-import { hexToRgb, type PixelImage, type Rgb } from './pixel-art';
+import { PixelImage, hexToRgb, type Rgb } from './pixel-art';
 import { drawPixelPitchfork } from './pixel-pitchfork-art';
+import { drawStatic } from './static-art';
 import { drawPixelSickle } from './pixel-sickle-art';
 import {
   clipping,
@@ -328,7 +329,10 @@ function houseDeed(c: VolumeCanvas, seal: Ramp, lot = false): void {
   c.ellipsoid([-1.9, 1.1, 0.6], lying(0), [1.1, 0.45, 1.1], (s) => tone(seal, s.light));
 }
 
-const MODELS: Readonly<Record<BaseItemKind, Model>> = {
+/** Los objetos que tienen modelo propio (los muebles usan el dibujo de su pieza). */
+type ModeledKind = Exclude<BaseItemKind, `furniture-${string}`>;
+
+const MODELS: Readonly<Record<ModeledKind, Model>> = {
   gold(c) {
     coins(c, 7);
   },
@@ -2540,6 +2544,9 @@ export function drawItem(
 ): PixelImage {
   if (kind === 'pitchfork') return drawPixelPitchfork(style);
   if (kind === 'sickle') return drawPixelSickle(style);
+  const piece = ITEMS[kind].furniture;
+  if (piece)
+    return fitted(drawStatic(piece, 0), ITEM_ART_SIZE * (style === 'icon' ? ICON_DETAIL : 1));
   // Los íconos (mochila, ventanas) se dibujan al doble de resolución: más detalle.
   const detail = style === 'icon' ? ICON_DETAIL : 1;
   const definition = ITEMS[kind];
@@ -2563,7 +2570,7 @@ export function drawItem(
     if (kind === 'gold') coins(canvas, GOLD_PILES[itemVariant(kind, amount)]?.coins ?? 7);
     else if (definition.spell)
       scroll(canvas, ramp(CIRCLE_RIBBON[SPELLS[definition.spell].circle - 1] ?? [200, 60, 50]));
-    else MODELS[kind as BaseItemKind](canvas, color);
+    else MODELS[kind as ModeledKind](canvas, color);
     const image = canvas.toImage(OUTLINE);
     if (!diagonal || fit < 0.6 || !touchesEdge(image)) return image;
   }
@@ -2992,4 +2999,58 @@ function rolledBandage(c: VolumeCanvas, bloody: boolean): void {
     const r = Math.hypot(s.p[1] - 2, s.p[2]);
     return tone(linen, s.light, r < 0.35 || (r > 0.85 && r < 1.1) ? -2 : 1);
   });
+}
+
+/**
+ * Un mueble como objeto: el dibujo de su pieza, recortado a lo pintado y
+ * ajustado al casillero: lo grande se achica promediando (para que no se
+ * pixele) y lo chico se agranda hasta 2,5 veces.
+ */
+function fitted(image: PixelImage, size: number): PixelImage {
+  let left = image.width;
+  let top = image.height;
+  let right = -1;
+  let bottom = -1;
+  for (let y = 0; y < image.height; y++)
+    for (let x = 0; x < image.width; x++)
+      if (image.alphaAt(x, y) > 0) {
+        left = Math.min(left, x);
+        right = Math.max(right, x);
+        top = Math.min(top, y);
+        bottom = Math.max(bottom, y);
+      }
+  const out = new PixelImage(size, size);
+  if (right < 0) return out;
+  const width = right - left + 1;
+  const height = bottom - top + 1;
+  const scale = Math.min(2.5, (size * 0.92) / Math.max(width, height));
+  const w = Math.max(1, Math.round(width * scale));
+  const h = Math.max(1, Math.round(height * scale));
+  const ox = Math.floor((size - w) / 2);
+  const oy = Math.floor((size - h) / 2);
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      // Promedio de los píxeles que caen en este (con su transparencia).
+      const x0 = left + x / scale;
+      const y0 = top + y / scale;
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      let a = 0;
+      let n = 0;
+      for (let sy = Math.floor(y0); sy < Math.max(Math.floor(y0) + 1, y0 + 1 / scale); sy++)
+        for (let sx = Math.floor(x0); sx < Math.max(Math.floor(x0) + 1, x0 + 1 / scale); sx++) {
+          const i = (sy * image.width + sx) * 4;
+          const alpha = image.data[i + 3] ?? 0;
+          r += (image.data[i] ?? 0) * alpha;
+          g += (image.data[i + 1] ?? 0) * alpha;
+          b += (image.data[i + 2] ?? 0) * alpha;
+          a += alpha;
+          n++;
+        }
+      if (a === 0) continue;
+      const at = ((oy + y) * size + ox + x) * 4;
+      out.data.set([r / a, g / a, b / a, a / n], at);
+    }
+  return out;
 }

@@ -21,6 +21,7 @@ const GROUPS = [
   'Herramientas',
   'Recipientes',
   'Recursos',
+  'Muebles',
   'Otros',
 ] as const;
 type Group = (typeof GROUPS)[number];
@@ -33,6 +34,7 @@ const REAGENTS: ReadonlySet<ItemKind> = new Set(
 /** En qué grupo de la lista va cada objeto. */
 export function catalogGroup(kind: ItemKind): Group {
   const definition = ITEMS[kind];
+  if (definition.furniture) return 'Muebles';
   if ((weaponByKind(kind) && kind !== 'pickaxe') || kind === 'arrow' || kind === 'bolt')
     return 'Armas y munición';
   if (definition.use === 'spellbook') return 'Magia y pergaminos';

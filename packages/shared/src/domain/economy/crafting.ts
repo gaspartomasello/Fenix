@@ -283,6 +283,20 @@ export const RECIPES: readonly Recipe[] = [
     ['fishing-pole', 0, boards(5)],
     ['wooden-shield', 150, boards(10)],
   ]),
+  // Muebles: la habilidad mínima de UO clásico (en décimas; 100 % de éxito con 20 puntos más).
+  ...group('carpentry', 'Muebles', [
+    ['furniture-crate', 100, boards(10)],
+    ['furniture-stool', 110, boards(9)],
+    ['furniture-chair', 210, boards(13)],
+    ['furniture-bookshelf', 315, boards(25)],
+    ['furniture-table', 421, boards(17)],
+    ['furniture-bench', 526, boards(17)],
+    ['furniture-chest', 736, { boards: 20, 'iron-ingot': 2 }],
+    ['furniture-throne', 736, { boards: 19, cloth: 5 }],
+    ['furniture-wardrobe', 842, boards(35)],
+    ['furniture-bed', 947, { boards: 50, cloth: 30 }],
+    ['furniture-double-bed', 947, { boards: 70, cloth: 50 }],
+  ]),
   ...group('bowcraft', 'Munición', [
     ['arrow', 0, boards(2), 10],
     ['bolt', 0, boards(2), 10],
