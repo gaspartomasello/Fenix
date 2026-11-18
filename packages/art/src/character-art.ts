@@ -12,6 +12,7 @@ import {
   PORTRAIT_HEAD,
   CHARACTER_ART_HEIGHT,
   CHARACTER_ART_WIDTH,
+  CHARACTER_FEET_Y,
   cameraFor,
   heldInLeftHand,
   humanoidRig,
@@ -330,9 +331,24 @@ function drawFigure(
 ): PixelImage {
   // Montado: lienzo más grande, la montura primero y el jinete sentado en ella.
   const layout = mount ? mountLayout(mount) : null;
+  // La horca y la hoz superan el ancho normal en algunos cuadros. Se amplía
+  // solo el sprite del mundo, con los pies y el centro en el mismo lugar.
+  // Los lienzos propios de la ventana de equipo y los cuerpos conservan su tamaño.
+  const worldWidth =
+    canvasFor === spriteCanvas
+      ? equipment.rightHand === 'pitchfork'
+        ? 104
+        : equipment.rightHand === 'sickle'
+          ? 72
+          : CHARACTER_ART_WIDTH
+      : CHARACTER_ART_WIDTH;
   const canvas = layout
     ? spriteCanvas(layout.width, layout.height, mountedCamera(direction, mount ?? undefined))
-    : canvasFor(CHARACTER_ART_WIDTH, CHARACTER_ART_HEIGHT, cameraFor(direction));
+    : canvasFor(
+        worldWidth,
+        CHARACTER_ART_HEIGHT,
+        cameraFor(direction, undefined, { width: worldWidth, feetY: CHARACTER_FEET_Y }),
+      );
   const ride = mount ? drawMount(canvas, mount, frame) : null;
   const female = appearance.gender === 'female';
   const outfit = role ? (OUTFITS[role] ?? null) : null;
