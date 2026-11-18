@@ -409,28 +409,10 @@ const MODELS: Readonly<Record<BaseItemKind, Model>> = {
     ribs(c, ramp([132, 70, 36]));
   },
   bandage(c) {
-    // Venda enrollada con espiral visible en el extremo y una tira suelta.
-    const linen = ramp([232, 226, 210]);
-    c.polygon(
-      [
-        [-2.8, 0.65, 0.8],
-        [-0.5, 0.65, 1.5],
-        [-2.4, 0.65, 5.6],
-        [-5.2, 0.65, 4.5],
-      ],
-      (s) => tone(linen, s.light, Math.abs(s.p[2] - 3.7) < 0.14 ? -1 : 0),
-    );
-    c.limb([-2.5, 2, 0], [2.5, 2, 0], 1.85, 1.85, (s) =>
-      tone(linen, s.light, Math.abs(s.p[0] + 0.5) < 0.2 ? -1 : 0),
-    );
-    const end = Array.from({ length: 12 }, (_, i): Vec3 => {
-      const a = (i * Math.PI) / 6;
-      return [2.55, 2 + Math.cos(a) * 1.8, Math.sin(a) * 1.8];
-    });
-    c.polygon(end, (s) => {
-      const r = Math.hypot(s.p[1] - 2, s.p[2]);
-      return tone(linen, s.light, r < 0.35 || (r > 0.85 && r < 1.1) ? -2 : 1);
-    });
+    rolledBandage(c, false);
+  },
+  'bloody-bandage'(c) {
+    rolledBandage(c, true);
   },
   bread(c) {
     // Hogaza dorada con cortes en la corteza.
@@ -2955,4 +2937,42 @@ const LEATHER_DARK_ICON = ramp([84, 54, 34]);
 
 function lerp3(a: Vec3, b: Vec3, t: number): Vec3 {
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+}
+
+/**
+ * Venda enrollada con espiral visible en el extremo y una tira suelta. La
+ * usada tiene el lino amarillento y manchas de sangre seca en la tira y el rollo.
+ */
+function rolledBandage(c: VolumeCanvas, bloody: boolean): void {
+  const linen = ramp(bloody ? [214, 200, 172] : [232, 226, 210]);
+  const blood = ramp([150, 30, 26]);
+  // Manchas de sangre: unas pocas, fijas, en la tira y sobre el rollo.
+  const stained = (p: Vec3): boolean =>
+    bloody &&
+    ((p[0] + 3.4) ** 2 + (p[2] - 3.4) ** 2 < 1.3 ||
+      (p[0] + 1.8) ** 2 + (p[2] - 1.6) ** 2 < 0.45 ||
+      (p[0] - 0.9) ** 2 + (p[1] - 3.4) ** 2 < 0.9 ||
+      (p[0] + 1.6) ** 2 + (p[1] - 3.2) ** 2 + p[2] ** 2 < 0.5);
+  const cloth = (p: Vec3, light: number, shade: number): Rgb =>
+    stained(p) ? tone(blood, light, shade) : tone(linen, light, shade);
+  c.polygon(
+    [
+      [-2.8, 0.65, 0.8],
+      [-0.5, 0.65, 1.5],
+      [-2.4, 0.65, 5.6],
+      [-5.2, 0.65, 4.5],
+    ],
+    (s) => cloth(s.p, s.light, Math.abs(s.p[2] - 3.7) < 0.14 ? -1 : 0),
+  );
+  c.limb([-2.5, 2, 0], [2.5, 2, 0], 1.85, 1.85, (s) =>
+    cloth(s.p, s.light, Math.abs(s.p[0] + 0.5) < 0.2 ? -1 : 0),
+  );
+  const end = Array.from({ length: 12 }, (_, i): Vec3 => {
+    const a = (i * Math.PI) / 6;
+    return [2.55, 2 + Math.cos(a) * 1.8, Math.sin(a) * 1.8];
+  });
+  c.polygon(end, (s) => {
+    const r = Math.hypot(s.p[1] - 2, s.p[2]);
+    return tone(linen, s.light, r < 0.35 || (r > 0.85 && r < 1.1) ? -2 : 1);
+  });
 }

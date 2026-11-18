@@ -15,6 +15,7 @@ const WEIGHTS: Partial<Record<ItemKind, number>> = {
   arrow: 0.05,
   bolt: 0.05,
   bandage: 0.05,
+  'bloody-bandage': 0.05,
   'black-pearl': 0.02,
   'blood-moss': 0.02,
   garlic: 0.02,
