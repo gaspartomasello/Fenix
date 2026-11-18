@@ -213,7 +213,11 @@ export class Corpses {
       delete result.changes.message;
       this.items.publish(result.changes, playerId);
     }
-    if (taken.length > 0) this.say(playerId, `Tomaste: ${taken.join(', ')}.`);
+    if (taken.length > 0)
+      this.say(
+        playerId,
+        own ? `Recuperaste tus cosas: ${taken.join(', ')}.` : `Tomaste: ${taken.join(', ')}.`,
+      );
   }
 
   /** El cuerpo se deshizo: se cierran sus ventanas y lo que quedaba se pierde. */

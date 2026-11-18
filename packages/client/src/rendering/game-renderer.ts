@@ -205,6 +205,12 @@ export class GameRenderer {
     return this.groundItems.itemAt(this.toWorld(point));
   }
 
+  /** El cuerpo (o los huesos) de un jugador bajo un punto de la pantalla: es un objeto del suelo. */
+  playerCorpseAt(point: ScreenPoint): GroundItemSnapshot | null {
+    const item = this.groundItems.itemAt(this.toWorld(point));
+    return item?.kind === 'player-corpse' || item?.kind === 'player-bones' ? item : null;
+  }
+
   /** Criatura viva bajo un punto de la pantalla (la de más adelante si hay varias). */
   creatureAt(point: ScreenPoint): EntityId | null {
     return this.mobileAt(point, (view) => view.isAliveCreature);

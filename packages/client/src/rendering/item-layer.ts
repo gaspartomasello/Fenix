@@ -76,8 +76,13 @@ export class ItemLayer {
   itemAt(point: ScreenPoint): GroundItemSnapshot | null {
     let best: { item: GroundItemSnapshot; z: number } | null = null;
     for (const { sprite, item } of this.sprites.values()) {
+      if (!sprite.visible) continue;
+      // El cuerpo de un jugador es grande (una persona tirada): se toca en cualquier parte de él.
       const inside =
-        Math.abs(point.x - sprite.x) <= HALF * 0.7 && Math.abs(point.y - sprite.y) <= HALF * 0.7;
+        item.kind === 'player-corpse' || item.kind === 'player-bones'
+          ? insideDrawing(sprite, point)
+          : Math.abs(point.x - sprite.x) <= HALF * 0.7 &&
+            Math.abs(point.y - sprite.y) <= HALF * 0.7;
       if (inside && (!best || sprite.zIndex > best.z)) best = { item, z: sprite.zIndex };
     }
     return best?.item ?? null;
@@ -103,4 +108,19 @@ export class ItemLayer {
     this.sprites.get(id)?.sprite.destroy();
     this.sprites.delete(id);
   }
+}
+
+/** ¿Cae el punto dentro del dibujo (su rectángulo, un poco achicado para no tocar de más)? */
+function insideDrawing(sprite: Sprite, point: ScreenPoint): boolean {
+  const width = sprite.texture.width * Math.abs(sprite.scale.x);
+  const height = sprite.texture.height * Math.abs(sprite.scale.y);
+  const left = sprite.x - sprite.anchor.x * width;
+  const top = sprite.y - sprite.anchor.y * height;
+  const margin = 0.15;
+  return (
+    point.x >= left + width * margin &&
+    point.x <= left + width * (1 - margin) &&
+    point.y >= top + height * margin &&
+    point.y <= top + height * (1 - margin)
+  );
 }
