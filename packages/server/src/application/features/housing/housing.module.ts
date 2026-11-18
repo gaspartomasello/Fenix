@@ -25,6 +25,10 @@ export const housingModule: ModuleFactory = (kernel) => {
   kernel.guards.container.add((playerId, containerId) =>
     housing.containerRefusal(playerId, containerId),
   );
+  kernel.services.provide('houses', {
+    at: (position) => housing.furnishedAt(position),
+    setFurniture: (houseId, furniture) => housing.setFurniture(houseId, furniture),
+  });
   return {
     name: 'housing',
     handles: {

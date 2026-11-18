@@ -309,6 +309,21 @@ export function decodeClientMessage(raw: string): DecodeResult<ClientMessage> {
         return { ok: true, message: { type: 'placeHouse', deedId: data.deedId, position } };
       break;
     }
+    case 'placeFurniture': {
+      const position = asPosition(data.position);
+      if (isId(data.itemId) && position)
+        return { ok: true, message: { type: 'placeFurniture', itemId: data.itemId, position } };
+      break;
+    }
+    case 'furnitureAction': {
+      const position = asPosition(data.position);
+      if (position && (data.action === 'turn' || data.action === 'pickUp'))
+        return {
+          ok: true,
+          message: { type: 'furnitureAction', position, action: data.action },
+        };
+      break;
+    }
     case 'houseAction':
       if (isId(data.houseId) && isHouseAction(data.action))
         return {

@@ -1,3 +1,4 @@
+import type { StaticPlacement } from '@fenix/shared/world/statics';
 import type { Position } from '@fenix/shared/geometry/position';
 import {
   HOUSE_PLANS,
@@ -16,6 +17,8 @@ export class House {
   chestIds: EntityId[] = [];
   /** El diseño de una casa a medida (null: una casa hecha). */
   design: HouseDesign | null;
+  /** Los muebles que puso el dueño (en el mapa). */
+  furniture: StaticPlacement[] = [];
 
   constructor(
     readonly id: EntityId,
@@ -46,6 +49,7 @@ export class House {
       slots: this.slots,
       name: this.name,
       ...(this.design ? { design: this.design } : {}),
+      ...(this.furniture.length > 0 ? { furniture: this.furniture } : {}),
     };
   }
 
@@ -70,6 +74,7 @@ export class House {
       public: this.security.public,
       ...(openDoors.length > 0 ? { openDoors } : {}),
       ...(this.design ? { design: this.design } : {}),
+      ...(this.furniture.length > 0 ? { furniture: this.furniture } : {}),
     };
   }
 }

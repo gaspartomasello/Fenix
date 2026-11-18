@@ -295,7 +295,7 @@ export const ITEM_KINDS: readonly ItemKind[] = [...BASE_ITEM_KINDS, ...SCROLL_KI
  * Qué pasa con doble clic. `tool`: elegir un lugar para recolectar (árbol,
  * roca, agua); `craft`: abrir la ventana del oficio; `smelt`: fundir mineral
  * cerca de una forja; `bandage`: elegir a quién vendar; `scroll`: lanzar el
- * hechizo del pergamino.
+ * hechizo del pergamino; `furniture`: elegir dónde ponerlo adentro de la casa.
  */
 export type ItemUse =
   | 'eat'
@@ -317,6 +317,7 @@ export type ItemUse =
   | 'house'
   | 'lockpick'
   | 'mastery'
+  | 'furniture'
   | 'none';
 
 /** Lo que hace una poción al tomarla. */
@@ -934,31 +935,82 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
 
   logs: { name: 'tronco', plural: 'troncos', article: 'un', stackable: true },
   boards: { name: 'tabla', plural: 'tablas', article: 'una', stackable: true },
-  'furniture-stool': { name: 'banqueta', plural: 'banquetas', article: 'una', furniture: 'stool' },
-  'furniture-chair': { name: 'silla', plural: 'sillas', article: 'una', furniture: 'chair-s' },
-  'furniture-table': { name: 'mesa', plural: 'mesas', article: 'una', furniture: 'table' },
-  'furniture-bench': { name: 'banco', plural: 'bancos', article: 'un', furniture: 'bench-x' },
+  'furniture-stool': {
+    name: 'banqueta',
+    plural: 'banquetas',
+    article: 'una',
+    furniture: 'stool',
+    use: 'furniture',
+  },
+  'furniture-chair': {
+    name: 'silla',
+    plural: 'sillas',
+    article: 'una',
+    furniture: 'chair-s',
+    use: 'furniture',
+  },
+  'furniture-table': {
+    name: 'mesa',
+    plural: 'mesas',
+    article: 'una',
+    furniture: 'table',
+    use: 'furniture',
+  },
+  'furniture-bench': {
+    name: 'banco',
+    plural: 'bancos',
+    article: 'un',
+    furniture: 'bench-x',
+    use: 'furniture',
+  },
   'furniture-bookshelf': {
     name: 'biblioteca',
     plural: 'bibliotecas',
     article: 'una',
     furniture: 'bookshelf-x',
+    use: 'furniture',
   },
-  'furniture-crate': { name: 'cajón', plural: 'cajones', article: 'un', furniture: 'crate' },
-  'furniture-chest': { name: 'cofre', plural: 'cofres', article: 'un', furniture: 'chest' },
-  'furniture-throne': { name: 'trono', plural: 'tronos', article: 'un', furniture: 'throne' },
-  'furniture-wardrobe': { name: 'ropero', plural: 'roperos', article: 'un', furniture: 'wardrobe' },
+  'furniture-crate': {
+    name: 'cajón',
+    plural: 'cajones',
+    article: 'un',
+    furniture: 'crate',
+    use: 'furniture',
+  },
+  'furniture-chest': {
+    name: 'cofre',
+    plural: 'cofres',
+    article: 'un',
+    furniture: 'chest-x',
+    use: 'furniture',
+  },
+  'furniture-throne': {
+    name: 'trono',
+    plural: 'tronos',
+    article: 'un',
+    furniture: 'throne',
+    use: 'furniture',
+  },
+  'furniture-wardrobe': {
+    name: 'ropero',
+    plural: 'roperos',
+    article: 'un',
+    furniture: 'wardrobe',
+    use: 'furniture',
+  },
   'furniture-bed': {
     name: 'cama de una plaza',
     plural: 'camas de una plaza',
     article: 'una',
-    furniture: 'bed',
+    furniture: 'bed-x',
+    use: 'furniture',
   },
   'furniture-double-bed': {
     name: 'cama de dos plazas',
     plural: 'camas de dos plazas',
     article: 'una',
-    furniture: 'double-bed',
+    furniture: 'double-bed-x',
+    use: 'furniture',
   },
 
   'stone-block': {

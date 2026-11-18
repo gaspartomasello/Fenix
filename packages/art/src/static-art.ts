@@ -2235,8 +2235,14 @@ const counter: Model = (c, variant) => {
 };
 
 /** Cofre con tapa redondeada, flejes de hierro y cerradura de bronce. */
-const chest: Model = (c, variant) => {
-  const f: Vec3 = variant === 1 ? [0, 0, 1] : [Math.SQRT1_2, 0, Math.SQRT1_2];
+const chest: Model = (c, variant) =>
+  chestFacing(c, variant, variant === 1 ? [0, 0, 1] : [Math.SQRT1_2, 0, Math.SQRT1_2]);
+
+/** Los cofres de las casas de los jugadores: miran hacia un lado o hacia el otro (se giran). */
+const chestX: Model = (c, variant) => chestFacing(c, variant, [0, 0, 1]);
+const chestY: Model = (c, variant) => chestFacing(c, variant, [1, 0, 0]);
+
+function chestFacing(c: VolumeCanvas, variant: number, f: Vec3): void {
   const wood = planks(variant === 2 ? ramp([110, 40, 40]) : FURNITURE, 0, 3);
   // Baúl grande: caja, tapa abombada, flejes y esquineros de hierro, y una cerradura de bronce.
   c.box(local(f, 0, 5.5, 0), facing(f), [10, 5.5, 6.5], wood);
@@ -2262,7 +2268,7 @@ const chest: Model = (c, variant) => {
   // Asas a los costados.
   for (const sx of [-10.6, 10.6])
     c.limb(local(f, sx, 7, -2), local(f, sx, 7, 2), 0.5, 0.5, metal(IRON));
-};
+}
 
 /** Armero: bastidor con lanzas, espadas y un escudo. */
 const weaponRack: Model = (c) => {
@@ -2303,9 +2309,9 @@ const armorStand: Model = (c) => {
 };
 
 /** Cama: armazón de madera con postes torneados, colchón, frazada y almohada (de una plaza o de dos). */
-function bedOf(width: number): Model {
+function bedOf(width: number, along?: 'x' | 'y'): Model {
   return (c, variant) => {
-    const f: Vec3 = variant === 1 ? [1, 0, 0] : [0, 0, 1];
+    const f: Vec3 = (along ? along === 'y' : variant === 1) ? [1, 0, 0] : [0, 0, 1];
     const half = width / 2;
     c.box(local(f, 0, 3.4, 0), facing(f), [half, 3.4, 13], planks(FURNITURE, 2, 4));
     // Cabecera alta con dos postes y una tabla tallada; los pies, más bajos.
@@ -2339,6 +2345,10 @@ function bedOf(width: number): Model {
 }
 const bed = bedOf(14);
 const doubleBed = bedOf(24);
+const bedX = bedOf(14, 'x');
+const bedY = bedOf(14, 'y');
+const doubleBedX = bedOf(24, 'x');
+const doubleBedY = bedOf(24, 'y');
 
 /** Hogar: chimenea de piedra con el fuego encendido y leños. */
 const hearth: Model = (c) => {
@@ -3749,6 +3759,12 @@ const SPECS: Readonly<Record<StaticKind, StaticSpec>> = {
   'armor-stand': { model: armorStand, shadow: [8, 3] },
   bed: { model: bed, shadow: [16, 7] },
   'double-bed': { model: doubleBed, shadow: [20, 8] },
+  'bed-x': { model: bedX, shadow: [16, 7] },
+  'bed-y': { model: bedY, shadow: [16, 7] },
+  'double-bed-x': { model: doubleBedX, shadow: [20, 8] },
+  'double-bed-y': { model: doubleBedY, shadow: [20, 8] },
+  'chest-x': { model: chestX, shadow: [13, 6] },
+  'chest-y': { model: chestY, shadow: [13, 6] },
   hearth: { model: hearth, shadow: [16, 6] },
   keg: { model: keg, shadow: [11, 5] },
   'chair-n': { model: (c) => chair(c, [0, 0, -1]), shadow: [7, 3] },

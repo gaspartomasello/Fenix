@@ -1,3 +1,4 @@
+import type { StaticPlacement } from '../world/statics';
 import type { Position } from '../geometry/position';
 import { Terrain } from '../world/terrain';
 import type {
@@ -26,6 +27,8 @@ export interface HouseSite {
   readonly name: string;
   /** El diseño de una casa a medida (en un lote). */
   readonly design?: HouseDesign;
+  /** Los muebles puestos (en el mapa). */
+  readonly furniture?: readonly StaticPlacement[];
 }
 
 /** El plano de la casa levantada: el de su clase o, en un lote, el de su diseño. */
@@ -211,6 +214,8 @@ export function houseStructure(site: HouseSite): MapStructure {
         teleporters.push({ ...at(slot, level.up), to: at(next.slot, next.level.arrival) });
     });
   }
+  // Los muebles que puso el dueño.
+  for (const piece of site.furniture ?? []) statics.push({ ...piece });
   // El cartel con el nombre, afuera, al lado del camino a la puerta.
   statics.push({ kind: 'sign', ...houseSign(site) });
   return {

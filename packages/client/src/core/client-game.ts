@@ -1,3 +1,4 @@
+import type { StaticKind } from '@fenix/shared/world/statics';
 import type { SkillKey, SkillDirection, SkillDirections } from '@fenix/shared/skills/skill-catalog';
 import type { AttributeKey } from '@fenix/shared/magic/effects';
 import type { StatDirections } from '@fenix/shared/skills/stat-gain';
@@ -816,6 +817,25 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   /** Cavar con la pala (buscando un tesoro). */
   dig(toolId: EntityId, position: { x: number; y: number }): void {
     if (this.self) this.gateway.send({ type: 'dig', toolId, position });
+  }
+
+  /** Poner un mueble de la mochila adentro de la casa. */
+  placeFurniture(itemId: EntityId, position: { x: number; y: number }): void {
+    if (this.self) this.gateway.send({ type: 'placeFurniture', itemId, position });
+  }
+
+  /** Girar un mueble puesto o volver a guardarlo en la mochila. */
+  furnitureAction(position: { x: number; y: number }, action: 'turn' | 'pickUp'): void {
+    if (this.self) this.gateway.send({ type: 'furnitureAction', position, action });
+  }
+
+  /** El mueble puesto en ese tile (de alguna casa), con el nombre de su dueño. */
+  furnitureAt(position: { x: number; y: number }): { kind: StaticKind; owner: string } | null {
+    for (const house of this._houses.values())
+      for (const piece of house.furniture ?? [])
+        if (piece.x === position.x && piece.y === position.y)
+          return { kind: piece.kind, owner: house.owner };
+    return null;
   }
 
   buy(vendorId: EntityId, kind: ItemKind, amount: number): void {

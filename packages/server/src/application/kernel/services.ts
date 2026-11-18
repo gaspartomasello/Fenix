@@ -5,6 +5,7 @@ import type { EntityId } from '@fenix/shared/protocol/messages';
 import type { Creature } from '../../domain/creatures/creature';
 import type { Mobile } from '../../domain/mobile';
 import type { Player } from '../../domain/player';
+import type { StaticPlacement } from '@fenix/shared/world/statics';
 
 /**
  * Lo que un módulo ofrece a los demás. Cada uno es una interfaz chica: quien
@@ -55,6 +56,26 @@ export interface GameServices {
    * cercano si hay a quién ajusticiar alrededor. `lawless`: ahí no hay guardias.
    */
   guards: { call(at: Position, now: number): 'coming' | 'nobody' | 'lawless' };
+  /** Las casas de los jugadores, para amueblarlas. */
+  houses: {
+    /** La casa en esa posición (planta baja o piso alto), o null. */
+    at(position: Position): FurnishedHouse | null;
+    /** Cambia los muebles puestos: se rearma la casa en el mapa y se avisa a todos. */
+    setFurniture(houseId: EntityId, furniture: readonly StaticPlacement[]): void;
+  };
+}
+
+/** Lo que se sabe de una casa para amueblarla. */
+export interface FurnishedHouse {
+  readonly id: EntityId;
+  readonly name: string;
+  /** Cuántos muebles entran. */
+  readonly limit: number;
+  readonly furniture: readonly StaticPlacement[];
+  /** ¿Lo puede amueblar (el dueño o un copropietario)? */
+  canFurnish(playerName: string): boolean;
+  /** ¿Es piso de adentro (no el patio)? */
+  indoors(position: Position): boolean;
 }
 
 export type ServiceName = keyof GameServices;

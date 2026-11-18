@@ -1208,6 +1208,12 @@ compras de 2000 monedas o más se pueden pagar con el oro del banco.
   `guards.door` (las puertas de una casa privada solo las abren los amigos; desde adentro, siempre),
   `guards.move` (los echados no entran), `guards.take` (lo que hay adentro es de los amigos) y
   `guards.container` (los cofres y bolsas de adentro, también).
+- **Muebles** (`features/furniture`, reglas en `shared/housing/furniture.ts`): los muebles que
+  fabrica un carpintero (objetos con `furniture`) se ponen con doble clic en un lugar libre del piso
+  de adentro de la casa (`placeFurniture`), a dos tiles o menos, sin tapar puertas: quedan como
+  piezas de la casa (`HouseSite.furniture`, ocupan su tile, no se roban y se guardan con la casa).
+  El dueño o un copropietario los gira o los vuelve a guardar en la mochila (`furnitureAction`).
+  Entran doce por cada cofre que trae la casa. La casa los da al módulo con el servicio `houses`.
 - **Permisos**: dueño, copropietarios (todo menos demoler y nombrar copropietarios), amigos (abren
   puertas y cofres, levantan lo de adentro), visitas y echados. Pública: cualquiera abre las
   puertas, menos los echados.

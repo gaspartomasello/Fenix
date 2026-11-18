@@ -7,6 +7,7 @@ import {
   type HouseKind,
   type HouseSecurity,
 } from '@fenix/shared/housing/houses';
+import { isStaticKind, type StaticPlacement } from '@fenix/shared/world/statics';
 import { House } from '../housing/house';
 import type { World } from '../world';
 import { captureItem, parseSavedItem, restoreItem, type SavedItem } from './saved-character';
@@ -33,6 +34,8 @@ export interface SavedHouse {
   readonly floor: readonly { readonly at: Position; readonly item: SavedItem }[];
   /** Lo de adentro de cada cofre, en el orden de los cofres del plano. */
   readonly chests: readonly (readonly SavedItem[])[];
+  /** Los muebles puestos (en el mapa). */
+  readonly furniture?: readonly StaticPlacement[];
 }
 
 /** Toma una foto de la casa con lo que tiene adentro. */
@@ -55,6 +58,7 @@ export function captureHouse(world: World, house: House): SavedHouse {
     owner: house.owner,
     security: house.security,
     ...(house.design ? { design: house.design } : {}),
+    ...(house.furniture.length > 0 ? { furniture: house.furniture } : {}),
     world: world.mapId,
     floor,
     chests: house.chestIds.map((id) =>
@@ -132,6 +136,13 @@ export function parseSavedHouse(value: unknown): SavedHouse | null {
       })
     : [];
   const design = parseHouseDesign(value.design, kind);
+  const furniture = Array.isArray(value.furniture)
+    ? value.furniture.flatMap((entry) => {
+        if (!isObject(entry) || !isStaticKind(entry.kind)) return [];
+        const at = asPosition(entry);
+        return at ? [{ kind: entry.kind, ...at }] : [];
+      })
+    : [];
   const chests = Array.isArray(value.chests)
     ? value.chests.map((contents) =>
         Array.isArray(contents) ? contents.flatMap((item) => parseSavedItem(item) ?? []) : [],
@@ -153,6 +164,7 @@ export function parseSavedHouse(value: unknown): SavedHouse | null {
       banned: names(security.banned),
     },
     ...(design ? { design } : {}),
+    ...(furniture.length > 0 ? { furniture } : {}),
     world,
     floor,
     chests,
@@ -167,7 +179,7 @@ export function parseHouseList(raw: string): SavedHouse[] {
 
 /** La casa guardada, de nuevo como casa (sin poner todavía lo de adentro). */
 export function houseOf(saved: SavedHouse): House {
-  return new House(
+  const house = new House(
     saved.id,
     saved.kind,
     { x: saved.x, y: saved.y },
@@ -177,4 +189,6 @@ export function houseOf(saved: SavedHouse): House {
     saved.security,
     saved.design,
   );
+  house.furniture = [...(saved.furniture ?? [])];
+  return house;
 }
