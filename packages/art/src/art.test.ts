@@ -77,13 +77,13 @@ describe('arte procedural (sin DOM)', () => {
     }
   });
 
-  it('mantiene los píxeles de las armas de espadas de la referencia', () => {
+  it('mantiene los píxeles de las armas de la referencia y de la katana elegida', () => {
     const sources = [
       ['bardiche', 43, 38, 2674265277],
       ['broadsword', 24, 21, 809205224],
       ['cutlass', 17, 22, 206217893],
       ['halberd', 56, 46, 569565504],
-      ['katana', 23, 26, 1186815936],
+      ['katana', 59, 57, 596895070],
       ['longsword', 32, 31, 357849512],
       ['scimitar', 21, 26, 242315224],
       ['viking-sword', 27, 26, 3988415381],
