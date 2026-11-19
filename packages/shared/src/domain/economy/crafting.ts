@@ -328,6 +328,7 @@ export const RECIPES: readonly Recipe[] = [
     ['wooden-box', 210, boards(10)],
     ['quarterstaff', 400, boards(6)],
     ['bokuto', 400, boards(8)],
+    ['tachi', 600, boards(12)],
     ['dye-tub', 500, boards(10)],
   ]),
   // Instrumentos: los mínimos de UO (tambor 57,8; laúd 68,3; flauta 78,9).

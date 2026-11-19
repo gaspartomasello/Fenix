@@ -1780,6 +1780,7 @@ const STANCES: Partial<Record<ItemKind, Vec3>> = {
       'daisho',
       'elven-machete',
       'no-dachi',
+      'tachi',
       'radiant-scimitar',
       'rune-blade',
       'the-redeemer',
@@ -2152,6 +2153,7 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     daisho: { length: 16, width: 0.8, guard: 1.2 },
     'elven-machete': { length: 13, width: 1.5, guard: 1.5 },
     'no-dachi': { length: 20, width: 0.9, guard: 1.2 },
+    tachi: { length: 18, width: 0.85, guard: 0.7 },
     'radiant-scimitar': { length: 14, width: 1.3, guard: 2.2 },
     'rune-blade': { length: 17, width: 1.2, guard: 2.6 },
     'the-redeemer': { length: 18, width: 1.5, guard: 3.2 },
@@ -2195,6 +2197,20 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     return;
   }
   if (katana) return drawKatana(canvas, along, dir, up);
+  if (kind === 'tachi') {
+    // Hoja larga y curva en cobre, con empuñadura oscura como el sprite enviado.
+    canvas.limb(along(-5), along(1), 0.7, 0.7, grip);
+    canvas.limb(along(1), along(3), 0.9, 0.9, metal(GOLD));
+    const copper = solid(ramp([205, 125, 67]));
+    let start = along(3);
+    for (let i = 1; i <= 8; i++) {
+      const t = i / 8;
+      const end = add(along(3 + t * length), scale(up, 2.8 * t * t));
+      canvas.limb(start, end, 0.95 - t * 0.35, i === 8 ? 0.12 : 0.95 - t * 0.35, copper);
+      start = end;
+    }
+    return;
+  }
   if (kind === 'daisho') {
     // Par de hojas: la larga en la empuñadura y la corta junto a ella.
     const second = (k: number): Vec3 => add(along(k), scale(side, 2.5));

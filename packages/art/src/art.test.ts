@@ -106,6 +106,7 @@ describe('arte procedural (sin DOM)', () => {
       ['daisho', 44, 37, 810411189],
       ['elven-machete', 32, 37, 3605336277],
       ['no-dachi', 66, 40, 3469151997],
+      ['tachi', 65, 37, 3141146302],
       ['pickaxe', 28, 28, 3228280093],
       ['radiant-scimitar', 46, 51, 4207232192],
       ['rune-blade', 42, 39, 2783960216],

@@ -142,6 +142,7 @@ const WEAPONS: Partial<Record<ItemKind, Weapon>> = {
   daisho: sword('daisho', 13, 16, 2750, 40),
   'elven-machete': sword('machete élfico', 11, 15, 2750, 20),
   'no-dachi': sword('no-dachi', 16, 19, 3500, 40),
+  tachi: sword('tachi', 16, 19, 3500, 55),
   'radiant-scimitar': sword('cimitarra radiante', 10, 14, 2500, 20),
   'rune-blade': sword('hoja rúnica', 14, 17, 3000, 30),
   'the-redeemer': sword('Redentora', 20, 24, 5000, 85),

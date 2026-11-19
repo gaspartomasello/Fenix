@@ -1262,6 +1262,11 @@ const MODELS: Readonly<Record<ModeledKind, Model>> = {
     blade(c, [-7, 0.6, 4], [8, 0.6, -4], 0.85);
     hilt(c, [-7, 0.6, 4], normalize([15, 0, -8]), 5, 1.2);
   },
+  tachi(c) {
+    c.limb([-7, 0.6, 4], [-1, 0.6, 1], 0.7, 0.7, solid(GRIP));
+    c.limb([-1, 0.6, 1], [3, 0.6, -1], 0.9, 0.9, solid(ramp([180, 104, 56])));
+    c.limb([3, 0.6, -1], [8, 0.6, -4], 1.1, 0.15, solid(ramp([211, 129, 68])));
+  },
   'radiant-scimitar'(c) {
     blade(c, [-5, 0.6, 3], [6, 0.6, -2], 1.25);
     hilt(c, [-5, 0.6, 3], normalize([11, 0, -5]), 3, 2);
