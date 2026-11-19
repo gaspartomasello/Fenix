@@ -74,6 +74,23 @@ describe('Items', () => {
     expect(items.get('dagger')?.location.type).toBe('backpack');
   });
 
+  it('impide equipar una espada si la fuerza no alcanza', () => {
+    items.add('heavy', 'halberd', 1, {
+      type: 'backpack',
+      ownerId: 'ana',
+      position: { x: 0, y: 0 },
+    });
+    const weak = { ...ana, combat: { attributes: { strength: 94 } } };
+    expect(items.move(weak, 'heavy', { type: 'equipment', slot: 'rightHand' }, map)).toEqual({
+      ok: false,
+      reason: 'Necesitás 95 puntos de fuerza para usar esa arma.',
+    });
+    const strong = { ...ana, combat: { attributes: { strength: 95 } } };
+    expect(items.move(strong, 'heavy', { type: 'equipment', slot: 'rightHand' }, map).ok).toBe(
+      true,
+    );
+  });
+
   it('con doble clic se come, se bebe y se pone o se saca', () => {
     items.add('apples', 'apple', 2, { type: 'backpack', ownerId: 'ana', position: { x: 0, y: 0 } });
     items.add('cap', 'leather-cap', 1, {

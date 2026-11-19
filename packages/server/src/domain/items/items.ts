@@ -1,4 +1,5 @@
 import type { Position } from '@fenix/shared/geometry/position';
+import { weaponByKind } from '@fenix/shared/combat/weapons';
 import type { EquipmentSlot } from '@fenix/shared/items/equipment';
 import { ITEMS, MAX_STACK, describeItem, type ItemKind } from '@fenix/shared/items/item-catalog';
 import {
@@ -39,12 +40,17 @@ export interface ItemActor {
   readonly position: Position;
   /** Su apariencia (el peto de placas de mujer solo lo usan ellas). */
   readonly appearance?: { readonly gender?: string };
+  /** Los personajes reales aportan sus atributos para validar armas pesadas. */
+  readonly combat?: { readonly attributes: { readonly strength: number } };
 }
 
 /** Por qué no puede ponerse algo (null: sí puede). */
 function wearRefusal(actor: ItemActor, kind: ItemKind): string | null {
   if (ITEMS[kind].womenOnly && actor.appearance?.gender !== 'female')
     return 'Ese peto está hecho para una mujer.';
+  const requiredStrength = weaponByKind(kind)?.minStrength;
+  if (requiredStrength && actor.combat && actor.combat.attributes.strength < requiredStrength)
+    return `Necesitás ${requiredStrength} puntos de fuerza para usar esa arma.`;
   return null;
 }
 

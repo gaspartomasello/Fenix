@@ -104,6 +104,9 @@ const THRUSTING: ReadonlySet<ItemKind> = new Set<ItemKind>([
   'short-spear',
   'war-fork',
   'pitchfork',
+  'bladed-staff',
+  'butcher-knife',
+  'skinning-knife',
 ]);
 
 /** Armas que se llevan en la mano izquierda (el arco, como en UO). */

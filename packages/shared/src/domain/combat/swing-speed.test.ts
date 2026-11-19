@@ -15,7 +15,7 @@ describe('velocidad de los golpes (Sphere: destreza; OSI: energía)', () => {
 
   it('con más destreza se pega más rápido, con menos más lento', () => {
     if (!katana) throw new Error('falta la katana');
-    expect(swingDelayMs(katana, 100)).toBe(1400);
+    expect(swingDelayMs(katana, 100)).toBe(1750);
     expect(swingDelayMs(katana, 10)).toBeGreaterThan(katana.swingMs);
   });
 

@@ -341,7 +341,11 @@ function drawFigure(
   // Los lienzos propios de la ventana de equipo y los cuerpos conservan su tamaño.
   const worldWidth =
     canvasFor === spriteCanvas
-      ? equipment.rightHand === 'pitchfork'
+      ? equipment.rightHand === 'pitchfork' ||
+        equipment.rightHand === 'bladed-staff' ||
+        equipment.rightHand === 'crescent-blade' ||
+        equipment.rightHand === 'scythe' ||
+        equipment.rightHand === 'executioners-axe'
         ? 104
         : equipment.rightHand === 'sickle'
           ? SICKLE_ART_WIDTH
@@ -1739,6 +1743,7 @@ const HEAVY_AXES: Partial<
   'battle-axe': { haft: 13, reach: 4.6, height: 3.6, double: false },
   'two-handed-axe': { haft: 17, reach: 4.8, height: 3.8, double: false },
   'large-battle-axe': { haft: 17, reach: 4.8, height: 4, double: true },
+  'executioners-axe': { haft: 16, reach: 5.2, height: 4.2, double: false },
 };
 
 /** Las armas de asta, que en la ventana de personaje se muestran paradas al costado (como en UO). */
@@ -1750,6 +1755,9 @@ const POLEARMS: ReadonlySet<ItemKind> = new Set<ItemKind>([
   'pitchfork',
   'bardiche',
   'quarterstaff',
+  'bladed-staff',
+  'crescent-blade',
+  'scythe',
 ]);
 
 /**
@@ -1769,13 +1777,24 @@ const STANCES: Partial<Record<ItemKind, Vec3>> = {
   katana: [0.12, -0.45, 0.88],
   // La hoz cuelga junto al muslo, con la media luna hacia adelante.
   sickle: [0.18, -0.9, 0.42],
+  'bone-harvester': [0.3, 0.75, 0.45],
+  'butcher-knife': [0.1, -0.8, 0.4],
+  cleaver: [0.4, 0.6, 0.5],
+  'skinning-knife': [0.1, -0.8, 0.4],
   dagger: [0.1, -0.85, 0.5],
   kryss: [0.1, -0.85, 0.5],
   ...Object.fromEntries(
-    ['mace', 'club', 'flail', 'war-hammer', 'axe', 'war-axe', 'hammer-pick', 'pickaxe'].map((k) => [
-      k,
-      [-0.35, 0.85, -0.45] as Vec3,
-    ]),
+    [
+      'mace',
+      'club',
+      'flail',
+      'war-hammer',
+      'axe',
+      'hatchet',
+      'war-axe',
+      'hammer-pick',
+      'pickaxe',
+    ].map((k) => [k, [-0.35, 0.85, -0.45] as Vec3]),
   ),
 };
 
@@ -1825,6 +1844,56 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     // La hacha de batalla lleva un pico corto atrás.
     if (kind === 'battle-axe')
       canvas.limb(head, add(head, scale(side, -3)), 0.8, 0.2, metal(DARK_STEEL));
+    return;
+  }
+  if (kind === 'bladed-staff' || kind === 'crescent-blade') {
+    canvas.limb(along(-13), along(13), 0.55, 0.55, solid(WOOD));
+    for (const end of [-1, 1]) {
+      const a = along(end * 13);
+      const b = along(end * 19);
+      if (kind === 'bladed-staff')
+        canvas.polygon(
+          [a, add(along(end * 15), scale(side, 1.5)), b, add(along(end * 15), scale(side, -1.5))],
+          metal(STEEL),
+        );
+      else {
+        canvas.limb(a, add(b, scale(side, 3)), 1.1, 0.1, metal(STEEL));
+        canvas.limb(a, add(b, scale(side, -3)), 1.1, 0.1, metal(STEEL));
+      }
+    }
+    return;
+  }
+  if (kind === 'scythe') {
+    canvas.limb(along(-10), along(18), 0.65, 0.65, solid(WOOD));
+    const tip = along(18);
+    canvas.limb(tip, add(add(tip, scale(side, 6)), scale(dir, 3)), 1.4, 0.55, metal(STEEL));
+    canvas.limb(
+      add(add(tip, scale(side, 6)), scale(dir, 3)),
+      add(add(tip, scale(side, 10)), scale(dir, 2)),
+      0.55,
+      0.1,
+      metal(STEEL),
+    );
+    return;
+  }
+  if (kind === 'cleaver') {
+    canvas.limb(along(-3), along(2), 0.7, 0.7, solid(WOOD));
+    canvas.polygon(
+      [along(2), along(10), add(along(10), scale(side, 2.8)), add(along(2), scale(side, 2.8))],
+      metal(STEEL),
+    );
+    return;
+  }
+  if (kind === 'bone-harvester') {
+    canvas.limb(along(-3), along(2), 0.7, 0.7, solid(WOOD));
+    canvas.limb(along(2), add(along(8), scale(side, 1.2)), 1.1, 0.9, metal(STEEL));
+    canvas.limb(
+      add(along(8), scale(side, 1.2)),
+      add(along(11), scale(side, -1.8)),
+      0.9,
+      0.1,
+      metal(STEEL),
+    );
     return;
   }
   if (kind === 'bardiche') {
@@ -1933,8 +2002,8 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     return;
   }
 
-  if (kind === 'axe' || kind === 'pickaxe' || kind === 'war-axe') {
-    canvas.limb(along(-3), along(12), 0.75, 0.75, solid(WOOD));
+  if (kind === 'axe' || kind === 'hatchet' || kind === 'pickaxe' || kind === 'war-axe') {
+    canvas.limb(along(-3), along(kind === 'hatchet' ? 9 : 12), 0.75, 0.75, solid(WOOD));
     const up = normalize(cross(side, dir));
     if (kind === 'war-axe') {
       // Hoja doble, una a cada lado del mango.
@@ -1950,8 +2019,8 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
           ],
           metal(STEEL),
         );
-    } else if (kind === 'axe') {
-      const head = along(10.5);
+    } else if (kind === 'axe' || kind === 'hatchet') {
+      const head = along(kind === 'hatchet' ? 7.5 : 10.5);
       canvas.polygon(
         [
           add(head, scale(side, 0.5)),
@@ -2055,6 +2124,8 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     longsword: { length: 17, width: 1, guard: 3 },
     scimitar: { length: 13, width: 1.1, guard: 2.2 },
     cutlass: { length: 10, width: 1.3, guard: 1.6 },
+    'butcher-knife': { length: 7, width: 1.3, guard: 0 },
+    'skinning-knife': { length: 6, width: 0.7, guard: 0 },
     'viking-sword': { length: 13, width: 1.25, guard: 2.2 },
   };
   const { length, width, guard } = blades[kind] ?? { length: 13, width: 0.85, guard: 2.4 };
