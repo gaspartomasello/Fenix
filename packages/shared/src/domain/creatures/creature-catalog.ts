@@ -1042,6 +1042,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       { kind: 'plate-chest', chance: 0.4 },
       { kind: 'plate-legs', chance: 0.4 },
       { kind: 'katana', chance: 0.3 },
+      { kind: 'the-redeemer', chance: 0.01 },
       { kind: 'black-pearl', chance: 1, amount: [10, 25] },
       { kind: 'sulfurous-ash', chance: 1, amount: [10, 25] },
       { kind: 'scroll-summon-daemon', chance: 0.25 },

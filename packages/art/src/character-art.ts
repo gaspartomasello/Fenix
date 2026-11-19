@@ -1744,6 +1744,7 @@ const HEAVY_AXES: Partial<
   'two-handed-axe': { haft: 17, reach: 4.8, height: 3.8, double: false },
   'large-battle-axe': { haft: 17, reach: 4.8, height: 4, double: true },
   'executioners-axe': { haft: 16, reach: 5.2, height: 4.2, double: false },
+  'ornate-axe': { haft: 16, reach: 4.8, height: 3.7, double: true },
 };
 
 /** Las armas de asta, que en la ventana de personaje se muestran paradas al costado (como en UO). */
@@ -1769,10 +1770,23 @@ const POLEARMS: ReadonlySet<ItemKind> = new Set<ItemKind>([
  */
 const STANCES: Partial<Record<ItemKind, Vec3>> = {
   ...Object.fromEntries(
-    ['longsword', 'broadsword', 'short-sword', 'viking-sword', 'scimitar', 'cutlass'].map((k) => [
-      k,
-      [0.42, 0.86, 0.3] as Vec3,
-    ]),
+    [
+      'longsword',
+      'broadsword',
+      'short-sword',
+      'viking-sword',
+      'scimitar',
+      'cutlass',
+      'daisho',
+      'elven-machete',
+      'no-dachi',
+      'tachi',
+      'radiant-scimitar',
+      'rune-blade',
+      'the-redeemer',
+      'wakizashi',
+      'bokuto',
+    ].map((k) => [k, [0.42, 0.86, 0.3] as Vec3]),
   ),
   katana: [0.12, -0.45, 0.88],
   // La hoz cuelga junto al muslo, con la media luna hacia adelante.
@@ -1861,6 +1875,14 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
         canvas.limb(a, add(b, scale(side, -3)), 1.1, 0.1, metal(STEEL));
       }
     }
+    return;
+  }
+  if (kind === 'bladed-whip') {
+    canvas.limb(along(-3), along(3), 0.65, 0.55, grip);
+    const curve = (i: number): Vec3 =>
+      add(along(3 + i * 1.4), scale(side, 2.5 * Math.sin(i * 0.8)));
+    for (let i = 0; i < 8; i++)
+      canvas.limb(curve(i), curve(i + 1), 0.5 - i * 0.045, 0.45 - i * 0.045, metal(STEEL));
     return;
   }
   if (kind === 'scythe') {
@@ -2127,6 +2149,15 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     'butcher-knife': { length: 7, width: 1.3, guard: 0 },
     'skinning-knife': { length: 6, width: 0.7, guard: 0 },
     'viking-sword': { length: 13, width: 1.25, guard: 2.2 },
+    bokuto: { length: 14, width: 0.85, guard: 0 },
+    daisho: { length: 16, width: 0.8, guard: 1.2 },
+    'elven-machete': { length: 13, width: 1.5, guard: 1.5 },
+    'no-dachi': { length: 20, width: 0.9, guard: 1.2 },
+    tachi: { length: 18, width: 0.85, guard: 0.7 },
+    'radiant-scimitar': { length: 14, width: 1.3, guard: 2.2 },
+    'rune-blade': { length: 17, width: 1.2, guard: 2.6 },
+    'the-redeemer': { length: 18, width: 1.5, guard: 3.2 },
+    wakizashi: { length: 10, width: 0.75, guard: 0.9 },
   };
   const { length, width, guard } = blades[kind] ?? { length: 13, width: 0.85, guard: 2.4 };
   const katana = kind === 'katana';
@@ -2150,7 +2181,7 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     }
     return;
   }
-  if (kind === 'scimitar' || kind === 'cutlass') {
+  if (kind === 'scimitar' || kind === 'cutlass' || kind === 'radiant-scimitar') {
     // Hoja curva que se ensancha antes de la punta.
     canvas.limb(along(-2), along(1.2), 0.8, 0.8, grip);
     canvas.limb(
@@ -2166,6 +2197,31 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     return;
   }
   if (katana) return drawKatana(canvas, along, dir, up);
+  if (kind === 'tachi') {
+    // Hoja larga y curva en cobre, con empuñadura oscura como el sprite enviado.
+    canvas.limb(along(-5), along(1), 0.7, 0.7, grip);
+    canvas.limb(along(1), along(3), 0.9, 0.9, metal(GOLD));
+    const copper = solid(ramp([205, 125, 67]));
+    let start = along(3);
+    for (let i = 1; i <= 8; i++) {
+      const t = i / 8;
+      const end = add(along(3 + t * length), scale(up, 2.8 * t * t));
+      canvas.limb(start, end, 0.95 - t * 0.35, i === 8 ? 0.12 : 0.95 - t * 0.35, copper);
+      start = end;
+    }
+    return;
+  }
+  if (kind === 'daisho') {
+    // Par de hojas: la larga en la empuñadura y la corta junto a ella.
+    const second = (k: number): Vec3 => add(along(k), scale(side, 2.5));
+    canvas.limb(second(-2), second(1.2), 0.7, 0.65, grip);
+    canvas.limb(second(2), second(11), 0.7, 0.2, metal(STEEL));
+  }
+  if (kind === 'bokuto') {
+    canvas.limb(along(-3), along(2), 0.8, 0.8, grip);
+    canvas.limb(along(2), along(2 + length), width, 0.25, solid(WOOD));
+    return;
+  }
   canvas.limb(along(-2), along(1.2), 0.8, 0.8, grip);
   canvas.sphere(along(-2.4), 0.9, metal(GOLD));
   canvas.limb(
