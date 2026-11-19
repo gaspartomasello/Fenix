@@ -1,10 +1,7 @@
 import type { ItemKind } from '@fenix/shared/items/item-catalog';
 import { PixelImage, doubled } from './pixel-art';
 
-/** Píxeles de los GIF oficiales de UO y de la katana elegida por Gaspar.
- * Cada entrada conserva la dimensión, la paleta y la posición de cada píxel de su fuente.
- * Fuente de los GIF: https://uo.com/wiki/ultima-online-wiki/new-legacy-an-overview/new-legacy-weapons/
- */
+/** Sprites de armas y katana seleccionada por Gaspar. */
 type Sprite = {
   readonly width: number;
   readonly height: number;
@@ -12,7 +9,6 @@ type Sprite = {
   readonly pixels: string;
 };
 const SWORDS: Partial<Record<ItemKind, Sprite>> = {
-  // https://uo.com/wp-content/uploads/2015/09/swords_bardiche.gif
   bardiche: {
     width: 43,
     height: 38,
@@ -118,7 +114,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_broadsword.gif
   broadsword: {
     width: 24,
     height: 21,
@@ -190,7 +185,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAA0NDQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_cutlass.gif
   cutlass: {
     width: 17,
     height: 22,
@@ -244,7 +238,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAhIiIYIyQCAAAAAAAAAAAAAiUmGAACJwIAAAAAAAAAAAACIQIAAAACAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_halberd.gif
   halberd: {
     width: 56,
     height: 46,
@@ -450,7 +443,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_longsword.gif
   longsword: {
     width: 32,
     height: 31,
@@ -515,7 +507,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAAAAAAAAAAAAA=',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_scimitar.gif
   scimitar: {
     width: 21,
     height: 26,
@@ -595,7 +586,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_viking_sword.gif
   'viking-sword': {
     width: 27,
     height: 26,
@@ -659,7 +649,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_bladed_staff.gif
   'bladed-staff': {
     width: 59,
     height: 57,
@@ -765,7 +754,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAEBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_butcher_knife.gif
   'butcher-knife': {
     width: 14,
     height: 14,
@@ -796,7 +784,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAPEQ8SAAAAAAAAAAAAAA8RDwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_cleaver.gif
   cleaver: {
     width: 17,
     height: 14,
@@ -833,7 +820,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAAAAAAAA==',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_crescent_blade.gif
   'crescent-blade': {
     width: 44,
     height: 50,
@@ -929,7 +915,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_scythe.gif
   scythe: {
     width: 41,
     height: 45,
@@ -1021,7 +1006,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAMBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_skinning_knife.gif
   'skinning-knife': {
     width: 13,
     height: 11,
@@ -1055,7 +1039,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAACQwQEQAAAAAAAAAAAAASERMUAAAAAAAAAAAAAAAVFhQAAAAAAAAAAAAAABQRAAAAAAAAAAAAAAAAAAA=',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_executioners_axe.gif
   'executioners-axe': {
     width: 32,
     height: 27,
@@ -1131,7 +1114,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_hatchet.gif
   hatchet: {
     width: 26,
     height: 21,
@@ -1204,7 +1186,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_axe.gif
   axe: {
     width: 29,
     height: 25,
@@ -1287,7 +1268,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_battleaxe.gif
   'battle-axe': {
     width: 26,
     height: 21,
@@ -1360,7 +1340,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_double_axe.gif
   'double-axe': {
     width: 27,
     height: 23,
@@ -1461,7 +1440,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_large_battle_axe.gif
   'large-battle-axe': {
     width: 27,
     height: 27,
@@ -1546,7 +1524,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAABUEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_two_handed_axe.gif
   'two-handed-axe': {
     width: 26,
     height: 24,
@@ -1625,7 +1602,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/weapons-whip.gif
   'bladed-whip': {
     width: 21,
     height: 13,
@@ -1761,7 +1737,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAAAHd4eQAAAAAAAAAAAAAAAAAAAAAAAAB6AAAAAAAA',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_bokuto.gif
   bokuto: {
     width: 54,
     height: 28,
@@ -1864,7 +1839,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_daisho.gif
   daisho: {
     width: 44,
     height: 37,
@@ -2006,7 +1980,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAAAAAAAAAAAAAAAAAkbz4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_elven_machete.gif
   'elven-machete': {
     width: 32,
     height: 37,
@@ -2119,7 +2092,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAAAAAAAAA=',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_no-dachi.gif
   'no-dachi': {
     width: 66,
     height: 40,
@@ -2273,7 +2245,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_pickaxe.gif
   pickaxe: {
     width: 28,
     height: 28,
@@ -2331,7 +2302,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAA==',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_radiant_scimitar.gif
   'radiant-scimitar': {
     width: 46,
     height: 51,
@@ -2486,7 +2456,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAA',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_rune_blade.gif
   'rune-blade': {
     width: 42,
     height: 39,
@@ -2630,7 +2599,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAQIvLwIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_redeemer.gif
   'the-redeemer': {
     width: 49,
     height: 43,
@@ -2732,7 +2700,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AA==',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_wakizashi.gif
   wakizashi: {
     width: 30,
     height: 30,
@@ -2810,7 +2777,6 @@ const SWORDS: Partial<Record<ItemKind, Sprite>> = {
       'AAAAAAAAAAA4BgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     ].join(''),
   },
-  // https://uo.com/wp-content/uploads/2015/09/swords_ornate_axe.gif
   'ornate-axe': {
     width: 38,
     height: 34,
