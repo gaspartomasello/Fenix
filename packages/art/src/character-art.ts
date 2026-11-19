@@ -1791,7 +1791,6 @@ const STANCES: Partial<Record<ItemKind, Vec3>> = {
   katana: [0.12, -0.45, 0.88],
   // La hoz cuelga junto al muslo, con la media luna hacia adelante.
   sickle: [0.18, -0.9, 0.42],
-  'bone-harvester': [0.3, 0.75, 0.45],
   'butcher-knife': [0.1, -0.8, 0.4],
   cleaver: [0.4, 0.6, 0.5],
   'skinning-knife': [0.1, -0.8, 0.4],
@@ -1902,18 +1901,6 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     canvas.limb(along(-3), along(2), 0.7, 0.7, solid(WOOD));
     canvas.polygon(
       [along(2), along(10), add(along(10), scale(side, 2.8)), add(along(2), scale(side, 2.8))],
-      metal(STEEL),
-    );
-    return;
-  }
-  if (kind === 'bone-harvester') {
-    canvas.limb(along(-3), along(2), 0.7, 0.7, solid(WOOD));
-    canvas.limb(along(2), add(along(8), scale(side, 1.2)), 1.1, 0.9, metal(STEEL));
-    canvas.limb(
-      add(along(8), scale(side, 1.2)),
-      add(along(11), scale(side, -1.8)),
-      0.9,
-      0.1,
       metal(STEEL),
     );
     return;
