@@ -101,6 +101,17 @@ describe('arte procedural (sin DOM)', () => {
       ['double-axe', 27, 23, 2150688336],
       ['large-battle-axe', 27, 27, 2797745000],
       ['two-handed-axe', 26, 24, 4201684096],
+      ['bladed-whip', 21, 13, 4189038722],
+      ['bokuto', 54, 28, 2279851824],
+      ['daisho', 44, 37, 810411189],
+      ['elven-machete', 32, 37, 3605336277],
+      ['no-dachi', 66, 40, 3469151997],
+      ['pickaxe', 28, 28, 3228280093],
+      ['radiant-scimitar', 46, 51, 4207232192],
+      ['rune-blade', 42, 39, 2783960216],
+      ['the-redeemer', 49, 43, 101612902],
+      ['wakizashi', 30, 30, 3350300176],
+      ['ornate-axe', 38, 34, 2461905085],
     ] as const;
     for (const [kind, width, height, expectedHash] of sources) {
       const ground = drawItem(kind);

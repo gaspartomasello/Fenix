@@ -14,6 +14,8 @@ const NOT_CRAFTED: ReadonlySet<BaseItemKind> = new Set<BaseItemKind>([
   'spellbook',
   'red-feather-hat',
   'ramiro-banner',
+  // Arma única: únicamente botín raro de dragón.
+  'the-redeemer',
 ]);
 
 describe('etapa 149: los oficios fabrican todo lo que se puede llevar', () => {

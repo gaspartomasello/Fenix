@@ -1234,6 +1234,54 @@ const MODELS: Readonly<Record<ModeledKind, Model>> = {
     const at = haft(c, alongPole(8), alongPole(-7), 0.7);
     c.polygon([at(6, 0), at(8, 3), at(10, 3), at(10, -3), at(8, -3)], metal(STEEL));
   },
+  'bladed-whip'(c) {
+    c.limb([-5, 0.7, 2], [-2, 0.7, 1], 0.65, 0.6, solid(GRIP));
+    for (let i = 0; i < 6; i++)
+      c.limb(
+        [-2 + i * 1.6, 0.7, 1 - Math.sin(i * 0.8) * 2],
+        [-0.4 + i * 1.6, 0.7, 1 - Math.sin((i + 1) * 0.8) * 2],
+        0.45 - i * 0.05,
+        0.4 - i * 0.05,
+        metal(STEEL),
+      );
+  },
+  bokuto(c) {
+    c.limb([-5, 0.7, 3], [7, 0.7, -3], 0.75, 0.25, solid(WOOD));
+  },
+  daisho(c) {
+    blade(c, [-4, 0.6, 2], [7, 0.6, -3], 0.95);
+    hilt(c, [-4, 0.6, 2], normalize([11, 0, -5]), 4, 1.4);
+    blade(c, [-3, 0.6, 5], [4, 0.6, 1], 0.65);
+    hilt(c, [-3, 0.6, 5], normalize([7, 0, -4]), 3, 1);
+  },
+  'elven-machete'(c) {
+    blade(c, [-4, 0.6, 2], [5, 0.6, -2], 1.5);
+    hilt(c, [-4, 0.6, 2], normalize([9, 0, -4]), 3, 1.4);
+  },
+  'no-dachi'(c) {
+    blade(c, [-7, 0.6, 4], [8, 0.6, -4], 0.85);
+    hilt(c, [-7, 0.6, 4], normalize([15, 0, -8]), 5, 1.2);
+  },
+  'radiant-scimitar'(c) {
+    blade(c, [-5, 0.6, 3], [6, 0.6, -2], 1.25);
+    hilt(c, [-5, 0.6, 3], normalize([11, 0, -5]), 3, 2);
+  },
+  'rune-blade'(c) {
+    blade(c, [-6, 0.6, 3], [7, 0.6, -3], 1.2);
+    hilt(c, [-6, 0.6, 3], normalize([13, 0, -6]), 4, 2);
+  },
+  'the-redeemer'(c) {
+    blade(c, [-6, 0.6, 3], [8, 0.6, -3], 1.8);
+    hilt(c, [-6, 0.6, 3], normalize([14, 0, -6]), 4, 2.6);
+  },
+  wakizashi(c) {
+    blade(c, [-3, 0.6, 2], [5, 0.6, -2], 0.7);
+    hilt(c, [-3, 0.6, 2], normalize([8, 0, -4]), 3, 1);
+  },
+  'ornate-axe'(c) {
+    const at = haft(c, alongPole(14), alongPole(-12), 0.7);
+    c.polygon([at(10, 0), at(12, 4), at(17, 5), at(17, -5), at(12, -4)], metal(STEEL));
+  },
   katana(c) {
     katana(c);
   },
