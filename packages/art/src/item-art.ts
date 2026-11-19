@@ -6,6 +6,7 @@ import { drawPixelPitchfork } from './pixel-pitchfork-art';
 import { drawStatic } from './static-art';
 import { CHEST_ART } from '@fenix/shared/housing/furniture';
 import { drawPixelSickle } from './pixel-sickle-art';
+import { officialSwordSprite } from './official-swords-art';
 import {
   clipping,
   Camera,
@@ -1195,6 +1196,43 @@ const MODELS: Readonly<Record<ModeledKind, Model>> = {
   broadsword(c) {
     blade(c, [-3.2, 0.6, 2.4], [6.8, 0.6, -2.8], 1.5);
     hilt(c, [-3.2, 0.6, 2.4], normalize([10, 0, -5.2]), 3.8, 3);
+  },
+  'bladed-staff'(c) {
+    const at = haft(c, alongPole(12), alongPole(-12), 0.55);
+    for (const k of [-1, 1])
+      c.polygon([at(12 * k, 0), at(14 * k, 1.5), at(20 * k, 0), at(14 * k, -1.5)], metal(STEEL));
+  },
+  'bone-harvester'(c) {
+    blade(c, [-3, 0.6, 2], [5, 0.6, -2], 1.1);
+    hilt(c, [-3, 0.6, 2], normalize([8, 0, -4]), 3, 0.8);
+  },
+  'butcher-knife'(c) {
+    blade(c, [-2, 0.6, 1], [3, 0.6, -1], 1.2);
+    hilt(c, [-2, 0.6, 1], normalize([5, 0, -2]), 2, 0.4);
+  },
+  cleaver(c) {
+    c.limb([-3, 0.6, 1], [0, 0.6, 0], 0.65, 0.65, solid(WOOD));
+    c.box([2, 0.7, -1], lying(0.25), [2.6, 0.3, 1.8], metal(STEEL));
+  },
+  'crescent-blade'(c) {
+    const at = haft(c, alongPole(12), alongPole(-12), 0.55);
+    for (const k of [-1, 1]) c.limb(at(11 * k, 0), at(15 * k, 3 * k), 1.2, 0.15, metal(STEEL));
+  },
+  scythe(c) {
+    const at = haft(c, alongPole(14), alongPole(-10), 0.55);
+    c.limb(at(14, 0), at(18, 6), 1.2, 0.1, metal(STEEL));
+  },
+  'skinning-knife'(c) {
+    blade(c, [-2, 0.6, 1], [2.5, 0.6, -1], 0.55);
+    hilt(c, [-2, 0.6, 1], normalize([4.5, 0, -2]), 2, 0.2);
+  },
+  'executioners-axe'(c) {
+    const at = haft(c, alongPole(12), alongPole(-12), 0.7);
+    c.polygon([at(9, 0), at(12, 4), at(16, 5), at(16, -5), at(12, -4)], metal(STEEL));
+  },
+  hatchet(c) {
+    const at = haft(c, alongPole(8), alongPole(-7), 0.7);
+    c.polygon([at(6, 0), at(8, 3), at(10, 3), at(10, -3), at(8, -3)], metal(STEEL));
   },
   katana(c) {
     katana(c);
@@ -2545,6 +2583,8 @@ export function drawItem(
 ): PixelImage {
   if (kind === 'pitchfork') return drawPixelPitchfork(style);
   if (kind === 'sickle') return drawPixelSickle(style);
+  const sourceSprite = officialSwordSprite(kind, style);
+  if (sourceSprite) return sourceSprite;
   const piece = ITEMS[kind].furniture ?? CHEST_ART[kind];
   if (piece)
     return fitted(drawStatic(piece, 0), ITEM_ART_SIZE * (style === 'icon' ? ICON_DETAIL : 1));

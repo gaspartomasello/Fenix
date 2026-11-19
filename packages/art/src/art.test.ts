@@ -21,6 +21,7 @@ import {
 import { drawCreatureFrame } from './creature-art';
 import { creatureLayout } from './monster-art';
 import { ITEM_ART_SIZE, drawItem, itemVariant } from './item-art';
+import { officialSwordSprite } from './official-swords-art';
 import {
   INVISIBLE_STATICS,
   STATIC_ART_HEIGHT,
@@ -67,8 +68,60 @@ describe('arte procedural (sin DOM)', () => {
   it('dibuja el ícono de cada objeto', () => {
     for (const kind of ITEM_KINDS) {
       const image = drawItem(kind);
-      expect(image.width).toBe(kind === 'pitchfork' || kind === 'sickle' ? 50 : ITEM_ART_SIZE);
+      expect(image.width).toBe(
+        kind === 'pitchfork' || kind === 'sickle'
+          ? 50
+          : (officialSwordSprite(kind, 'ground')?.width ?? ITEM_ART_SIZE),
+      );
       expect(opaquePixels(image.data)).toBeGreaterThan(20);
+    }
+  });
+
+  it('mantiene los píxeles de las armas de espadas de la referencia', () => {
+    const sources = [
+      ['bardiche', 43, 38, 2674265277],
+      ['broadsword', 24, 21, 809205224],
+      ['cutlass', 17, 22, 206217893],
+      ['halberd', 56, 46, 569565504],
+      ['katana', 23, 26, 1186815936],
+      ['longsword', 32, 31, 357849512],
+      ['scimitar', 21, 26, 242315224],
+      ['viking-sword', 27, 26, 3988415381],
+      ['bladed-staff', 59, 57, 1922132008],
+      ['bone-harvester', 29, 21, 1982288781],
+      ['butcher-knife', 14, 14, 3197167904],
+      ['cleaver', 17, 14, 3202097901],
+      ['crescent-blade', 44, 50, 8851621],
+      ['scythe', 41, 45, 1812991325],
+      ['skinning-knife', 13, 11, 3670949373],
+      ['executioners-axe', 32, 27, 3997022349],
+      ['hatchet', 26, 21, 2183487984],
+      ['axe', 29, 25, 2679315400],
+      ['battle-axe', 26, 21, 2183487984],
+      ['double-axe', 27, 23, 2150688336],
+      ['large-battle-axe', 27, 27, 2797745000],
+      ['two-handed-axe', 26, 24, 4201684096],
+    ] as const;
+    for (const [kind, width, height, expectedHash] of sources) {
+      const ground = drawItem(kind);
+      const icon = drawItem(kind, 'icon');
+      expect([ground.width, ground.height, icon.width, icon.height]).toEqual([
+        width,
+        height,
+        width * 2,
+        height * 2,
+      ]);
+      let hash = 2166136261;
+      for (const byte of ground.data) hash = Math.imul(hash ^ byte, 16777619) >>> 0;
+      expect(hash).toBe(expectedHash);
+      for (let y = 0; y < height; y++)
+        for (let x = 0; x < width; x++) {
+          const source = (y * width + x) * 4;
+          const target = (y * 2 * (width * 2) + x * 2) * 4;
+          expect(icon.data.slice(target, target + 4)).toEqual(
+            ground.data.slice(source, source + 4),
+          );
+        }
     }
   });
 

@@ -6,6 +6,8 @@ export type CombatSkill = 'wrestling' | 'swordsmanship' | 'fencing' | 'mace-figh
 
 export interface Weapon {
   readonly name: string;
+  /** Fuerza mínima necesaria para equiparla. */
+  readonly minStrength?: number;
   readonly minDamage: number;
   readonly maxDamage: number;
   /** Tiempo entre golpes. */
@@ -39,13 +41,28 @@ const WEAPONS: Partial<Record<ItemKind, Weapon>> = {
   },
   broadsword: {
     name: 'espada ancha',
-    minDamage: 6,
+    minStrength: 30,
+    minDamage: 13,
+    maxDamage: 17,
+    swingMs: 3250,
+    skill: 'swordsmanship',
+  },
+  katana: {
+    name: 'katana',
+    minStrength: 25,
+    minDamage: 10,
     maxDamage: 14,
     swingMs: 2500,
     skill: 'swordsmanship',
   },
-  katana: { name: 'katana', minDamage: 5, maxDamage: 12, swingMs: 2000, skill: 'swordsmanship' },
-  axe: { name: 'hacha', minDamage: 7, maxDamage: 14, swingMs: 2750, skill: 'swordsmanship' },
+  axe: {
+    name: 'hacha',
+    minStrength: 35,
+    minDamage: 14,
+    maxDamage: 17,
+    swingMs: 3000,
+    skill: 'swordsmanship',
+  },
   mace: { name: 'maza', minDamage: 6, maxDamage: 12, swingMs: 2500, skill: 'mace-fighting' },
   'war-hammer': {
     name: 'martillo de guerra',
@@ -56,16 +73,18 @@ const WEAPONS: Partial<Record<ItemKind, Weapon>> = {
   },
   longsword: {
     name: 'espada larga',
-    minDamage: 7,
-    maxDamage: 16,
-    swingMs: 2750,
+    minStrength: 35,
+    minDamage: 14,
+    maxDamage: 18,
+    swingMs: 3500,
     skill: 'swordsmanship',
   },
   scimitar: {
     name: 'cimitarra',
-    minDamage: 5,
-    maxDamage: 13,
-    swingMs: 2250,
+    minStrength: 25,
+    minDamage: 12,
+    maxDamage: 16,
+    swingMs: 3000,
     skill: 'swordsmanship',
   },
   'war-axe': {
@@ -77,9 +96,10 @@ const WEAPONS: Partial<Record<ItemKind, Weapon>> = {
   },
   halberd: {
     name: 'alabarda',
-    minDamage: 13,
-    maxDamage: 25,
-    swingMs: 3750,
+    minStrength: 95,
+    minDamage: 18,
+    maxDamage: 21,
+    swingMs: 4000,
     skill: 'swordsmanship',
   },
   club: { name: 'garrote', minDamage: 4, maxDamage: 10, swingMs: 2250, skill: 'mace-fighting' },
@@ -101,13 +121,22 @@ const WEAPONS: Partial<Record<ItemKind, Weapon>> = {
     ammo: 'arrow',
   },
   // Las hachas grandes son de espadas (como en UO): lentas y de mucho daño.
-  'double-axe': sword('hacha doble', 9, 19, 3250),
-  'battle-axe': sword('hacha de batalla', 10, 20, 3250),
-  'two-handed-axe': sword('hacha a dos manos', 11, 21, 3500),
-  'large-battle-axe': sword('gran hacha de batalla', 12, 23, 3500),
-  bardiche: sword('hacha de asta', 12, 24, 3750),
-  cutlass: sword('alfanje', 5, 12, 2000),
-  'viking-sword': sword('espada vikinga', 7, 16, 2750),
+  'double-axe': sword('hacha doble', 15, 18, 3250, 45),
+  'battle-axe': sword('hacha de batalla', 16, 19, 3500, 35),
+  'two-handed-axe': sword('hacha a dos manos', 16, 19, 3500, 40),
+  'large-battle-axe': sword('gran hacha de batalla', 17, 20, 3750, 80),
+  bardiche: sword('hacha de asta', 17, 20, 3750, 45),
+  cutlass: sword('alfanje', 10, 14, 2500, 25),
+  'viking-sword': sword('espada vikinga', 15, 19, 3750, 40),
+  'bladed-staff': sword('bastón con hoja', 14, 17, 3000, 40),
+  'bone-harvester': sword('cosechador de huesos', 12, 16, 3000, 25),
+  'butcher-knife': sword('cuchillo de carnicero', 10, 13, 2250, 5),
+  cleaver: sword('cuchilla de carnicero', 10, 14, 2500, 10),
+  'crescent-blade': sword('hoja de media luna', 12, 15, 2500, 55),
+  scythe: sword('guadaña', 16, 19, 3500, 45),
+  'skinning-knife': sword('cuchillo de desollar', 10, 13, 2250, 5),
+  'executioners-axe': sword('hacha de verdugo', 15, 18, 3250, 40),
+  hatchet: sword('hachuela', 13, 16, 2750, 20),
   'war-fork': {
     name: 'horquilla de guerra',
     minDamage: 7,
@@ -160,8 +189,21 @@ const WEAPONS: Partial<Record<ItemKind, Weapon>> = {
   },
 };
 
-function sword(name: string, minDamage: number, maxDamage: number, swingMs: number): Weapon {
-  return { name, minDamage, maxDamage, swingMs, skill: 'swordsmanship' };
+function sword(
+  name: string,
+  minDamage: number,
+  maxDamage: number,
+  swingMs: number,
+  minStrength?: number,
+): Weapon {
+  return {
+    name,
+    minDamage,
+    maxDamage,
+    swingMs,
+    ...(minStrength === undefined ? {} : { minStrength }),
+    skill: 'swordsmanship',
+  };
 }
 
 /** Protección de cada pieza de armadura. */
