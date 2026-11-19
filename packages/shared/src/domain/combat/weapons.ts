@@ -129,7 +129,6 @@ const WEAPONS: Partial<Record<ItemKind, Weapon>> = {
   cutlass: sword('alfanje', 10, 14, 2500, 25),
   'viking-sword': sword('espada vikinga', 15, 19, 3750, 40),
   'bladed-staff': sword('bastón con hoja', 14, 17, 3000, 40),
-  'bone-harvester': sword('cosechador de huesos', 12, 16, 3000, 25),
   'butcher-knife': sword('cuchillo de carnicero', 10, 13, 2250, 5),
   cleaver: sword('cuchilla de carnicero', 10, 14, 2500, 10),
   'crescent-blade': sword('hoja de media luna', 12, 15, 2500, 55),

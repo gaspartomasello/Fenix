@@ -180,7 +180,6 @@ export const RECIPES: readonly Recipe[] = [
       ['double-axe', 400, ingots(12)],
       ['viking-sword', 400, ingots(14)],
       ['bladed-staff', 500, ingots(14)],
-      ['bone-harvester', 330, ingots(10)],
       ['butcher-knife', 0, ingots(4)],
       ['cleaver', 150, ingots(6)],
       ['crescent-blade', 600, ingots(16)],

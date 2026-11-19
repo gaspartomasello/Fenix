@@ -65,7 +65,6 @@ export const BASE_ITEM_KINDS = [
   'cutlass',
   'viking-sword',
   'bladed-staff',
-  'bone-harvester',
   'butcher-knife',
   'cleaver',
   'crescent-blade',
@@ -660,7 +659,6 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
   cutlass: weapon('alfanje', 'alfanjes', 'un'),
   'viking-sword': weapon('espada vikinga', 'espadas vikingas', 'una'),
   'bladed-staff': { ...weapon('bastón con hoja', 'bastones con hoja', 'un'), twoHanded: true },
-  'bone-harvester': weapon('cosechador de huesos', 'cosechadores de huesos', 'un'),
   'butcher-knife': weapon('cuchillo de carnicero', 'cuchillos de carnicero', 'un'),
   cleaver: weapon('cuchilla de carnicero', 'cuchillas de carnicero', 'una'),
   'crescent-blade': {

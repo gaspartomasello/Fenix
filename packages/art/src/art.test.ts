@@ -88,7 +88,6 @@ describe('arte procedural (sin DOM)', () => {
       ['scimitar', 21, 26, 242315224],
       ['viking-sword', 27, 26, 3988415381],
       ['bladed-staff', 59, 57, 1922132008],
-      ['bone-harvester', 29, 21, 1982288781],
       ['butcher-knife', 14, 14, 3197167904],
       ['cleaver', 17, 14, 3202097901],
       ['crescent-blade', 44, 50, 8851621],

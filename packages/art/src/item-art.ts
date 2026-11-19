@@ -1202,10 +1202,6 @@ const MODELS: Readonly<Record<ModeledKind, Model>> = {
     for (const k of [-1, 1])
       c.polygon([at(12 * k, 0), at(14 * k, 1.5), at(20 * k, 0), at(14 * k, -1.5)], metal(STEEL));
   },
-  'bone-harvester'(c) {
-    blade(c, [-3, 0.6, 2], [5, 0.6, -2], 1.1);
-    hilt(c, [-3, 0.6, 2], normalize([8, 0, -4]), 3, 0.8);
-  },
   'butcher-knife'(c) {
     blade(c, [-2, 0.6, 1], [3, 0.6, -1], 1.2);
     hilt(c, [-2, 0.6, 1], normalize([5, 0, -2]), 2, 0.4);
