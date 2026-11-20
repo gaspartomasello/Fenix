@@ -1736,12 +1736,19 @@ function drawLight(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
 }
 
 /** Hachas grandes en la mano: largo del mango y tamaño de la hoja. */
+/** Cuánto más largas van las hojas en la mano, para que se parezcan al ícono. */
+const BLADE_SCALE = 1.3;
+/** Acero de las hojas: claro y brillante, como en los íconos (el de siempre se veía gris oscuro). */
+const BLADE_STEEL = ramp([182, 188, 202]);
+/** Cuánto más grande va la hoja de las hachas en la mano. */
+const AXE_SCALE = 1.35;
+
 const HEAVY_AXES: Partial<
   Record<ItemKind, { haft: number; reach: number; height: number; double: boolean }>
 > = {
   'double-axe': { haft: 12, reach: 3.8, height: 2.8, double: true },
   'battle-axe': { haft: 13, reach: 4.6, height: 3.6, double: false },
-  'two-handed-axe': { haft: 17, reach: 4.8, height: 3.8, double: false },
+  'two-handed-axe': { haft: 17, reach: 4.8, height: 3.8, double: true },
   'large-battle-axe': { haft: 17, reach: 4.8, height: 4, double: true },
   'executioners-axe': { haft: 16, reach: 5.2, height: 4.2, double: false },
   'ornate-axe': { haft: 16, reach: 4.8, height: 3.7, double: true },
@@ -1820,7 +1827,9 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     (rig.display === true || rig.rest === true) &&
     (POLEARMS.has(kind) || (HEAVY_AXES[kind]?.haft ?? 0) > 14);
   // En el mundo, derecha de verdad (aunque el cuerpo se incline al correr).
-  const stance = rig.display === true || rig.rest === true ? STANCES[kind] : undefined;
+  // Cada arma se empuña a su manera al descansar o caminar; en la ventana de personaje,
+  // las de una mano van alzadas en diagonal (como en el ícono), para que se vean enteras.
+  const stance = rig.rest === true ? STANCES[kind] : undefined;
   const dir = upright
     ? rig.rest
       ? normalize([0.03, 1, 0.02] as Vec3)
@@ -1839,7 +1848,9 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
   const heavyAxe = HEAVY_AXES[kind];
   if (heavyAxe) {
     // Hachas de guerra: mango (largo en las de dos manos) y una o dos hojas.
-    const { haft, reach, height, double } = heavyAxe;
+    const { haft, double } = heavyAxe;
+    const reach = heavyAxe.reach * AXE_SCALE;
+    const height = heavyAxe.height * AXE_SCALE;
     canvas.limb(along(haft > 14 ? -6 : -3), along(haft), 0.75, 0.75, solid(WOOD));
     // Parada (en la ventana de personaje), la hoja se ve de frente: crece a lo largo del mango.
     const up = upright ? dir : normalize(cross(side, dir));
@@ -1874,14 +1885,6 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
         canvas.limb(a, add(b, scale(side, -3)), 1.1, 0.1, metal(STEEL));
       }
     }
-    return;
-  }
-  if (kind === 'bladed-whip') {
-    canvas.limb(along(-3), along(3), 0.65, 0.55, grip);
-    const curve = (i: number): Vec3 =>
-      add(along(3 + i * 1.4), scale(side, 2.5 * Math.sin(i * 0.8)));
-    for (let i = 0; i < 8; i++)
-      canvas.limb(curve(i), curve(i + 1), 0.5 - i * 0.045, 0.45 - i * 0.045, metal(STEEL));
     return;
   }
   if (kind === 'scythe') {
@@ -2012,31 +2015,33 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
   }
 
   if (kind === 'axe' || kind === 'hatchet' || kind === 'pickaxe' || kind === 'war-axe') {
-    canvas.limb(along(-3), along(kind === 'hatchet' ? 9 : 12), 0.75, 0.75, solid(WOOD));
+    canvas.limb(along(-3), along(kind === 'hatchet' ? 10 : 14), 0.75, 0.75, solid(WOOD));
     const up = normalize(cross(side, dir));
+    // La hoja, del tamaño del ícono.
+    const k2 = AXE_SCALE;
     if (kind === 'war-axe') {
       // Hoja doble, una a cada lado del mango.
-      const head = along(10.5);
+      const head = along(12.5);
       for (const k of [1, -1])
         canvas.polygon(
           [
             add(head, scale(side, 0.5 * k)),
-            add(head, scale(up, 2.4)),
-            add(add(head, scale(side, 4 * k)), scale(up, 3.2)),
-            add(add(head, scale(side, 4 * k)), scale(up, -3.2)),
-            add(head, scale(up, -2.4)),
+            add(head, scale(up, 2.4 * k2)),
+            add(add(head, scale(side, 4 * k * k2)), scale(up, 3.2 * k2)),
+            add(add(head, scale(side, 4 * k * k2)), scale(up, -3.2 * k2)),
+            add(head, scale(up, -2.4 * k2)),
           ],
           metal(STEEL),
         );
     } else if (kind === 'axe' || kind === 'hatchet') {
-      const head = along(kind === 'hatchet' ? 7.5 : 10.5);
+      const head = along(kind === 'hatchet' ? 8.5 : 12.5);
       canvas.polygon(
         [
           add(head, scale(side, 0.5)),
-          add(head, scale(up, 2.6)),
-          add(add(head, scale(side, 4.4)), scale(up, 3.4)),
-          add(add(head, scale(side, 4.4)), scale(up, -2.6)),
-          add(head, scale(up, -1.8)),
+          add(head, scale(up, 2.6 * k2)),
+          add(add(head, scale(side, 4.4 * k2)), scale(up, 3.4 * k2)),
+          add(add(head, scale(side, 4.4 * k2)), scale(up, -2.6 * k2)),
+          add(head, scale(up, -1.8 * k2)),
         ],
         metal(STEEL),
       );
@@ -2146,7 +2151,11 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     'the-redeemer': { length: 18, width: 1.5, guard: 3.2 },
     wakizashi: { length: 10, width: 0.75, guard: 0.9 },
   };
-  const { length, width, guard } = blades[kind] ?? { length: 13, width: 0.85, guard: 2.4 };
+  const base = blades[kind] ?? { length: 13, width: 0.85, guard: 2.4 };
+  // En la mano, las hojas del tamaño del ícono (antes quedaban cortas, como cuchillos).
+  const length = base.length * BLADE_SCALE;
+  const width = base.width * 1.15;
+  const guard = base.guard * 1.15;
   const katana = kind === 'katana';
   if (kind === 'sickle') {
     // Hoz: mango corto de madera y una hoja en media luna que sale hacia adelante
@@ -2179,8 +2188,8 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
       metal(GOLD),
     );
     const mid = add(along(2 + length * 0.6), scale(up, 1));
-    canvas.limb(along(2), mid, width * 0.8, width * 1.2, metal(STEEL));
-    canvas.limb(mid, add(along(2 + length), scale(up, 3)), width * 1.2, 0.25, metal(STEEL));
+    canvas.limb(along(2), mid, width * 0.8, width * 1.2, metal(BLADE_STEEL));
+    canvas.limb(mid, add(along(2 + length), scale(up, 3)), width * 1.2, 0.25, metal(BLADE_STEEL));
     return;
   }
   if (katana) return drawKatana(canvas, along, dir, up);
@@ -2202,7 +2211,26 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     // Par de hojas: la larga en la empuñadura y la corta junto a ella.
     const second = (k: number): Vec3 => add(along(k), scale(side, 2.5));
     canvas.limb(second(-2), second(1.2), 0.7, 0.65, grip);
-    canvas.limb(second(2), second(11), 0.7, 0.2, metal(STEEL));
+    canvas.limb(second(2), second(11 * BLADE_SCALE), 0.7, 0.2, metal(BLADE_STEEL));
+  }
+  if (kind === 'bladed-whip') {
+    // Látigo: mango de cuero con pomo y el látigo enrollado que cuelga de la mano.
+    canvas.limb(along(-3), along(2), 0.75, 0.7, grip);
+    canvas.sphere(along(-3.3), 0.75, metal(GOLD));
+    const leather = solid(ramp([96, 64, 40]));
+    const down = normalize(sub([0, -1, 0], scale(dir, 0.2)));
+    let at = along(2);
+    for (let i = 0; i < 20; i++) {
+      const a = (i / 20) * Math.PI * 4;
+      const next = add(
+        add(along(2.5), scale(down, 2 + i * 0.32)),
+        add(scale(side, Math.cos(a) * 2.2), scale(up, Math.sin(a) * 2.2)),
+      );
+      canvas.limb(at, next, 0.4, 0.38, leather);
+      at = next;
+    }
+    canvas.limb(at, add(at, scale(down, 3)), 0.35, 0.15, metal(BLADE_STEEL));
+    return;
   }
   if (kind === 'bokuto') {
     canvas.limb(along(-3), along(2), 0.8, 0.8, grip);
@@ -2218,7 +2246,7 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     0.6,
     metal(GOLD),
   );
-  canvas.limb(along(2), along(2 + length), width, 0.35, metal(STEEL));
+  canvas.limb(along(2), along(2 + length), width, 0.35, metal(BLADE_STEEL));
 }
 
 /**
@@ -2246,8 +2274,8 @@ function drawKatana(canvas: VolumeCanvas, along: (k: number) => Vec3, dir: Vec3,
     Math.hypot(...sub(q.p, along(0.9))) > 1.6 ? tone(GOLD, q.light) : tone(DARK_STEEL, q.light),
   );
   canvas.limb(along(1.2), along(2), 0.75, 0.7, metal(GOLD));
-  const length = 15;
-  const sag = 1.4;
+  const length = 15 * BLADE_SCALE;
+  const sag = 1.4 * BLADE_SCALE;
   const center = (t: number): Vec3 => add(along(2 + length * t), scale(up, sag * t * t));
   const width = (t: number): number => 1.05 - 0.3 * t;
   const blade: Material = (q) => {
