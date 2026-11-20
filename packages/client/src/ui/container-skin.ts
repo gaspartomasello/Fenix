@@ -16,7 +16,7 @@ function imageOf(art: ContainerArt): string {
 }
 
 /**
- * Viste una ventana de recipiente con su dibujo, como en UO (la mochila de
+ * Viste una ventana de recipiente con su dibujo (la mochila de
  * cuero, la bolsa, el cofre abierto): el marco de la ventana desaparece y la
  * zona de los objetos queda en el hueco del dibujo.
  */

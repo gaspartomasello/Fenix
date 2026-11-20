@@ -64,7 +64,7 @@ const CREATED_FOOD: readonly ItemKind[] = ['apple', 'fish-steak', 'cooked-ribs']
 
 /**
  * Empieza a lanzar un hechizo: valida libro (o pergamino), Magia, maná,
- * reactivos y objetivo; gasta maná y reactivos (como en UO, aunque después falle).
+ * reactivos y objetivo; gasta maná y reactivos (según el diseño del juego, aunque después falle).
  */
 export function startCast(
   player: Player,
@@ -331,7 +331,7 @@ export function resolveCast(
   ) {
     return { kind: 'lost-target' };
   }
-  // Como en UO: si al terminar de conjurar el objetivo no está a la vista, el hechizo falla.
+  // según el diseño del juego: si al terminar de conjurar el objetivo no está a la vista, el hechizo falla.
   const aim = pending.position ?? (target.id === player.id ? null : target.position);
   if (aim && !hasLineOfSight(world.map, player.position, aim)) return { kind: 'blocked' };
   if (random() >= spellSuccessChance(spell, magery)) return { kind: 'fizzled' };

@@ -145,7 +145,7 @@ export class Camera implements Projection {
 }
 
 /**
- * Proyección de UO para el mundo (terreno y objetos fijos): el suelo se ve
+ * Proyección del juego para el mundo (terreno y objetos fijos): el suelo se ve
  * como el rombo del tile, sin achatarse, y la altura sube derecho en la
  * pantalla. Modelo: x a lo largo del eje x del mapa (abajo a la derecha en
  * pantalla), z a lo largo del eje y del mapa (abajo a la izquierda), y hacia
@@ -156,7 +156,7 @@ export class WorldProjection implements Projection {
   private static readonly A = Math.SQRT1_2;
   /** Hacia quien mira: de frente-abajo y desde arriba. */
   readonly viewDir: Vec3 = normalize([1, 2 * WorldProjection.A, 1]);
-  /** Luz desde arriba y de la izquierda de la pantalla, como en UO. */
+  /** Luz desde arriba y de la izquierda de la pantalla. */
   readonly lightDir: Vec3 = normalize([0.1, 1, 0.75]);
   private readonly inverse: readonly Vec3[];
 
@@ -317,7 +317,7 @@ export interface Sample {
 /** Color de un pixel, o null para dejarlo sin pintar (por ejemplo, fuera del pelo). */
 export type Material = (sample: Sample) => Rgb | null;
 
-/** Luz desde arriba a la izquierda y un poco de frente, como en UO. */
+/** Luz desde arriba a la izquierda y un poco de frente. */
 const LIGHT: Vec3 = normalize([-0.5, 0.65, 0.8]);
 const AMBIENT = 0.3;
 

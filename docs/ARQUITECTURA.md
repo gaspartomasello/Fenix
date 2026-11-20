@@ -27,7 +27,7 @@ Código que cliente y servidor deben compartir exactamente. No tiene dependencia
 
 | Módulo                              | Contenido                                                                                                |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `domain/geometry`                   | `Position`, `Direction` (numeración de UO), pasos y distancias                                           |
+| `domain/geometry`                   | `Position`, `Direction` (numeración del juego), pasos y distancias                                       |
 | `domain/world`                      | `Terrain`, `TileMap`                                                                                     |
 | `domain/rules`                      | Movimiento (`canStep`, tiempos de paso), chat (límites, limpieza)                                        |
 | `domain/character`                  | Apariencia y validación de nombres                                                                       |
@@ -73,7 +73,7 @@ comparando el dibujo con y sin cada pieza puesta. La usan la ventana propia (`Eq
 con casilleros que se pueden arrastrar y botones) y la de mirar a otros (`PaperdollViewer`,
 que abre `WorldPaperdolls` con doble clic sobre una persona).
 
-El mundo usa otra proyección del mismo motor (`WorldProjection`), la de UO: el suelo se ve como el
+El mundo usa otra proyección del mismo motor (`WorldProjection`), la del juego: el suelo se ve como el
 rombo de 44×44 del tile, sin achatarse, y la altura sube derecho en la pantalla. Así los objetos
 fijos (`static-art.ts`: árboles, rocas, paredes, cercas, barriles, cajas, pozo, faroles, santuario,
 forja, yunque) calzan con las baldosas y se iluminan igual que los personajes. El terreno
@@ -150,7 +150,7 @@ app (orquestación)
   donde el arte generado (`assets/`) se convierte en texturas de Pixi.
 - **ui/** usa DOM nativo, separado del canvas. Los componentes reciben callbacks; no conocen la red.
   Las ventanas (mochila, equipo) se arrastran y se cierran con la cruz o con clic derecho, como en
-  UO; `DragController` implementa arrastrar y soltar con eventos de puntero, así funciona igual con
+  Fénix; `DragController` implementa arrastrar y soltar con eventos de puntero, así funciona igual con
   mouse y con el dedo. Al empezar a arrastrar, el objeto se levanta (`DragSource.lift` lo esconde
   de la mochila, del personaje o del suelo) y vuelve a verse si se suelta donde no va o el servidor
   no lo acepta.
@@ -175,7 +175,7 @@ ClientGame.requestStep
 ```
 
 Los demás jugadores se interpolan entre tiles durante la duración del paso (400 ms caminando,
-200 ms corriendo, como en UO).
+200 ms corriendo).
 
 ### Objetos
 
@@ -237,12 +237,12 @@ debajo de lo que está parado.
 
 Cada jugador tiene un `SkillSet` (valores en décimas). Al pelear, practica el arma y Tácticas (y
 Anatomía con cada golpe que entra, y Parada si lo atacan con escudo); al regenerar maná,
-Meditación; al lanzar, Magia. El acierto usa la fórmula de UO con las habilidades de ambos. El
-daño del golpe se multiplica por Tácticas (60 %–100 %) y por Anatomía (hasta +50 %, como en UO).
+Meditación; al lanzar, Magia. El acierto usa la fórmula del juego con las habilidades de ambos. El
+daño del golpe se multiplica por Tácticas (60 %–100 %) y por Anatomía (hasta +50 %).
 Del lado del mago, Evaluar inteligencia multiplica el daño de los hechizos (hasta +50 %, no las
 curas ni el maná) y se practica con cada hechizo de daño que sale.
 
-Los hechizos (`spell-catalog.ts`) van en ocho círculos, como en UO: cada círculo fija maná, Magia
+Los hechizos (`spell-catalog.ts`) van en ocho círculos: cada círculo fija maná, Magia
 mínima y tiempo de lanzamiento, y cada hechizo dice a quién va (`self`, `beneficial`, `harmful` o
 `location`) y qué hace (`SpellEffect`: daño, curación, atributos, cura, veneno, parálisis,
 teletransporte, comida, drenar maná, protección, visión nocturna, daño en área, resurrección o
@@ -265,7 +265,7 @@ eligen ni lo siguen. Al esconderse, los demás reciben `mobileDisappeared`; al d
 un golpe o un hechizo de daño, correr o pasarse de pasos. `useSkill` usa Esconderse o Mirar.
 
 Algunos hechizos **caen más tarde** (`delayMs`): la Explosión gasta el maná al lanzarla y estalla
-2,5 s después, como en UO. `resolveCast` devuelve `delayed` en vez de aplicar el daño, el ciclo del
+2,5 s después. `resolveCast` devuelve `delayed` en vez de aplicar el daño, el ciclo del
 juego lo guarda y `landDelayedSpell` lo aplica al vencer (con la tirada de Resistencia en ese
 momento; cae aunque el objetivo se haya alejado, no si murió o se fue). Mientras tanto se puede
 lanzar otro: la Columna de fuego tarda 2,25 s, así que lanzada enseguida cae junto con la
@@ -276,7 +276,7 @@ objetivo de su dueño o a quien lo ataque, si no lo siguen (pueden entrar al pue
 cuenta para él, no reaparecen y se van cuando vencen, mueren o su dueño se desconecta. Hay como
 mucho dos por jugador.
 
-Los **atributos** (fuerza, destreza e inteligencia) se entrenan como en UO: cada uso de una
+Los **atributos** (fuerza, destreza e inteligencia) se entrenan según el diseño del juego: cada uso de una
 habilidad (`SkillSet` avisa a `Player`) puede subir uno de los suyos (`SKILL_STATS`), no muy
 seguido, hasta 100 cada uno y 225 entre los tres. Se guardan con el personaje y cambian los
 máximos de vida, maná y energía.
@@ -294,7 +294,7 @@ parálisis (se corta con un golpe) y visión nocturna. El `GameLoop` los hace ve
 veneno; el dueño recibe la lista con `effects`, que el cliente muestra en la barra de efectos.
 
 Vendas (`domain/healing/bandage.ts`, mensaje `useOn`) y pociones (`domain/items/consumables.ts`)
-siguen las mismas reglas de UO: la venda tarda según la destreza, cura según Primeros auxilios y
+siguen las mismas reglas del juego: la venda tarda según la destreza, cura según Primeros auxilios y
 Anatomía y, con 60 en ambas, puede sacar el veneno. Al terminar de vendar (salga bien o no), el
 combate avisa `bandageUsed` y `features/washing` deja una venda ensangrentada en la mochila. Con
 doble clic a dos tiles o menos del agua (mar, río, orilla, aljibe, fuente o bebedero de caballos)
@@ -356,7 +356,7 @@ el más cercano de los que lo siguen atacando. Contra personas valen las reglas 
 devolver el golpe no es delito. El modo guerra no se guarda: se entra al juego en paz.
 
 Las subidas de habilidad y de atributo llegan como `system` con `tone` (`skill` o `stat`) y el
-chat las pinta en celeste y en verde, como en UO.
+chat las pinta en celeste y en verde.
 
 ### Un mundo grande
 
@@ -364,7 +364,7 @@ chat las pinta en celeste y en verde, como en UO.
   16; jugadores y criaturas avisan al moverse (`moved`). `mobilesNear` y `anyPlayerNear` miran
   solo las celdas cercanas, en vez de recorrer todo el mundo.
 - **Criaturas que duermen**: lejos de todo jugador (`AWAKE_RANGE`) una criatura no piensa ni
-  camina, como en UO; las invocaciones y monturas siempre siguen a su dueño.
+  camina; las invocaciones y monturas siempre siguen a su dueño.
 - **Mapa compacto** (`encodeMap` / `decodeMap`, en `@fenix/shared`): el mapa del mensaje de
   bienvenida viaja como bytes en base64 (uno por tile de terreno, cinco por objeto fijo).
 - **Caminos**: el A\* busca primero en una ventana alrededor de los extremos.
@@ -407,7 +407,7 @@ servidor solo borra lo que está entre las cosas del administrador (una bolsa, c
 
 ### Recipientes
 
-Como en UO, hay cosas que guardan cosas: bolsas, saquitos y cajas que se llevan en la
+según el diseño del juego, hay cosas que guardan cosas: bolsas, saquitos y cajas que se llevan en la
 mochila (`capacity` en el catálogo) y muebles del mundo (cofres, barriles, toneles,
 cajones, bibliotecas y estantes; ver `STATIC_CONTAINERS`). Un objeto puede estar
 `{ type: 'container', containerId }`: el id de una bolsa o `static:x:y` para un mueble.
@@ -429,7 +429,7 @@ un mensaje); el primero que escribe queda como autor. Las bibliotecas traen libr
 
 ### Misiones
 
-Los vecinos (`townsfolk`) dan misiones, como en UO: al hacerles clic el cliente manda
+Los vecinos (`townsfolk`) dan misiones: al hacerles clic el cliente manda
 `talkNpc` y `Quests` (caso de uso) decide qué contestar. Si el vecino necesita algo, le
 manda al jugador un `questOffer`; si ya se la habían aceptado, recuerda lo que falta o
 paga si está lista; y si le traen una carta, la recibe. Hay tres tipos (ver
@@ -493,7 +493,7 @@ tiendas grandes, calcula el total al comprar varios y tiene «Vender todo».
 
 - **Lugares del equipo** (`EQUIPMENT_SLOTS`): además de cabeza, capa, torso, manos, piernas
   y pies, ahora hay cuello (golas), brazos (mangas y brazales) y manos (guantes y guanteletes),
-  como en UO. Cada material tiene sus piezas: cuero, tachonado, anillas, malla, hueso y placas;
+  según el diseño del juego. Cada material tiene sus piezas: cuero, tachonado, anillas, malla, hueso y placas;
   el juego completo de placas suma bastante más que el peto solo. El herrero vende las de
   metal, el tabernero las de cuero; la herrería y la sastrería las fabrican. Los guardias
   llevan el juego completo.
@@ -503,7 +503,7 @@ tiendas grandes, calcula el total al comprar varios y tiene «Vender todo».
   hombrera). Las grebas de placas tienen escarcelas y rodilleras; la gola se apila sobre el
   cuello.
 - **Ventana de personaje** (`paperdoll-art.ts`): el mismo modelo 3D, de frente y casi sin
-  inclinación, en la pose `display` (brazos separados, como en UO) y dibujado a
+  inclinación, en la pose `display` (brazos separados) y dibujado a
   `PAPERDOLL_DETAIL` veces la resolución del sprite (no el sprite agrandado). El lienzo tiene
   `detail`: con más de 1 las calcomanías crecen, las manos tienen dedos y pulgar (cerradas si
   empuñan algo) y las telas caen sin escalones. Para agarrar una prenda del dibujo se comparan
@@ -545,7 +545,7 @@ tiendas grandes, calcula el total al comprar varios y tiene «Vender todo».
   atributos, vida, maná y energía, defensa de lo puesto (`armorOf`), el arma con su daño y
   velocidad (`weaponOf`), el peso y el oro de la mochila.
 - **Peso y carga** (`shared/domain/items/weight.ts`): cada objeto pesa unas piedras
-  (`itemWeight`) y se puede llevar `40 + 3,5 × Fuerza` (`maxWeight`), como en UO. Con más peso
+  (`itemWeight`) y se puede llevar `40 + 3,5 × Fuerza` (`maxWeight`). Con más peso
   no se corre y cada paso gasta energía; con más de 40 piedras de más (o sin energía) no se
   puede caminar (`encumbrance`). El servidor calcula lo que lleva cada uno (`Items.weightOf`,
   mochila con las bolsas y lo puesto) en cada aviso de inventario, que ahora trae `weight`;
@@ -631,13 +631,13 @@ una cámara al fondo con un cofre. Se unen por **pasadizos** (`Passage`): una pa
 cementerio llevan a las catacumbas, y en algunas casas una **baldosa floja**
 (`loose-flagstone`, una bajada `secret`) baja a ellas; desde abajo, una escalera de mano sube
 de vuelta a la casa. `undercityLinks` (`world-builder`) arma esos teletransportes. La
-alcantarilla tiene la estética de UO (arte propio): veredas de adoquines (`Cobblestone`),
+alcantarilla tiene la estética del juego (arte propio): veredas de adoquines (`Cobblestone`),
 canales de agua verde y turbia que se cruzan a pie (`SewerWater`), muros de bloques con musgo
 (`sewer-wall`), baba y agujeros que despiden gases.
 
 ### Pisos altos y línea de visión
 
-Algunos edificios tienen pisos altos, como en UO: la posada (un piso con cuartos), la torre
+Algunos edificios tienen pisos altos: la posada (un piso con cuartos), la torre
 del mago (dos pisos con escalera de caracol: biblioteca y observatorio) y algunas casas (escalera
 de madera o de mano). `city-builder` pone la escalera en el rincón del cuarto más lejos de la
 puerta y anota la subida (`Ascent`); `generateFloors` (`upper-floors.ts`) arma cada piso del
@@ -650,7 +650,7 @@ quedar encima de su edificio. `TileMap.displayOf` da la posición a la vista (en
 edificio, a su altura) y `rawOf` la inversa. Tipos de escalera: de madera, de piedra, de
 caracol, de mano, la bajada y la trampilla.
 
-**Pisos a la vista**, como en UO: arriba de todo cada edificio tiene una **azotea** (techo
+**Pisos a la vista**: arriba de todo cada edificio tiene una **azotea** (techo
 plano con almenas de piedra o baranda de tablas; se sube por una escalera de mano y una
 trampilla) y las casas de una planta tienen su techo (sin acceso). En el cliente, `Ground`
 proyecta todo con `displayOf`: los pisos altos se dibujan encima de su edificio, subidos lo
@@ -730,7 +730,7 @@ marca al leer el mapa.
 
 ### Barcos tripulados
 
-Los barcos siguen el modelo de UO (se revisó el código de ServUO para las reglas): se compran como
+Los barcos siguen el modelo del juego (se revisó el código de un servidor de referencia para las reglas): se compran como
 maqueta a Bruno el armador (`shipwright`), se botan con doble clic en el agua más cercana y los
 navegan varios personajes juntos. Hay balandra (5 × 3, sin cañones) y galeón (7 × 3, un cañón
 por banda); ver `SHIPS`.
@@ -740,7 +740,7 @@ por banda); ver `SHIPS`.
   guardar). Se dan con nombre o a cualquiera, al grupo o al gremio del dueño; «sin permiso» con
   nombre deja afuera aunque sea del grupo (`shipLevel`). Para subir caminando a una cubierta ajena
   hace falta permiso (`MovePlayer.refusal`).
-- **Timón**: cualquier tripulante a bordo da órdenes en voz alta como al timonel de UO («adelante»,
+- **Timón**: cualquier tripulante a bordo da órdenes en voz alta como al timonel del juego («adelante»,
   «despacio atrás», «un paso a babor», «virar a estribor», «dar la vuelta», «alto»;
   `parseShipOrder`) o con la ventana del barco. El caso de uso `Ships` mueve el barco tile por tile
   (más lento «despacio») y lleva todo lo que hay encima: gente, criaturas y objetos. Solo entra en
@@ -784,14 +784,14 @@ lista (`account`), crea, juega y borra personajes; `ClientSession` pasa de "sin 
 cuentas pasa a la cuenta de su mismo nombre la primera vez que se entra con su contraseña. La
 cuenta de un personaje de prueba ya lo trae.
 
-La creación es como en UO (`shared/domain/character/creation.ts`): 120 puntos de atributos (de
+La creación es según el diseño del juego (`shared/domain/character/creation.ts`): 120 puntos de atributos (de
 10 a 80 cada uno) y cuatro habilidades, dos en 60 y dos en 50. El equipo sale de `startingKit`:
 lo de todos (100 vendas, comida, pociones, antorcha) más lo de cada habilidad (armas y armadura
 para combate, libro y 150 de cada reactivo para Magia, herramientas y materiales para los
 oficios…); además, 2000 monedas en el banco. Las armas, la armadura y el escudo se ponen solos.
 Empieza vestido con `startingClothes`: camisa del color elegido y pantalón (las mujeres,
 pollera), objetos de verdad que se pueden sacar. Un jugador sin nada en el torso o en las
-piernas muestra **ropa interior**, como en UO pero apta para todo público (`bareTorso` y
+piernas muestra **ropa interior** pero apta para todo público (`bareTorso` y
 `underpants` en `character-art.ts`): un short largo de lino y, las mujeres, una musculosa. Los
 vecinos del pueblo siempre andan vestidos. Hay más peinados (rapado, con entradas, en punta,
 cresta, moño alto, a los hombros, largo ondulado, trenza al costado, dos rodetes) y barbas
@@ -827,7 +827,7 @@ sigue las reglas del combate entre jugadores contra su dueño (el pueblo la prot
 si el dueño es inocente). Al dueño se le avisa cuando la atacan y cuando la matan; el cuerpo queda
 20 s y después puede comprar otra. `releasePet` (`/liberar`) la deja ir, montada o suelta. `MountActions` la monta
 (`mount`: la criatura sale del mundo y `Player.mount` guarda la especie), la baja (`dismount`, o al
-morir) y avisa con `mountChanged`. Montado, `moveDuration(mode, true)` da los tiempos de UO (200 ms
+morir) y avisa con `mountChanged`. Montado, `moveDuration(mode, true)` da los tiempos del juego (200 ms
 al paso, 100 ms al galope) en el servidor y en la predicción del cliente, y correr no gasta
 energía. La montura se guarda con el personaje (montada o suelta).
 
@@ -926,7 +926,7 @@ casi tres veces una persona); el dragón joven es el chico, en el fondo y en las
 
 ### Montañas
 
-Las montañas son como en UO: terreno de roca (`Terrain.Mountain`) que sube en laderas, más alto
+Las montañas son según el diseño del juego: terreno de roca (`Terrain.Mountain`) que sube en laderas, más alto
 cuanto más adentro del macizo (`mountains.ts`, al final de `populateContinent`). La marca
 `mountain` sigue en cada tile (bloquea y se pica con el pico) pero no se dibuja
 (`INVISIBLE_STATICS`); encima van riscos sueltos de tres formas (`crag`, `crag-spire`,
@@ -937,14 +937,14 @@ En el campo, un ruido de **claros** deja zonas lisas, sin plantas ni piedras, pa
 
 ### Rango de visión
 
-Cada jugador solo recibe lo que pasa a 18 tiles o menos (como en UO): al moverse, el servidor
+Cada jugador solo recibe lo que pasa a 18 tiles o menos : al moverse, el servidor
 calcula quién entra y quién sale de su rango y envía `mobileAppeared` / `mobileDisappeared` en
 ambos sentidos. El chat en voz alta también se oye solo dentro de ese rango (el de grupo y el de
 gremio llega a sus miembros estén donde estén).
 
 ## Render
 
-- **Terreno** (`TerrainLayer`): rombos de 44×44 (el tamaño de tile de UO) dibujados a
+- **Terreno** (`TerrainLayer`): rombos de 44×44 (el tamaño de tile del juego) dibujados a
   resolución completa, con bordes mezclados según los vecinos, en bloques de 16×16 que se
   ocultan fuera de cámara. El color de cada terreno y variante se calcula una sola vez por
   pixel (`colorField` en `terrain-art.ts`) y cada combinación de vecinos lo reutiliza: así un
@@ -986,9 +986,9 @@ gremio llega a sus miembros estén donde estén).
   (`core/targeting.ts`): la criatura salvaje viva más cercana, sin personas ni criaturas con
   dueño. El diseño de la pantalla es solo CSS. El diseño de juego está en `docs/CELULAR.md`.
 
-## Hechizos de UO completos y campos con partículas (etapa 65)
+## Hechizos del juego completos y campos con partículas (etapa 65)
 
-- **Los 64 hechizos**: se sumaron los que faltaban, cada uno en su círculo como en UO. En el
+- **Los 64 hechizos**: se sumaron los que faltaban, cada uno en su círculo según el diseño del juego. En el
   primero, Armadura reactiva. En el tercero, Cerradura mágica, Telequinesis y Abrir cerradura.
   En el quinto, Espíritu de espadas, Disipar campo, Incógnito, Reflejo mágico e Invocar criatura.
   En el sexto, Disipar. En el séptimo, Disipar en grupo y Transformación. Las reglas están en
@@ -1022,7 +1022,7 @@ gremio llega a sus miembros estén donde estén).
 ## Bolsas, tina con panel de colores y resbalar contra paredes (etapa 66)
 
 - **Guardar en bolsas**: soltar un objeto sobre una bolsa (un ícono con `data-bag` en la mochila
-  o en otro recipiente) lo guarda adentro, como en UO (`drag-controller.ts`, que ilumina la bolsa
+  o en otro recipiente) lo guarda adentro (`drag-controller.ts`, que ilumina la bolsa
   al pasar por encima). El servidor ya aceptaba `container` sin lugar: busca el primer casillero
   libre.
 - **Lo de las bolsas cuenta**: `Items.countInBackpack` y `consumeFromBackpack` miran también
@@ -1035,7 +1035,7 @@ gremio llega a sus miembros estén donde estén).
   tina (`dye`, que gasta una tintura). Las bolsas también se tiñen.
 - **Personaje de prueba sin oro**: `Player.testKit` guarda qué versión del kit de prueba ya se le
   aplicó. La versión 2 le saca una sola vez el oro que tenía; lo que gane después lo conserva.
-- **Resbalar contra las paredes** (`slideDirection` en `@fenix/shared`), como en UO: un paso en
+- **Resbalar contra las paredes** (`slideDirection` en `@fenix/shared`): un paso en
   diagonal de la grilla que choca prueba las dos direcciones vecinas y sigue por la libre (hacia
   donde tira el mouse o el joystick, `MovementIntent.lean`). De frente contra algo se frena. Lo
   resuelve el cliente al predecir el paso y manda la dirección final; el servidor la valida igual
@@ -1151,13 +1151,13 @@ Las 4 fijas son las del módulo, el armado completo (`game.test.ts`) y las dos d
     facetas, espejo, púas, cristales de hielo).
   - `recipes.test.ts` exige que los 64 tengan efecto, que ninguno sea igual a otro y que todos
     se dibujen de principio a fin.
-- **Veneno a la vista, como en UO.** `MobileSnapshot` y `mobileHealth` llevan `poisoned`; el
+- **Veneno a la vista.** `MobileSnapshot` y `mobileHealth` llevan `poisoned`; el
   servidor lo avisa al envenenarse, al curarse y cuando se pasa. La barra de vida sobre la
   cabeza y la del panel se ven verde veneno.
 
 ## Opciones, barra de información y atajos de teclado (etapa 71)
 
-Un panel de opciones como el de un asistente de UO (tecla **P** o botón **Opciones**; en el
+Un panel de opciones como el de un asistente del juego (tecla **P** o botón **Opciones**; en el
 celular, en el menú). Todo vive en el navegador (`fenix.opciones`); los atajos mandan los mismos
 pedidos que la barra de atajos y los botones, y el servidor decide como siempre.
 
@@ -1179,7 +1179,7 @@ pedidos que la barra de atajos y los botones, y el servidor decide como siempre.
 
 ## Casas de los jugadores (etapa 72)
 
-Casas prefabricadas como en UO: se compra la escritura a **Octavio el arquitecto** (en la capital y
+Casas prefabricadas según el diseño del juego: se compra la escritura a **Octavio el arquitecto** (en la capital y
 en los pueblos medianos), se usa en el campo y la casa aparece entera, con sus cofres. Las
 compras de 2000 monedas o más se pueden pagar con el oro del banco.
 
@@ -1232,7 +1232,7 @@ compras de 2000 monedas o más se pueden pagar con el oro del banco.
 
 ## Casa a medida (etapa 73)
 
-Como el diseñador de casas de UO: el arquitecto vende **lotes** vacíos (escrituras como las de las
+Como el diseñador de casas del juego: el arquitecto vende **lotes** vacíos (escrituras como las de las
 casas) y, adentro, una ventana de diseño deja poner las piezas planta por planta.
 
 - **Lotes** (`houses.ts`, `lot: true`): chico 6×6 (2 plantas, 2 cofres, 2000 monedas), mediano 9×9
@@ -1269,7 +1269,7 @@ casas) y, adentro, una ventana de diseño deja poner las piezas planta por plant
 
 ## Ventanas que se corren (etapa 74)
 
-Como en UO, cada ventana (`GameWindow`) se arrastra desde cualquier lugar que no tenga su propio
+según el diseño del juego, cada ventana (`GameWindow`) se arrastra desde cualquier lugar que no tenga su propio
 toque (no solo desde la barra): los objetos, los botones y la grilla de diseño siguen siendo
 suyos, y desde el cuerpo recién arrastra cuando el dedo se mueve unos píxeles. Se puede correr
 fuera de la pantalla dejando 48 px asomados para volver a agarrarla. Tocarla la trae adelante; su
@@ -1339,7 +1339,7 @@ ningún monumento real):
   los galpones del pescador y el astillero) y otro puente hasta el islote del faro. La región
   "Puerto de Altamar" es tan segura como la ciudad. En el continente, `TownPlan.harbor` abre un
   canal desde el agua del borde sur de la ciudad hasta el mar abierto. `WORLD_VERSION` 10.
-- **Carteles de comercio** como en UO (`shop-sign-<ícono>-x|y`): una tabla colgada de un brazo de
+- **Carteles de comercio** según el diseño del juego (`shop-sign-<ícono>-x|y`): una tabla colgada de un brazo de
   hierro junto a la puerta, perpendicular a la pared, con el ícono del oficio (yunque, serrucho,
   estrella, monedas, jarra, corazón, bolsa, tijera, arco, frasco, pan, jamón, gema, pluma, pez,
   ancla, casa, herradura, hacha). `Plan.shopSign` la cuelga en el primer tramo liso de pared.
@@ -1357,7 +1357,7 @@ ningún monumento real):
   en diagonal con puentes donde lo cruzan los túneles y cristales de hielo que alumbran. Dos
   escaleras de piedra bajan a las **salas especiales**: el Trono de la Escarcha (liche de escarcha
   con magos y elementales) y el Santuario del Dragón de Hielo (cámara en cruz con el dragón).
-  Diseño propio, inspirado en el calabozo de hielo de UO. Van como lugares bajo tierra en la
+  Diseño propio, inspirado en el calabozo de hielo del juego. Van como lugares bajo tierra en la
   columna de las criptas; `iceLinks` arma las escaleras.
 - **Bestiario de la nieve**: yeti, troll de las nieves, araña de hielo, elemental de hielo, liche
   de escarcha y dragón de hielo toman el cuerpo de otra criatura teñido de hielo o de nieve
@@ -1373,7 +1373,7 @@ ningún monumento real):
   con seis nichos de cada lado (sarcófago y un muerto en cada uno), la cripta del **rey de la
   tumba** al fondo con su trono y su guardia, y un corredor al este hasta una cámara en cruz con un
   liche, espectros y cofres. Muros de arenisca tallada (`tomb-wall`). Diseño propio, inspirado en
-  la de UO.
+  la del juego.
 - Criaturas nuevas: **momia** (cuerpo de zombi teñido de vendas viejas) y **rey de la tumba**
   (liche teñido de oro), con las paletas `linen` y `gold` de `ice-art.ts`.
 - Los calabozos de afuera se arman igual en `world-builder.ts` (`specials` y `dungeonLinks`).
@@ -1510,7 +1510,7 @@ ningún monumento real):
 ## Apilar objetos y el cartelito de cantidad (etapa 102)
 
 - Soltar una pila sobre otra del mismo tipo (mismo color, mismo equipo inicial) las suma, como en
-  UO: en la mochila, en el banco y en bolsas o muebles. Lo decide el servidor (`Items.stackUnder`)
+  Fénix: en la mochila, en el banco y en bolsas o muebles. Lo decide el servidor (`Items.stackUnder`)
   según dónde cae el centro del ícono soltado; no cambia el protocolo.
 - El panel de cantidad es un cartelito chico: el objeto y su pila, una barra deslizable (con − y +
   para afinar), el número, "Todo" y "Aceptar". En la computadora se escribe el número y Enter acepta.
@@ -1568,7 +1568,7 @@ ningún monumento real):
   robar). El cliente lo muestra en `SnoopWindow`: tocar un objeto manda `stealItem` y se intenta
   robar **justo eso**, con la misma chance y las mismas consecuencias que Robar.
 
-## El cuerpo del jugador como en UO (etapa 112)
+## El cuerpo del jugador según el diseño del juego (etapa 112)
 
 - Al morir, lo que llevaba puesto pasa al cuerpo recordando su lugar (`worn` en la ubicación
   `corpse`). El cuerpo guarda la apariencia y la dirección (`corpse.look`) y el suelo lo manda en
@@ -1692,11 +1692,11 @@ lugares en sus plazas siguen a su gusto.
   abriendo.
 - **Armas a la vista en la ventana de personaje**: en esa pose el arma colgaba hacia la cámara y casi
   no se veía (la katana, el puñal). Ahora el antebrazo va adelante y el arma en alto, en diagonal
-  hacia afuera (`DISPLAY_ARMED_ARM`, `DISPLAY_WEAPON` en `humanoid-rig.ts`), como en UO.
+  hacia afuera (`DISPLAY_ARMED_ARM`, `DISPLAY_WEAPON` en `humanoid-rig.ts`).
 
 **Etapa 132**: en la ventana de personaje, las armas de asta (alabarda, bardiche, lanzas, horquilla,
 bastón) y las hachas largas de dos manos se muestran **paradas al costado**, del suelo hasta arriba
-de la cabeza, como en UO (`POLEARMS` y `rig.display` en `character-art.ts`); las hojas de hacha se
+de la cabeza (`POLEARMS` y `rig.display` en `character-art.ts`); las hojas de hacha se
 ven de frente. Las demás armas siguen en alto, en diagonal.
 
 ## El mapa se descubre al recorrerlo (etapa 133)

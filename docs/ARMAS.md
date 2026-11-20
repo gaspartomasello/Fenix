@@ -3,11 +3,11 @@
 Guía para cargar un arma nueva (o mejorar una que ya existe) de punta a punta: que se pueda
 conseguir, que pegue con su daño y su velocidad, y que se vea bien en la mochila, en el suelo,
 en la mano del personaje y en la ventana de personaje. Leé también `docs/ARQUITECTURA.md` y las
-reglas de `CLAUDE.md` (arte propio, código en inglés y textos en español claro).
+reglas de `CLAUDE.md` (catálogo de arte, código en inglés y textos en español claro).
 
 ## Cómo pelea un arma
 
-- **Acierto:** habilidad del arma del atacante contra la del defensor (fórmula de UO): a igual
+- **Acierto:** habilidad del arma del atacante contra la del defensor (fórmula del juego): a igual
   habilidad, 50 %; entre 10 % y 95 %.
 - **Daño:** al azar entre `minDamage` y `maxDamage`, +1 cada 20 de fuerza, × Tácticas (60 %–100 %),
   × Anatomía (hasta +50 %); la armadura absorbe hasta 60 %.
@@ -15,22 +15,22 @@ reglas de `CLAUDE.md` (arte propio, código en inglés y textos en español clar
   `15000 ÷ ((destreza + 100) × velocidad)`, con la destreza en proporción a la energía que queda
   (cansado, más lento) y nunca más de un golpe por segundo (`shared/combat/swing-speed.ts`).
   Cada arma guarda `swingMs`: **lo que tarda con 40 de destreza** (un personaje nuevo). La
-  velocidad al estilo UO sale sola: `velocidad = 107143 ÷ swingMs` (daga 71, alabarda 29).
-  Para cargar una velocidad de UO: `swingMs = 107143 ÷ velocidad`, redondeado a 250.
+  velocidad base sale sola: `velocidad = 107143 ÷ swingMs` (daga 54, alabarda 29).
+  Para cargar una velocidad del juego: `swingMs = 107143 ÷ velocidad`, redondeado a 250.
 - **Habilidad:** cada arma usa y sube una: `fencing` (esgrima: daga, estoque, lanza), `swordsmanship`
   (espadas y hachas), `mace-fighting` (mazas, martillos, garrote, bastón), `archery` (arco y
   ballestas, con `range` y `ammo`).
 
 ### Valores de referencia (para que quede pareja)
 
-| Tipo                         | Daño       | `swingMs` | Velocidad UO | Ejemplos                        |
-| ---------------------------- | ---------- | --------- | ------------ | ------------------------------- |
-| Puñal (una mano, rápido)     | 3–7, 4–10  | 1500–1750 | 61–71        | daga, estoque                   |
-| Espada liviana               | 5–12, 5–13 | 2000–2250 | 48–54        | katana, alfanje, cimitarra      |
-| Espada / maza de una mano    | 6–16       | 2500–2750 | 39–43        | espada larga, maza, hacha       |
-| Pesada de una mano           | 9–18       | 3000      | 36           | hacha de guerra, mangual        |
-| Dos manos pesada             | 10–25      | 3250–3750 | 29–33        | hacha doble, alabarda, bardiche |
-| Arco / ballesta (alcance 10) | 8–26       | 3000–5000 | 21–36        | arco, ballesta, ballesta pesada |
+| Tipo                         | Daño       | `swingMs` | Velocidad base | Ejemplos                        |
+| ---------------------------- | ---------- | --------- | -------------- | ------------------------------- |
+| Puñal (una mano, rápido)     | 10–12      | 2000      | 54             | daga, estoque                   |
+| Espada liviana               | 5–12, 5–13 | 2000–2250 | 48–54          | katana, alfanje, cimitarra      |
+| Espada / maza de una mano    | 6–16       | 2500–2750 | 39–43          | espada larga, maza, hacha       |
+| Pesada de una mano           | 9–18       | 3000      | 36             | hacha de guerra, mangual        |
+| Dos manos pesada             | 10–25      | 3250–3750 | 29–33          | hacha doble, alabarda, bardiche |
+| Arco / ballesta (alcance 10) | 8–26       | 3000–5000 | 21–36          | arco, ballesta, ballesta pesada |
 
 Regla práctica: **más daño, más lenta**. El daño por segundo de las armas de una mano anda entre
 3,3 y 4,5 (con 40 de destreza); las de dos manos, algo más, a cambio de no llevar escudo.
@@ -51,7 +51,7 @@ y con guiones; el nombre, en español.
      name: 'espada bastarda',
      minDamage: 8,
      maxDamage: 17,
-     swingMs: 3000, // con 40 de destreza (velocidad UO 36)
+     swingMs: 3000, // con 40 de destreza (velocidad base 36)
      skill: 'swordsmanship',
    },
    ```

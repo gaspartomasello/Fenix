@@ -26,7 +26,7 @@ import { Item, type ItemLocation } from './item';
 
 /** Algo que queda dentro de un cuerpo; una bolsa puede traer cosas adentro. */
 
-/** Lo que no se cae nunca al morir, sea o no del equipo inicial (como el libro de hechizos en UO). */
+/** Lo que no se cae nunca al morir, sea o no del equipo inicial (como el libro de hechizos en Fénix). */
 const KEPT_ON_DEATH: ReadonlySet<ItemKind> = new Set<ItemKind>(['spellbook']);
 
 export interface CorpseDrop {
@@ -89,7 +89,7 @@ const fail = (reason: string): ItemResult => ({ ok: false, reason });
 
 /**
  * Todos los objetos del mundo y las reglas para moverlos y usarlos, como en
- * UO: se levantan a 2 tiles o menos, la mochila tiene un límite, lo apilable
+ * Fénix: se levantan a 2 tiles o menos, la mochila tiene un límite, lo apilable
  * se junta y cada lugar del cuerpo admite un solo objeto.
  */
 export class Items {
@@ -171,7 +171,7 @@ export class Items {
         type: 'corpse',
         corpseId,
         at,
-        // En grilla; si no entran, se encima el resto en cascada, como en UO.
+        // En grilla; si no entran, se encima el resto en cascada.
         position:
           index < columns * rows
             ? {
@@ -212,7 +212,7 @@ export class Items {
 
   /**
    * Al morir un jugador, todo lo que llevaba (la mochila y lo puesto) pasa a su
-   * cuerpo, salvo el equipo inicial, que se queda con él (como en UO). Lo de
+   * cuerpo, salvo el equipo inicial, que se queda con él . Lo de
    * adentro de las bolsas va con la bolsa.
    */
   strip(ownerId: EntityId, corpseId: EntityId, at: Position): ItemChanges {
@@ -295,7 +295,7 @@ export class Items {
 
   /** Cuántas unidades de un tipo tiene alguien en la mochila. */
   /**
-   * Cuántos lleva en la mochila, como en UO: también lo guardado en las
+   * Cuántos lleva en la mochila: también lo guardado en las
    * bolsas de adentro (los reactivos en su bolsa sirven para los hechizos).
    */
   countInBackpack(ownerId: EntityId, kind: ItemKind): number {
@@ -474,7 +474,7 @@ export class Items {
 
   /**
    * La pila del mismo tipo sobre la que se soltó `item` (el centro del ícono
-   * soltado cae sobre ella), para sumarlas como en UO. null si no hay o si no
+   * soltado cae sobre ella), para sumarlas según el diseño del juego. null si no hay o si no
    * entra todo junto.
    */
   private stackUnder(
@@ -907,7 +907,7 @@ export class Items {
         if (!occupied) return spot;
       }
     }
-    // Mochila apretada: se apilan en cascada, como en UO.
+    // Mochila apretada: se apilan en cascada.
     const n = taken.length;
     return clampToBackpack({ x: (n * 9) % BACKPACK_AREA.width, y: (n * 7) % BACKPACK_AREA.height });
   }

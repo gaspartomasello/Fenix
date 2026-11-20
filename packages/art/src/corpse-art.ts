@@ -165,7 +165,7 @@ export function drawCreatureCorpse(
 export const PLAYER_CORPSE_LAYOUT: CorpseLayout = HUMANOID_LAYOUT;
 
 /**
- * El cuerpo de un jugador, como en UO: la misma persona, tirada de
+ * El cuerpo de un jugador: la misma persona, tirada de
  * espaldas, con su cara, su pelo y lo que todavía tiene puesto (lo que se le
  * saca deja de verse).
  */

@@ -11,7 +11,7 @@ import type { Notifier } from '../../ports';
 export const DEFEND_RANGE = 12;
 
 /**
- * Modo guerra y defensa propia, como en UO, para todos los jugadores. En
+ * Modo guerra y defensa propia, para todos los jugadores. En
  * guerra el personaje se dibuja en guardia; en paz no ataca. Si lo atacan
  * (criatura o persona) y no está peleando con nadie, pasa solo a modo guerra
  * y devuelve los golpes; al matar a su objetivo sigue con el más cercano de

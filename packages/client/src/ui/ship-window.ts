@@ -45,7 +45,7 @@ const SPEEDS = [
 ] as const;
 
 /**
- * La ventana del barco, como el timón y la lista de tripulantes de UO: el
+ * La ventana del barco, como el timón y la lista de tripulantes del juego: el
  * timón (para la tripulación), los cañones, reparar, abrir la bodega y, para
  * el capitán, quién puede qué: con nombre, o todo el grupo o el gremio.
  */

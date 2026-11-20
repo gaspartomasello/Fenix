@@ -2,7 +2,7 @@ export const CHAT_MAX_LENGTH = 120;
 
 /** Tiempo mínimo que un mensaje queda visible sobre la cabeza del personaje. */
 export const OVERHEAD_TEXT_DURATION_MS = 4000;
-/** Cuánto más dura por cada letra (como en UO: lo largo se queda más, para alcanzar a leerlo). */
+/** Cuánto más dura por cada letra (según el diseño del juego: lo largo se queda más, para alcanzar a leerlo). */
 export const OVERHEAD_TEXT_MS_PER_CHAR = 90;
 /** Lo más que dura un mensaje sobre la cabeza. */
 export const OVERHEAD_TEXT_MAX_MS = 16_000;

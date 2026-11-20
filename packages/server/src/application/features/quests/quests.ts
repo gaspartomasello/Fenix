@@ -64,7 +64,7 @@ const DELIVER_STORIES: readonly ((to: string, town: string) => string)[] = [
 ];
 
 /**
- * Misiones de los vecinos, como en UO: al hablarle, un vecino cuenta lo que
+ * Misiones de los vecinos: al hablarle, un vecino cuenta lo que
  * le pasa y pide algo — cazar criaturas que molestan, traer materiales, o
  * llevar una carta a alguien de otro pueblo. Se pueden llevar hasta
  * MAX_QUESTS a la vez; al volver con lo pedido, el vecino paga en oro (y a

@@ -340,7 +340,7 @@ export const TERRAINS: Readonly<Record<Terrain, TerrainDefinition>> = {
     id: Terrain.SewerWater,
     key: 'sewer-water',
     name: 'agua de la alcantarilla',
-    // Sucia pero baja: se cruza a pie, como en las alcantarillas de UO.
+    // Sucia pero baja: se cruza a pie, como en las alcantarillas del juego.
     walkable: true,
     blendPriority: 0.2,
   },

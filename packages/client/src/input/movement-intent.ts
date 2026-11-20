@@ -10,7 +10,7 @@ export interface MovementIntent {
   readonly lean?: Direction;
 }
 
-/** Flechas o WASD → vector de pantalla (arriba en pantalla = NorthWest en UO). */
+/** Flechas o WASD → vector de pantalla (arriba en pantalla = NorthWest en Fénix). */
 export function keysToIntent(keys: ReadonlySet<string>, running: boolean): MovementIntent | null {
   const up = keys.has('ArrowUp') || keys.has('KeyW');
   const down = keys.has('ArrowDown') || keys.has('KeyS');
@@ -23,7 +23,7 @@ export function keysToIntent(keys: ReadonlySet<string>, running: boolean): Movem
   return direction === null ? null : { direction, mode: running ? 'run' : 'walk' };
 }
 
-/** Distancia del cursor al personaje a partir de la cual se corre, como en UO. */
+/** Distancia del cursor al personaje a partir de la cual se corre. */
 export const RUN_DISTANCE_PX = 140;
 const DEAD_ZONE_PX = 12;
 

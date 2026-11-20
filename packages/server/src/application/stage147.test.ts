@@ -49,7 +49,7 @@ function workshop() {
   return { app, ana, give, count, texts, clock };
 }
 
-describe('etapa 147: carpintería fabrica muebles, con la habilidad de UO', () => {
+describe('etapa 147: carpintería fabrica muebles, con la habilidad del juego', () => {
   it('cada mueble tiene su receta de carpintería y su pieza', () => {
     for (const kind of FURNITURE_KINDS) {
       expect(ITEMS[kind].furniture).toBeDefined();
@@ -74,7 +74,7 @@ describe('etapa 147: carpintería fabrica muebles, con la habilidad de UO', () =
     expect(f.count('boards')).toBe(27);
   });
 
-  it('las camas piden casi el máximo de carpintería (94,7), como en UO', () => {
+  it('las camas piden casi el máximo de carpintería (94,7)', () => {
     const bed = RECIPES.find((r) => r.result === 'furniture-double-bed');
     expect(bed?.minSkill).toBe(947);
   });

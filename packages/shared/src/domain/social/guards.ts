@@ -1,5 +1,5 @@
 /**
- * Llamar a la guardia, como el "guards" de UO: decir "¡guardia!" (o pedir
+ * Llamar a la guardia, como el "guards" del juego: decir "¡guardia!" (o pedir
  * auxilio) dentro de un pueblo protegido hace venir al guardia más cercano,
  * que ajusticia a los criminales, asesinos y fieras que haya alrededor de
  * quien llamó. Fuera de los pueblos (y en el Refugio de los Bandidos) no

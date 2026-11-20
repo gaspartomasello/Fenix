@@ -18,7 +18,7 @@ function coffinImage(): string {
 }
 
 /**
- * Lo que tiene un cuerpo, en un ataúd como en UO: se arrastra cada objeto a
+ * Lo que tiene un cuerpo, en un ataúd según el diseño del juego: se arrastra cada objeto a
  * la mochila (o a donde se quiera), doble clic lo guarda, y "Tomar todo" se
  * lleva todo junto.
  */
@@ -67,7 +67,7 @@ export class CorpseWindow {
     this.corpseId = corpse.corpseId;
     this.window.setTitle(`Cuerpo: ${corpse.name}`);
     this.nameplate.textContent = corpse.name;
-    // El cuerpo de un jugador se saquea de a un objeto, como en UO.
+    // El cuerpo de un jugador se saquea de a un objeto.
     this.takeAll.hidden = corpse.noTakeAll === true;
     this.empty.hidden = corpse.items.length > 0;
     this.area.replaceChildren(

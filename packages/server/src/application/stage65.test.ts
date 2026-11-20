@@ -93,7 +93,7 @@ function createField() {
   return { map, world, app, run, join, player, mage, texts, notifier, give };
 }
 
-describe('etapa 65: los hechizos de UO que faltaban', () => {
+describe('etapa 65: los hechizos del juego que faltaban', () => {
   it('Armadura reactiva se queda con parte del golpe y se la devuelve a quien pega', () => {
     const f = createField();
     const ana = f.mage('Ana');

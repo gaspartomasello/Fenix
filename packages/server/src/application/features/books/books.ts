@@ -7,7 +7,7 @@ import type { ItemNotifications } from '../../kernel/item-notifications';
 import type { Notifier } from '../../ports';
 
 /**
- * Libros, como en UO: con doble clic se abren y se leen hoja por hoja. Un
+ * Libros: con doble clic se abren y se leen hoja por hoja. Un
  * libro en blanco se puede escribir (título y hojas); el primero que escribe
  * queda como autor. Los libros que se encuentran en las bibliotecas ya vienen
  * escritos y no se pueden cambiar.

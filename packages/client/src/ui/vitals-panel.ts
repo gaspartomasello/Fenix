@@ -41,7 +41,7 @@ export class VitalsPanel {
     this.element.remove();
   }
 
-  /** Envenenado: la barra de vida se pone verde veneno, como en UO. */
+  /** Envenenado: la barra de vida se pone verde veneno. */
   setPoisoned(poisoned: boolean): void {
     this.bars.hits.fill.classList.toggle('vital-fill--poisoned', poisoned);
   }

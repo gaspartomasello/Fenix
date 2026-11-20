@@ -1,6 +1,6 @@
 # Fenix — guía para trabajar en el repo
 
-MMORPG web inspirado en Ultima Online / Sphere. Leé `docs/ARQUITECTURA.md` antes de cambiar algo.
+MMORPG web isométrico de fantasía. Leé `docs/ARQUITECTURA.md` antes de cambiar algo.
 
 ## Reglas
 
@@ -16,13 +16,10 @@ MMORPG web inspirado en Ultima Online / Sphere. Leé `docs/ARQUITECTURA.md` ante
   cruzado; el lint lo impide. No se cablea nada en `GameApplication`.
 - **Arte y contenido**: el arte es procedural en `@fenix/art` (sin DOM); los mapas se editan con
   Tiled en `@fenix/content` (ver `docs/MAPAS.md`). Si cambia el arte, regenerar los tilesets.
-- **Referencias sí, copia no**: la estética se inspira en Ultima Online, Diablo y Helbreath, y sus
-  gráficos se pueden usar como referencia (para entender el estilo, la silueta o el clima). Lo que
-  entra al juego tiene que ser propio: no se incluye material de esos juegos (gráficos, mapas,
-  sonidos, música, nombres), y el resultado no puede ser reconocible como un gráfico concreto de
-  ellos. Las referencias no se usan como entrada directa de un generador, salvo con influencia
-  baja y comparando el resultado lado a lado. Arte propio: procedural, hecho con IA a partir de
-  descripciones propias, o con licencia libre verificada. Dirección de arte: `docs/ARTE.md`. Ideas pendientes: `docs/IDEAS.md`.
+- **Arte y catálogo**: conservar los sprites que Gaspar apruebe y sus píxeles originales.
+  Para objetos nuevos, dibujar el ícono y su representación en la mano, comparar ambos y
+  verificar que se distingan dentro del juego. Dirección de arte: `docs/ARTE.md`.
+  Ideas pendientes: `docs/IDEAS.md`.
 - **Interfaz con identidad (regla estricta)**: cada ventana, menú y panel (incluidas las de casas y
   construcción) sigue la línea estética del juego: cuero oscuro y madera, marco de bronce forjado
   con remaches, títulos dorados con brillo de brasa, botones como placas grabadas o medallones. Nada
@@ -33,7 +30,7 @@ MMORPG web inspirado en Ultima Online / Sphere. Leé `docs/ARQUITECTURA.md` ante
 - Código en inglés; comentarios, UI y docs en español.
 - **Con Gaspar se habla siempre en español**: todos los mensajes, resúmenes y explicaciones, sin pasar
   nunca al inglés.
-- **Todo lo que ve el jugador va en español claro**, sin jerga de UO ni anglicismos. Glosario:
+- **Todo lo que ve el jugador va en español claro**, sin jerga del juego ni anglicismos. Glosario:
 
   | En vez de… | Usar…                         |
   | ---------- | ----------------------------- |

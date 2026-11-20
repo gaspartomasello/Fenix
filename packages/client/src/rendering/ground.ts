@@ -56,7 +56,7 @@ export class Ground {
 
   /**
    * Los pisos que se esconden estando en `position`: los que están arriba de
-   * uno dentro del mismo edificio (como en UO, al entrar se ve el interior).
+   * uno dentro del mismo edificio (según el diseño del juego, al entrar se ve el interior).
    */
   floorsAbove(position: FractionalPosition): Set<RegionData> {
     const hidden = new Set<RegionData>();

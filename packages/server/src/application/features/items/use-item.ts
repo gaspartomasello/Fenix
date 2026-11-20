@@ -72,7 +72,7 @@ export class UseItem {
     if (consumed) {
       const effect = consume(player, consumed, this.clock.now(), () => this.random.next());
       changes.message = effect.message;
-      // La botella vacía vuelve a la mochila, como en UO.
+      // La botella vacía vuelve a la mochila.
       if (ITEMS[consumed].potion)
         this.world.items.addToBackpack(playerId, 'empty-bottle', 1, () => this.ids.next(), changes);
       this.mobiles.sendVitals(player);

@@ -2,7 +2,7 @@ import type { Position } from '../geometry/position';
 import type { TileMap } from '../world/tile-map';
 
 /**
- * Línea de visión, como en UO: entre dos lugares no tiene que haber nada que
+ * Línea de visión: entre dos lugares no tiene que haber nada que
  * tape la vista (una pared, una reja, una puerta cerrada, la roca). Se recorre
  * la recta tile por tile sin contar las puntas; al pasar en diagonal entre dos
  * tiles tapados (una esquina de pared) tampoco se ve. Además, los dos lugares

@@ -4,7 +4,7 @@ import type { GameRenderer } from '../rendering/game-renderer';
 import type { WorldTooltip } from '../ui/world-tooltip';
 
 /**
- * Puertas, como en UO: doble clic (o un toque, en pantallas táctiles) sobre
+ * Puertas: doble clic (o un toque, en pantallas táctiles) sobre
  * una puerta la abre o la cierra. El servidor decide (hay que estar al lado).
  */
 export class WorldDoors {

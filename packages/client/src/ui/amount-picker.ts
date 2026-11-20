@@ -3,7 +3,7 @@ import { el, onPress } from './dom';
 import { itemIconUrl } from './item-icons';
 
 /**
- * Cuántos mover de una pila, como el cartelito de UO: el objeto, una barra que
+ * Cuántos mover de una pila, como el cartelito del juego: el objeto, una barra que
  * se desliza de 1 a la pila entera, el número, "Todo" y "Aceptar". Igual en la
  * computadora y en el celular (con el dedo se desliza la barra; los botones
  * − y + afinan de a uno). En la computadora también se escribe el número,

@@ -22,7 +22,7 @@ const CHAT_RANGE = 3;
 
 /**
  * La vida de las ciudades: los vecinos caminan por las calles cerca de su
- * casa (con pausas, como quien pasea) y los guardias patrullan. Como en UO,
+ * casa (con pausas, como quien pasea) y los guardias patrullan. según el diseño del juego,
  * un guardia que ve a un criminal, a un asesino o a una fiera dentro de la
  * ciudad protegida le grita y enseguida aparece a su lado y lo ajusticia.
  * Las criaturas que crea un administrador del juego no las tocan.

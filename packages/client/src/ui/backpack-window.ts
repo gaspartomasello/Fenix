@@ -52,7 +52,7 @@ export function destinationFor(
   }
 }
 
-/** Ventana de la mochila: los objetos se ubican libremente, como en UO. */
+/** Ventana de la mochila: los objetos se ubican libremente. */
 export class BackpackWindow {
   readonly window: GameWindow;
   private readonly area: HTMLElement;
@@ -69,7 +69,7 @@ export class BackpackWindow {
       this.area,
       el('p', { className: 'window-hint', text: 'Arrastrá para mover · doble clic para usar' }),
     );
-    // Una mochila de cuero, como en UO.
+    // Una mochila de cuero.
     new ContainerSkin(this.window, this.area).wear(BACKPACK_ART);
   }
 

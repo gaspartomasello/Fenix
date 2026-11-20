@@ -30,7 +30,7 @@ const ATTRIBUTE_NAMES: Readonly<Record<AttributeKey, string>> = {
   intelligence: 'Inteligencia',
 };
 
-/** Personajes armados para empezar rápido, como las plantillas de UO. */
+/** Personajes armados para empezar rápido, como las plantillas del juego. */
 const TEMPLATES: readonly {
   readonly name: string;
   readonly attributes: Attributes;

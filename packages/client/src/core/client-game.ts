@@ -67,7 +67,7 @@ import type { ServerGateway } from './ports';
 /** Después de este tiempo sin golpes, un atacante vuelve a avisarse. */
 const ATTACK_WARNING_MS = 20_000;
 
-/** Mensajes del registro; `skill` y `stat` son las subidas (celeste y verde, como en UO). */
+/** Mensajes del registro; `skill` y `stat` son las subidas (celeste y verde). */
 export type LogKind = 'chat' | 'system' | 'skill' | 'stat';
 
 export interface LogEntry {
@@ -453,7 +453,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
 
   // ── Acciones del jugador ────────────────────────────────────────────
 
-  /** Un paso hacia `direction`; si choca en diagonal, resbala hacia `lean` (como en UO). */
+  /** Un paso hacia `direction`; si choca en diagonal, resbala hacia `lean` . */
   requestStep(direction: Direction, mode: MoveMode, lean?: Direction): void {
     const self = this.self;
     if (!self || !this.predictor) return;
@@ -604,7 +604,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
     else this.notify('No tenés invitaciones pendientes.');
   }
 
-  /** Entrar o salir del modo guerra. Al salir se deja de atacar, como en UO. */
+  /** Entrar o salir del modo guerra. Al salir se deja de atacar. */
   toggleWarMode(): void {
     if (!this.self) return;
     const war = !this._warMode;
@@ -1398,7 +1398,7 @@ export class ClientGame extends EventEmitter<ClientGameEvents> {
   }
 
   /**
-   * Como en UO: la primera vez que algo te ataca (o vuelve a hacerlo después
+   * según el diseño del juego: la primera vez que algo te ataca (o vuelve a hacerlo después
    * de un rato), el chat avisa quién. Si no se lo ve, igual se avisa.
    */
   private warnAttacker(id: EntityId, attacker: Entity | undefined, now: number): void {

@@ -493,7 +493,7 @@ class Plan {
   }
 
   /**
-   * El cartel del comercio, como en UO: colgado de la pared de afuera, en el
+   * El cartel del comercio: colgado de la pared de afuera, en el
    * primer tramo liso al lado de la puerta.
    */
   shopSign(door: Position, icon: ShopSignIcon): void {
@@ -898,7 +898,7 @@ export function buildCity(spec: CitySpec): City {
     }
     furnishHome(plan, home, random, style);
   }
-  // Las demás casas y negocios, con su techo plano (se ven desde afuera, como en UO).
+  // Las demás casas y negocios, con su techo plano (se ven desde afuera).
   if (!style.lawless)
     for (const house of houses) if (house !== abandoned) roofOnly(plan, spec, house);
   // Faroles a lo largo de las avenidas (en el refugio, solo las fogatas de las carpas).
@@ -1292,7 +1292,7 @@ interface Corners {
 
 /**
  * La muralla sigue el contorno de la ciudad: un rectángulo con las esquinas
- * cortadas en diagonal (en escalones, como las murallas de UO). Lo que queda
+ * cortadas en diagonal (en escalones, como las murallas del juego). Lo que queda
  * afuera del corte no se construye.
  */
 function buildRing(
@@ -1608,7 +1608,7 @@ function building(
     x1: lot.x0 + Math.max(3, w - 1 - Math.floor(random.next() * 2)),
     y1: lot.y0 + Math.max(3, h - 1 - Math.floor(random.next() * 2)),
   };
-  // En la capital hay casas de piedra y de arenisca, mezcladas (como en UO).
+  // En la capital hay casas de piedra y de arenisca, mezcladas .
   const sandstone = style.walls === STONE && random.next() < 0.35;
   const kit = sandstone ? SANDSTONE : style.walls;
   const floor = sandstone ? Terrain.Sandstone : style.floor;

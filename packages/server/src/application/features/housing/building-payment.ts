@@ -6,7 +6,7 @@ import type { World } from '../../../domain/world';
 
 /**
  * Cobrar y devolver lo de una obra: el oro sale de la mochila y, si no
- * alcanza, del banco (como en UO); los materiales, de la mochila y de los
+ * alcanza, del banco ; los materiales, de la mochila y de los
  * cofres de la casa.
  */
 export class BuildingPayment {

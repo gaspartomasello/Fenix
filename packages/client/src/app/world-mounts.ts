@@ -3,7 +3,7 @@ import type { GameRenderer } from '../rendering/game-renderer';
 import type { WorldTooltip } from '../ui/world-tooltip';
 
 /**
- * Montar y desmontar desde el mundo, como en UO: doble clic (o un toque)
+ * Montar y desmontar desde el mundo: doble clic (o un toque)
  * sobre la montura propia para subirse, y doble clic sobre uno mismo,
  * estando montado, para bajarse.
  */

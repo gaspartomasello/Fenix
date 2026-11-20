@@ -258,7 +258,7 @@ export class World {
     return [...this.players.values()];
   }
 
-  /** Jugadores que ven la posición dada (rango de visión de UO). */
+  /** Jugadores que ven la posición dada (rango de visión del juego). */
   playersNear(position: Position, options: { except?: EntityId } = {}): Player[] {
     const at = this.seen(position);
     return [...this.players.values()].filter(

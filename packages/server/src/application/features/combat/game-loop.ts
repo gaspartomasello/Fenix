@@ -145,7 +145,7 @@ export class GameLoop {
   /**
    * Un golpe corta la concentración de quien está lanzando, salvo con
    * Protección. A las criaturas también: un mago esquelético al que le pegan
-   * pierde el hechizo (y el maná que gastó), como en UO.
+   * pierde el hechizo (y el maná que gastó).
    */
   private disrupt(mobile: Mobile): void {
     if (mobile instanceof Creature && mobile.pendingCast) {
@@ -233,7 +233,7 @@ export class GameLoop {
     }
 
     // Meditación: hasta 3 veces más rápido el maná con la habilidad al máximo,
-    // pero no funciona con armadura de metal (como en UO).
+    // pero no funciona con armadura de metal .
     const meditates = !wearsMetalArmor(this.world.items.lookOf(player.id));
     const meditation = meditates ? player.skills.get('meditation') : 0;
     const manaInterval = REGEN_INTERVAL_MS.mana * (1 - meditation / 1500);
@@ -456,7 +456,7 @@ export class GameLoop {
       return;
     }
 
-    // Lejos de todo jugador la criatura duerme (como en UO): no piensa ni camina.
+    // Lejos de todo jugador la criatura duerme : no piensa ni camina.
     // Las invocaciones y monturas siguen a su dueño siempre.
     if (!creature.ownerId && !this.world.anyPlayerNear(creature.position, AWAKE_RANGE)) return;
     const target = updateTarget(creature, this.world);
@@ -791,7 +791,7 @@ export class GameLoop {
 
   private tryResurrect(player: Player, now: number): void {
     const nearShrine = this.shrines.some((s) => tileDistance(s, player.position) <= SHRINE_RANGE);
-    // Como en UO, los sanadores del pueblo también devuelven la vida a los fantasmas.
+    // según el diseño del juego, los sanadores del pueblo también devuelven la vida a los fantasmas.
     const healer = nearShrine
       ? undefined
       : this.world

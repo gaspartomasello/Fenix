@@ -189,6 +189,18 @@ export const RECIPES: readonly Recipe[] = [
       ['hatchet', 200, ingots(8)],
       ['hammer-pick', 450, ingots(16)],
       ['war-fork', 450, ingots(12)],
+      ['assassin-spike', 280, ingots(5)],
+      ['double-bladed-staff', 550, ingots(14)],
+      ['elven-spellblade', 500, ingots(12)],
+      ['kama', 300, ingots(8)],
+      ['lajatang', 700, ingots(20)],
+      ['lance', 700, ingots(18)],
+      ['leafblade', 350, ingots(10)],
+      ['pike', 550, ingots(16)],
+      ['sai', 300, ingots(6)],
+      ['spiked-whip', 500, ingots(12)],
+      ['tekagi', 350, ingots(8)],
+      ['war-cleaver', 350, ingots(8)],
       ['pitchfork', 500, ingots(12)],
       ['sickle', 450, ingots(8)],
       ['battle-axe', 550, ingots(14)],
@@ -330,13 +342,13 @@ export const RECIPES: readonly Recipe[] = [
     ['tachi', 600, boards(12)],
     ['dye-tub', 500, boards(10)],
   ]),
-  // Instrumentos: los mínimos de UO (tambor 57,8; laúd 68,3; flauta 78,9).
+  // Instrumentos: los mínimos del juego (tambor 57,8; laúd 68,3; flauta 78,9).
   ...group('carpentry', 'Instrumentos', [
     ['drum', 578, { boards: 4, hides: 4 }],
     ['lute', 683, { boards: 25, cloth: 10 }],
     ['flute', 789, boards(6)],
   ]),
-  // Muebles: la habilidad mínima de UO clásico (en décimas; 100 % de éxito con 20 puntos más).
+  // Muebles: la habilidad mínima del juego clásico (en décimas; 100 % de éxito con 20 puntos más).
   ...group('carpentry', 'Muebles', [
     ['furniture-crate', 100, boards(10)],
     ['furniture-stool', 110, boards(9)],

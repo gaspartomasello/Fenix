@@ -638,7 +638,7 @@ function rockFace(seed: number): Material {
   };
 }
 
-/** Pared de cueva: un bloque de roca que llena el tile, como las cuevas de UO. */
+/** Pared de cueva: un bloque de roca que llena el tile, como las cuevas del juego. */
 const caveWall: Model = (c, variant) => {
   c.box([0, 19, 0], UP, [H, 19, H], rockFace(variant * 7));
 };
@@ -3354,7 +3354,7 @@ const SIGN_ICONS: Readonly<Record<ShopSignIcon, (p: SignPainter) => void>> = {
 };
 
 /**
- * Cartel de un comercio, como en UO: un brazo de hierro que sale de la pared
+ * Cartel de un comercio: un brazo de hierro que sale de la pared
  * junto a la puerta y una tabla colgada de dos cadenas, perpendicular a la
  * pared (se ve desde la calle), con el ícono del oficio pintado.
  */

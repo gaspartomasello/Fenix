@@ -20,7 +20,7 @@ const TARGET_HINTS = {
 } as const;
 
 /**
- * Libro de hechizos, como en UO: una página por círculo, cada hechizo con
+ * Libro de hechizos: una página por círculo, cada hechizo con
  * su maná, reactivos, un botón para lanzarlo y otro para ponerlo en la barra
  * de atajos. Con el libro abierto, las teclas 1 a 8 lanzan los hechizos de la
  * página abierta.

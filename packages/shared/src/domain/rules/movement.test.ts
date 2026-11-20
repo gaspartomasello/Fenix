@@ -30,7 +30,7 @@ describe('canStep', () => {
   });
 });
 
-describe('slideDirection (resbalar contra una pared, como en UO)', () => {
+describe('slideDirection (resbalar contra una pared)', () => {
   // 3x3:  W G G
   //       G G G
   //       G G W

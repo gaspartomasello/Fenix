@@ -35,7 +35,7 @@ const TOGGLES: readonly { key: 'names' | 'numbers' | 'minimap' | 'hotbar'; label
 ];
 
 /**
- * Opciones del jugador, como las de un asistente de UO: qué muestra la barra
+ * Opciones del jugador, como las de un asistente del juego: qué muestra la barra
  * de información de arriba (y en qué orden), qué se ve en pantalla y los
  * atajos de teclado. Cada cambio se aplica y se guarda al momento.
  */

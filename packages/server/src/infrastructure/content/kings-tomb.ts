@@ -14,7 +14,7 @@ const HEIGHT = 72;
  * su sarcófago y su muerto) y, al fondo, la cripta del rey de la tumba con su
  * trono y su guardia. Del vestíbulo sale además un corredor al este que baja
  * hasta una cámara en cruz, donde los magos de la corte cuidan el tesoro.
- * Diseño propio, inspirado en la tumba de los reyes de UO.
+ * Diseño propio, inspirado en la tumba de los reyes del juego.
  */
 export function generateKingsTomb(seed: number): Underground {
   const random = new SeededRandom(seed);

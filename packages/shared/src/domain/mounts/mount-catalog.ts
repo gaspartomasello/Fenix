@@ -1,6 +1,6 @@
 /**
  * Monturas: animales mansos que se compran en la caballeriza, siguen a su
- * dueño y se montan con doble clic. Montado se anda más rápido (como en UO,
+ * dueño y se montan con doble clic. Montado se anda más rápido (según el diseño del juego,
  * al paso se va a la velocidad de correr a pie, y al galope al doble).
  */
 export const MOUNT_KINDS = [

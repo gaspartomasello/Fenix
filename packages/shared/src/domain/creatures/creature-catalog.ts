@@ -107,7 +107,7 @@ export interface CreatureDefinition {
   readonly abilities?: CreatureAbilities;
   /**
    * Lo que lleva puesto y en las manos (los humanos): se ve en su dibujo y,
-   * al morir, queda entero en el cuerpo, como en UO.
+   * al morir, queda entero en el cuerpo.
    */
   readonly outfit?: Readonly<Partial<Record<EquipmentSlot, ItemKind>>>;
   /** Una bolsa que lleva encima (los que hacen magia: sus reactivos). Queda en el cuerpo. */
@@ -1043,6 +1043,7 @@ export const CREATURES: Readonly<Record<CreatureKind, CreatureDefinition>> = {
       { kind: 'plate-legs', chance: 0.4 },
       { kind: 'katana', chance: 0.3 },
       { kind: 'the-redeemer', chance: 0.01 },
+      { kind: 'paladin-fork', chance: 0.03 },
       { kind: 'black-pearl', chance: 1, amount: [10, 25] },
       { kind: 'sulfurous-ash', chance: 1, amount: [10, 25] },
       { kind: 'scroll-summon-daemon', chance: 0.25 },

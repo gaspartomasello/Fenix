@@ -1,4 +1,4 @@
-/** Atributos base de un personaje o criatura (como en UO). */
+/** Atributos base de un personaje o criatura . */
 export interface Attributes {
   readonly strength: number;
   readonly dexterity: number;

@@ -1,5 +1,5 @@
 /**
- * Reputación, como en UO: inocentes (azul), criminales (gris, por atacar
+ * Reputación: inocentes (azul), criminales (gris, por atacar
  * a un inocente) y asesinos (rojo, con más de dos muertes de inocentes). Los
  * invulnerables (amarillo) son como los administradores del juego: no se los
  * puede lastimar.

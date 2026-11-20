@@ -29,9 +29,9 @@ export const FISTS: Weapon = {
 };
 
 const WEAPONS: Partial<Record<ItemKind, Weapon>> = {
-  dagger: { name: 'daga', minDamage: 3, maxDamage: 7, swingMs: 1500, skill: 'fencing' },
-  kryss: { name: 'estoque', minDamage: 4, maxDamage: 10, swingMs: 1750, skill: 'fencing' },
-  spear: { name: 'lanza', minDamage: 8, maxDamage: 17, swingMs: 2750, skill: 'fencing' },
+  dagger: fencing('daga', 10, 12, 2000, 10),
+  kryss: fencing('estoque', 10, 12, 2000, 10),
+  spear: fencing('lanza', 13, 16, 2750, 50),
   'short-sword': {
     name: 'espada corta',
     minDamage: 5,
@@ -120,7 +120,7 @@ const WEAPONS: Partial<Record<ItemKind, Weapon>> = {
     range: 10,
     ammo: 'arrow',
   },
-  // Las hachas grandes son de espadas (como en UO): lentas y de mucho daño.
+  // Las hachas grandes son de espadas : lentas y de mucho daño.
   'double-axe': sword('hacha doble', 15, 18, 3250, 45),
   'battle-axe': sword('hacha de batalla', 16, 19, 3500, 35),
   'two-handed-axe': sword('hacha a dos manos', 16, 19, 3500, 40),
@@ -147,13 +147,7 @@ const WEAPONS: Partial<Record<ItemKind, Weapon>> = {
   'the-redeemer': sword('Redentora', 20, 24, 5000, 85),
   wakizashi: sword('wakizashi', 10, 14, 2500, 20),
   'ornate-axe': sword('hacha ornamentada', 17, 20, 3750, 45),
-  'war-fork': {
-    name: 'horquilla de guerra',
-    minDamage: 7,
-    maxDamage: 15,
-    swingMs: 2750,
-    skill: 'fencing',
-  },
+  'war-fork': fencing('horquilla de guerra', 10, 14, 2500, 45),
   pitchfork: {
     name: 'horca de combate',
     minDamage: 13,
@@ -162,13 +156,20 @@ const WEAPONS: Partial<Record<ItemKind, Weapon>> = {
     skill: 'fencing',
   },
   sickle: { name: 'hoz', minDamage: 12, maxDamage: 16, swingMs: 3000, skill: 'swordsmanship' },
-  'short-spear': {
-    name: 'lanza corta',
-    minDamage: 6,
-    maxDamage: 13,
-    swingMs: 2250,
-    skill: 'fencing',
-  },
+  'short-spear': fencing('lanza corta', 10, 13, 2000, 40),
+  'assassin-spike': fencing('punzón de asesino', 10, 12, 2000, 15),
+  'double-bladed-staff': fencing('bastón de doble filo', 11, 14, 2250, 50),
+  'elven-spellblade': fencing('hoja encantada', 12, 15, 2500, 35),
+  kama: fencing('kama', 10, 13, 2000, 15),
+  lajatang: fencing('lajatang', 16, 19, 3500, 65),
+  lance: fencing('lanza de caballería', 18, 22, 4250, 95),
+  leafblade: fencing('hoja de laurel', 11, 15, 2750, 20),
+  'paladin-fork': fencing('horquilla del paladín', 10, 14, 2500, 45),
+  pike: fencing('pica', 14, 17, 3000, 50),
+  sai: fencing('sai', 10, 13, 2000, 15),
+  'spiked-whip': fencing('látigo de púas', 13, 17, 3250, 20),
+  tekagi: fencing('garras tekagi', 10, 13, 2000, 10),
+  'war-cleaver': fencing('cuchilla de guerra', 10, 13, 2250, 15),
   'hammer-pick': {
     name: 'pico de guerra',
     minDamage: 8,
@@ -198,6 +199,16 @@ const WEAPONS: Partial<Record<ItemKind, Weapon>> = {
     ammo: 'bolt',
   },
 };
+
+function fencing(
+  name: string,
+  minDamage: number,
+  maxDamage: number,
+  swingMs: number,
+  minStrength: number,
+): Weapon {
+  return { name, minDamage, maxDamage, swingMs, minStrength, skill: 'fencing' };
+}
 
 function sword(
   name: string,
@@ -250,7 +261,7 @@ const ARMOR_RATING: Partial<Record<ItemKind, number>> = {
   'thigh-boots': 2,
   boots: 1,
   cloak: 1,
-  // Piezas sueltas: el juego completo de placas suma como en UO (la mayor parte, el peto).
+  // Piezas sueltas: el juego completo de placas suma según el diseño del juego (la mayor parte, el peto).
   'leather-gorget': 1,
   'studded-gorget': 2,
   'plate-gorget': 3,
@@ -287,7 +298,7 @@ const ARMOR_RATING: Partial<Record<ItemKind, number>> = {
   'templar-chausses': 7,
 };
 
-/** Armadura de metal: no deja meditar (como en UO). */
+/** Armadura de metal: no deja meditar . */
 const METAL_ARMOR: ReadonlySet<ItemKind> = new Set<ItemKind>([
   'plate-gorget',
   'ringmail-sleeves',

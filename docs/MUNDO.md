@@ -1,12 +1,12 @@
 # El mundo de Fenix
 
 Cómo está armado el mundo abierto: biomas, terrenos, objetos del suelo, lomas y agua. Todo el arte
-es procedural (`@fenix/art`), sin nada de UO.
+combina modelos procedurales (`@fenix/art`) y sprites del catálogo.
 
 ## Forma del mundo
 
 El continente mide **1400 × 2000** tiles (`MAP_SIZE` × `MAP_HEIGHT`) y es alargado de norte a sur,
-mezcla de América y Britannia, **en una sola pieza** (sin estrecho):
+con regiones climáticas variadas, **en una sola pieza** (sin estrecho):
 
 - **Norte**: tundra y nieve arriba; más abajo, tierras templadas con la capital (Puerto Ceniza),
   Roca Alta al pie de la cordillera y Junco Verde.
@@ -89,7 +89,7 @@ pasto seco y suelo de selva.
 
 ## Fauna
 
-Cada bioma tiene sus animales (los valores salen del bestiario de un servidor de UO, con la vida a
+Cada bioma tiene sus animales (los valores salen del bestiario de un servidor del juego, con la vida a
 la mitad). Los monstruos fuertes y los jefes quedan para las mazmorras.
 
 - **Presas** (huyen apenas las tocan): conejo, cierva, ciervo, oveja, cuervo, golondrina.
@@ -200,7 +200,7 @@ veces, hogar, biblioteca o alfombra. El **castillo** tiene el salón del trono c
 hasta el trono, candelabros, armaduras en fila, la biblioteca del rey y el tesoro; el comedor con
 la mesa larga y sus sillas, y la barraca de la guardia con camas y armeros.
 
-**Puertas y ventanas:** como en UO, las puertas se abren y se cierran con doble clic estando al
+**Puertas y ventanas:** según el diseño del juego, las puertas se abren y se cierran con doble clic estando al
 lado (cerradas no dejan pasar, tampoco a las criaturas); no se puede cerrar una puerta con alguien
 parado en ella. Hay puertas de **madera** (casas, negocios, caballeriza, castillo), de **hierro**
 (el banco y el salón del trono), de **mazmorra** (roble oscuro con mirilla enrejada, en cada sala

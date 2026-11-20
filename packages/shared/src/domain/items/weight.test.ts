@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { encumbrance, itemWeight, maxWeight } from './weight';
 
 describe('peso y carga', () => {
-  it('se puede llevar 40 piedras más 3,5 por punto de Fuerza, como en UO', () => {
+  it('se puede llevar 40 piedras más 3,5 por punto de Fuerza', () => {
     expect(maxWeight(50)).toBe(215);
     expect(maxWeight(100)).toBe(390);
   });

@@ -31,7 +31,7 @@ export interface FieldHit {
 }
 
 /**
- * Muros y campos mágicos, como en UO: una hilera de cinco tiles atravesada
+ * Muros y campos mágicos: una hilera de cinco tiles atravesada
  * frente al lanzador. Los de piedra y energía cierran el paso; los de fuego,
  * veneno y parálisis dejan pasar pero castigan a quien los pisa. Son objetos
  * fijos en el suelo (así todos los ven) y se deshacen solos al rato.

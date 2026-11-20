@@ -103,7 +103,7 @@ describe('cuentas', () => {
     expect(world.items.lookOf(player.id).legs).toBe('trousers');
     expect(player.combat.baseAttributes).toEqual({ strength: 60, dexterity: 20, intelligence: 40 });
     expect(world.items.countInBackpack(player.id, 'black-pearl')).toBe(150);
-    // Los reactivos empiezan en su bolsa, como en UO.
+    // Los reactivos empiezan en su bolsa.
     const bag = world.items.backpackOf(player.id).find((i) => i.kind === 'bag');
     expect(world.items.contentsOf(bag?.id ?? '').map((i) => i.kind)).toContain('black-pearl');
     expect(world.items.backpackOf(player.id).some((i) => i.kind === 'black-pearl')).toBe(false);

@@ -56,7 +56,7 @@ export class Item {
   ship: ShipRecord | null = null;
 
   /**
-   * Equipo inicial (como el "newbie" de UO): las armas, el libro y los
+   * Equipo inicial (como el "newbie" del juego): las armas, el libro y los
    * reactivos con los que empieza. No se tira, no se da, no se vende y no
    * queda en el cuerpo al morir.
    */

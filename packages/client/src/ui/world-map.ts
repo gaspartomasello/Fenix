@@ -19,7 +19,7 @@ const SCREEN_FILL_WIDTH = 0.97;
 const FRAME_EXTRA = 20;
 
 /**
- * El mapa del mundo entero, como el de UO: el continente y las islas de una
+ * El mapa del mundo entero, como el del juego: el continente y las islas de una
  * vez, con los nombres de pueblos y lugares y dónde está uno. Se abre con la
  * segunda vez que se aprieta M (la primera abre el minimapa); un clic lo cierra.
  */

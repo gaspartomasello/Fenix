@@ -162,7 +162,7 @@ describe('separar pilas no duplica ni borra objetos', () => {
     ).toBe(true);
   });
 
-  it('soltar una pila sobre otra del mismo tipo las suma, como en UO', () => {
+  it('soltar una pila sobre otra del mismo tipo las suma', () => {
     const room = createRoom();
     const total = room.gold();
     const stack = room.world.items.backpackOf(room.ana).find((i) => i.kind === 'gold');

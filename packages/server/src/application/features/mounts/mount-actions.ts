@@ -17,7 +17,7 @@ import type { MobileNotifications } from '../../kernel/mobile-notifications';
 import type { IdGenerator, Notifier } from '../../ports';
 
 /**
- * Monturas, como en UO: se compran en la caballeriza, la montura suelta
+ * Monturas: se compran en la caballeriza, la montura suelta
  * sigue a su dueño, con doble clic se monta (y desaparece del mundo: va
  * debajo del jinete) y al desmontar vuelve a aparecer al lado. Cada jugador
  * tiene una sola. Al morir se cae de la montura. Suelta, pelea para su
@@ -95,7 +95,7 @@ export class MountActions {
     this.place(player, kind);
   }
 
-  /** Al morir se cae de la montura, que queda al lado (como en UO). */
+  /** Al morir se cae de la montura, que queda al lado . */
   dismountOnDeath(player: Player): void {
     if (player.mount) this.dismount(player.id);
   }

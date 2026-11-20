@@ -6,7 +6,7 @@ import { drawPixelPitchfork } from './pixel-pitchfork-art';
 import { drawStatic } from './static-art';
 import { CHEST_ART } from '@fenix/shared/housing/furniture';
 import { drawPixelSickle } from './pixel-sickle-art';
-import { officialSwordSprite } from './official-swords-art';
+import { weaponSprite } from './weapon-sprites-art';
 import {
   clipping,
   Camera,
@@ -26,7 +26,7 @@ import {
 
 /**
  * Objetos: modelos chicos hechos con el mismo motor de volumen que los
- * personajes, vistos desde arriba como en UO y con el doble de detalle que
+ * personajes, vistos desde arriba según el diseño del juego y con el doble de detalle que
  * el resto del arte (se muestran sin escalar).
  */
 export const ITEM_ART_SIZE = 44;
@@ -223,7 +223,7 @@ function haft(
 
 /**
  * Hacia dónde apunta, acostada, un arma de asta para que en el ícono quede
- * derecha (vertical), como las de UO: compensa el giro de la cámara.
+ * derecha (vertical), como las del juego: compensa el giro de la cámara.
  */
 const STANDING: Vec3 = [Math.sin(0.45), 0, Math.cos(0.45)];
 /** Un punto a lo largo del asta derecha: `k` positivo hacia abajo (el regatón). */
@@ -351,7 +351,7 @@ const MODELS: Readonly<Record<ModeledKind, Model>> = {
       solid(ramp([70, 140, 60])),
     );
   },
-  // Pociones con los colores de UO: amarilla cura, naranja purifica, roja da vigor,
+  // Pociones con los colores del juego: amarilla cura, naranja purifica, roja da vigor,
   // blanca da fuerza y azul agilidad.
   'healing-potion': potion([222, 196, 52]),
   'cure-potion': potion([224, 128, 40]),
@@ -553,7 +553,7 @@ const MODELS: Readonly<Record<ModeledKind, Model>> = {
       );
   },
   halberd(c) {
-    // De pie, como en UO: asta larga, hoja de hacha, gancho atrás y punta de lanza.
+    // De pie: asta larga, hoja de hacha, gancho atrás y punta de lanza.
     const at = haft(c, alongPole(11), alongPole(-11), 0.55);
     c.polygon([at(-2.6, 0.3), at(1.6, 0.3), at(1.2, 5), at(-3, 4.2)], axeSteel(at(-0.6, 0), 4.2));
     c.polygon([at(-1.2, -0.3), at(0.8, -0.3), at(-0.2, -2.6)], metal(STEEL));
@@ -1221,6 +1221,70 @@ const MODELS: Readonly<Record<ModeledKind, Model>> = {
   'skinning-knife'(c) {
     blade(c, [-2, 0.6, 1], [2.5, 0.6, -1], 0.55);
     hilt(c, [-2, 0.6, 1], normalize([4.5, 0, -2]), 2, 0.2);
+  },
+  'assassin-spike'(c) {
+    blade(c, [-3, 0.6, 2], [3, 0.6, -1], 0.55);
+    hilt(c, [-3, 0.6, 2], normalize([6, 0, -3]), 2.3, 0.5);
+  },
+  'double-bladed-staff'(c) {
+    const at = haft(c, alongPole(12), alongPole(-12), 0.6);
+    for (const k of [-1, 1])
+      c.polygon([at(10 * k, 0), at(13 * k, 1.5), at(19 * k, 0), at(13 * k, -1.5)], metal(STEEL));
+  },
+  'elven-spellblade'(c) {
+    blade(c, [-4, 0.6, 2], [5, 0.6, -2], 0.95);
+    hilt(c, [-4, 0.6, 2], normalize([9, 0, -4]), 3, 1.4);
+  },
+  kama(c) {
+    for (const x of [-2, 2]) {
+      c.limb([x, 0.7, 3], [x + 1, 0.7, -2], 0.6, 0.6, solid(WOOD));
+      c.limb([x + 1, 0.7, -2], [x + 4, 0.7, -3], 0.7, 0.15, metal(STEEL));
+    }
+  },
+  lajatang(c) {
+    const at = haft(c, alongPole(13), alongPole(-13), 0.65);
+    for (const k of [-1, 1]) c.limb(at(12 * k, 0), at(18 * k, 3 * k), 1.2, 0.15, metal(STEEL));
+  },
+  lance(c) {
+    const at = haft(c, alongPole(16), alongPole(-12), 0.65);
+    c.polygon([at(13, 0), at(17, 1.3), at(25, 0), at(17, -1.3)], metal(STEEL));
+  },
+  leafblade(c) {
+    blade(c, [-3, 0.6, 2], [4, 0.6, -2], 1.15);
+    hilt(c, [-3, 0.6, 2], normalize([7, 0, -4]), 2, 0.6);
+  },
+  'paladin-fork'(c) {
+    const at = haft(c, alongPole(11), alongPole(-11), 0.6);
+    for (const x of [-1, 0, 1]) c.limb(at(9, x * 1.3), at(15, x * 1.7), 0.55, 0.12, metal(STEEL));
+  },
+  pike(c) {
+    const at = haft(c, alongPole(15), alongPole(-12), 0.55);
+    c.polygon([at(12, 0), at(17, 1.5), at(23, 0), at(17, -1.5)], metal(STEEL));
+  },
+  sai(c) {
+    for (const x of [-2, 2]) {
+      c.limb([x - 2, 0.7, 3], [x + 2, 0.7, -3], 0.65, 0.16, metal(STEEL));
+      c.limb([x, 0.7, 0], [x + 2, 0.7, 1], 0.45, 0.1, metal(STEEL));
+    }
+  },
+  'spiked-whip'(c) {
+    c.limb([-5, 0.7, 2], [-2, 0.7, 1], 0.65, 0.6, solid(GRIP));
+    for (let i = 0; i < 6; i++)
+      c.limb(
+        [-2 + i * 1.6, 0.7, 1 - Math.sin(i * 0.8) * 2],
+        [-0.4 + i * 1.6, 0.7, 1 - Math.sin((i + 1) * 0.8) * 2],
+        0.45 - i * 0.05,
+        0.4 - i * 0.05,
+        metal(STEEL),
+      );
+  },
+  tekagi(c) {
+    c.limb([-3, 0.7, 2], [1, 0.7, 0], 1, 0.8, solid(WOOD));
+    for (const z of [-1, 0, 1]) c.limb([1, 0.7, z], [5, 0.7, z - 1], 0.5, 0.1, metal(STEEL));
+  },
+  'war-cleaver'(c) {
+    blade(c, [-4, 0.6, 2], [5, 0.6, -2], 1.55);
+    hilt(c, [-4, 0.6, 2], normalize([9, 0, -4]), 2.5, 1.5);
   },
   'executioners-axe'(c) {
     const at = haft(c, alongPole(12), alongPole(-12), 0.7);
@@ -2571,7 +2635,7 @@ function helmet(c: VolumeCanvas): void {
 }
 
 /**
- * Cuántas monedas se dibujan según la cantidad, como en UO: una moneda, un
+ * Cuántas monedas se dibujan según la cantidad: una moneda, un
  * puñado, una pila o una montaña.
  */
 const GOLD_PILES: readonly { readonly from: number; readonly coins: number }[] = [
@@ -2632,7 +2696,7 @@ export function drawItem(
 ): PixelImage {
   if (kind === 'pitchfork') return drawPixelPitchfork(style);
   if (kind === 'sickle') return drawPixelSickle(style);
-  const sourceSprite = officialSwordSprite(kind, style);
+  const sourceSprite = weaponSprite(kind, style);
   if (sourceSprite) return sourceSprite;
   const piece = ITEMS[kind].furniture ?? CHEST_ART[kind];
   if (piece)

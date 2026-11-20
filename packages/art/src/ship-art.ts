@@ -53,7 +53,7 @@ function hullMaterial(stripe: Ramp, deckY: number): Material {
 }
 
 /**
- * Un barco visto desde arriba como en UO, con la proa hacia `facing`. El
+ * Un barco visto desde arriba según el diseño del juego, con la proa hacia `facing`. El
  * modelo se arma con la proa hacia +x y se gira con la proyección.
  */
 export function drawShip(kind: ShipKind, facing: ShipFacing): PixelImage {

@@ -20,7 +20,7 @@ export interface StatusInfo {
 }
 
 /**
- * Panel de estado, como el de UO (doble clic sobre las barras de vida):
+ * Panel de estado, como el del juego (doble clic sobre las barras de vida):
  * atributos, vida, maná y energía, defensa de lo que tiene puesto, el arma
  * con su daño y velocidad, el peso que lleva y el oro de la mochila.
  */

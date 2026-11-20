@@ -3,7 +3,7 @@ import { el } from './dom';
 import { itemIconUrl } from './item-icons';
 
 /**
- * Barra de información en una línea, como la de un asistente de UO: los
+ * Barra de información en una línea, como la de un asistente del juego: los
  * reactivos con su cantidad, el oro, el peso… lo que se elija en Opciones.
  * Lo que se está acabando se resalta.
  */

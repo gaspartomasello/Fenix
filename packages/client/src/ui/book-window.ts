@@ -30,7 +30,7 @@ function loadBookFonts(): void {
 }
 
 /**
- * Un libro abierto, como en UO: dos hojas de pergamino una al lado de la
+ * Un libro abierto: dos hojas de pergamino una al lado de la
  * otra y flechas para pasar las páginas. En la primera va el título y quién
  * lo escribió. Si el libro se puede escribir, cada hoja es un campo de
  * texto; lo escrito se guarda al pasar de página o al cerrar el libro.

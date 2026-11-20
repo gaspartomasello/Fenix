@@ -182,7 +182,7 @@ export class Combatant {
 
   /**
    * Pone (o renueva) un efecto. Un efecto del mismo tipo reemplaza al
-   * anterior: un hechizo de Fuerza tapa una Debilidad, como en UO.
+   * anterior: un hechizo de Fuerza tapa una Debilidad.
    */
   applyEffect(
     kind: EffectKind,

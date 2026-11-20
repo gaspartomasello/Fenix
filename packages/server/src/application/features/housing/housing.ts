@@ -68,7 +68,7 @@ const PANEL_RANGE = 3;
 const lower = (name: string): string => name.trim().toLocaleLowerCase();
 
 /**
- * Casas de los jugadores, como en UO: la escritura se usa en el campo y la
+ * Casas de los jugadores: la escritura se usa en el campo y la
  * casa aparece entera, con sus cofres. El dueño decide quién entra (casa
  * pública o privada, amigos y echados), quién la administra con él
  * (copropietarios) y puede demolerla para volver a tener la escritura. Lo que

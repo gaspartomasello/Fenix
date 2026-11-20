@@ -5,7 +5,7 @@ import type { World } from '../world';
 import type { ItemChanges } from './items';
 
 /**
- * Como en UO, los reactivos van en su bolsa dentro de la mochila: junta los
+ * según el diseño del juego, los reactivos van en su bolsa dentro de la mochila: junta los
  * que están sueltos en la bolsa que ya tiene reactivos (o en una bolsa nueva).
  * La bolsa es de cuero común: se puede teñir. `newbie`: equipo inicial.
  */

@@ -2,7 +2,7 @@ import { Direction } from '../geometry/direction';
 import type { Position } from '../geometry/position';
 
 /**
- * Rastrear, como en UO: se elige qué buscar (animales, monstruos, personas o
+ * Rastrear: se elige qué buscar (animales, monstruos, personas o
  * vecinos) y se ven los rastros a la redonda, con su dirección y distancia;
  * se puede seguir uno con una flecha. Todo en décimas (0–1000).
  */

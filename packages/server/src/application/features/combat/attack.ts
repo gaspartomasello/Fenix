@@ -52,7 +52,7 @@ export class Attack {
     if (target instanceof Player)
       this.notifier.send(target.id, { type: 'system', text: `¡${player.name} te está atacando!` });
 
-    // Atacar pone en modo guerra, como en UO.
+    // Atacar pone en modo guerra.
     this.warMode.set(player, true);
     player.combat.targetId = target.id;
     this.mobiles.sendTarget(player);

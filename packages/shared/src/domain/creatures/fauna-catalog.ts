@@ -3,7 +3,7 @@ import type { CreatureDefinition, LootEntry } from './creature-catalog';
 /**
  * Fauna de las tierras salvajes, según el terreno: animales mansos que
  * huyen o se defienden, y fieras que atacan. Los valores salen del
- * bestiario de un servidor de UO, escalados al juego (la vida, a la mitad).
+ * bestiario de un servidor del juego, escalados al juego (la vida, a la mitad).
  * Los monstruos fuertes y los jefes quedan para las mazmorras.
  */
 export const FAUNA_KINDS = [

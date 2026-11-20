@@ -28,7 +28,7 @@ interface Following {
 }
 
 /**
- * Rastrear, como en UO: el jugador elige qué buscar y ve los rastros a la
+ * Rastrear: el jugador elige qué buscar y ve los rastros a la
  * redonda (más lejos y más seguros con práctica); los escondidos cuestan
  * más. Puede seguir uno de los que encontró: mientras dura, el servidor le
  * manda dónde está para la flecha. Las reglas están en `@fenix/shared`.

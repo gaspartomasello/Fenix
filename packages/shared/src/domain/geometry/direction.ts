@@ -1,7 +1,7 @@
 import type { Position } from './position';
 
 /**
- * Las 8 direcciones con la misma numeración que Ultima Online.
+ * Las 8 direcciones con la misma numeración que Fénix.
  * En pantalla isométrica el Norte apunta hacia arriba a la derecha.
  */
 export const Direction = {

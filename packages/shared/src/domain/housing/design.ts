@@ -7,7 +7,7 @@ import { HOUSE_PLANS, HOUSE_STYLES, type HouseKind, type HouseStyle } from './ho
 import { FLOOR_MARGIN, type HouseLayout, type HouseLevelLayout } from './layout';
 
 /**
- * Casa a medida, como el diseñador de casas de UO: se compra un lote vacío
+ * Casa a medida, como el diseñador de casas del juego: se compra un lote vacío
  * (la escritura del arquitecto) y adentro se ponen las piezas piso por piso:
  * pisos, paredes, ventanas, puertas, escaleras y cofres. Arriba de todo va el
  * techo, solo. Cada cambio se paga al confirmarlo, con oro o con materiales

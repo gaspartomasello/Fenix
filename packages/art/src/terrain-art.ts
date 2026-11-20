@@ -3,7 +3,7 @@ import { PixelImage, shade, type Rgb } from './pixel-art';
 
 /**
  * Tamaño del rombo de terreno, en pixeles de pantalla (44×44 como los tiles
- * de UO). Se dibuja a resolución completa y se muestra sin escalar.
+ * del juego). Se dibuja a resolución completa y se muestra sin escalar.
  */
 export const TERRAIN_ART_SIZE = 44;
 export const TERRAIN_VARIANTS = 4;
@@ -793,7 +793,7 @@ function blends(over: Terrain | undefined, under: Terrain): over is Terrain {
 /**
  * Dibuja una variante de un tile de terreno. Si un vecino tiene mayor
  * prioridad de mezcla, su textura se derrama sobre el borde compartido con
- * un contorno irregular y una sombra suave, como las transiciones de UO.
+ * un contorno irregular y una sombra suave, como las transiciones del juego.
  */
 export function drawTerrainTile(
   terrain: Terrain,

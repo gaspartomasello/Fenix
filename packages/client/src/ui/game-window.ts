@@ -12,8 +12,8 @@ const DRAG_START = 6;
 const INTERACTIVE = 'button, input, select, textarea, a, label, [contenteditable], .item-icon';
 
 /**
- * Ventana flotante con botón para cerrarla (como en UO, el clic derecho
- * sobre la ventana también la cierra). Como en UO, se arrastra desde
+ * Ventana flotante con botón para cerrarla (según el diseño del juego, el clic derecho
+ * sobre la ventana también la cierra). según el diseño del juego, se arrastra desde
  * cualquier lado que no tenga su propio toque (no solo de la barra) y se
  * puede correr fuera de la pantalla dejando un pedazo asomado. Tocarla la
  * trae adelante; su atajo (B, C, Mochila…) la vuelve a traer adelante y
@@ -86,7 +86,7 @@ export class GameWindow {
 
   /**
    * El atajo de la ventana: si está tapada por otra o corrida afuera, vuelve
-   * adelante y entera (como en UO); si ya estaba así, se cierra.
+   * adelante y entera ; si ya estaba así, se cierra.
    */
   toggle(): void {
     if (this.visible && this.onTop && this.fullyOnScreen) this.hide();

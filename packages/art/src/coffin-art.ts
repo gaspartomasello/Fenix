@@ -11,7 +11,7 @@ import {
 } from './volume';
 
 /**
- * Ventana de un cuerpo, como en UO: un ataúd de madera visto desde arriba,
+ * Ventana de un cuerpo: un ataúd de madera visto desde arriba,
  * con la calavera y los huesos cruzados en la cabecera. Medidas en pixeles
  * de pantalla (la imagen viene al doble de detalle).
  */

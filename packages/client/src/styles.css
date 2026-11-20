@@ -407,7 +407,7 @@ body {
   font-style: italic;
 }
 
-/* Subió una habilidad: celeste, como en UO. */
+/* Subió una habilidad: celeste. */
 .chat-line--skill {
   color: #5fe3ea;
 }
@@ -1316,7 +1316,7 @@ body {
   }
 }
 
-/* ── Ventana de personaje (estilo UO) ─────────────────────────────── */
+/* ── Ventana de personaje (estilo Fénix) ─────────────────────────────── */
 
 .paperdoll {
   display: grid;
@@ -1383,7 +1383,7 @@ body {
   filter: grayscale(1) brightness(1.6);
 }
 
-/* El personaje, de frente, sobre fondo oscuro como en UO. */
+/* El personaje, de frente, sobre fondo oscuro según el diseño del juego. */
 .paperdoll-sheet {
   display: grid;
   place-items: center;
@@ -1499,7 +1499,7 @@ body {
   font-style: italic;
 }
 
-/* Cuerpo que se revisa: un ataúd con calavera, como en UO, sin el marco de ventana. */
+/* Cuerpo que se revisa: un ataúd con calavera, sin el marco de ventana. */
 .skinned-window {
   min-width: 0;
   background: transparent;
@@ -5200,7 +5200,7 @@ html:not(.touch-ui) .info-strip .info-chip-icon {
 }
 
 /*
- * ── Cuántos mover de una pila: el cartelito de UO ────────────────────
+ * ── Cuántos mover de una pila: el cartelito del juego ────────────────────
  * Chico y simple: el objeto y su pila, una barra de bronce que se desliza, el
  * número, "Todo" y "Aceptar". Igual en la computadora y en el celular.
  */

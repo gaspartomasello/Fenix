@@ -41,7 +41,7 @@ export interface MountainWorld {
 }
 
 /**
- * Las montañas como en UO: no una laja repetida en cada tile, sino terreno de
+ * Las montañas según el diseño del juego: no una laja repetida en cada tile, sino terreno de
  * roca que sube en laderas (más alto cuanto más adentro del macizo), con
  * riscos sueltos de distintas formas encima. Los macizos grandes tienen una
  * mina: un socavón que entra en la montaña hasta una galería, donde se pica

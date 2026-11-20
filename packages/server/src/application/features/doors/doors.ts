@@ -7,7 +7,7 @@ import type { Guards } from '../../kernel/guards';
 import type { Notifier } from '../../ports';
 
 /**
- * Puertas, como en UO: con doble clic, estando al lado, se abren o se
+ * Puertas: con doble clic, estando al lado, se abren o se
  * cierran. Cerradas bloquean el paso (también a las criaturas: no entran a
  * las casas). No se puede cerrar una puerta con alguien parado en ella. Las
  * dos hojas de una puerta doble se abren y se cierran juntas. El cambio se
