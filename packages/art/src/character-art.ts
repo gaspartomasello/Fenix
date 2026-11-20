@@ -1874,30 +1874,22 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     canvas.limb(along(-13), along(13), 0.55, 0.55, solid(WOOD));
     for (const end of [-1, 1]) {
       const a = along(end * 13);
-      const b = along(end * 19);
-      if (kind === 'bladed-staff')
-        canvas.polygon(
-          [a, add(along(end * 15), scale(side, 1.5)), b, add(along(end * 15), scale(side, -1.5))],
-          metal(STEEL),
-        );
-      else {
-        canvas.limb(a, add(b, scale(side, 3)), 1.1, 0.1, metal(STEEL));
-        canvas.limb(a, add(b, scale(side, -3)), 1.1, 0.1, metal(STEEL));
+      if (kind === 'bladed-staff') {
+        // Una hoja larga de lanza en cada punta.
+        canvas.limb(a, along(end * 14), 0.8, 0.8, metal(DARK_STEEL));
+        canvas.limb(along(end * 14), along(end * 22), 1.1, 0.1, metal(BLADE_STEEL));
+      } else {
+        // Una media luna grande en cada punta del asta, como en el ícono.
+        arc(canvas, a, scale(dir, end), side, 3.4, 200, 1, 0.15);
       }
     }
     return;
   }
   if (kind === 'scythe') {
+    // Guadaña: asta larga y una hoja larga y curva que vuelve hacia el mango.
     canvas.limb(along(-10), along(18), 0.65, 0.65, solid(WOOD));
-    const tip = along(18);
-    canvas.limb(tip, add(add(tip, scale(side, 6)), scale(dir, 3)), 1.4, 0.55, metal(STEEL));
-    canvas.limb(
-      add(add(tip, scale(side, 6)), scale(dir, 3)),
-      add(add(tip, scale(side, 10)), scale(dir, 2)),
-      0.55,
-      0.1,
-      metal(STEEL),
-    );
+    canvas.limb(along(17.5), along(19), 0.8, 0.8, metal(DARK_STEEL));
+    arc(canvas, along(18.5), side, scale(dir, -1), 6, 120, 1.3, 0.12);
     return;
   }
   if (kind === 'cleaver') {
@@ -2148,7 +2140,7 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     tachi: { length: 18, width: 0.85, guard: 0.7 },
     'radiant-scimitar': { length: 14, width: 1.3, guard: 2.2 },
     'rune-blade': { length: 17, width: 1.2, guard: 2.6 },
-    'the-redeemer': { length: 18, width: 1.5, guard: 3.2 },
+    'the-redeemer': { length: 18, width: 1.9, guard: 3.8 },
     wakizashi: { length: 10, width: 0.75, guard: 0.9 },
   };
   const base = blades[kind] ?? { length: 13, width: 0.85, guard: 2.4 };
@@ -2192,7 +2184,10 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     canvas.limb(mid, add(along(2 + length), scale(up, 3)), width * 1.2, 0.25, metal(BLADE_STEEL));
     return;
   }
-  if (katana) return drawKatana(canvas, along, dir, up);
+  if (katana) return drawKatana(canvas, along, dir, up, 15);
+  // La no-dachi (larga) y la wakizashi (corta) son de la familia de la katana.
+  if (kind === 'no-dachi') return drawKatana(canvas, along, dir, up, 21);
+  if (kind === 'wakizashi') return drawKatana(canvas, along, dir, up, 10);
   if (kind === 'tachi') {
     // Hoja larga y curva en cobre, con empuñadura oscura como el sprite enviado.
     canvas.limb(along(-5), along(1), 0.7, 0.7, grip);
@@ -2237,23 +2232,101 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     canvas.limb(along(2), along(2 + length), width, 0.25, solid(WOOD));
     return;
   }
+  // La guarda y el pomo: dorados, de bronce en la vikinga y de acero en las de hoja ancha.
+  const fittings =
+    kind === 'viking-sword'
+      ? metal(ramp([176, 112, 56]))
+      : kind === 'the-redeemer' || kind === 'rune-blade' || kind === 'longsword'
+        ? metal(BLADE_STEEL)
+        : metal(GOLD);
   canvas.limb(along(-2), along(1.2), 0.8, 0.8, grip);
-  canvas.sphere(along(-2.4), 0.9, metal(GOLD));
+  canvas.sphere(along(-2.4), kind === 'the-redeemer' ? 1.3 : 0.9, fittings);
   canvas.limb(
     add(along(1.6), scale(side, -guard)),
     add(along(1.6), scale(side, guard)),
     0.6,
     0.6,
-    metal(GOLD),
+    fittings,
   );
+  if (kind === 'elven-machete') {
+    // Un solo filo que se ensancha hacia la punta y termina en diagonal.
+    const steps = 6;
+    for (let i = 0; i < steps; i++) {
+      const t0 = i / steps;
+      const t1 = (i + 1) / steps;
+      const w0 = width * (0.6 + 0.45 * t0);
+      const w1 = i === steps - 1 ? 0.2 : width * (0.6 + 0.45 * t1);
+      canvas.limb(
+        add(along(2 + length * t0), scale(up, w0 * 0.4)),
+        add(along(2 + length * t1), scale(up, w1 * 0.4)),
+        w0,
+        w1,
+        metal(BLADE_STEEL),
+      );
+    }
+    return;
+  }
+  if (kind === 'rune-blade') {
+    // Hoja que se abre en dos puntas, como una garra, y un espolón hacia atrás.
+    canvas.limb(along(2), along(2 + length), width, 0.2, metal(BLADE_STEEL));
+    const fork = along(2 + length * 0.3);
+    const branch = add(along(2 + length * 0.75), add(scale(side, 2.6), scale(up, 2.6)));
+    canvas.limb(fork, branch, width * 0.8, 0.15, metal(BLADE_STEEL));
+    canvas.limb(
+      along(0.5),
+      add(along(-5), scale(side, -2.6)),
+      width * 0.7,
+      0.12,
+      metal(BLADE_STEEL),
+    );
+    return;
+  }
   canvas.limb(along(2), along(2 + length), width, 0.35, metal(BLADE_STEEL));
+}
+
+/**
+ * Una hoja en arco: sale de `from` hacia `out`, se curva hacia `turn` y la punta
+ * vuelve (una media luna o la hoja de una guadaña). `degrees`: cuánto da la vuelta.
+ */
+function arc(
+  canvas: VolumeCanvas,
+  from: Vec3,
+  out: Vec3,
+  turn: Vec3,
+  radius: number,
+  degrees: number,
+  width: number,
+  tip: number,
+): void {
+  const steps = 10;
+  const center = add(from, scale(turn, radius));
+  const point = (t: number): Vec3 =>
+    add(center, add(scale(turn, -radius * Math.cos(t)), scale(out, radius * Math.sin(t))));
+  const last = (degrees * Math.PI) / 180;
+  for (let i = 0; i < steps; i++) {
+    const w0 = width + ((tip - width) * i) / steps;
+    const w1 = width + ((tip - width) * (i + 1)) / steps;
+    canvas.limb(
+      point((last * i) / steps),
+      point((last * (i + 1)) / steps),
+      w0,
+      w1,
+      metal(BLADE_STEEL),
+    );
+  }
 }
 
 /**
  * Katana en la mano: el mango largo envuelto en rombos, la guarda de hierro
  * con borde dorado y la hoja curva hacia el lomo, con el filo templado claro.
  */
-function drawKatana(canvas: VolumeCanvas, along: (k: number) => Vec3, dir: Vec3, up: Vec3): void {
+function drawKatana(
+  canvas: VolumeCanvas,
+  along: (k: number) => Vec3,
+  dir: Vec3,
+  up: Vec3,
+  bladeLength: number,
+): void {
   const side = normalize(cross(dir, up));
   canvas.limb(along(-4.6), along(0.6), 0.8, 0.78, (q) => {
     const a = sub(q.p, along(0));
@@ -2274,8 +2347,8 @@ function drawKatana(canvas: VolumeCanvas, along: (k: number) => Vec3, dir: Vec3,
     Math.hypot(...sub(q.p, along(0.9))) > 1.6 ? tone(GOLD, q.light) : tone(DARK_STEEL, q.light),
   );
   canvas.limb(along(1.2), along(2), 0.75, 0.7, metal(GOLD));
-  const length = 15 * BLADE_SCALE;
-  const sag = 1.4 * BLADE_SCALE;
+  const length = bladeLength * BLADE_SCALE;
+  const sag = (1.4 * bladeLength * BLADE_SCALE) / 15;
   const center = (t: number): Vec3 => add(along(2 + length * t), scale(up, sag * t * t));
   const width = (t: number): number => 1.05 - 0.3 * t;
   const blade: Material = (q) => {
