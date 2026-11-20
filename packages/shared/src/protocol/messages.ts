@@ -935,7 +935,7 @@ export interface CorpseMessage {
   /** "lobo gris", "dragón rojo"… */
   readonly name: string;
   readonly items: readonly BackpackItemSnapshot[];
-  /** El cuerpo de un jugador no tiene "Tomar todo": se saquea de a un objeto, como en UO. */
+  /** El cuerpo de un jugador no tiene "Tomar todo": se saquea de a un objeto. */
   readonly noTakeAll?: true;
 }
 
@@ -1149,7 +1149,7 @@ export interface GmCatalogMessage {
 export interface SystemMessage {
   readonly type: 'system';
   readonly text: string;
-  /** Avisos con su color, como en UO: subió una habilidad o un atributo. */
+  /** Avisos con su color: subió una habilidad o un atributo. */
   readonly tone?: 'skill' | 'stat';
 }
 

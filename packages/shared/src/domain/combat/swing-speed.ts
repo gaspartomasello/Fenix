@@ -1,12 +1,12 @@
 import type { Weapon } from './weapons';
 
 /**
- * Velocidad de los golpes, como en Sphere (y en UO antes de Age of Shadows):
+ * Velocidad de los golpes, como en Sphere (y en Fénix antes de Age of Shadows):
  *
  *   segundos entre golpes = 15000 ÷ ((destreza + 100) × velocidad del arma)
  *
  * Cada arma guarda en `swingMs` cuánto tarda con la destreza de un personaje
- * nuevo (40); de ahí sale su velocidad al estilo UO. Con más destreza se pega
+ * nuevo (40); de ahí sale su velocidad al estilo Fénix. Con más destreza se pega
  * más rápido con cualquier arma (de 40 a 100, un 30 % más rápido).
  *
  * Y como en OSI, cuenta la energía que queda: cansado se pega más lento. La
@@ -16,12 +16,12 @@ import type { Weapon } from './weapons';
 
 /** Destreza con la que cada arma tarda lo que dice su `swingMs`. */
 export const REFERENCE_DEXTERITY = 40;
-/** El escalado de Sphere y de UO. */
+/** El escalado de Sphere y del juego. */
 const SPEED_SCALE = 15000;
 /** Nadie pega más seguido que esto (ni con muchísima destreza). */
 export const MIN_SWING_MS = 1000;
 
-/** La velocidad del arma al estilo UO: más alta, más rápida (la daga 71, la alabarda 33). */
+/** La velocidad del arma al estilo Fénix: más alta, más rápida (la daga 71, la alabarda 33). */
 export function weaponSpeed(weapon: Weapon): number {
   return (SPEED_SCALE * 1000) / ((REFERENCE_DEXTERITY + 100) * weapon.swingMs);
 }

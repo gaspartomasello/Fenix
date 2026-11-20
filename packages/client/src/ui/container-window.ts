@@ -18,7 +18,7 @@ const SKINS: Partial<Record<string, ContainerArt>> = {
 };
 
 /**
- * Un recipiente abierto, como en UO: una bolsa, una caja, un cofre, un
+ * Un recipiente abierto: una bolsa, una caja, un cofre, un
  * barril o una biblioteca. Cada uno se ve con su madera o su cuero; se
  * arrastra para guardar o sacar, y doble clic sobre una bolsa de adentro la
  * abre también.
@@ -61,7 +61,7 @@ export class ContainerWindow {
     const title = contents.name.charAt(0).toUpperCase() + contents.name.slice(1);
     this.window.setTitle(title);
     this.area.dataset.look = contents.look;
-    // Las bolsas y los cofres se ven como en UO; lo demás, con su madera de siempre.
+    // Las bolsas y los cofres se ven según el diseño del juego; lo demás, con su madera de siempre.
     this.skin.wear(SKINS[contents.look] ?? null);
     this.empty.hidden = contents.items.length > 0;
     this.area.replaceChildren(

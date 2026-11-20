@@ -21,7 +21,7 @@ import {
 import { drawCreatureFrame } from './creature-art';
 import { creatureLayout } from './monster-art';
 import { ITEM_ART_SIZE, drawItem, itemVariant } from './item-art';
-import { officialSwordSprite } from './official-swords-art';
+import { weaponSprite } from './weapon-sprites-art';
 import {
   INVISIBLE_STATICS,
   STATIC_ART_HEIGHT,
@@ -71,7 +71,7 @@ describe('arte procedural (sin DOM)', () => {
       expect(image.width).toBe(
         kind === 'pitchfork' || kind === 'sickle'
           ? 50
-          : (officialSwordSprite(kind, 'ground')?.width ?? ITEM_ART_SIZE),
+          : (weaponSprite(kind, 'ground')?.width ?? ITEM_ART_SIZE),
       );
       expect(opaquePixels(image.data)).toBeGreaterThan(20);
     }
@@ -106,6 +106,24 @@ describe('arte procedural (sin DOM)', () => {
       ['elven-machete', 32, 37, 3605336277],
       ['no-dachi', 66, 40, 3469151997],
       ['tachi', 65, 37, 3141146302],
+      ['assassin-spike', 19, 19, 2805585029],
+      ['dagger', 13, 12, 365279832],
+      ['double-bladed-staff', 55, 42, 1608693197],
+      ['elven-spellblade', 27, 23, 3670897157],
+      ['kama', 27, 32, 3190912181],
+      ['kryss', 22, 25, 4170444216],
+      ['lajatang', 61, 32, 2146024464],
+      ['lance', 53, 54, 3161997909],
+      ['leafblade', 23, 23, 3475898520],
+      ['paladin-fork', 26, 30, 4274207192],
+      ['pike', 44, 44, 3712490309],
+      ['sai', 31, 36, 153901797],
+      ['short-spear', 32, 33, 1160922984],
+      ['spear', 59, 51, 2604659872],
+      ['spiked-whip', 21, 13, 4189038722],
+      ['tekagi', 33, 35, 2514177923],
+      ['war-cleaver', 38, 41, 650232989],
+      ['war-fork', 26, 30, 4274207192],
       ['pickaxe', 28, 28, 3228280093],
       ['radiant-scimitar', 46, 51, 4207232192],
       ['rune-blade', 42, 39, 2783960216],

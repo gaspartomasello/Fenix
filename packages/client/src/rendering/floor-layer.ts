@@ -15,7 +15,7 @@ interface Floor {
 
 /**
  * El suelo de los pisos altos, dibujado encima de su edificio (a la altura de
- * las paredes), como en UO: desde un piso se ve la calle y desde la calle se
+ * las paredes): desde un piso se ve la calle y desde la calle se
  * ven los pisos y las azoteas. Va en la capa ordenada, por delante de todo lo
  * de la planta baja de su edificio y por detrás de lo que hay en el mismo piso.
  */

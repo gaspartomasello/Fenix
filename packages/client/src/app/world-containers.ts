@@ -8,7 +8,7 @@ import type { ConfirmDialog } from '../ui/confirm-dialog';
 import type { WorldTooltip } from '../ui/world-tooltip';
 
 /**
- * Muebles que guardan cosas, como en UO: doble clic (o un toque) sobre un
+ * Muebles que guardan cosas: doble clic (o un toque) sobre un
  * cofre, un barril, un cajón o una biblioteca lo abre y muestra lo que tiene.
  * También los cofres de las casas (el que trae la casa y los que se ponen):
  * en un cofre puesto de la casa propia se elige abrirlo, girarlo o guardarlo.

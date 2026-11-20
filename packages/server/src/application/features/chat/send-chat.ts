@@ -5,7 +5,7 @@ import type { World } from '../../../domain/world';
 import type { Notifier } from '../../ports';
 
 /**
- * Hablar: en voz alta lo oyen quienes están en el rango de visión, como en UO;
+ * Hablar: en voz alta lo oyen quienes están en el rango de visión;
  * al grupo o al gremio lo reciben sus miembros estén donde estén.
  */
 export class SendChat {

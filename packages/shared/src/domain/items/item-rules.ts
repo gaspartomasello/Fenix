@@ -3,9 +3,9 @@ import { tileDistance, type Position } from '../geometry/position';
 /** Distancia máxima (en tiles) para levantar, tirar o usar un objeto en el suelo. */
 export const ITEM_REACH = 2;
 
-/** Área de la mochila en pixeles: los objetos se ubican libremente adentro, como en UO. */
+/** Área de la mochila en pixeles: los objetos se ubican libremente adentro. */
 export const BACKPACK_AREA = { width: 240, height: 160 } as const;
-/** Lugar para los objetos dentro de un cuerpo (el ataúd es angosto y largo, como en UO). */
+/** Lugar para los objetos dentro de un cuerpo (el ataúd es angosto y largo). */
 export const CORPSE_AREA = { width: 132, height: 176 } as const;
 /** Tamaño de un ícono de objeto en la mochila. */
 export const ITEM_ICON_SIZE = 44;

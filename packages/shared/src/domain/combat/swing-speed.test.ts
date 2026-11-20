@@ -32,7 +32,7 @@ describe('velocidad de los golpes (Sphere: destreza; OSI: energía)', () => {
     expect(swingDelayMs(dagger, 1000)).toBe(MIN_SWING_MS);
   });
 
-  it('la velocidad al estilo UO: más alta, más rápida', () => {
+  it('la velocidad al estilo Fénix: más alta, más rápida', () => {
     const dagger = weaponByKind('dagger');
     if (!dagger || !halberd) throw new Error('faltan armas');
     expect(weaponSpeed(dagger)).toBeGreaterThan(weaponSpeed(halberd));

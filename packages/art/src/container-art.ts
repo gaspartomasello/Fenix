@@ -2,7 +2,7 @@ import { PixelImage, mixColors, shade, type Rgb } from './pixel-art';
 import { noise } from './volume';
 
 /**
- * Ventanas de los recipientes, como en UO: la mochila de cuero, la bolsa con
+ * Ventanas de los recipientes: la mochila de cuero, la bolsa con
  * su cordón y el cofre abierto con fieltro verde y herrajes dorados. Cada una
  * es un dibujo (al doble de detalle) con un hueco del tamaño de la grilla de
  * la mochila donde van los objetos. Medidas en pixeles de pantalla.

@@ -2,7 +2,7 @@ import { directionOffset, type Direction } from '../geometry/direction';
 import type { Position } from '../geometry/position';
 
 /**
- * Barcos, como en Ultima Online: se compran como maqueta, se botan al agua y
+ * Barcos, como en Fénix: se compran como maqueta, se botan al agua y
  * los navegan varios personajes juntos. El dueño es siempre el capitán; a los
  * demás se les da un nivel de permiso (pasajero, tripulante, oficial o
  * capitán), uno por uno o a todo el grupo o el gremio del dueño.
@@ -126,7 +126,7 @@ export function sideDirection(facing: ShipFacing, side: ShipSide): Direction {
 // ── Permisos de a bordo ─────────────────────────────────────────────
 
 /**
- * Niveles de permiso, de menor a mayor, como en los galeones de UO:
+ * Niveles de permiso, de menor a mayor, como en los galeones del juego:
  * - pasajero: sube a bordo;
  * - tripulante: además gobierna el timón, dispara los cañones y repara;
  * - oficial: además abre la bodega;
@@ -244,7 +244,7 @@ const HEADINGS: readonly [string, RelativeHeading][] = [
 ];
 
 /**
- * Lo que entiende el timonel, como las órdenes de voz de UO: «adelante»,
+ * Lo que entiende el timonel, como las órdenes de voz del juego: «adelante»,
  * «atrás», «babor», «estribor» (o izquierda y derecha), combinados
  * («adelante a babor»), con «despacio» o «un paso»; «virar a babor»,
  * «virar a estribor», «dar la vuelta» y «alto» (o «parar»).

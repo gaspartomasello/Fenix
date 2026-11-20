@@ -4,7 +4,7 @@ import type { PaperdollViewer } from '../ui/paperdoll-viewer';
 
 /**
  * Doble clic (o doble toque) sobre una persona: abre su ventana de
- * personaje, como en UO. Sobre uno mismo abre la propia, con sus botones.
+ * personaje. Sobre uno mismo abre la propia, con sus botones.
  */
 export class WorldPaperdolls {
   private readonly abort = new AbortController();

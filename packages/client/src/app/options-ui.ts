@@ -42,7 +42,7 @@ export interface OptionsUiDeps {
 }
 
 /**
- * Las opciones del jugador, como un asistente de UO: la ventana para
+ * Las opciones del jugador, como un asistente del juego: la ventana para
  * elegirlas, la barra de información de arriba y los atajos de teclado.
  * Todo vive en el navegador; lo que hacen los atajos lo decide el servidor
  * como siempre (son los mismos pedidos que la barra de atajos o los botones).
@@ -106,7 +106,7 @@ export class OptionsUi {
     );
   }
 
-  /** Un atajo propio gana sobre las teclas del juego (como en un asistente de UO). */
+  /** Un atajo propio gana sobre las teclas del juego (como en un asistente del juego). */
   private onKey(e: KeyboardEvent): void {
     if (e.repeat || isTyping(e.target)) return;
     const combo = comboOf(e);

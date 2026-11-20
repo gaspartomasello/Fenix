@@ -2,7 +2,7 @@ import { directionOffset, type Direction } from '../geometry/direction';
 import type { Position } from '../geometry/position';
 import type { TileMap } from '../world/tile-map';
 
-/** Tiempos de movimiento a pie, iguales a los de UO (ms por tile). */
+/** Tiempos de movimiento a pie, iguales a los del juego (ms por tile). */
 export const MOVE_DURATION_MS = {
   walk: 400,
   run: 200,
@@ -14,7 +14,7 @@ export function isMoveMode(value: unknown): value is MoveMode {
   return value === 'walk' || value === 'run';
 }
 
-/** Montado, como en UO: al paso se va como corriendo a pie y al galope, al doble. */
+/** Montado: al paso se va como corriendo a pie y al galope, al doble. */
 export const MOUNTED_MOVE_DURATION_MS = {
   walk: 200,
   run: 100,
@@ -42,7 +42,7 @@ export function canStep(map: TileMap, from: Position, direction: Direction): boo
 }
 
 /**
- * Resbalar contra una pared, como en UO: un paso en diagonal de la grilla
+ * Resbalar contra una pared: un paso en diagonal de la grilla
  * (arriba, abajo, izquierda o derecha en la pantalla) que choca prueba las
  * dos direcciones vecinas y sigue por la que esté libre; si las dos lo
  * están, va hacia donde tira más el jugador (`lean`). De frente contra algo

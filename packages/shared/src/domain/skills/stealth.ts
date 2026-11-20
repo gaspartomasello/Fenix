@@ -1,5 +1,5 @@
 /**
- * Esconderse, Sigilo y Mirar, como en UO: el que se esconde desaparece de la
+ * Esconderse, Sigilo y Mirar: el que se esconde desaparece de la
  * vista de los demás (personas y criaturas) hasta que ataca, lanza un
  * hechizo, habla, recibe un golpe o da más pasos de los que su Sigilo le
  * permite. Mirar busca a los escondidos cerca. Todo en décimas (0–1000).

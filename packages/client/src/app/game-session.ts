@@ -348,7 +348,7 @@ export class GameSession {
     const magic = this.setUpMagic(targeting);
     this.setUpSocial();
     this.setUpQuests();
-    // Opciones (como un asistente de UO): barra de información, qué se ve y atajos de teclado.
+    // Opciones (como un asistente del juego): barra de información, qué se ve y atajos de teclado.
     const options = new OptionsUi({
       game: this.game,
       renderer,
@@ -562,7 +562,7 @@ export class GameSession {
     this.game.on('vitalsChanged', render);
     render();
 
-    // Doble clic (o doble toque) sobre las barras: el panel de estado, como en UO.
+    // Doble clic (o doble toque) sobre las barras: el panel de estado.
     const status = new StatusWindow();
     this.hosts.ui.append(status.window.element);
     const info = (): StatusInfo => {
@@ -886,7 +886,7 @@ export class GameSession {
       }, done);
     });
     const backpack = new BackpackWindow(drag, actions);
-    // Como en UO, la ventana de personaje tiene a mano las demás ventanas.
+    // según el diseño del juego, la ventana de personaje tiene a mano las demás ventanas.
     const equipment = new EquipmentWindow(
       drag,
       actions,
@@ -1172,7 +1172,7 @@ export class GameSession {
   }
 
   /**
-   * Salir del juego, como el botón de UO: se cierra la conexión (el
+   * Salir del juego, como el botón del juego: se cierra la conexión (el
    * servidor guarda el personaje al soltarlo) y se vuelve a la pantalla de ingreso.
    */
   private logout(): void {

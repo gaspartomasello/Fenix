@@ -103,7 +103,7 @@ export class WorldItems {
 
   /**
    * Dónde cae un objeto soltado sobre el mundo. El alcance se mide desde uno
-   * mismo (como en UO), con la misma regla que el servidor: si no llega, se
+   * mismo , con la misma regla que el servidor: si no llega, se
    * avisa en el momento y el objeto vuelve a su lugar sin esperar respuesta.
    */
   private groundAt(clientX: number, clientY: number): ItemDestination | null {

@@ -23,7 +23,7 @@ const CACHE_SIZE = 32;
 const cache = new Map<string, PixelImage>();
 
 /**
- * El personaje de la ventana de personaje, como en UO: de frente, grande y
+ * El personaje de la ventana de personaje: de frente, grande y
  * con detalle. Es el mismo modelo 3D que se ve en el mundo, pero dibujado a
  * `PAPERDOLL_DETAIL` veces la resolución y casi sin inclinación de cámara,
  * así se ve cada prenda (no es el sprite agrandado).

@@ -185,7 +185,7 @@ function bagAt(clientX: number, clientY: number): HTMLElement | null {
 
 /**
  * Busca el destino bajo el puntero mediante atributos `data-drop`. Soltar
- * sobre una bolsa (no sobre sí misma) la guarda adentro, como en UO.
+ * sobre una bolsa (no sobre sí misma) la guarda adentro.
  */
 function resolveTarget(clientX: number, clientY: number, dragged: string): DropTarget | null {
   const bag = bagAt(clientX, clientY)?.dataset.bag;

@@ -362,7 +362,7 @@ function drawTroll(c: VolumeCanvas, rig: Rig): void {
 // ── Hombre lagarto ──────────────────────────────────────────────────
 
 /**
- * Hombre lagarto (de los pantanos, como en UO): escamas verdes con el
+ * Hombre lagarto (de los pantanos): escamas verdes con el
  * vientre claro, cabeza de reptil con hocico largo y cresta, cola gruesa
  * que arrastra, taparrabos de cuero y una lanza con punta de hueso.
  */

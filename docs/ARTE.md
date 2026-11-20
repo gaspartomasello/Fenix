@@ -1,15 +1,13 @@
 # Dirección de arte
 
-Fenix no es una copia de Ultima Online. Es un mundo con arte propio que toma de tres fuentes y
-las mezcla:
+Fenix es un mundo de fantasía con una dirección de arte propia:
 
-- **Ultima Online**: el mundo vivo y abierto, los oficios, la vida de pueblo, la libertad de rol.
+- **Mundo vivo**: los oficios, la vida de pueblo y la libertad de rol.
 - **Diablo**: la fantasía oscura, la luz dramática, lo temible de las mazmorras.
 - **Helbreath**: el ritmo, la lectura clara de los personajes, el choque entre bandos.
 
-Las referencias se usan como lo hace un pintor: para entender qué hace funcionar una imagen
-(silueta, paleta, clima, lectura a tamaño chico), nunca para calcarla. La regla está en
-`CLAUDE.md` («Referencias sí, copia no»).
+Los íconos aprobados por Gaspar se conservan en el catálogo. La silueta, la paleta y la lectura
+a tamaño pequeño guían los gráficos nuevos y la representación de cada objeto en la mano.
 
 ## Dos estéticas en tensión
 

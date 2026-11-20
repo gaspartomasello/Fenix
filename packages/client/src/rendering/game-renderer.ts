@@ -40,7 +40,7 @@ const NEARBY_REVEAL = 4;
 const GHOST_TINT = 0x8c8c9c;
 /** El jinete sobre la montura: angosto y de la montura para arriba. */
 const RIDER_HIT_BOX = { halfWidth: 12, bottom: 44 };
-/** El personaje se dibuja un poco por debajo del centro, como en UO. */
+/** El personaje se dibuja un poco por debajo del centro. */
 const CAMERA_VERTICAL_OFFSET = 30;
 /** Margen alrededor de la pantalla para crear objetos antes de que entren. */
 const VIEW_MARGIN = 96;
@@ -337,7 +337,7 @@ export class GameRenderer {
     this.effects.update(now);
     this.fields.update(now);
     this.ships.update();
-    // De fantasma el mundo se ve gris, como en UO.
+    // De fantasma el mundo se ve gris.
     this.scene.tint = self.dead ? GHOST_TINT : 0xffffff;
     const time = this.game.worldTime();
     if (time) {

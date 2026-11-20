@@ -7,7 +7,7 @@ nuevo (ver «Módulos del servidor» en `docs/ARQUITECTURA.md`).
 ## Combate y lanzado de hechizos como en Sphere
 
 **Decisión del autor**: el combate y el lanzado de hechizos tienen que sentirse como en
-**SphereServer 0.55i / 0.56b**, no como el UO oficial posterior. Vale para todo lo que se
+**SphereServer 0.55i / 0.56b**. Vale para todo lo que se
 programe de combate y magia de acá en adelante.
 
 Qué dice la configuración de Sphere (`sphere.ini` de Source-X, cuyos valores por defecto son
@@ -26,7 +26,7 @@ Qué dice la configuración de Sphere (`sphere.ini` de Source-X, cuyos valores p
 | Paralizado                                        | Opción vieja: se puede seguir pegando (`COMBAT_PARALYZE_CANSWING`)                                                             | No se puede                                   |
 | Veneno al golpear                                 | Estilo 0.55i (salvo `COMBAT_NOPOISONHIT`)                                                                                      | A revisar                                     |
 
-Fórmula de golpe que se suele citar para Sphere y el UO de esa época: demora en segundos =
+Fórmula de golpe citada para esa configuración: demora en segundos =
 15000 ÷ ((energía + 100) × velocidad del arma). Verificarla contra el código de Sphere antes
 de programarla.
 
@@ -62,8 +62,8 @@ Decisiones propuestas (**pendiente** de confirmar):
 - **De quién se saca la cabeza**: solo de criminales y asesinos. Hacerlo con un inocente cuenta
   como crimen.
 - **Cuerpo de los jugadores**: hoy al morir queda solo el fantasma; hace falta un cuerpo de
-  jugador (con lo que llevaba, saqueable si era criminal o asesino, y su cabeza). Como en UO
-  (referencia: ServUO, `Mobile.DefaultCorpseDecay`): el cuerpo dura **7 minutos**, después se
+  jugador (con lo que llevaba, saqueable si era criminal o asesino, y su cabeza). según el diseño del juego
+  (referencia: un servidor de referencia, `Mobile.DefaultCorpseDecay`): el cuerpo dura **7 minutos**, después se
   vuelve **huesos** (con lo que quedaba adentro) y los huesos duran **otros 7 minutos** antes de
   desaparecer. Los cuerpos de criaturas no se vuelven huesos: desaparecen (en Fenix hoy, 2
   minutos con botín y 20 segundos vacíos). **Pendiente**: si se usan los mismos 7 + 7 minutos.

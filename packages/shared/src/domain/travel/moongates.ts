@@ -1,5 +1,5 @@
 /**
- * Portales lunares, como en UO: uno en las afueras de cada ciudad importante,
+ * Portales lunares: uno en las afueras de cada ciudad importante,
  * siempre abiertos. Al pisarlo se elige a qué ciudad ir (en este continente o
  * en otro) y se aparece al lado del portal de esa ciudad.
  */

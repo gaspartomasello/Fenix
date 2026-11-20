@@ -16,13 +16,13 @@ export const LOOTED_CORPSE_MS = 120_000;
 
 /**
  * El cuerpo de un jugador dura 7 minutos; después se vuelve un montón de
- * huesos, con lo que quedaba adentro, que dura otros 7 (como en UO).
+ * huesos, con lo que quedaba adentro, que dura otros 7 .
  */
 export const PLAYER_CORPSE_MS = 7 * 60_000;
 export const PLAYER_BONES_MS = 7 * 60_000;
 
 /**
- * Cuerpos que se revisan, como en UO: el botín de una criatura queda dentro
+ * Cuerpos que se revisan: el botín de una criatura queda dentro
  * de su cuerpo. Con doble clic se abre y se ve qué tiene; los objetos se
  * arrastran a la mochila (o "Tomar todo"). Cuando se vacía o pasa el
  * tiempo, el cuerpo desaparece.
@@ -181,7 +181,7 @@ export class Corpses {
   /**
    * "Tomar todo": pasa a la mochila todo lo que entre. En el cuerpo de otro
    * jugador no se puede (se saquea de a un objeto); en el propio, sí, y lo
-   * que uno llevaba puesto se lo vuelve a poner (como en UO).
+   * que uno llevaba puesto se lo vuelve a poner .
    */
   lootAll(playerId: EntityId, corpseId: EntityId): void {
     const player = this.world.get(playerId);

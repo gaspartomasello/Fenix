@@ -1,8 +1,8 @@
 # Fenix en el celular
 
 Cómo se juega Fenix con el dedo y por qué. Se juega con el celular **acostado** (como la mayoría
-de los juegos de rol de celular y como MobileUO, el cliente de UO para celular hecho sobre
-ClassicUO): el mundo isométrico necesita ancho, y así cada pulgar tiene su lado.
+de los juegos de rol de celular y como un cliente móvil isométrico, el cliente del juego para celular hecho sobre
+un cliente clásico): el mundo isométrico necesita ancho, y así cada pulgar tiene su lado.
 
 ## Objetivo
 

@@ -24,7 +24,7 @@ export const shipsModule: ModuleFactory = (kernel) => {
     ships.containerRefusal(playerId, containerId),
   );
   kernel.itemUses.on('ship', (playerId, itemId) => ships.launch(playerId, itemId));
-  // Las órdenes al timonel se dan en voz alta, como en UO.
+  // Las órdenes al timonel se dan en voz alta.
   kernel.events.on('spoke', ({ player, text }) => ships.hear(player.id, text));
   return {
     name: 'ships',

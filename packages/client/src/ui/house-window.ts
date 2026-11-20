@@ -45,7 +45,7 @@ const LISTS: readonly { list: HouseList; title: string; hint: string; ownerOnly:
 ];
 
 /**
- * La ventana de una casa, como el cartel de las casas de UO: de quién es, qué
+ * La ventana de una casa, como el cartel de las casas del juego: de quién es, qué
  * casa es y quién es uno ahí. El dueño y los copropietarios le cambian el
  * nombre, la hacen pública o privada, manejan las listas (copropietarios,
  * amigos y echados), echan a las visitas y el dueño la puede demoler.

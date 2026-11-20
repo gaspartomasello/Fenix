@@ -25,7 +25,7 @@ const SIDES: readonly Position[] = [
 ];
 
 /**
- * Amueblar la casa, como en UO: un mueble de la mochila (hecho por un
+ * Amueblar la casa: un mueble de la mochila (hecho por un
  * carpintero) se pone en un lugar libre del piso de adentro de la casa propia
  * y queda ahí: ocupa su tile, no se roba y se guarda con la casa. El dueño o
  * un copropietario lo gira o lo vuelve a guardar en la mochila.

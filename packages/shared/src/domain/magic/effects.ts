@@ -1,5 +1,5 @@
 /**
- * Efectos de estado (como los "buffs" de UO): atributos subidos o bajados
+ * Efectos de estado (como los "buffs" del juego): atributos subidos o bajados
  * por hechizos o pociones, protección, veneno, parálisis y visión nocturna.
  */
 export const EFFECT_KINDS = [

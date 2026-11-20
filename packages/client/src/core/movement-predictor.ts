@@ -44,7 +44,7 @@ export class MovementPredictor {
     this.seq += 1;
     this.pending.add(this.seq);
 
-    // Si choca en diagonal, resbala por la pared hacia el lado libre (como en UO).
+    // Si choca en diagonal, resbala por la pared hacia el lado libre .
     const direction = slideDirection(this.map, self.position, wanted, lean) ?? wanted;
     if (canStep(this.map, self.position, direction)) {
       self.moveTo(step(self.position, direction), direction, duration, now, mode);

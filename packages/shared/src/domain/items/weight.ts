@@ -2,7 +2,7 @@ import { armorRating, weaponByKind } from '../combat/weapons';
 import { ITEMS, type ItemKind } from './item-catalog';
 
 /**
- * Peso y carga, como en UO: cada objeto pesa unas piedras y lo que se puede
+ * Peso y carga: cada objeto pesa unas piedras y lo que se puede
  * llevar depende de la Fuerza (40 piedras más 3,5 por punto). Con más peso que
  * eso no se puede correr y cada paso cansa; muy por encima, no se puede ni
  * caminar. Las mismas reglas las usan el servidor y el cliente.
@@ -15,7 +15,7 @@ const WEIGHTS: Partial<Record<ItemKind, number>> = {
   arrow: 0.05,
   bolt: 0.05,
   bandage: 0.05,
-  // Muebles: pesan, pero se llevan (como en UO) hasta la casa.
+  // Muebles: pesan, pero se llevan  hasta la casa.
   'furniture-stool': 5,
   'furniture-chair': 8,
   'furniture-crate': 8,

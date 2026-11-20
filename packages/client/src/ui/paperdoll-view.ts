@@ -90,7 +90,7 @@ export interface PaperdollInteraction {
 }
 
 /**
- * Ventana de personaje al estilo de UO: marco de piedra, casilleros a la
+ * Ventana de personaje al estilo del juego: marco de piedra, casilleros a la
  * izquierda con lo que tiene puesto, el personaje grande y de frente en el
  * centro, botones a la derecha y una placa con nombre y título. Sirve para
  * el propio personaje (con botones y arrastrar) o para mirar a otro.
@@ -143,7 +143,7 @@ export class PaperdollView {
     );
 
     const sheet = el('div', { className: 'paperdoll-sheet' }, [this.figure]);
-    // Como en UO: la mochila colgada al costado del personaje.
+    // según el diseño del juego: la mochila colgada al costado del personaje.
     if (backpack) {
       const bag = el(
         'button',

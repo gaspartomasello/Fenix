@@ -289,7 +289,7 @@ interface Figure {
   readonly metalTorso: boolean;
   /**
    * Un jugador sin nada en el torso o en las piernas: se ve la ropa interior,
-   * como en UO, sencilla y tapada (un short largo; las mujeres, también una
+   * según el diseño del juego, sencilla y tapada (un short largo; las mujeres, también una
    * musculosa). Los vecinos del pueblo siempre andan vestidos.
    */
   readonly bareTorso: boolean;
@@ -1605,7 +1605,7 @@ function drawShield(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
   const hand = rig.arms[-1].hand;
   if (kind === 'torch' || kind === 'lantern') return drawLight(canvas, rig, kind);
   if (kind === 'spellbook') return drawHeldBook(canvas, rig);
-  // Los grandes miran casi al frente, como en la ventana de personaje de UO.
+  // Los grandes miran casi al frente, como en la ventana de personaje del juego.
   const facing = normalize(rig.chest.dir(kind === 'buckler' ? [-0.8, 0, 0.6] : [-0.4, 0, 0.92]));
   const axes = axesAlong(facing);
   const up = axes[1];
@@ -1754,7 +1754,7 @@ const HEAVY_AXES: Partial<
   'ornate-axe': { haft: 16, reach: 4.8, height: 3.7, double: true },
 };
 
-/** Las armas de asta, que en la ventana de personaje se muestran paradas al costado (como en UO). */
+/** Las armas de asta se muestran paradas al costado en la ventana de personaje. */
 const POLEARMS: ReadonlySet<ItemKind> = new Set<ItemKind>([
   'halberd',
   'spear',
@@ -1764,6 +1764,11 @@ const POLEARMS: ReadonlySet<ItemKind> = new Set<ItemKind>([
   'bardiche',
   'quarterstaff',
   'bladed-staff',
+  'double-bladed-staff',
+  'lajatang',
+  'lance',
+  'pike',
+  'paladin-fork',
   'crescent-blade',
   'scythe',
 ]);
@@ -1793,6 +1798,8 @@ const STANCES: Partial<Record<ItemKind, Vec3>> = {
       'the-redeemer',
       'wakizashi',
       'bokuto',
+      'elven-spellblade',
+      'war-cleaver',
     ].map((k) => [k, [0.42, 0.86, 0.3] as Vec3]),
   ),
   katana: [0.12, -0.45, 0.88],
@@ -1803,6 +1810,12 @@ const STANCES: Partial<Record<ItemKind, Vec3>> = {
   'skinning-knife': [0.1, -0.8, 0.4],
   dagger: [0.1, -0.85, 0.5],
   kryss: [0.1, -0.85, 0.5],
+  'assassin-spike': [0.1, -0.85, 0.5],
+  leafblade: [0.1, -0.85, 0.5],
+  sai: [0.1, -0.75, 0.5],
+  tekagi: [0.1, -0.7, 0.5],
+  kama: [0.2, -0.6, 0.5],
+  'spiked-whip': [0.35, 0.5, 0.5],
   ...Object.fromEntries(
     [
       'mace',
@@ -1870,11 +1883,16 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
       canvas.limb(head, add(head, scale(side, -3)), 0.8, 0.2, metal(DARK_STEEL));
     return;
   }
-  if (kind === 'bladed-staff' || kind === 'crescent-blade') {
+  if (
+    kind === 'bladed-staff' ||
+    kind === 'crescent-blade' ||
+    kind === 'double-bladed-staff' ||
+    kind === 'lajatang'
+  ) {
     canvas.limb(along(-13), along(13), 0.55, 0.55, solid(WOOD));
     for (const end of [-1, 1]) {
       const a = along(end * 13);
-      if (kind === 'bladed-staff') {
+      if (kind === 'bladed-staff' || kind === 'double-bladed-staff') {
         // Una hoja larga de lanza en cada punta.
         canvas.limb(a, along(end * 14), 0.8, 0.8, metal(DARK_STEEL));
         canvas.limb(along(end * 14), along(end * 22), 1.1, 0.1, metal(BLADE_STEEL));
@@ -1883,6 +1901,14 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
         arc(canvas, a, scale(dir, end), side, 3.4, 200, 1, 0.15);
       }
     }
+    return;
+  }
+  if (kind === 'spiked-whip') {
+    canvas.limb(along(-3), along(3), 0.65, 0.55, grip);
+    const curve = (i: number): Vec3 =>
+      add(along(3 + i * 1.4), scale(side, 2.5 * Math.sin(i * 0.8)));
+    for (let i = 0; i < 8; i++)
+      canvas.limb(curve(i), curve(i + 1), 0.5 - i * 0.045, 0.45 - i * 0.045, metal(STEEL));
     return;
   }
   if (kind === 'scythe') {
@@ -1936,8 +1962,8 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     }
     return;
   }
-  if (kind === 'war-fork' || kind === 'short-spear') {
-    const fork = kind === 'war-fork';
+  if (kind === 'war-fork' || kind === 'paladin-fork' || kind === 'short-spear') {
+    const fork = kind === 'war-fork' || kind === 'paladin-fork';
     const end = fork ? 16 : 12;
     canvas.limb(along(fork ? -8 : -5), along(end), 0.6, 0.6, solid(WOOD));
     if (fork) {
@@ -1967,6 +1993,29 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
         ],
         metal(STEEL),
       );
+    }
+    return;
+  }
+  if (kind === 'kama' || kind === 'sai' || kind === 'tekagi') {
+    for (const k of [-1, 1]) {
+      const point = (n: number): Vec3 => add(along(n), scale(side, k * 1.25));
+      canvas.limb(point(-3), point(3), 0.65, 0.6, grip);
+      if (kind === 'kama') {
+        canvas.limb(point(3), add(point(7), scale(side, 3 * k)), 1, 0.1, metal(STEEL));
+      } else if (kind === 'sai') {
+        canvas.limb(point(3), point(11), 0.55, 0.1, metal(STEEL));
+        for (const wing of [-1, 1])
+          canvas.limb(point(3), add(point(7), scale(side, 1.7 * wing)), 0.4, 0.1, metal(STEEL));
+      } else {
+        for (const claw of [-1, 0, 1])
+          canvas.limb(
+            add(point(3), scale(side, claw)),
+            add(point(9), scale(side, claw * 1.3)),
+            0.45,
+            0.1,
+            metal(STEEL),
+          );
+      }
     }
     return;
   }
@@ -2046,12 +2095,14 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
   }
 
   const up = normalize(cross(side, dir));
-  if (kind === 'spear' || kind === 'halberd') {
+  if (kind === 'spear' || kind === 'halberd' || kind === 'lance' || kind === 'pike') {
     // Asta larga que sale por detrás de la mano y punta en forma de hoja.
     canvas.limb(along(-10), along(22), 0.6, 0.6, solid(WOOD));
     const tip = along(22);
+    const end = kind === 'lance' ? 31 : kind === 'pike' ? 29 : 28;
+    const width = kind === 'lance' ? 1.8 : kind === 'pike' ? 0.8 : 1.3;
     canvas.polygon(
-      [tip, add(along(24), scale(side, 1.3)), along(28), add(along(24), scale(side, -1.3))],
+      [tip, add(along(24), scale(side, width)), along(end), add(along(24), scale(side, -width))],
       metal(STEEL),
     );
     // La alabarda suma una hoja de hacha bajo la punta y un gancho atrás.
@@ -2133,6 +2184,10 @@ function drawWeapon(canvas: VolumeCanvas, rig: Rig, kind: ItemKind): void {
     'butcher-knife': { length: 7, width: 1.3, guard: 0 },
     'skinning-knife': { length: 6, width: 0.7, guard: 0 },
     'viking-sword': { length: 13, width: 1.25, guard: 2.2 },
+    'assassin-spike': { length: 8, width: 0.65, guard: 0.9 },
+    'elven-spellblade': { length: 15, width: 1.1, guard: 1.6 },
+    leafblade: { length: 9, width: 1.2, guard: 0.7 },
+    'war-cleaver': { length: 11, width: 1.5, guard: 1.1 },
     bokuto: { length: 14, width: 0.85, guard: 0 },
     daisho: { length: 16, width: 0.8, guard: 1.2 },
     'elven-machete': { length: 13, width: 1.5, guard: 1.5 },

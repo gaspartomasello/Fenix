@@ -1443,7 +1443,7 @@ interface IslandShape {
 export type AshlandPart = 'wall' | 'inside' | 'cone' | 'crater';
 
 /**
- * Continente de norte a sur, mezcla de América y Britannia: entero (sin
+ * Continente de norte a sur, con regiones climáticas variadas: entero (sin
  * estrecho), con una gran bahía en la costa este, una cordillera a lo largo
  * de la costa oeste (con pasos) y costas torcidas con ruido. En el mar:
  * - una isla grande al este de la bahía, con una ciudad y las Tierras de

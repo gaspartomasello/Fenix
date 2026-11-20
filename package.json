@@ -2,7 +2,7 @@
   "name": "fenix",
   "private": true,
   "version": "0.1.0",
-  "description": "MMORPG web inspirado en Ultima Online y el motor Sphere",
+  "description": "MMORPG web isométrico de fantasía",
   "type": "module",
   "engines": {
     "node": ">=22.12.0"

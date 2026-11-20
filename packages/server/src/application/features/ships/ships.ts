@@ -53,7 +53,7 @@ import type { Clock, IdGenerator, Notifier, RandomSource } from '../../ports';
 const VISIBILITY_MS = 1000;
 
 /**
- * Barcos, como en UO: se botan desde una maqueta y los navegan varios
+ * Barcos: se botan desde una maqueta y los navegan varios
  * personajes juntos. Cualquiera de la tripulación da órdenes al timonel en
  * voz alta («adelante», «virar a babor», «alto») o con la ventana del barco;
  * el barco se mueve con todo lo que tiene encima. Cada banda de un galeón

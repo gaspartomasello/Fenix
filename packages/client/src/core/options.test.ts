@@ -20,7 +20,7 @@ const press = (code: string, extra: Partial<KeyPress> = {}): KeyPress => ({
 });
 
 describe('opciones', () => {
-  it('nombra las combinaciones como en un asistente de UO', () => {
+  it('nombra las combinaciones como en un asistente del juego', () => {
     expect(comboOf(press('F1'))).toBe('F1');
     expect(comboOf(press('KeyQ', { shiftKey: true }))).toBe('Shift+Q');
     expect(comboOf(press('Digit3', { ctrlKey: true, altKey: true }))).toBe('Ctrl+Alt+3');

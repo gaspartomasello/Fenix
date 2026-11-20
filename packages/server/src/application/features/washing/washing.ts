@@ -22,7 +22,7 @@ const WATER_SOURCES: ReadonlySet<StaticKind> = new Set<StaticKind>([
  * Las vendas usadas: al terminar de vendar, la venda queda ensangrentada en
  * la mochila. Con doble clic cerca del agua (el mar, un río, la orilla, un
  * aljibe, una fuente o un bebedero de caballos) se lavan todas y vuelven a
- * ser vendas, como en UO.
+ * ser vendas.
  */
 export class Washing {
   /** Dónde hay aljibes, fuentes y bebederos (no cambian). */

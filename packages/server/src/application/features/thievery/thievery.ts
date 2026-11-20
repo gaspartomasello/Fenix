@@ -25,7 +25,7 @@ import type { GameServices } from '../../kernel/services';
 const SNOOP_MEMORY_MS = 2 * 60 * 1000;
 
 /**
- * El oficio del ladrón, como en UO:
+ * El oficio del ladrón:
  * - Forzar cerraduras: con una ganzúa, abrir un cofre cerrado con llave
  *   (los de las ruinas y casas abandonadas, y algunos de los pueblos). Al
  *   fallar, a veces se rompe la ganzúa.

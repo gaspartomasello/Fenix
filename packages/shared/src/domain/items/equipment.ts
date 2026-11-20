@@ -1,4 +1,4 @@
-/** Lugares del cuerpo donde se equipa un objeto (las "capas" de UO). */
+/** Lugares del cuerpo donde se equipa un objeto (las "capas" del juego). */
 export const EQUIPMENT_SLOTS = [
   'head',
   'neck',

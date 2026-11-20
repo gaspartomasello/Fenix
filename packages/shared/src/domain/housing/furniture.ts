@@ -3,7 +3,7 @@ import type { StaticKind } from '../world/statics';
 import { HOUSE_PLANS, type HouseKind } from './houses';
 
 /**
- * Los muebles de una casa, como en UO: se fabrican (carpintería), se llevan
+ * Los muebles de una casa: se fabrican (carpintería), se llevan
  * en la mochila y, soltados adentro de la casa propia, quedan puestos (ocupan
  * su lugar, no se roban y se guardan con la casa). El dueño o un copropietario
  * los gira o los vuelve a guardar en la mochila.

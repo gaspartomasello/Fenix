@@ -90,7 +90,7 @@ export class JoinWorld {
   }
 
   /**
-   * Crea un personaje como en UO: atributos repartidos, cuatro habilidades
+   * Crea un personaje según el diseño del juego: atributos repartidos, cuatro habilidades
    * elegidas (60, 60, 50 y 50) y el equipo que corresponde, todo "de equipo
    * inicial" (no se pierde ni se da); además, oro en el banco.
    */
@@ -114,10 +114,10 @@ export class JoinWorld {
       const item = this.world.items.add(this.ids.next(), kind, amount, owner);
       item.newbie = true;
     }
-    // Los reactivos, en su bolsa (como en UO).
+    // Los reactivos, en su bolsa .
     bagReagents(player, this.world, () => this.ids.next(), emptyChanges(), true);
     this.arrangeBackpack(player.id);
-    // Se pone lo que se viste y se empuña (armas, armadura, escudo, capa), como en UO.
+    // Se pone lo que se viste y se empuña (armas, armadura, escudo, capa).
     for (const item of this.world.items.backpackOf(player.id)) {
       const slot = ITEMS[item.kind].slot;
       // La luz y el libro de hechizos empiezan en la mochila (cada uno se los pone si quiere).

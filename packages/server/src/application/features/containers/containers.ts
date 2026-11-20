@@ -19,7 +19,7 @@ import type { Clock, IdGenerator, Notifier, RandomSource } from '../../ports';
 
 /** Cada cuánto se revisa que quien tiene un recipiente abierto siga pudiendo verlo. */
 const CHECK_MS = 1000;
-/** Un mueble vacío se vuelve a llenar después de este tiempo (como en UO, el mundo se repone). */
+/** Un mueble vacío se vuelve a llenar después de este tiempo (según el diseño del juego, el mundo se repone). */
 const REFILL_MS = 30 * 60 * 1000;
 
 /** Lo que suele haber en cada mueble: [objeto, cantidad mínima, máxima, probabilidad]. */
@@ -68,7 +68,7 @@ const STOCK: Readonly<Record<ContainerLook, readonly [ItemKind, number, number, 
 };
 
 /**
- * Recipientes, como en UO: las bolsas y cajas que se llevan en la mochila y
+ * Recipientes: las bolsas y cajas que se llevan en la mochila y
  * los muebles del mundo que guardan cosas (cofres, barriles, cajones,
  * bibliotecas, estantes). Con doble clic se abren y se ve lo de adentro; se
  * arrastra para guardar o sacar. Los muebles traen cosas la primera vez que

@@ -2,7 +2,7 @@ import type { StaticKind } from '../world/statics';
 import { Terrain } from '../world/terrain';
 
 /**
- * Casas de los jugadores, como en Ultima Online: se compran como escritura al
+ * Casas de los jugadores, como en Fénix: se compran como escritura al
  * arquitecto, se levantan en las tierras salvajes (fuera de los pueblos y de
  * los lugares con nombre) y quedan del dueño. Vienen vacías, con sus cofres:
  * lo demás lo pone cada uno. Hay casas de distintos tamaños y estilos, desde

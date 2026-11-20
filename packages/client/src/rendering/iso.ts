@@ -1,7 +1,7 @@
 import type { Direction } from '@fenix/shared/geometry/direction';
 import type { FractionalPosition } from '../core/entity';
 
-/** Medio ancho/alto del rombo de un tile en pantalla (tiles de 44×44 como UO). */
+/** Medio ancho/alto del rombo de un tile en pantalla (tiles de 44×44 como Fénix). */
 export const TILE_HALF = 22;
 
 /** Escala del arte del mundo (terreno y objetos fijos): se dibuja a resolución completa. */
@@ -24,7 +24,7 @@ export function screenToTile({ x, y }: ScreenPoint): FractionalPosition {
 }
 
 /**
- * Dirección de UO correspondiente a un vector en pantalla. Los sectores se
+ * Dirección del juego correspondiente a un vector en pantalla. Los sectores se
  * cuentan desde "derecha" en sentido horario: derecha = NorthEast, abajo =
  * SouthEast, arriba = NorthWest, etc.
  */

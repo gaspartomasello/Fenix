@@ -1,10 +1,9 @@
 # Fenix
 
-MMORPG web inspirado en **Ultima Online** y el motor **Sphere**: mundo isométrico compartido,
+MMORPG web de fantasía: mundo isométrico compartido,
 en tiempo real, jugable desde el navegador.
 
-> Proyecto independiente. No usa código, gráficos, mapas ni marcas de Electronic Arts.
-> El arte se genera por código y las mecánicas se reimplementan desde cero.
+> Proyecto independiente. El arte combina modelos generados por código y sprites aprobados para el catálogo de Fénix.
 
 ## Requisitos
 
@@ -61,11 +60,11 @@ para viajar a un pueblo o lugar con nombre (`/ir` solo muestra la lista).
 
 ## Controles
 
-- **Flechas / WASD**: caminar (arriba en pantalla = Noroeste, como en UO). **Shift** para correr.
+- **Flechas / WASD**: caminar (arriba en pantalla = Noroeste). **Shift** para correr.
 - **Clic derecho sostenido** (o **tocar y mantener** en el celular): caminar hacia el cursor;
   lejos del personaje, correr.
 - **Enter**: hablar. **Escape**: cancelar.
-- **B**: mochila. **C**: ventana de personaje, como en UO: casilleros con lo que tiene puesto a la
+- **B**: mochila. **C**: ventana de personaje: casilleros con lo que tiene puesto a la
   izquierda, el personaje grande y de frente, botones a las demás ventanas a la derecha y una placa
   con nombre y título. **Doble clic sobre otra persona** (o alguien del pueblo): ver su ventana de
   personaje, sin botones.
@@ -167,16 +166,16 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
    correr (distintas), golpe en arco con espada o hacha, estocada con daga, puñetazo, lanzar
    hechizos, mordida de las bestias y gestos de reposo cada tanto (girar los hombros, cambiar el
    peso de pierna). La capa envuelve el cuerpo y vuela según se camine, corra o pelee. Objetos
-   redibujados con volumen y vistos desde arriba, y ventana de personaje al estilo de UO.
-10. ✅ **Habilidades, hechizos, objetos y oficios como en UO**: 22 habilidades en cuatro grupos
+   redibujados con volumen y vistos desde arriba, y ventana de personaje al estilo del juego.
+10. ✅ **Habilidades, hechizos, objetos y oficios según el diseño del juego**: 22 habilidades en cuatro grupos
     (combate, magia, recolección y oficios) con tope total de 700; fuerza, destreza e
     inteligencia suben al usarlas (hasta 100 cada una y 225 entre las tres). 34 hechizos en ocho
-    círculos, con los reactivos de UO (musgo de sangre y belladona incluidos), objetivo a uno
+    círculos, con los reactivos del juego (musgo de sangre y belladona incluidos), objetivo a uno
     mismo, a otro o a un lugar, y Resistencia mágica. El octavo círculo trae Terremoto,
     Resurrección e invocaciones (vórtice de energía, elementales de aire, tierra, fuego y agua, y
     demonio) que pelean para su dueño un rato. Efectos que duran: subir o bajar atributos, Protección
     (los golpes no cortan el hechizo), veneno, parálisis y visión nocturna. Vendas con Primeros
-    auxilios y Anatomía, pociones de los colores de UO, pergaminos. Mazas, estoque, lanza, espada
+    auxilios y Anatomía, pociones de los colores del juego, pergaminos. Mazas, estoque, lanza, espada
     ancha, katana, martillo de guerra y arco con flechas (de lejos, a dos manos); cuero
     tachonado, armadura de placas, túnica y sombrero de mago. Siete oficios con herramienta,
     materiales y lugar: herrería, sastrería, carpintería, flechería, alquimia, inscripción y
@@ -184,7 +183,7 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
 11. ✅ **Mundo sin pixelado e iluminación**: terreno (pasto, tierra, arena, adoquines, agua y
     tablones) y objetos del mundo (árboles, rocas, paredes, cercas, barriles, cajas, pozo,
     faroles, santuario, forja y yunque) redibujados a resolución completa con volumen y luz,
-    en la proyección de UO. De noche, la luz de faroles y fuegos ilumina el suelo, las paredes y
+    en la proyección del juego. De noche, la luz de faroles y fuegos ilumina el suelo, las paredes y
     los personajes que toca, sin velar la pantalla; Visión nocturna hace ver como de día. El
     oro se ve como una moneda, un puñado, una pila o una montaña según la cantidad.
 12. ✅ **Criaturas y mazmorra**: araña gigante (envenena), orco (huye cuando le queda poca vida),
@@ -202,7 +201,7 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
     dueño y viaja con él, montar y desmontar, el doble de velocidad y se guarda con el personaje.
     Después: animación de ocho cuadros por ciclo al caminar, correr y galopar (con las patas
     delanteras cruzadas) y el cuerpo de una criatura se revisa en un ataúd con calavera, como en
-    UO. Se probó dibujar los sprites al doble de detalle con sombreado suave, pero se veía peor:
+    Fénix. Se probó dibujar los sprites al doble de detalle con sombreado suave, pero se veía peor:
     volvió el gráfico anterior, con la animación nueva.
 14. ✅ **Árboles**: siete especies que crecen por ramificación (tronco, ramas madre, ramas y
     ramitas, con las hojas en las puntas): roble de copa ancha, pino con pisos de ramas, ceibo
@@ -233,12 +232,12 @@ Detalle de capas, flujo de mensajes y decisiones en [docs/ARQUITECTURA.md](docs/
 19. ✅ **Evaluar inteligencia**: habilidad nueva de magia que agranda el daño de los hechizos
     (hasta +50 % al máximo), como Anatomía y Tácticas para los guerreros. La Explosión cae 2,5 s
     después de lanzada (para combinarla con la Columna de fuego) y Anatomía suma daño.
-20. ✅ **Viajes**: runas (se compran a la maga) y tres hechizos de UO. **Marcar** (6.º) graba en
+20. ✅ **Viajes**: runas (se compran a la maga) y tres hechizos del juego. **Marcar** (6.º) graba en
     la runa el lugar donde estás; **Recordar** (4.º) te lleva ahí; **Portal** (7.º) abre dos
     puertas de luz azul, una al lado tuyo y otra en el lugar de la runa, que cualquiera puede
     cruzar caminando durante 30 s. Al lanzarlos se elige la runa en una ventana, y cada runa dice
     qué lugar guarda. No se pueden marcar runas en la mazmorra.
-21. ✅ **Sigilo**: tres habilidades nuevas de UO. **Esconderse** te saca de la vista de los demás
+21. ✅ **Sigilo**: tres habilidades nuevas del juego. **Esconderse** te saca de la vista de los demás
     jugadores y de las criaturas (no con una criatura atacándote al lado, ni montado); **Sigilo**
     te deja dar un paso escondido cada 10 puntos (correr te descubre); **Mirar** encuentra a los
     escondidos cerca, según tu Mirar contra su Esconderse. Atacar, lanzar un hechizo, hablar en

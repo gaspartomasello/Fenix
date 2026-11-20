@@ -51,7 +51,7 @@ export const BASE_ITEM_KINDS = [
   'quarterstaff',
   'bow',
   'arrow',
-  // Más armas, como las de UO: hachas, armas de asta, espadas y ballestas
+  // Más armas: hachas, armas de asta, espadas y ballestas
   'double-axe',
   'battle-axe',
   'two-handed-axe',
@@ -61,6 +61,19 @@ export const BASE_ITEM_KINDS = [
   'pitchfork',
   'sickle',
   'short-spear',
+  'assassin-spike',
+  'double-bladed-staff',
+  'elven-spellblade',
+  'kama',
+  'lajatang',
+  'lance',
+  'leafblade',
+  'paladin-fork',
+  'pike',
+  'sai',
+  'spiked-whip',
+  'tekagi',
+  'war-cleaver',
   'hammer-pick',
   'cutlass',
   'viking-sword',
@@ -134,7 +147,7 @@ export const BASE_ITEM_KINDS = [
   'bone-leggings',
   // La máscara de madera pintada de las tribus de la selva, con penacho de plumas.
   'tribal-mask',
-  // Piezas sueltas de armadura, como en UO: gola, brazales, guantes y perneras de cada material
+  // Piezas sueltas de armadura: gola, brazales, guantes y perneras de cada material
   'leather-gorget',
   'studded-gorget',
   'plate-gorget',
@@ -360,7 +373,7 @@ export interface ItemDefinition {
   readonly color?: number;
   /** Ocupa las dos manos (no se puede usar escudo). */
   readonly twoHanded?: boolean;
-  /** Solo lo pueden poner las mujeres (el peto de placas de mujer, como en UO). */
+  /** Solo lo pueden poner las mujeres (el peto de placas de mujer). */
   readonly womenOnly?: boolean;
   /** Herramienta: qué oficio abre. */
   readonly crafts?: SkillKey;
@@ -452,7 +465,7 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
     stackable: true,
     color: 0x9a3a2e,
   },
-  // Las bolsas son de cuero: se pueden teñir, como en UO.
+  // Las bolsas son de cuero: se pueden teñir.
   bag: {
     name: 'bolsa',
     plural: 'bolsas',
@@ -655,6 +668,22 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
   pitchfork: { ...weapon('horca de combate', 'horcas de combate', 'una'), twoHanded: true },
   sickle: weapon('hoz', 'hoces', 'una'),
   'short-spear': { ...weapon('lanza corta', 'lanzas cortas', 'una'), twoHanded: true },
+  'assassin-spike': weapon('punzón de asesino', 'punzones de asesino', 'un'),
+  'double-bladed-staff': {
+    ...weapon('bastón de doble filo', 'bastones de doble filo', 'un'),
+    twoHanded: true,
+  },
+  'elven-spellblade': { ...weapon('hoja encantada', 'hojas encantadas', 'una'), twoHanded: true },
+  kama: { ...weapon('kama', 'kamas', 'una'), twoHanded: true },
+  lajatang: { ...weapon('lajatang', 'lajatangs', 'un'), twoHanded: true },
+  lance: weapon('lanza de caballería', 'lanzas de caballería', 'una'),
+  leafblade: weapon('hoja de laurel', 'hojas de laurel', 'una'),
+  'paladin-fork': weapon('horquilla del paladín', 'horquillas del paladín', 'una'),
+  pike: { ...weapon('pica', 'picas', 'una'), twoHanded: true },
+  sai: { ...weapon('sai', 'sais', 'un'), twoHanded: true },
+  'spiked-whip': weapon('látigo de púas', 'látigos de púas', 'un'),
+  tekagi: { ...weapon('garra tekagi', 'garras tekagi', 'una'), twoHanded: true },
+  'war-cleaver': weapon('cuchilla de guerra', 'cuchillas de guerra', 'una'),
   'hammer-pick': weapon('pico de guerra', 'picos de guerra', 'un'),
   cutlass: weapon('alfanje', 'alfanjes', 'un'),
   'viking-sword': weapon('espada vikinga', 'espadas vikingas', 'una'),
@@ -699,7 +728,7 @@ const BASE: Readonly<Record<BaseItemKind, Spec>> = {
   chainmail: wear('cota de malla', 'cotas de malla', 'una', 'torso', 0x8e949c),
   ringmail: wear('cota de anillas', 'cotas de anillas', 'una', 'torso', 0x7e848c),
   'plate-chest': wear('peto de placas', 'petos de placas', 'un', 'torso', 0xa8aeb6),
-  // Como en UO, el peto de placas de mujer tiene su forma (y solo lo usan ellas).
+  // El peto de placas de mujer tiene su forma (y solo lo usan ellas).
   'female-plate': {
     ...wear('peto de placas de mujer', 'petos de placas de mujer', 'un', 'torso', 0xa8aeb6),
     womenOnly: true,
@@ -1171,5 +1200,5 @@ export function describeItem(kind: ItemKind, amount = 1): string {
   return `${amount} ${definition.plural}`;
 }
 
-/** Máximo de unidades en una pila, como en UO. */
+/** Máximo de unidades en una pila. */
 export const MAX_STACK = 60_000;

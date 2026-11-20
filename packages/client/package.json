@@ -8,7 +8,7 @@
     "dev": "vite",
     "dev:solo": "vite --mode solo",
     "build": "vite build",
-    "build:solo": "vite build --mode solo && node scripts/inline-solo.mjs && tsx scripts/world-solo.ts",
+    "build:solo": "vite build --mode solo && node scripts/inline-solo.mjs && node --import tsx scripts/world-solo.ts",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json"
   },

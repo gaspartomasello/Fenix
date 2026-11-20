@@ -59,7 +59,7 @@ const STYLES = Object.keys(HOUSE_STYLES) as HouseStyle[];
 const FLOORS = Object.keys(HOUSE_FLOORS) as FloorKind[];
 
 /**
- * La ventana para diseñar una casa a medida, como la de UO: el lote visto
+ * La ventana para diseñar una casa a medida, como la del juego: el lote visto
  * desde arriba, planta por planta. Se elige una pieza (piso, pared, ventana,
  * puerta, escalera, cofre) y se pinta sobre la grilla; abajo se ve lo que
  * cuesta en oro o en materiales y si se puede construir. Nada cambia en el

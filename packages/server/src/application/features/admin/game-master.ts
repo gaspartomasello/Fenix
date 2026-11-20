@@ -33,7 +33,7 @@ export interface GameMasterActions {
 const FULL = 1;
 
 /**
- * El administrador del juego (como los GM de UO): hace aparecer criaturas
+ * El administrador del juego (como los GM del juego): hace aparecer criaturas
  * (salvajes, o que lo siguen y pelean para él), crea objetos y monturas,
  * mata, cura y resucita, trae gente o va hasta ella, limpia lo que creó y
  * avisa a todos. Solo pueden los personajes que el servidor nombra

@@ -1,12 +1,12 @@
 /**
  * Objetos fijos del mundo (árboles, rocas, paredes…), como los "statics"
- * de UO. Cada uno ocupa un tile; los que bloquean impiden pasar por él.
+ * del juego. Cada uno ocupa un tile; los que bloquean impiden pasar por él.
  */
 import { Direction } from '../geometry/direction';
 import type { Position } from '../geometry/position';
 
 /**
- * Los íconos de los carteles de los comercios, como en UO: una tabla colgada
+ * Los íconos de los carteles de los comercios: una tabla colgada
  * junto a la puerta con el dibujo del oficio (un yunque en la herrería, un
  * serrucho en la carpintería, una estrella en la tienda de magia…).
  */
@@ -357,7 +357,7 @@ export const SEATS: Readonly<Partial<Record<StaticKind, Direction | 'any'>>> = {
 };
 
 /**
- * Puertas, como en UO: en el mapa van cerradas (bloquean); con doble clic se
+ * Puertas: en el mapa van cerradas (bloquean); con doble clic se
  * abren y se ve la puerta abierta. El estado lo lleva el mapa (`TileMap.setDoorOpen`).
  */
 export const DOORS: Readonly<Partial<Record<StaticKind, StaticKind>>> = {
@@ -400,7 +400,7 @@ export function doorPartner(kind: StaticKind, at: Position): Position | null {
 }
 
 /**
- * Muebles que guardan cosas, como en UO: con doble clic se abren y se ve lo
+ * Muebles que guardan cosas: con doble clic se abren y se ve lo
  * que tienen (un cofre, un barril, una biblioteca…). `look` es el dibujo de
  * la ventana.
  */

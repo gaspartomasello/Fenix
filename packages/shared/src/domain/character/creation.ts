@@ -12,7 +12,7 @@ import { isAppearance, type Appearance } from './appearance';
 import { validateCharacterName } from './name';
 
 /**
- * Crear un personaje, como en UO: se reparten los puntos de los atributos y
+ * Crear un personaje: se reparten los puntos de los atributos y
  * se eligen cuatro habilidades (dos en 60 y dos en 50). Según esas habilidades
  * trae su equipo: armas, el libro de hechizos y los reactivos, herramientas…
  * Ese equipo inicial es "del personaje": no se pierde ni se lo pueden sacar.
@@ -139,7 +139,7 @@ export const REAGENTS: readonly ItemKind[] = [
   'sulfurous-ash',
 ];
 
-/** Lo que trae según cada habilidad elegida, como en UO. */
+/** Lo que trae según cada habilidad elegida. */
 export const SKILL_KITS: Readonly<Record<SkillKey, readonly KitEntry[]>> = {
   wrestling: [{ kind: 'leather-armor', amount: 1 }],
   swordsmanship: [{ kind: 'katana', amount: 1 }],
@@ -222,7 +222,7 @@ export function startingKit(chosen: readonly SkillKey[]): KitEntry[] {
 /**
  * La ropa con la que empieza: camisa del color elegido, pantalón (las
  * mujeres, pollera) y zapatos. Son objetos de verdad: si se los saca, se ve la ropa
- * interior, como en UO.
+ * interior.
  */
 export function startingClothes(
   appearance: Appearance,

@@ -6,7 +6,7 @@ import { el } from './dom';
 const HARMFUL: ReadonlySet<EffectKind> = new Set<EffectKind>(['poison', 'paralyzed']);
 
 /**
- * Efectos activos propios (como los íconos de UO): nombre, cuánto suben o
+ * Efectos activos propios (como los íconos del juego): nombre, cuánto suben o
  * bajan y el tiempo que les queda. Se ve debajo de las barras de vida.
  */
 export class EffectsBar {

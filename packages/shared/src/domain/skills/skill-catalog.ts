@@ -1,5 +1,5 @@
 /**
- * Habilidades, como en UO: suben de a 0,1 al usarlas, hasta 100 cada una y
+ * Habilidades: suben de a 0,1 al usarlas, hasta 100 cada una y
  * con un tope total. Se guardan en décimas (0–1000) para evitar decimales.
  */
 export const SKILL_KEYS = [
@@ -109,7 +109,7 @@ export const SKILL_DESCRIPTIONS: Readonly<Record<SkillKey, string>> = {
   cooking: 'Cocinar comida cerca del fuego.',
 };
 
-/** Grupos de habilidades, como en la ventana de UO. */
+/** Grupos de habilidades, como en la ventana del juego. */
 export const SKILL_GROUPS: readonly {
   readonly name: string;
   readonly skills: readonly SkillKey[];
@@ -190,7 +190,7 @@ export function formatSkill(tenths: number): string {
 /**
  * Probabilidad de subir al usar una habilidad: segura hasta 50 (lo básico se
  * aprende rápido), después más baja cerca del máximo, pero nunca imposible
- * (no es tan exigente como el UO original: se llega a gran maestro jugando,
+ * (no es tan exigente como el Fénix original: se llega a gran maestro jugando,
  * no en meses).
  */
 export function skillGainChance(tenths: number): number {

@@ -1,6 +1,6 @@
 import { ITEMS, type ItemKind } from './item-catalog';
 
-/** Colores de tintura, como en UO: cada uno con su nombre. */
+/** Colores de tintura: cada uno con su nombre. */
 export const DYE_HUES: readonly { readonly hue: number; readonly name: string }[] = [
   { hue: 0xb02a2a, name: 'rojo' },
   { hue: 0x7a1424, name: 'bordó' },
@@ -26,7 +26,7 @@ export interface DyeFamily {
   readonly hues: readonly number[];
 }
 
-/** Los tonos del panel (como el de UO): cada uno con su nombre y su ángulo de color. */
+/** Los tonos del panel (como el del juego): cada uno con su nombre y su ángulo de color. */
 const FAMILIES: readonly (readonly [string, number])[] = [
   ['rojo', 0],
   ['bermellón', 16],
@@ -82,7 +82,7 @@ function hsl(h: number, s: number, l: number): number {
 }
 
 /**
- * El panel de colores de la tina, como el de UO: cada tono con siete
+ * El panel de colores de la tina, como el del juego: cada tono con siete
  * matices, y los grises. Son todos los colores con que se puede teñir.
  */
 export const DYE_FAMILIES: readonly DyeFamily[] = [

@@ -32,7 +32,7 @@ export type EconomyResult =
 
 const fail = (reason: string): EconomyResult => ({ ok: false, reason });
 
-/** Desde cuánto se puede pagar con el oro del banco (como los cheques de UO). */
+/** Desde cuánto se puede pagar con el oro del banco (como los cheques del juego). */
 export const BANK_PURCHASE = 2000;
 
 /** ¿Hay un objeto fijo de este tipo cerca? (forja, yunque…) */
@@ -203,7 +203,7 @@ export function buy(
   if (!offer) return fail(`${vendor.name} no vende eso.`);
   const units = ITEMS[kind].stackable ? amount : Math.min(amount, 10);
   const total = offer.price * units;
-  // Como en UO, las compras grandes (una casa) se pueden pagar con el oro del banco.
+  // según el diseño del juego, las compras grandes (una casa) se pueden pagar con el oro del banco.
   const carried = world.items.countInBackpack(player.id, 'gold');
   const bankGold = world.items.bankOf(player.id).filter((i) => i.kind === 'gold');
   const banked = total >= BANK_PURCHASE ? bankGold.reduce((sum, i) => sum + i.amount, 0) : 0;

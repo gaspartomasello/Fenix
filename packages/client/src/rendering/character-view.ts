@@ -40,7 +40,7 @@ const NAME_COLOR_NOTORIETY: Readonly<Record<Notoriety, number>> = {
   murderer: 0xff5a4a,
   invulnerable: 0xffd84a,
 };
-/** Gris, como las criaturas atacables de UO. */
+/** Gris, como las criaturas atacables del juego. */
 const NAME_COLOR_CREATURE = 0xd0c8b8;
 /** Amarillo suave para los personajes del pueblo. */
 const NAME_COLOR_NPC = 0xf2dd8a;
@@ -437,7 +437,7 @@ export class CharacterView {
     if (!visible || (health === this.shownHealth && poisoned === this.shownPoisoned)) return;
     this.shownHealth = health;
     this.shownPoisoned = poisoned;
-    // Envenenado: verde veneno, como en UO; si no, del verde al rojo según la vida.
+    // Envenenado: verde veneno; si no, del verde al rojo según la vida.
     const color = poisoned
       ? POISON_GREEN
       : health > 0.5

@@ -28,7 +28,7 @@ interface OpenChest {
 }
 
 /**
- * Búsqueda de tesoros, como en UO: algunas criaturas llevan un mapa del tesoro
+ * Búsqueda de tesoros: algunas criaturas llevan un mapa del tesoro
  * que marca dónde hay un cofre enterrado. Se lee con doble clic (muestra la
  * zona y una pista), se va hasta la marca y se cava con una pala. Con suerte y
  * minería sale el cofre, lleno de oro y gemas… y sus guardianes. El cofre

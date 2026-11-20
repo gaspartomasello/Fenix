@@ -35,7 +35,7 @@ export function inMeleeRange(a: Position, b: Position): boolean {
 }
 
 /**
- * Probabilidad de acertar según las habilidades de ambos (fórmula de UO):
+ * Probabilidad de acertar según las habilidades de ambos (fórmula del juego):
  * (ataque + 20) / ((defensa + 20) × 2), entre 10 % y 95 %. A igual habilidad, 50 %.
  */
 export function hitChance(attackerSkill: number, defenderSkill: number): number {
@@ -51,7 +51,7 @@ export function blockChance(parrying: number): number {
 /**
  * Resuelve un golpe: acierto según habilidades; el escudo puede bloquearlo;
  * daño del arma más bonus por fuerza, multiplicado por Tácticas (60 %–100 %)
- * y por Anatomía (hasta +50 %, como en UO); la armadura absorbe hasta un 60 %.
+ * y por Anatomía (hasta +50 %); la armadura absorbe hasta un 60 %.
  * Un golpe que pasa hace al menos 1.
  */
 export function resolveAttack(

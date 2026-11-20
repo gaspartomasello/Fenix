@@ -1,5 +1,5 @@
 /**
- * Las habilidades del ladrón, como en UO: forzar cerraduras con ganzúas,
+ * Las habilidades del ladrón: forzar cerraduras con ganzúas,
  * fisgonear la mochila de otro y robarle. Todo en décimas (0–1000).
  */
 

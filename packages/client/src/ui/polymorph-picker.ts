@@ -7,7 +7,7 @@ import { toCanvas } from '../platform/canvas';
 import { el } from './dom';
 import { GameWindow } from './game-window';
 
-/** Como en UO, primero los animales y aparte las criaturas. */
+/** según el diseño del juego, primero los animales y aparte las criaturas. */
 const GROUPS: readonly { title: string; forms: readonly PolymorphForm[] }[] = [
   {
     title: 'Animales',

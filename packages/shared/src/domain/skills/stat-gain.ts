@@ -5,7 +5,7 @@ export type StatDirections = Readonly<Partial<Record<AttributeKey, SkillDirectio
 export const STAT_KEYS = ['strength', 'dexterity', 'intelligence'] as const;
 
 /**
- * Atributos que se entrenan con cada habilidad, como en UO: el primero sube
+ * Atributos que se entrenan con cada habilidad: el primero sube
  * más seguido que el segundo. Pelear da fuerza o destreza; la magia,
  * inteligencia; los oficios, según el trabajo.
  */

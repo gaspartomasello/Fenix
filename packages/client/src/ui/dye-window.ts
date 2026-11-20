@@ -8,7 +8,7 @@ import { itemLabel } from './item-label';
 const css = (hue: number): string => `#${hue.toString(16).padStart(6, '0')}`;
 
 /**
- * La tina de tintura, como en UO: primero se elige el color en su panel
+ * La tina de tintura: primero se elige el color en su panel
  * (cada tono con sus matices, del más claro al más oscuro, y los grises) y
  * el agua de la tina queda de ese color; después se toca la prenda o la
  * bolsa (de lo que uno lleva en la mochila o puesto) que se quiere teñir.

@@ -48,7 +48,7 @@ function pick<T>(list: readonly T[], random: () => number): T {
 }
 
 /**
- * Otra cara para Incógnito, como en UO: mismo cuerpo, pero otro nombre,
+ * Otra cara para Incógnito: mismo cuerpo, pero otro nombre,
  * otra piel, otro pelo y otra ropa, todo al azar.
  */
 export function randomDisguise(

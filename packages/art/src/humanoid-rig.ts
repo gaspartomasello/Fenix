@@ -107,15 +107,25 @@ const THRUSTING: ReadonlySet<ItemKind> = new Set<ItemKind>([
   'bladed-staff',
   'butcher-knife',
   'skinning-knife',
+  'assassin-spike',
+  'double-bladed-staff',
+  'elven-spellblade',
+  'lajatang',
+  'lance',
+  'leafblade',
+  'paladin-fork',
+  'pike',
+  'sai',
+  'tekagi',
 ]);
 
-/** Armas que se llevan en la mano izquierda (el arco, como en UO). */
+/** Armas que se llevan en la mano izquierda (el arco). */
 export function heldInLeftHand(weapon: ItemKind | undefined): boolean {
   return weapon === 'bow';
 }
 
 /**
- * Hacia dónde mira cada dirección de UO en la pantalla isométrica: 0 es de
+ * Hacia dónde mira cada dirección del juego en la pantalla isométrica: 0 es de
  * frente a la cámara, π/2 a la derecha y π de espaldas.
  */
 const FACING: Readonly<Record<Direction, number>> = {
@@ -292,7 +302,7 @@ const WALK: Readonly<Record<0 | 1 | 2 | 3, BodyPose>> = {
 };
 
 /**
- * En guardia, como en UO: rodillas flexionadas (la cadera baja sola, porque
+ * En guardia: rodillas flexionadas (la cadera baja sola, porque
  * el pie queda en el suelo), pie izquierdo adelantado y el derecho atrás,
  * peso un poco adelante, hombro del arma retrasado y los brazos arriba
  * (ver `guardArms`, que dependen de si tiene arma).
@@ -340,7 +350,7 @@ function guardArms(armed: boolean): { rightArm: ArmPose; leftArm: ArmPose } {
 
 /** Pasos de cada acción (las que tienen menos de 4 repiten el último). */
 const ACTIONS: Readonly<Record<ActionKind, readonly BodyPose[]>> = {
-  // Carrera, como en UO: torso inclinado, brazos doblados que bombean, rodillas altas y un
+  // Carrera: torso inclinado, brazos doblados que bombean, rodillas altas y un
   // instante en el aire (no es una caminata rápida).
   run: [
     {
@@ -548,7 +558,7 @@ const DEAD: BodyPose = {
 };
 
 /**
- * La pose de la ventana de personaje, como en UO: de pie, las piernas un poco
+ * La pose de la ventana de personaje: de pie, las piernas un poco
  * abiertas y los brazos separados del cuerpo con los codos apenas doblados,
  * así se ve cada prenda (mangas, guantes, lo que tiene en las manos).
  */
@@ -879,7 +889,7 @@ export function humanoidRig(
   };
   const right =
     // En la ventana de personaje, con un arma: el antebrazo adelante y el arma
-    // en alto, en diagonal hacia afuera (como en UO), para que se vea entera.
+    // en alto, en diagonal hacia afuera , para que se vea entera.
     frame === 'display' && armed
       ? displayGrip(armFor(1, DISPLAY_ARMED_ARM), chest)
       : armFor(1, pose.rightArm ?? defaultArm(1));

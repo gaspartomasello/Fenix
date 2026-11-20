@@ -1,5 +1,5 @@
 /**
- * Primeros auxilios con vendas, como en UO: cuánto tarda, cuánto cura y
+ * Primeros auxilios con vendas: cuánto tarda, cuánto cura y
  * cuándo saca el veneno, según Primeros auxilios y Anatomía.
  */
 

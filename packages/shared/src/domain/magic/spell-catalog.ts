@@ -114,7 +114,7 @@ export const CIRCLE_NAMES: Readonly<Record<SpellCircle, string>> = {
   8: 'Octavo círculo',
 };
 
-/** Maná y Magia mínima (en décimas) de cada círculo, como en UO. */
+/** Maná y Magia mínima (en décimas) de cada círculo. */
 const CIRCLE_MANA: Readonly<Record<SpellCircle, number>> = {
   1: 4,
   2: 6,
@@ -244,7 +244,7 @@ export interface SpellDefinition {
   readonly description: string;
   /**
    * Hechizos que tardan en caer después de lanzados (la Explosión, como en
-   * UO): el maná se gasta al lanzar y el efecto llega `delayMs` después. Mientras
+   * Fénix): el maná se gasta al lanzar y el efecto llega `delayMs` después. Mientras
    * tanto se puede lanzar otro, y con buena mano caen los dos juntos.
    */
   readonly delayMs?: number;
@@ -296,7 +296,7 @@ function spell(
   };
 }
 
-/** Animales que puede traer Invocar criatura, como en UO. */
+/** Animales que puede traer Invocar criatura. */
 export const SUMMONED_BEASTS: readonly CreatureKind[] = [
   'wolf',
   'brown-bear',
@@ -1041,7 +1041,7 @@ export function rollSpellPower(
 
 /**
  * Multiplicador de daño de los hechizos por Evaluar inteligencia (el
- * "Tácticas" del mago en UO): ×1 sin práctica, ×1,5 con la habilidad al máximo.
+ * "Tácticas" del mago en Fénix): ×1 sin práctica, ×1,5 con la habilidad al máximo.
  */
 export function spellDamageBonus(evaluatingIntelligence: number): number {
   return 1 + evaluatingIntelligence / 2000;

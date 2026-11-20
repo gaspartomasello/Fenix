@@ -8,7 +8,7 @@ import { isActiveSkill, type ActiveSkill } from '@fenix/shared/skills/stealth';
 import { DEFAULT_MAP_LABELS, type MapLabelFlags } from './map-labels';
 
 /**
- * Las opciones del jugador, como las de un asistente de UO: qué se ve en la
+ * Las opciones del jugador, como las de un asistente del juego: qué se ve en la
  * barra de información de arriba, qué se muestra en pantalla y los atajos de
  * teclado. Se guardan en el navegador; no hay reglas de juego acá.
  */

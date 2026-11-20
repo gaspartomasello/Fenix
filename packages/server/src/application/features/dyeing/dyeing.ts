@@ -7,7 +7,7 @@ import type { ItemNotifications } from '../../kernel/item-notifications';
 import type { Notifier } from '../../ports';
 
 /**
- * Teñir, como en UO: primero se elige el color de la tina en su panel de
+ * Teñir: primero se elige el color de la tina en su panel de
  * colores (el agua de la tina queda de ese color); después, con tinturas en
  * la mochila (cada teñida gasta una), la ropa de tela, las piezas de cuero y
  * las bolsas toman el color de la tina. Se tiñe lo que uno lleva: en la
